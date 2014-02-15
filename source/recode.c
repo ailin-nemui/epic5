@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.3 2014/02/14 16:29:10 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.4 2014/02/15 16:44:22 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -41,70 +41,115 @@
  *
  * * * * * PREFACE 
  *
- * EPIC wants to handle everything internally as a UTF-8 string, but 
- * sometimes we will receive a non-UTF8 string and have to decide how
- * to convert it into UTF8.
+ * There are three primary inbound sources of information:
+ *	1. Stuff you type
+ *	2. Scripts you /load
+ *	3. Stuff you get from IRC
+ * (there are other sources, like DCC CHAT, but those aren't handled yet)
  *
- * There is some research in the topic of automatic encoding detection,
- * and certainly my conversations with epic users tells me that most
- * non-english speakers want to use UTF-8, and english speakers are using
- * UTF-8 implicitly anyways.  So I don't expect this to be too critical
- * to how people use irc.
+ * In an ideal world, everything would be in UTF-8, but we have to handle
+ * data that is not in UTF-8 and we don't know what the encoding is. 
+ * There is some research into auto-detection of encoding, but nothing that
+ * was mature enough to use.
  *
- * Nevertheless, it is not my desire to cut off people who do not use 
- * UTF-8, either the epic user, or others on irc -- so we need to be 
- * able to tell each other about what encoding we're using.
+ * So it falls on you, the user, to use the /ENCODING command to tell the
+ * client what to do with things that are not in UTF-8.
  *
- * * * * * GLOBAL DEFAULTS
+ * * * * * HANDLING THE CONSOLE (stuff you type, stuff you see)
  *
- * Declare the encoding your terminal emulator uses (if it's not utf-8)
- *	/ENCODING console ISO-8859-1
+ * I've observed there are two types of people:
+ *	1. People who don't use 8 bit characters and know nothing of locales
+ *	   (lets call those people "English speakers")
+ *	2. People who undestand exactly what locale they're using.
+ *	   (lets call those people "The World")
  *
- * Declare what encoding non-utf8 scripts should be assumed to be
- * (assuming they don't declare their encoding, WHICH THEY SHOULD)
+ * If you have a locale set up, the client will use that for the encoding
+ * used by your terminal emulator.  For most of you, you're using UTF-8.
+ * Everything should Just Work for UTF-8 users with properly set locales.
+ *
+ * For NON-UTF8 users, or those who don't have any idea what a locale is, 
+ * the client has to do some fallback.  It's been my observation that 
+ * English Speaking UTF-8 users have some idea what locales are, and are 
+ * inclined to set up their locale to make it work right.  
+ *
+ * So my attention falls to people without locales.  I've decided the best
+ * choice is to just assume they're using ISO-8859-1.
+ *
+ * If for any reason, the client doesn't guess right, you can overrule it
+ * by using /ENCODING
+ * 
+ * Maybe you really are using UTF-8 but you don't have your locale set:
+ *	/ENCODING console UTF-8
+ *
+ * Or maybe you're using something else, like KOI8-R
+ *	/ENCODING console KOI8-R
+ *
+ * The client will expect you to type in the console encoding, and will
+ * translate all output to the encoding before display.
+ *
+ * * * * * * HANDLING NON-UTF8, NON-DECLARED SCRIPTS
+ *
+ * However.... Scripts are not usually encoded in UTF8 because of ascii 
+ * art.  Most EPIC5 scripts appear to be encoded in CP437.
+ *
+ * For scripts that are not encoded in UTF-8, epic needs to convert them.
+ * Scripts can make this easy on themselves by using /load -encoding:
+ *	if (word(2 $loadinfo()) != [pf] { load -pf -encoding CP437 $word(1 $loadinfo()); return; }
+ *
+ * For scripts not in utf8 that don't declare an encoding, the client has to
+ * assume *something*, and that is CP437.  This can be overruled with /ENCODING
  *	/ENCODING scripts CP437
  *
- * Declare that unless overruled by other rules, every NON-UTF8 string
- * from irc should be assumed to be ISO-8859-1.
+ * The benefit of all this is CP437 ascii art will now work correctly for all!
  *
- * * * * * * HANDLING TARGETS
- *
- * On irc, there are only two types of targets that generate messages
+ * * * * * * HANDLING NON-UTF8 STUFF ROM IRC
+ * 
+ * We receive messages from irc from two different types of sources:
  *	1. Servers (which have a dot in their name)
  *	2. Nicks (which do not have a dot in their name)
- * So although we may think of channels having encodings, what we really
- * are saying is by convention every nick in that channel has agreed to
- * use the same encoding.  So channel encodings are implied.
  *
- * BECAUSE THIS HANDLING IS FOR NON-UTF8 ENCODINGS, YOU DO NOT NEED TO DO
- * ANYTHING FOR SERVERS OR NICKS THAT USE UTF-8.
+ * By default, all outbound messages you send will be in UTF-8, and any 
+ * incoming messages in UTF-8 will be handled automatically.
  *
- * Declare what encoding irc.foo.com uses
- *	/ENCODING irc.foo.com ISO-8859-15
+ * There are times when someone on irc will send you a non-utf8 message,
+ * or there are people you want to send non-utf8 messages to.
  *
- * Declare what encoding hop uses (on all networks)
- *	/ENCODING hop ISO-8859-1
+ * Any non-utf8 message you receive from irc will be assumed to be ISO-8859-1
+ * and can be overruled by :
+ *	/ENCODING irc ISO-8859-1
  *
- * Declare what encoding hop uses (only on EFNet)
- *	/ENCODING EFNet/hop ISO-8859-1
+ * You can overrule this on a server/channel/nick basis:
  *
- * Declare what encoding people use on #epic on EFNet
- *	/ENCODING EFNet/#epic ISO-8859-1
- * IMPORTANT ^^^^ UTF-8 messages are always received, but this controls
- * what encoding is used for non-UTF8 messages you receive and what encoding
- * should be used for messages you SEND.  So in this case, all of your
- * text would be translated to ISO-8859-1 before sending to #epic.  If you
- * know that most people on #epic use UTF-8 but a couple of people don't, you
- * don't want to set the channel encoding -- just override those people!
+ * We know "irc.foo.com" uses ISO-8859-15
+ *	/ENCODING irc.foo.com KOI8-R
+ * or
+ *	/ENCODING irc.foo.com/ KOI8-R
  *
- * The server is optional, and the slash is optional.  You can leave the
- * server name blank to mean "all servers".  The slash is also optional,
- * but is necessary if you want to set the encoding for a person nicked
- * "console", "scripts", and "irc" since those are magic.
+ * Across all servers, every 'hop' we know uses ISO-8859-15
+ *	/ENCODING hop ISO-8859-15
+ * or
+ *	/ENCODING /hop ISO-8859-15
+ *
+ * We only want to set it for 'hop' on EFNet:
+ * (non-EFNet 'hop's would still be UTF-8 unless another rule said different)
+ *	/ENCODING EFNet/hop ISO-8859-15
+ *
+ * We know that on #happyfuntime on EFNet, people use ISO-8859-8.
+ *	/ENCODING EFNet/#happyfuntime ISO-8859-8
+ *
+ * The server part can be:
+ *	1. A server refnum
+ *	2. An "ourname" or "itsname" of the server
+ *	3. The server's group
+ *	4. Any of the server's altnames
+ *	5. The server's 005 NETWORK value
+ *
+ * Both the server and slash are optional.  Leaving the server blank means
+ * "all servers" and a leading slash is handy for nicknames that collide
+ * with the builtin names
+ * 
+ * We know that the user with nick 'console' uses ISO-8859-15
  *	/ENCODING /console ISO-8859-15
- *
- * DEFAULTS:
- *	Everything defaults to "/ENCODING IRC" unless overruled.
  */
 
 struct RecodeRule {
@@ -143,7 +188,7 @@ void	init_recodings (void)
 	/* Rule 0 is "console" */
 	recode_rules[0] = (RecodeRule *)new_malloc(sizeof(RecodeRule));
 	recode_rules[0]->target = malloc_strdup("console");
-	recode_rules[0]->encoding = malloc_strdup("UTF-8");
+	recode_rules[0]->encoding = malloc_strdup(console_encoding);
 	recode_rules[0]->from_handle = 0;
 	recode_rules[0]->to_handle = 0;
 

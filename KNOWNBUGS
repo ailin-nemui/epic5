@@ -3,6 +3,8 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * A /window command in /on window_create can suppress drawing of new status bar.
+* Unified channel/query system with new SWITCH_TARGET keybinding.
+* /set lastlog 0 doesn't /window clear and it probably shouldn't anyways.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -413,3 +415,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /server , so it doesn't null deref.
 * Add /lastlog -this_server and /lastlog -global for zlonix.
 * Fix $windowctl(NEW) by forbidding status updates during window creation.
+* Default /ENCODING CONSOLE to the user's locale, not to utf8.
