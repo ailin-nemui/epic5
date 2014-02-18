@@ -418,3 +418,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Re-implement /set allow_c1_chars for input line, display prep, and output.
 * Fix diagnostic output of /encoding
 * Comment out some stuff in term.c that isn't being used.
+* Re-implement status repeat-char-fill for utf8. (rb fudd)

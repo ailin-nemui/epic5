@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.82 2014/02/18 13:17:12 jnelson Exp $ */
+/* $EPIC: status.c,v 1.83 2014/02/18 15:32:56 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -506,12 +506,10 @@ int	make_status (Window *window, Status *status)
 
 	for (status_line = 0; status_line < status->number; status_line++)
 	{
-	unsigned char	lhs_fillchar[6],
-			rhs_fillchar[6],
-			*fillchar = lhs_fillchar,
-			*lhp = lhs_buffer,
-			*rhp = rhs_buffer,
-			*cp,
+	int		fillchar;
+	unsigned char	*lhp = lhs_buffer,
+			*rhp = rhs_buffer;
+	unsigned char 	*cp,
 			*str = NULL;
 	const unsigned char *	start_rhs = 0;
 		int	pr_lhs = 0,
@@ -523,7 +521,7 @@ int	make_status (Window *window, Status *status)
 		int	code_point;
 		int	cols;
 
-		fillchar[0] = fillchar[1] = 0;
+		fillchar = 0;
 
 		/*
 		 * Figure out which of the three status bars we're creating.
@@ -656,7 +654,6 @@ int	make_status (Window *window, Status *status)
 			if (code_point == '\f' && start_rhs == NULL)
 			{
 				start_rhs = s;
-				fillchar = rhs_fillchar;
 				*cp = 0;
 
 				cp = rhp;
@@ -682,8 +679,8 @@ int	make_status (Window *window, Status *status)
 			 */
 			else if (code_point == 9)	/* TAB */
 			{
-				fillchar[0] = ' ';
-				fillchar[1] = 0;
+				fillchar = 32;	/* Fill becomes space */
+
 				do
 					*cp++ = ' ';
 				while (++(*prc) % 8);
@@ -697,8 +694,8 @@ int	make_status (Window *window, Status *status)
 				unsigned char	utf8str[16];
 				const unsigned char *x;
 	
-				fillchar[0] = (code_point & 0x7F);
-				fillchar[1] = 0;
+				if (!start_rhs)
+					fillchar = code_point;
 
 				cols = codepoint_numcolumns(code_point);
 				if (cols == -1)
@@ -723,36 +720,33 @@ int	make_status (Window *window, Status *status)
 
 		/* What will we be filling with? */
 		if (get_int_var(STATUS_NO_REPEAT_VAR))
-		{
-			lhs_fillchar[0] = ' ';
-			lhs_fillchar[1] = 0;
-			rhs_fillchar[0] = ' ';
-			rhs_fillchar[1] = 0;
-		}
+			fillchar = 32;	/* Fill becomes space */
 
 		/*
 		 * Now if we have a rhs, then we have to adjust it.
 		 */
-		if (start_rhs)
+		/* Not attached, so don't "fix" it */
 		{
-			int numf = 0;
+			unsigned char	utf8str[16];
+			int 		numf = 0;
 
-			numf = screen->co - pr_lhs - pr_rhs -1;
-			while (numf-- >= 0)
-				strlcat(lhs_buffer, lhs_fillchar, 
-						sizeof lhs_buffer);
-		}
+			if ((cols = codepoint_numcolumns(fillchar)) == -1)
+			{
+				/* Use space as fillchar if necessary */
+				fillchar = 32;
+				cols = 1;
+			}
+			ucs_to_utf8(fillchar, utf8str, sizeof(utf8str));
 
-		/*
-		 * No rhs?  If the user wants us to pad it out, do so.
-		 */
-		else 
-		{
-			int chars = screen->co - pr_lhs - 1;
+			numf = screen->co - pr_lhs - 1;
+			if (start_rhs)
+				numf -= pr_rhs;
 
-			while (chars-- >= 0)
-				strlcat(lhs_buffer, lhs_fillchar, 
-						sizeof lhs_buffer);
+			while (numf >= 0)
+			{
+				strlcat(lhs_buffer, utf8str, sizeof lhs_buffer);
+				numf -= cols;
+			}
 		}
 
 		save_size = strlen(all_off());
