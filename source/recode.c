@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.4 2014/02/15 16:44:22 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.5 2014/02/18 13:17:12 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -378,7 +378,7 @@ BUILT_IN_COMMAND(encoding)
 
 
 	/* Save the new encoding */
-	malloc_strcpy(&recode_rules[0]->encoding, encoding);
+	malloc_strcpy(&recode_rules[x]->encoding, encoding);
 
 	/* Invalidate prior iconv handles */
 	if (recode_rules[x]->from_handle != 0)
@@ -394,7 +394,8 @@ BUILT_IN_COMMAND(encoding)
 
 
 	/* Declare what the new encoding is */
-	say("Encoding for %s is now %s", target, encoding);
+	say("Encoding for %s is now %s", recode_rules[x]->target, 
+					 recode_rules[x]->encoding);
 }
 
 

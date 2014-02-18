@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.77 2014/02/13 02:47:28 jnelson Exp $ */
+/* $EPIC: input.c,v 1.78 2014/02/18 13:17:12 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -306,10 +306,22 @@ static int 	safe_puts (const unsigned char *str, int numcols)
 	unsigned char	utf8str[8];
 	int	code_point;
 	int	cols;
+	int	allow_c1_chars = -1;
 
 	s = str;
 	while ((code_point = next_code_point(&s)))
 	{
+		/* C1 chars have to be checked */
+		if (code_point >= 0x80 && code_point <= 0x9F)
+		{
+			if (allow_c1_chars == -1)
+			    allow_c1_chars = get_int_var(ALLOW_C1_CHARS_VAR);
+
+			/* We don't output C1 chars */
+			if (!allow_c1_chars)
+				continue;
+		}
+
 		if ((cols = codepoint_numcolumns(code_point)) == -1)
 			cols = 1;
 

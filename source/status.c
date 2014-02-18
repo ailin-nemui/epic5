@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.81 2014/02/08 23:06:26 jnelson Exp $ */
+/* $EPIC: status.c,v 1.82 2014/02/18 13:17:12 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -150,7 +150,7 @@ struct status_formats status_expandos[] = {
 { 0, 'D', status_dcc, 	        NULL, 			NULL },
 { 0, 'E', status_activity,	NULL,			NULL },
 { 0, 'F', status_notify_windows,&notify_format,		&STATUS_NOTIFY_VAR },
-{ 0, 'G', status_network,		NULL,			NULL },
+{ 0, 'G', status_network,	NULL,			NULL },
 { 0, 'H', status_hold,		NULL,			NULL },
 { 0, 'I', status_insert_mode,   NULL,			NULL },
 { 0, 'K', status_scrollback,	NULL,			NULL },

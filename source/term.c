@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.28 2014/02/06 18:27:38 jnelson Exp $ */
+/* $EPIC: term.c,v 1.29 2014/02/18 13:17:12 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -1274,6 +1274,7 @@ void	term_beep (void)
 	}
 }
 
+/* XXX Deprecated */
 void	set_meta_8bit (void *stuff)
 {
 	VARIABLE *v;
@@ -1354,6 +1355,7 @@ void	term_clrscr (void)
 	}
 }
 
+#if 0
 /*
  * Move the cursor NUM spaces to the left, non-destruvtively if we can.
  */
@@ -1372,6 +1374,7 @@ void	term_left (int num)
 		while (num--)
 			tputs_x (current_term->TI_kbs);
 }
+#endif
 
 /*
  * Move the cursor NUM spaces to the right
@@ -1389,6 +1392,7 @@ void	term_right (int num)
 			tputs_x(current_term->TI_cuf1);
 }
 
+#if 0
 /*
  * term_delete (int num)
  * Deletes NUM characters at the current position
@@ -1437,6 +1441,7 @@ void	term_repeat (unsigned char c, int rep)
 		while (rep--)
 			putchar_x (c);
 }
+#endif
 
 /*
  * Scroll the screen N lines between lines TOP and BOT.

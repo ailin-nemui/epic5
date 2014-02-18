@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.165 2014/02/13 02:47:29 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.166 2014/02/18 13:17:12 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -1035,7 +1035,7 @@ unsigned char *	new_normalize_string (const unsigned char *str, int logical, int
 	int		strip_reverse, strip_bold, strip_blink, 
 			strip_underline, strip_altchar, strip_color, 
 			strip_all_off, strip_nd_space, boldback;
-	int		strip_unprintable, strip_other;
+	int		strip_unprintable, strip_other, strip_c1;
 	int		codepoint, state, cols;
 	char 		utf8str[16], *x;
 	size_t		(*attrout) (unsigned char *, Attribute *, Attribute *) = NULL;
@@ -1054,6 +1054,7 @@ unsigned char *	new_normalize_string (const unsigned char *str, int logical, int
 	strip_unprintable = ((mangle & STRIP_UNPRINTABLE) != 0);
 	strip_other	= ((mangle & STRIP_OTHER) != 0);
 
+	strip_c1	= !get_int_var(ALLOW_C1_CHARS_VAR);
 	boldback	= get_int_var(TERM_DOES_BRIGHT_BLINK_VAR);
 
 	if (logical == 0)
@@ -1088,14 +1089,45 @@ unsigned char *	new_normalize_string (const unsigned char *str, int logical, int
 		RESIZE(output, unsigned char, maxpos + 192);
 	    }
 
-	    /* Unicode code points are always permitted */
-	    if (codepoint > 127)
+	    /* Normal unicode code points are always permitted */
+	    if (codepoint >= 0xA0)		/* Valid unicode points */
 		state = 0;
+	    else if (codepoint >= 0x80)		/* C1 chars */
+		state = 1;
 	    else
 		state = ansi_state[codepoint];
 
 	    switch (state)
 	    {
+		/*
+		 * Unicode does not define any code points in the
+		 * U+0080 - U+009F zone ("C1 chars") and many terminal
+		 * emulators do weird things with them.   So we should
+		 * probably just strip them out.
+		 */
+		case 1:	     	/* C1 Chars */
+		case 5:		/* Unprintable chars */
+		{
+			if (strip_unprintable)
+				break;
+			if (state == 5 && normalize)
+				break;
+			if (state == 1 && strip_c1)
+			{
+				codepoint = (codepoint | 0x60) & 0x7F;
+abnormal_char:
+				a.reverse = !a.reverse;
+				pos += attrout(output + pos, &olda, &a);
+				output[pos++] = (char)(codepoint);
+				a.reverse = !a.reverse;
+				pos += attrout(output + pos, &olda, &a);
+				pc += cols;
+				break;
+			}
+
+			/* FALLTHROUGH */
+		}
+
 		/*
 		 * State 0 are characters that are permitted under all
 		 * circumstances.
@@ -1116,24 +1148,6 @@ normal_char:
 				output[pos++] = *x;
 
 			break;
-		}
-
-		/* 
-		 * The old State 1 was for C1 (high bit control chars)
-		 * These are now considered normal utf8 characters.
-		 */
-
-		/*
-		 * State 5 are characters that are never permitted under
-		 * any circumstances.
-		 */
-		case 5:
-		{
-			if (strip_unprintable)
-				break;
-			if (normalize)
-				break;
-			goto normal_char;
 		}
 
 		/*
@@ -1159,9 +1173,10 @@ normal_char:
 
 			if (normalize)
 			{
-				output[pos++] = (codepoint | 0x40) & 0x7F;
-				goto normal_char;
+				codepoint = (codepoint | 0x40) & 0x7F;
+				goto abnormal_char;
 			}
+
 			goto normal_char;
 		}
 
@@ -1176,7 +1191,7 @@ normal_char:
 		    if (mangle_escapes == 1)
 		    {
 			codepoint = '[';
-			goto normal_char;
+			goto abnormal_char;
 		    }
 
 		    if (normalize == 1)
@@ -2130,6 +2145,13 @@ int 	output_with_count (const unsigned char *str1, int clreol, int output)
 		/* Any other printable character */
 		default:
 		{
+			/* C1 chars will be ignored unless you want them */
+			if (codepoint >= 0x80 && codepoint < 0xA0)
+			{
+				if (!get_int_var(ALLOW_C1_CHARS_VAR))
+					break;
+			}
+
 			/* How many columns does this codepoint take? */
 			cols = codepoint_numcolumns(codepoint);
 			if (cols == -1)
