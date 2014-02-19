@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.216 2014/02/11 22:50:57 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.217 2014/02/19 13:44:53 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2982,28 +2982,30 @@ BUILT_IN_COMMAND(typecmd)
 BUILT_IN_COMMAND(xtypecmd)
 {
 	char	*arg;
-	char	es[1];
+	int	code_point;
 
 	if (*args == '-' || *args == '/')
 	{
-		char saved = *args;
+		int saved = (int)*args;
+
 		args++;
 		if ((arg = next_arg(args, &args)) != NULL)
 		{
 			if (!my_strnicmp(arg, "LITERAL", 1))
 			{
-				for (; *args; args++)
+				while ((code_point = next_code_point(&args)))
 				{
-					es[0] = 0;
-					input_add_character(*args, es);
+					if (code_point == -1)
+						args++;
+					input_add_character(code_point, NULL);
 				}
 			}
 			else
 				say("Unknown flag -%s to XTYPE", arg);
 			return;
 		}
-		es[0] = 0;
-		input_add_character(saved, es);
+
+		input_add_character(saved, NULL);
 	}
 	else
 		typecmd(command, args, empty_string);

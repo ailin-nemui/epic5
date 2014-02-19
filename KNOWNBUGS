@@ -419,3 +419,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix diagnostic output of /encoding
 * Comment out some stuff in term.c that isn't being used.
 * Re-implement status repeat-char-fill for utf8. (rb fudd)
+* Fix /xtype -l to be UTF-8 aware. (rb zlonix)
