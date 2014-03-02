@@ -2,8 +2,9 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* A /window command in /on window_create can suppress drawing of new status bar.
 * /set lastlog 0 doesn't /window clear and it probably shouldn't anyways.
+* Builtin expandos should be context-aware (ie, not on the input window)
+* On Netbsd, /usr/local/ is called /usr/pkg/
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -420,3 +421,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Comment out some stuff in term.c that isn't being used.
 * Re-implement status repeat-char-fill for utf8. (rb fudd)
 * Fix /xtype -l to be UTF-8 aware. (rb zlonix)
+* When status updates are suppressed, make a note if an attempt is tried
+* When status updates are permitted again, do an update_all_status() if defered
+

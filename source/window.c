@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.236 2014/02/14 22:50:57 jnelson Exp $ */
+/* $EPIC: window.c,v 1.237 2014/03/02 17:15:56 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -7,7 +7,7 @@
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1997, 2007 EPIC Software Labs.
+ * Copyright © 1997, 2014 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -340,6 +340,7 @@ Window	*new_window (Screen *screen)
 
 	/* Finally bootstrap the visible part of the window */
 	resize_window_display(new_w);
+	window_statusbar_needs_redraw(new_w);
 
 	/*
 	 * Offer it to the user.  I dont know if this will break stuff
@@ -1562,7 +1563,7 @@ static	int	restart = 0;
 			/* If redrawing failed this time, try next time */
 			if (redraw_status(tmp, &tmp->status) < 0)
 			{
-				debuglog("update_all_windows(%d) (redraw_status), OK, status redrawn -- now needs update",
+				debuglog("update_all_windows(%d) (redraw_status), OK, status not redrawn -- lets try update later",
 					tmp->refnum);
 				tmp->update |= UPDATE_STATUS;
 			}

@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.83 2014/02/18 15:32:56 jnelson Exp $ */
+/* $EPIC: status.c,v 1.84 2014/03/02 17:15:56 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -125,11 +125,11 @@ static	char	*notify_format 		= (char *) 0;
 static void	init_status	(void);
 
 /*
- * Status updates are not permitted until we are connected to a server.
- * Got_initial_version_28 will set this to 1 when we first get connected
- * to a server.
+ * Status updates are not permitted while we are doing some sensitive
+ * operations (like creating a window) to avoid null derefs
  */
-int     status_updates_permitted = 0;
+	int     status_updates_permitted = 0;
+static	int	defered_status_updates = 0;
 
 /*
  * This is the list of possible expandos.  Note that you should not use
@@ -493,6 +493,7 @@ int	make_status (Window *window, Status *status)
 	{
 		debuglog("make_status(%d) -- no status updates right now",
 				window->refnum);
+		defered_status_updates++;
 		return -1;
 	}
 
@@ -805,6 +806,7 @@ int	redraw_status (Window *window, Status *status)
 	if (!status_updates_permitted)
 	{
 		debuglog("redraw_status: no status updates right now, try later");
+		defered_status_updates++;
 		return -1;
 	}
 
@@ -949,8 +951,20 @@ void	build_status	(void *stuff)
  */
 int     permit_status_update (int flag)
 {
-        int old_flag = status_updates_permitted;
+        int 	old_flag;
+
+	old_flag = status_updates_permitted;
         status_updates_permitted = flag;
+
+	/* XXX I hate this, but I just want this problem to go away. */
+	/* This is caused by doing a /window command within /on window_create */
+	if (flag && defered_status_updates)
+	{
+		update_all_status();
+		update_all_windows();
+		defered_status_updates = 0;
+	}
+
         return old_flag;
 }
 
