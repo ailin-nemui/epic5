@@ -1,5 +1,20 @@
 EPIC5-1.1.7
 
+*** News 03/02/2014 -- Clarified behavior for /set lastlog 0
+	It was pointed out that /set lastlog 0 did not do a reasonable
+	thing with the unified scrollback buffer, so the behavior has
+	been refined a bit.  
+
+	Here is how /set lastlog <X> now works
+	1. For each window, set /window lastlog <X>.
+	2. For each window, rebuild each window's scrollback 
+	   -- Which may throw away stuff!  
+	   -- If you do /set lastlog 0, it throws away all scrollback
+	      and does an implicit /window clear!
+	3. For each window, if <X> is less than twice the window's size,
+	   /window lastlog <twice its size> (24 lines -> /window lastlog 48)
+	4. The final value of <X> will be twice the size of the biggest window.
+
 *** News 02/14/2014 -- New flags, /LASTLOG -THIS_SERVER and -GLOBAL
 	The /LASTLOG -THIS_SERVER flag will show all lastlog entries
 	from any window belonging to the server server as this window.

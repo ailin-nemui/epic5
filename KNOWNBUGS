@@ -423,4 +423,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /xtype -l to be UTF-8 aware. (rb zlonix)
 * When status updates are suppressed, make a note if an attempt is tried
 * When status updates are permitted again, do an update_all_status() if defered
-
+* Make /set lastlog do a scrollback redraw to "dispose" of extra lines
+* Make /set lastlog refuse to set to a value < twice the biggest window.
+* However, doing /set lastlog 0 WILL delete everything and clear every window.

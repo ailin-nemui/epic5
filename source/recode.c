@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.5 2014/02/18 13:17:12 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.6 2014/03/02 20:04:51 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -258,6 +258,55 @@ const char *	find_recoding (const char *target, iconv_t *from, iconv_t *to)
 	}
 
 	return recode_rules[x]->encoding;
+}
+
+/*
+ * decide_encoding - Given an UNBROKEN rfc1459 line, decide what the
+ *		     encoding is (or should be)
+ *
+ * Arguments:
+ *	orig_msg	- An RFC1459 message
+ *
+ * Return Value:
+ *	The encoding we think 'msg' is in; or if we're not sure, what
+ * 	encoding the user said the sender is using.
+ *
+ * Unfortunately, this function duplicates too much of the logic from
+ * parse_server() and BreakArgs().
+ */
+char *	decide_encoding (const unsigned char *orig_msg)
+{
+	unsigned char *	msg;
+
+	msg = LOCAL_COPY(orig_msg);
+
+	/* The easiest thing is to accept it if it's valid UTF-8 */
+	if (!invalid_utf8str(msg))
+		return "UTF-8";
+
+	/* 
+	 * XXX Some day, it'd be cool to do statistical analysis of the
+	 * message to decide what encoding it is
+	 */
+
+	/*
+	 * Each message has some metadata
+	 * 1. A "server"
+	 * 2. A "sender"
+	 * 3. A "receipient" (if a channel)
+	 *
+	 * These match up to rules like in this order:
+	 *	1. /encoding server/sender	
+	 *	2. /encoding /sender	(either nick or server)
+	 *	3. /encoding server/channel
+	 *	4. /encoding /channel
+	 *	5. /encoding server/	(ie, all targets on server)
+	 *	6. /encoding  irc	(ie, all default targets)
+	 *
+ 	 * So we need to extract the server, sender, receipient, and
+	 * perform the 6 checks to decide what the implied encoding is!
+	 */
+
 }
 
 /*

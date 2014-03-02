@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.95 2014/02/14 16:29:10 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.96 2014/03/02 20:04:51 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -318,6 +318,12 @@ void	set_lastlog_size (void *stuff)
 	{
 		window->lastlog_max = size;
 		trim_lastlog(window);
+		window_scrollback_needs_rebuild(window);
+
+		if (window->lastlog_max < window->display_lines * 2)
+			window->lastlog_max = window->display_lines * 2;
+		if (v->integer < window->display_lines * 2)
+			v->integer = window->display_lines * 2;
 	}
 }
 
