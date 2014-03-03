@@ -2,7 +2,6 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* /set lastlog 0 doesn't /window clear and it probably shouldn't anyways.
 * Builtin expandos should be context-aware (ie, not on the input window)
 * On Netbsd, /usr/local/ is called /usr/pkg/
 
@@ -426,3 +425,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make /set lastlog do a scrollback redraw to "dispose" of extra lines
 * Make /set lastlog refuse to set to a value < twice the biggest window.
 * However, doing /set lastlog 0 WILL delete everything and clear every window.
+* Have configure auto-detect your "local" directory (/usr/local|opt|/usr/pkg)
+* Have configure use the auto-detected local directory.
+* Reformat some parts of server.c
+* Change the current window whenever we're processing server stuff.
+* Don't allow /window lastlog to set the lastlog too low. 
+

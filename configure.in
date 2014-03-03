@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.99 2013/10/30 02:56:50 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.100 2014/03/03 15:14:56 jnelson Exp $
 
-AC_REVISION([$Revision: 1.99 $])dnl
+AC_REVISION([$Revision: 1.100 $])dnl
 AC_INIT([source/irc.c])
 AC_CONFIG_HEADER([include/defs.h])
 
@@ -37,18 +37,52 @@ AC_MSG_CHECKING([for an extra library directory])
 AC_ARG_WITH([localdir],
 [  --with-localdir=/usr/local An extra directory to look for stuff.],[
    if test "x$withval" = "x" ; then
-      with_extra_libdir="no"
+      if test -d /usr/local/lib ; then
+	withval="/usr/local"
+      elif test -d /usr/pkg/lib ; then
+	withval="/usr/pkg"
+      elif test -d /opt/lib ; then
+	withval="/opt"
+      else
+        with_extra_libdir="no"
+      fi
    elif test -d "$withval" ; then
       with_extra_libdir="yes"
+   else
+      with_extra_libdir="no"
+   fi
+
+   if test "x$withval" != "x" ; then
       LIBS="-L$withval/lib $LIBS"
       CFLAGS="-I$withval/include/ $CFLAGS"
+      localdir=$withdir
+      with_extra_libdir="yes"
    else
       with_extra_libdir="no"
    fi
 ],[
-   with_extra_libdir="no"
+   if test "x$withval" = "x" ; then
+      if test -d /usr/local/lib ; then
+	withval="/usr/local"
+      elif test -d /usr/pkg/lib ; then
+	withval="/usr/pkg"
+      elif test -d /opt/lib ; then
+	withval="/opt"
+      else
+        with_extra_libdir="no"
+      fi
+   fi
+
+   if test "x$withval" != "x" ; then
+      LIBS="-L$withval/lib $LIBS"
+      CFLAGS="-I$withval/include/ $CFLAGS"
+      localdir=$withdir
+      with_extra_libdir="yes"
+   else
+      with_extra_libdir="no"
+   fi
 ])
-AC_MSG_RESULT([$with_extra_libdir])
+AC_MSG_RESULT([$with_extra_libdir, $withval])
 
 dnl ----------------------------------------------------------
 dnl ----------------------------------------------------------
@@ -273,7 +307,7 @@ else
 
 	# Otherwise, go hunting for it.
 	if test "x$have_ssl" = "x" ; then
-	    for ssldir in /usr/local/ssl /usr/local/openssl; do
+	    for ssldir in $localdir/ssl $localdir/openssl; do
 		if test "x$have_ssl" != "x"; then
 			break;
 		fi
@@ -914,7 +948,7 @@ fi
 
 	dnl Otherwise, go hunting for it.
 	if test "x$have_iconv" = "x"; then
-	    for iconvdir in "$with_iconv" "$prefix" /usr/local /opt /usr/opt; do
+	    for iconvdir in "$with_iconv" "$prefix" $localdir /usr/local /usr/pkg /opt /usr/opt; do
 		if test "x$have_iconv" != "x"; then
 			break
 		fi
@@ -1108,7 +1142,7 @@ AC_ARG_WITH(tcl,
 )
 
 if test "x$tclconfig" = "xyes" ; then
-	for i in /usr/lib /usr/local/lib /usr/local/lib/tcl8.4 ; do
+	for i in /usr/lib $localdir/lib $localdir/lib/tcl8.4 ; do
 		if test -r $i/tclConfig.sh ; then
 			tclconfig=$i/tclConfig.sh
 			break;

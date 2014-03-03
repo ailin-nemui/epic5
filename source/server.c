@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.262 2014/02/14 00:43:41 jnelson Exp $ */
+/* $EPIC: server.c,v 1.263 2014/03/03 15:14:56 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1258,6 +1258,7 @@ void	do_server (int fd)
 			continue;		/* Move along. */
 
 		from_server = i;
+		make_window_current_by_refnum(get_winref_by_servref(i));
 		l = message_from(NULL, LEVEL_OTHER);
 
 		/*
@@ -1276,11 +1277,12 @@ void	do_server (int fd)
 			ssize_t len;
 
 			/*
-			 * This is our handler for the first bit of data from the
-			 * dns helper, which is a length value.  This length value
-			 * tells us how much data we should expect to receive from
-			 * the dns helper.  We use this value to malloc() off some
-			 * space and then read into that buffer.
+			 * This is our handler for the first bit of data from 
+			 * the dns helper, which is a length value.  This 
+			 * length value tells us how much data we should expect
+			 * to receive from the dns helper.  We use this value 
+			 * to malloc() off some space and then read into that 
+			 * buffer.
 			 */
 			if (s->addrs == NULL)
 			{
@@ -1328,49 +1330,56 @@ void	do_server (int fd)
 
 			/*
 			 * If we've already received the "reponse length" value
-			 * [handled above] then s->addrs is not NULL, and we need
-			 * to write the nonblocking dns responses into the buffer.
-			 * once we have all of the reponse, we can "unmarshall"
-			 * the response (converting a (char *) buffer into a linked
-			 * list of (struct addrinfo *)'s, which we can then use 
-			 * to connect to the server [via connect_to_server()].
+			 * [handled above] then s->addrs is not NULL, and we 
+			 * need to write the nonblocking dns responses into the
+			 * buffer.  Once we have all of the reponse, we can 
+			 * "unmarshall" the response (converting a (char *) 
+			 * buffer into a linked list of (struct addrinfo *)'s, 
+			 * which we can then use to connect to the server 
+			 * [via connect_to_server()].
 			 */
 			else
 			{
-				len = dgets(s->des, (char *)s->addrs + s->addr_offset, 
+				len = dgets(s->des, 
+					(char *)s->addrs + s->addr_offset, 
 					s->addr_len - s->addr_offset, -2);
+
 				if (len < s->addr_len - s->addr_offset)
 				{
-					if (len < 0)
-						yell("DNS lookup failed, possibly because of a "
-							"bug in async_getaddrinfo!");
-					else if (len == 0)
-						yell("Got part of the dns response, waiting "
-							"for the rest, stand by...");
-					else
-					{
-						yell("Got %d, expected %d bytes", 
-							len, s->addr_len - s->addr_offset);
-						s->addr_offset += len;
-					}
-					pop_message_from(l);
-					continue;
+				    if (len < 0)
+					yell("DNS lookup failed, possibly "
+					     "because of a bug in "
+					     "async_getaddrinfo!");
+				    else if (len == 0)
+					yell("Got part of the dns response, "
+					     "waiting for the rest, "
+					     "stand by...");
+				    else
+				    {
+					yell("Got %d, expected %d bytes", 
+						len, 
+						s->addr_len - s->addr_offset);
+					s->addr_offset += len;
+				    }
+				    pop_message_from(l);
+				    continue;
 				}
 				else
 				{
-					unmarshall_getaddrinfo(s->addrs);
-					s->des = new_close(s->des);
+				    unmarshall_getaddrinfo(s->addrs);
+				    s->des = new_close(s->des);
 
-					s->next_addr = s->addrs;
-					for (cnt = 0; s->next_addr; s->next_addr = 
+				    s->next_addr = s->addrs;
+				    for (cnt = 0; s->next_addr; s->next_addr = 
 						s->next_addr->ai_next)
-						cnt++;
-					say("DNS lookup for server %d [%s] returned (%d) "
-						"addresses", i, s->info->host, cnt);
+					cnt++;
+				    say("DNS lookup for server %d [%s] "
+					"returned (%d) addresses", 
+					i, s->info->host, cnt);
 
-					s->next_addr = s->addrs;
-					s->addr_counter = 0;
-					connect_to_server(i);
+				    s->next_addr = s->addrs;
+				    s->addr_counter = 0;
+				    connect_to_server(i);
 				}
 			}
 		}
@@ -1451,9 +1460,10 @@ something_broke:
 			/*
 			 * For SSL server connections, we have to take a little
 			 * detour.  First we start up the ssl connection, which
-			 * always returns before it completes.  Then we tell newio
-			 * to call the ssl connector when the fd is ready, and
-			 * change our status to tell us what we're doing.
+			 * always returns before it completes.  Then we tell 
+			 * newio to call the ssl connector when the fd is 
+			 * ready, and change our status to tell us what we're 
+			 * doing.
 			 */
 			if (!my_stricmp(get_server_type(i), "IRC-SSL"))
 			{
