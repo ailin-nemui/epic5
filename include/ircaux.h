@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.115 2014/02/14 00:06:15 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.116 2014/03/05 14:40:55 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -233,6 +233,7 @@ char *	substitute_string	(const char *, const char *, const char *, int, int);
 #define STRIP_ALL_OFF		1 << 9
 #define STRIP_UNPRINTABLE	1 << 10
 #define STRIP_OTHER		1 << 11
+#define STRIP_ITALIC		1 << 12
 
 extern	int	outbound_line_mangler;
 extern	int	inbound_line_mangler;

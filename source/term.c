@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.29 2014/02/18 13:17:12 jnelson Exp $ */
+/* $EPIC: term.c,v 1.30 2014/03/05 14:40:56 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -915,7 +915,7 @@ int 	term_init (void)
 	/*
 	 * Default to no colors. (ick)
 	 */
-	for (i = 0; i < 16; i++)
+	for (i = 0; i < 256; i++)
 		current_term->TI_forecolors[i] = current_term->TI_backcolors[i] = "";
 
 	if (current_term->TI_bold)
@@ -939,6 +939,11 @@ int 	term_init (void)
 		current_term->TI_sgrstrs[TERM_SGR_ALTCHAR_ON - 1] = current_term->TI_smacs;
 	if (current_term->TI_rmacs)
 		current_term->TI_sgrstrs[TERM_SGR_ALTCHAR_OFF - 1] = current_term->TI_rmacs;
+	if (current_term->TI_sitm)
+		current_term->TI_sgrstrs[TERM_SGR_ITALIC_ON - 1] = current_term->TI_sitm;
+	if (current_term->TI_ritm)
+		current_term->TI_sgrstrs[TERM_SGR_ITALIC_OFF - 1] = current_term->TI_ritm;
+
 	if (current_term->TI_normal[0])
 	{
 		current_term->TI_sgrstrs[TERM_SGR_NORMAL - 1] = current_term->TI_normal;
@@ -1058,6 +1063,20 @@ int 	term_init (void)
 		else
 		    snprintf(cbuf, sizeof cbuf, "\033[%dm", (i & 0x07) + 40);
 
+		current_term->TI_backcolors[i] = malloc_strdup(cbuf);
+	}
+
+	/* I don't know any other way to set 256 colors, so ..... */
+	for (i = 16; i < 256; i++)
+	{
+		char cbuf[128];
+
+		*cbuf = 0;
+		snprintf(cbuf, sizeof cbuf, "\033[38;5;%dm", i);
+		current_term->TI_forecolors[i] = malloc_strdup(cbuf);
+
+		*cbuf = 0;
+		snprintf(cbuf, sizeof cbuf, "\033[48;5;%dm", i);
 		current_term->TI_backcolors[i] = malloc_strdup(cbuf);
 	}
 

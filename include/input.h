@@ -49,6 +49,7 @@
 	BUILT_IN_KEYBINDING(insert_altcharset);
 	BUILT_IN_KEYBINDING(insert_blink);
 	BUILT_IN_KEYBINDING(insert_bold);
+	BUILT_IN_KEYBINDING(insert_italic);
 	BUILT_IN_KEYBINDING(insert_reverse);
 	BUILT_IN_KEYBINDING(insert_underline);
 	BUILT_IN_KEYBINDING(parse_text);

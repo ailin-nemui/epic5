@@ -1,4 +1,20 @@
-EPIC5-1.1.7
+EPIC5-1.1.8
+
+*** News 03/05/2014 -- 256 color support (^X works like ^C)
+	You can now send 256 colors to your terminal emulator using
+	the ^X highlight character.  It works like ^C, but it supports
+	values 0-255 instead of just 0-15.
+
+	Caveat:
+	  256 color support isn't "standard" ansi so the client sends the 
+	  hardcoded sequence ^[[38;5;<number>m  to your terminal.  If your 
+	  terminal does not honor this way of doing 256 colors, then there's 
+	  not much you can do about it...
+
+*** News 03/05/2014 -- Italics support
+	The highlight character ^P now toggles the "Italic" setting of
+	your terminal emulator.  Mine doesn't support this so I couldn't
+	test it very well.  Please report any bogons if you use it.
 
 *** News 03/02/2014 -- Clarified behavior for /set lastlog 0
 	It was pointed out that /set lastlog 0 did not do a reasonable
@@ -93,6 +109,8 @@ EPIC5-1.1.7
 
 	The default is "ISO-8859-1" for no particular reason.
 	This will be supplanted by a /recode command in the future!
+
+EPIC5-1.1.7
 
 *** News 01/16/2014 -- New scripts (should document these!) from Zlonix
 	   xmsglog	Encrypted logfiles

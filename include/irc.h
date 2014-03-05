@@ -57,6 +57,8 @@
 #define ND_SPACE_STR	"\023"
 #define ALT_TOG		'\005'		/* ^E (think Extended) */
 #define ALT_TOG_STR	"\005"
+#define ITALIC_TOG	'\020'		/* ^P */
+#define ITALIC_TOG_STR	"\020"
 
 #define IRCD_BUFFER_SIZE	512
 /* Last two bytes are always reserved for \r\n */

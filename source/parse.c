@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.99 2014/02/11 22:50:57 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.100 2014/03/05 14:40:56 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -262,6 +262,8 @@ static void	p_topic (const char *from, const char *comm, const char **ArgList)
 				channel, new_topic, LEVEL_TOPIC))
 		return;
 
+	/* ENCODING - new_topic needs to be translated */
+
 	l = message_from(channel, LEVEL_TOPIC);
 	if (do_hook(TOPIC_LIST, "%s %s %s", from, channel, new_topic))
 		say("%s has changed the topic on channel %s to %s",
@@ -294,6 +296,8 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 						LEVEL_OPERWALL, message))
 			return;
 
+		/* ENCODING - message needs to be translated */
+
 		l = message_from(NULL, LEVEL_OPERWALL);
 		retval = do_hook(OPERWALL_LIST, "%s %s", from, message + 11);
 		pop_message_from(l);
@@ -314,6 +318,8 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 	if (!server_wallop && check_flooding(from, FromUserHost, 
 						LEVEL_WALLOP, message))
 		return;
+
+	/* ENCODING - message needs to be translated */
 
 	l = message_from(NULL, LEVEL_WALLOP);
 	if (do_hook(WALLOP_LIST, "%s %c %s", 
@@ -421,6 +427,8 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	{
 		int	do_return = 1;
 
+		/* ENCODING - message needs to be translated */
+
 		sed = 0;
 		l = message_from(target, level);
 		if (do_hook(ENCRYPTED_PRIVMSG_LIST, "%s %s %s", 
@@ -447,6 +455,8 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 		set_server_public_nick(from_server, from);
 	else if (hook_type == MSG_LIST)
 		set_server_recv_nick(from_server, from);
+
+	/* ENCODING - message needs to be translated */
 
 	/* Go ahead and throw it to the user */
 	l = message_from(target, level);
@@ -503,6 +513,8 @@ static void	p_quit (const char *from, const char *comm, const char **ArgList)
 
 	if (check_flooding(from, FromUserHost, LEVEL_QUIT, quit_message))
 		goto remove_quitter;
+
+	/* ENCODING - quit_message needs to be translated */
 
 	for (chan = walk_channels(1, from); chan; chan = walk_channels(0, from))
 	{
@@ -695,20 +707,16 @@ static void 	p_invite (const char *from, const char *comm, const char **ArgList)
 }
 
 /* 
- * Reconnect has been put back in the "jon2 comprimise" 
+ * Received whenever we have been killed.
+ * (On old MS COMIC CHAT servers, also when someone else was killed)
  *
- * Unlimited autoreconnect for server kills
- * Limited autoreconnect for forground procis on oper kills
- *	(/set auto_reconnect ON)
- * No autoreconnect on oper kills for background procis
+ * Up through epic4, there used to be a /set auto_reconnect which was 
+ * used here, but epic5 uses server states, so p_kill is now treated
+ * as an advisory message (your script pack decides what to do once you
+ * actually get the EOF from the server).
  *
- * /on disconnect is still always hooked no matter what.
- *
- * You may configure this any way you please.. I really dont give
- * a darn what autoconnect you use... but this is a fair default.
- *
- * NOTE: If you want to change it, you *will* have to do it yourself.
- * Im quite serious.  Im not going to change this.
+ * All we do now is throw /on disconnect and/or tell you what
+ * happened and it's someone else's problem what to do with that.
  */
 static void	p_kill (const char *from, const char *comm, const char **ArgList)
 {
@@ -720,17 +728,12 @@ static void	p_kill (const char *from, const char *comm, const char **ArgList)
 	if (!(reason = ArgList[1])) { }
 
 	/* 
-	 * Bogorific Microsoft Exchange ``IRC'' server sends out a KILL
-	 * protocol message instead of a QUIT protocol message when
-	 * someone is killed on your server.  Do the obviously appropriate
-	 * thing and reroute this misdirected protocol message to 
-	 * p_quit, where it should have been sent in the first place.
-	 * Die Microsoft, Die.
+	 * Old MS Comic Chat servers (exchange) sent a KILL instead of 
+	 * a QUIT when someone was killed.  We reroute that to QUIT.
 	 */
 	if (!is_me(from_server, victim))
 	{
-		/* I don't care if this doesn't work.  */
-		p_quit(from, comm, ArgList);	/* Die Microsoft, Die */
+		p_quit(from, comm, ArgList);
 		return;
 	}
 
@@ -754,6 +757,8 @@ static void	p_kill (const char *from, const char *comm, const char **ArgList)
 	 * We've been killed.  Bummer for us.
 	 */
 	if (!reason) { reason = "No Reason Given"; }
+
+	/* ENCODING - should "reason" be translated here? */
 
 	if ((hooked = do_hook(DISCONNECT_LIST, "Killed by %s (%s)",
 						from, reason)))
@@ -1004,6 +1009,8 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 	if (!(comment = ArgList[2])) { comment = "(no comment)"; }
 
 
+	/* ENCODING - "comment" should be translated */
+
 	/*
 	 * All this to handle being kicked...
 	 */
@@ -1093,6 +1100,8 @@ static void	p_part (const char *from, const char *comm, const char **ArgList)
 	if (!(channel = ArgList[0]))
 		{ rfc1459_odd(from, comm, ArgList); return; }
 	if (!(reason = ArgList[1])) { }
+
+	/* ENCODING - "reason" should be translated */
 
 	if ((check_ignore_channel(from, FromUserHost, 
 				channel, LEVEL_PART) != IGNORED)
@@ -1200,6 +1209,8 @@ static int 	p_killmsg (const char *from, const char *to, const char *cline)
 		reason = line;
 	}
 
+	/* ENCODING - "reason" should be translated */
+
 	retval = do_hook(KILL_LIST, "%s %s %s %s %s", from, poor_sap, bastard,
 					path_to_bastard, reason);
 	pop_message_from(l);
@@ -1221,6 +1232,8 @@ static 	void 	p_snotice (const char *from, const char *to, const char *line)
 	if (!f || !*f)
 		if (!(f = get_server_itsname(from_server)))
 			f = get_server_name(from_server);
+
+	/* ENCODING - "line" should be translated */
 
 	/* OPERator Notices */
 	if (!strncmp(line, "*** Notice -- ", 13))
@@ -1334,6 +1347,8 @@ static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 		set_server_doing_notice(from_server, 0);
 		return;
 	}
+
+	/* ENCODING - "message" should be translated here */
 
 	/* Let the user know if it is an encrypted notice */
 	/* Note that this is always hooked, even during a flood */

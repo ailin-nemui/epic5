@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.64 2014/02/11 22:50:57 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.65 2014/03/05 14:40:56 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -313,6 +313,7 @@ void 	init_binds (void)
     ADDBIND("FORWARD_CHARACTER",	    forward_character		    );
     ADDBIND("FORWARD_WORD",		    input_forward_word		    );
     ADDBIND("HIGHLIGHT_OFF",		    highlight_off		    );
+    ADDBIND("ITALIC",			    insert_italic		    );
     ADDBIND("NEXT_WINDOW",		    next_window			    );
     ADDBIND("PARSE_COMMAND",		    parse_text			    );
     ADDBIND("PREVIOUS_WINDOW",		    previous_window		    );

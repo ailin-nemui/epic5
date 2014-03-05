@@ -2,8 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Builtin expandos should be context-aware (ie, not on the input window)
-* On Netbsd, /usr/local/ is called /usr/pkg/
+* Finish the translation cases that were documented.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -430,4 +429,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Reformat some parts of server.c
 * Change the current window whenever we're processing server stuff.
 * Don't allow /window lastlog to set the lastlog too low. 
+* Add support for ITALICS (^P) (\020), including ITALIC keybinding.
+* Add support for 256 colors.  I should document all changes but i don't wanna
+* Document all the places where encoding translation should happen.
+* De-harshen some comments I wrote 20 years ago in anger.
 

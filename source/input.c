@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.78 2014/02/18 13:17:12 jnelson Exp $ */
+/* $EPIC: input.c,v 1.79 2014/03/05 14:40:56 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -1620,6 +1620,11 @@ BUILT_IN_KEYBINDING(insert_blink)
 BUILT_IN_KEYBINDING(insert_altcharset)
 {
 	input_add_character(ALT_TOG, string);
+}
+
+BUILT_IN_KEYBINDING(insert_italic)
+{
+	input_add_character(ITALIC_TOG, string);
 }
 
 /* type_text: the BIND function TYPE_TEXT */

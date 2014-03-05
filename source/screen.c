@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.166 2014/02/18 13:17:12 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.167 2014/03/05 14:40:56 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -129,6 +129,7 @@ static	int	ok_to_output	(Window *);
 static	void	edit_codepoint (u_32int_t key);
 static ssize_t read_esc_seq     (const unsigned char *, void *, int *);
 static ssize_t read_color_seq   (const unsigned char *, void *d, int);
+static ssize_t read_color256_seq  (const unsigned char *, void *d);
 static void	destroy_prompt (Screen *s, WaitPrompt **oldprompt);
 
 
@@ -156,15 +157,16 @@ static void	destroy_prompt (Screen *s, WaitPrompt **oldprompt);
  * is a function that essentially ignores/strips attribute changes.
  */
 struct 	attributes {
-	char	reverse;
-	char	bold;
-	char	blink;
-	char	underline;
-	char	altchar;
-	char	color_fg;
-	char	color_bg;
-	char	fg_color;
-	char	bg_color;
+	unsigned char	reverse;
+	unsigned char	bold;
+	unsigned char	blink;
+	unsigned char	underline;
+	unsigned char	altchar;
+	unsigned char	color_fg;
+	unsigned char	color_bg;
+	unsigned char	fg_color;
+	unsigned char	bg_color;
+	unsigned char	italic;
 };
 typedef struct attributes Attribute;
 
@@ -176,6 +178,7 @@ const unsigned char *all_off (void)
 
 	a->reverse = a->bold = a->blink = a->underline = a->altchar = 0;
 	a->color_fg = a->fg_color = a->color_bg = a->bg_color = 0;
+	a->italic = 0;
 	*old_a = *a;
 	display_attributes(retval, &old_a, &a);
 	return retval;
@@ -205,14 +208,50 @@ static size_t	display_attributes (unsigned char *output, Attribute *old_a, Attri
 	unsigned char	val3 = 0x80;
 	unsigned char	val4 = 0x80;
 
+	/*
+	 * A "Display attribute" is a \006 followed by four bytes.
+	 * Each of the four bytes have the high bit set (to avoid nuls)
+	 * Each of the four bytes thus contain 7 bits of information
+	 */
+
+	/* 
+	 * Byte 1 uses its 7 bits for 7 attribute toggles
+	 *	1	Reverse
+	 *	2	Bold
+	 *	3	Blink
+	 *	4	Underline
+	 *	5	AltCharSet 
+	 *	6	Italics
+	 *	7 	[Reserved for future expansion]
+	 */
 	if (a->reverse)		val1 |= 0x01;
 	if (a->bold)		val1 |= 0x02;
 	if (a->blink)		val1 |= 0x04;
 	if (a->underline)	val1 |= 0x08;
 	if (a->altchar)		val1 |= 0x10;
+	if (a->italic)		val1 |= 0x20;
 
-	if (a->color_fg) {	val2 |= 0x01; val3 |= a->fg_color; }
-	if (a->color_bg) {	val2 |= 0x02; val4 |= a->bg_color; }
+	/*
+	 * Byte 2 holds color information
+	 *	1	Foreground Color turned on
+	 *	2	Background Color turned on
+	 *	3	The foreground color has high bit set (see below)
+	 *	4	The background color has high bit set (see below)
+	 *	5	[Reserved for future expansion]
+	 *	6	[Reserved for future expansion]
+	 *	7	[Reserved for future expansion]
+	 *
+	 * Byte 3 holds the low 7 bits of the foreground color.
+	 *	The high bit is stored in Byte 2, bit 3
+	 *
+	 * Byte 4 holds the low 7 bits of the background color.
+	 *	The high bit is stored in Byte 2, bit 3.
+	 */
+
+	if (a->color_fg) {	val2 |= 0x01; val3 |= (a->fg_color & 0x7F); }
+	if (a->color_bg) {	val2 |= 0x02; val4 |= (a->bg_color & 0x7F); }
+	if (a->color_fg && a->fg_color >= 0x80)	{ val2 |= 0x04; }
+	if (a->color_bg && a->bg_color >= 0x80) { val2 |= 0x08; }
 
 	output[0] = '\006';
 	output[1] = val1;
@@ -237,18 +276,21 @@ static size_t	logic_attributes (unsigned char *output, Attribute *old_a, Attribu
 		old_a = &dummy;
 		old_a->reverse = old_a->bold = old_a->blink = 0;
 		old_a->underline = old_a->altchar = 0;
+		old_a->italic = 0;
 		old_a->color_fg = old_a->fg_color = 0;
 		old_a->color_bg = old_a->bg_color = 0;
 		*str++ = ALL_OFF, count++;
 	}
 
 	if (a->reverse == 0 && a->bold == 0 && a->blink == 0 &&
-	    a->underline == 0 && a->altchar == 0 && a->fg_color == 0 &&
-	    a->bg_color == 0 && a->color_bg == 0 && a->color_fg == 0)
+	    a->underline == 0 && a->altchar == 0 && a->italic == 0 &&
+	    a->fg_color == 0 && a->bg_color == 0 && 
+	    a->color_bg == 0 && a->color_fg == 0)
 	{
 	    if (old_a->reverse != 0 || old_a->bold != 0 || old_a->blink != 0 ||
-		old_a->underline != 0 || old_a->altchar != 0 || old_a->fg_color != 0 ||
-		old_a->bg_color != 0 || old_a->color_bg != 0 || old_a->color_fg != 0)
+		old_a->underline != 0 || old_a->altchar != 0 || old_a->italic ||
+		old_a->fg_color != 0 || old_a->bg_color != 0 || 
+		old_a->color_bg != 0 || old_a->color_fg != 0)
 	    {
 		*str++ = ALL_OFF;
 		*old_a = *a;
@@ -259,33 +301,75 @@ static size_t	logic_attributes (unsigned char *output, Attribute *old_a, Attribu
 	/* Colors need to be set first, always */
 	if (a->color_fg != old_a->color_fg || a->fg_color != old_a->fg_color)
 	{
-	    *str++ = '\003', count++;
-	    if (a->color_fg)
+	    if (a->fg_color <= 7)
 	    {
-		*str++ = '3', count++;
-		*str++ = '0' + a->fg_color, count++;
+		    *str++ = '\003', count++;
+		    if (a->color_fg)
+		    {
+			*str++ = '3', count++;
+			*str++ = '0' + a->fg_color, count++;
+		    }
+		    else
+		    {
+			*str++ = '-', count++;
+			*str++ = '1', count++;
+		    }
 	    }
 	    else
 	    {
-		*str++ = '-', count++;
-		*str++ = '1', count++;
-	    }
+		    *str++ = '\020', count++;
+		    if (a->color_fg)
+		    {
+			*str++ = a->fg_color / 100, count++;
+			*str++ = (a->fg_color % 100) / 10, count++;
+			*str++ = a->fg_color % 10, count++;
+		    }
+		    else
+		    {
+			*str++ = '-', count++;
+			*str++ = '1', count++;
+		    }
+	     }
 	}
 	if (a->color_bg != old_a->color_bg || a->bg_color != old_a->bg_color)
 	{
 	    if (!a->color_fg)
-		*str++ = '\003', count++;
-	    *str++ = ',', count++;
-	    if (a->color_bg)
 	    {
-		*str++ = '4', count++;
-		*str++ = '0' + a->bg_color, count++;
+		if (a->bg_color <= 7)
+			*str++ = '\003', count++;
+		else
+			*str++ = '\020', count++;
+	    }
+	    *str++ = ',', count++;
+
+	    if (a->bg_color <= 7)
+	    {
+		    if (a->color_bg)
+		    {
+			*str++ = '4', count++;
+			*str++ = '0' + a->bg_color, count++;
+		    }
+		    else
+		    {
+			*str++ = '-', count++;
+			*str++ = '1', count++;
+		    }
 	    }
 	    else
 	    {
-		*str++ = '-', count++;
-		*str++ = '1', count++;
-	    }
+		    *str++ = '\020', count++;
+		    if (a->color_bg)
+		    {
+			*str++ = a->bg_color / 100, count++;
+			*str++ = (a->bg_color % 100) / 10, count++;
+			*str++ = a->bg_color % 10, count++;
+		    }
+		    else
+		    {
+			*str++ = '-', count++;
+			*str++ = '1', count++;
+		    }
+	     }
 	}
 	if (old_a->bold != a->bold)
 		*str++ = BOLD_TOG, count++;
@@ -297,6 +381,8 @@ static size_t	logic_attributes (unsigned char *output, Attribute *old_a, Attribu
 		*str++ = UND_TOG, count++;
 	if (old_a->altchar != a->altchar)
 		*str++ = ALT_TOG, count++;
+	if (old_a->italic != a->italic)
+		*str++ = ITALIC_TOG, count++;
 
 	*old_a = *a;
 	return count;
@@ -326,6 +412,7 @@ static int	read_attributes (const unsigned char *input, Attribute *a)
 		return -1;
 
 	a->reverse = a->bold = a->blink = a->underline = a->altchar = 0;
+	a->italic = 0;
 	a->color_fg = a->fg_color = a->color_bg = a->bg_color = 0;
 
 	if (*input & 0x01)	a->reverse = 1;
@@ -333,15 +420,16 @@ static int	read_attributes (const unsigned char *input, Attribute *a)
 	if (*input & 0x04)	a->blink = 1;
 	if (*input & 0x08)	a->underline = 1;
 	if (*input & 0x10)	a->altchar = 1;
+	if (*input & 0x20)	a->italic = 1;
 
 	input++;
 	if (*input & 0x01) {	
 		a->color_fg = 1; 
-		a->fg_color = input[1] & 0x7F; 
+		a->fg_color = (0x80 * (*input & 0x04)) + (input[1] & 0x7F);
 	}
 	if (*input & 0x02) {	
 		a->color_bg = 1; 
-		a->bg_color = input[2] & 0x7F; 
+		a->bg_color = (0x80 * (*input & 0x08)) + (input[2] & 0x7F);
 	}
 
 	return 0;
@@ -356,14 +444,13 @@ static void	term_attribute (Attribute *a)
 	if (a->blink)		term_blink_on();
 	if (a->underline)	term_underline_on();
 	if (a->altchar)		term_altcharset_on();
+	if (a->italic)		term_italics_on();
 
 	/* XXXX This is where you'd put in a shim to globally defeat colors */
 	if (!(x_debug & DEBUG_NO_COLOR))
 	{
-		if (a->color_fg) {	if (a->fg_color > 7) abort(); 
-					else term_set_foreground(a->fg_color); }
-		if (a->color_bg) {	if (a->bg_color > 7) abort();
-					else term_set_background(a->bg_color); }
+		if (a->color_fg) { term_set_foreground(a->fg_color); }
+		if (a->color_bg) { term_set_background(a->bg_color); }
 	}
 }
 
@@ -486,6 +573,7 @@ static ssize_t	read_color_seq (const unsigned char *start, void *d, int blinkbol
         /* Reset all attributes to zero */
         ad.bold = ad.underline = ad.reverse = ad.blink = ad.altchar = 0;
         ad.color_fg = ad.color_bg = ad.fg_color = ad.bg_color = 0;
+	ad.italic = 0;
 
 	/* Copy the inward attributes, if provided */
 	a = (d) ? (Attribute *)d : &ad;
@@ -634,6 +722,214 @@ static ssize_t	read_color_seq (const unsigned char *start, void *d, int blinkbol
 			}
 		}
 
+		if (fg && *ptr == ',')
+		{
+			ptr++;
+			continue;
+		}
+		else
+			break;
+	}
+
+	return ptr - start;
+}
+
+/*
+ * read_color256_seq -- Parse out and count the length of a ^X color sequence
+ * Arguments:
+ *	start     - A string beginning with ^C that represents a color sequence
+ *	d         - An (Attribute *) [or NULL] that shall be modified by the
+ *		    color sequence.
+ * Return Value:
+ *	The length of the ^X color sequence, such that (start + retval) is
+ *	the first character that is not part of the ^X color sequence.
+ *	In no case does the return value pass the string's terminating null.
+ *
+ * DO NOT USE ANY OTHER FUNCTION TO PARSE ^X CODES.  YOU HAVE BEEN WARNED!
+ */
+static ssize_t	read_color256_seq (const unsigned char *start, void *d)
+{
+	/* Local variables, of course */
+	const 	unsigned char *	ptr = start;
+		int		c1, c2, c3;
+		Attribute *	a;
+		Attribute	ad;
+		int		fg;
+		int		val, val1, val2, val3;
+		int		noval;
+
+        /* Reset all attributes to zero */
+        ad.bold = ad.underline = ad.reverse = ad.blink = ad.altchar = 0;
+        ad.color_fg = ad.color_bg = ad.fg_color = ad.bg_color = 0;
+	ad.italic = 0;
+
+	/* Copy the inward attributes, if provided */
+	a = (d) ? (Attribute *)d : &ad;
+
+	/*
+	 * Originally this was a check for *ptr == '\003' but it was
+	 * inconvenient to pass in the ^C here for prepare_display, so
+	 * i'm making this check optional.
+	 */
+	if (*ptr == '\030')
+		ptr++;
+
+	/*
+	 * This is a one-or-two-time-through loop.  We find the maximum
+	 * span that can compose a legit ^C sequence, then if the first
+	 * nonvalid character is a comma, we grab the rhs of the code.
+	 */
+	for (fg = 1; ; fg = 0)
+	{
+		/*
+		 * If its just a lonely old ^X, then its probably a terminator.
+		 * Just skip over it and go on.
+		 */
+		if (*ptr == 0)
+		{
+			if (fg)
+				a->color_fg = a->fg_color = 0;
+			a->color_bg = a->bg_color = 0;
+			return ptr - start;
+		}
+
+		/*
+		 * Check for the very special case of a definite terminator.
+		 * If the argument to ^X is -1, then we absolutely know that
+		 * this ends the code without starting a new one
+		 */
+		/* XXX *cough* is 'ptr[1]' valid here? */
+		else if (ptr[0] == '-' && ptr[1] == '1')
+		{
+			if (fg)
+				a->color_fg = a->fg_color = 0;
+			a->color_bg = a->bg_color = 0;
+			return (ptr + 2) - start;
+		}
+
+		/*
+		 * Further checks against a lonely old naked ^X.
+		 */
+		else if (!isdigit(ptr[0]) && ptr[0] != ',')
+		{
+			if (fg)
+				a->color_fg = a->fg_color = 0;
+			a->color_bg = a->bg_color = 0;
+			return ptr - start;
+		}
+
+
+		/*
+		 * Code certainly cant have more than three chars in it
+		 */
+		c1 = c2 = c3 = 0;
+		if ((c1 = ptr[0]))
+			if ((c2 = ptr[1]))
+				c3 = ptr[2];
+
+		val = 0;
+		noval = 0;
+		val1 = val2 = val3 = 0;
+
+#define mkdigit(x) ((x) - '0')
+
+		/* Our action depends on the char immediately after the ^C. */
+		switch (c1)
+		{
+		    /* These might take one, two, or three characters */
+		    case '0':
+		    case '1':
+		    {
+			if (c2 >= '0' && c2 <= '9')
+			{
+				if (c3 >= '0' && c3 <= '9')
+					goto three_digits;
+				else
+					goto two_digits;
+			}
+			else
+				goto one_digit;
+			break;
+		    }
+
+		    case '2':
+		    {
+			if (c2 >= '0' && c2 <= '4')
+			{
+				if (c3 >= '0' && c3 <= '9')
+					goto three_digits;
+				else
+					goto two_digits;
+			}
+			else if (c2 == '5')
+			{
+				if (c3 >= '0' && c3 <= '5')
+					goto three_digits;
+				else
+					goto two_digits;
+			}
+			else if (c2 >= '6' && c2 <= '9')
+				goto two_digits;
+			else
+				goto one_digit;
+				
+			break;
+		    }
+
+		    case '3':
+		    case '4':
+		    case '5':
+		    case '6':
+		    case '7':
+		    case '8':
+		    case '9':
+		    {
+			if (c2 >= '0' && c2 <= '9')
+				goto two_digits;
+			else
+				goto one_digit;
+			break;
+		    }
+		    
+		    case ',':
+		    {
+			a->color_fg = 0;
+			a->fg_color = 0;
+			goto comma;
+		    }
+		    default:
+		    {
+			/* We tested this above so ... what happened here? */
+			break;
+		    }
+		}
+
+		panic(1, "read_color256_seq didn't properly parse %s", start);
+
+three_digits:
+		val = mkdigit(*ptr);
+		ptr++;
+two_digits:
+		val *= 10;
+		val += mkdigit(*ptr);
+		ptr++;
+one_digit:
+		val *= 10;
+		val += mkdigit(*ptr);
+		ptr++;
+
+		if (fg)
+		{
+			a->color_fg = 1;
+			a->fg_color = val;
+		}
+		else
+		{
+			a->color_bg = 1;
+			a->bg_color = val;
+		}
+
+comma:
 		if (fg && *ptr == ',')
 		{
 			ptr++;
@@ -848,7 +1144,7 @@ start_over:
 			{
 				a->reverse = a->bold = 0;
 				a->blink = a->underline = 0;
-				a->altchar = 0;
+				a->altchar = a->italic = 0;
 				a->color_fg = a->color_bg = 0;
 				a->fg_color = a->bg_color = 0;
 				break;
@@ -857,6 +1153,8 @@ start_over:
 				a->bold = 1;
 				break;
 			case 2:		/* dim on -- not supported */
+				break;
+			case 3:		/* Italics on -- not supported */
 				break;
 			case 4:		/* Underline on */
 				a->underline = 1;
@@ -876,6 +1174,8 @@ start_over:
 			case 22:	/* Bold off */
 				a->bold = 0;
 				break;
+			case 23:	/* Italics off -- not supported */
+				break;
 			case 24:	/* Underline off */
 				a->underline = 0;
 				break;
@@ -889,6 +1189,19 @@ start_over:
 				a->fg_color = args[i] - 30;
 				break;
 			}
+			case 38:	/* Set 256 fg color */
+			{
+				if (i == nargs)
+					break;		/* Invalid */
+				if (args[++i] != 5)
+					break;		/* Invalid */
+				if (i == nargs)
+					break;		/* Invalid */
+				i++;
+				a->color_fg = 1;
+				a->fg_color = args[i];
+				break;
+			}
 			case 39:	/* Reset foreground color to default */
 			{
 				a->color_fg = 0;
@@ -900,6 +1213,19 @@ start_over:
 			{
 				a->color_bg = 1;
 				a->bg_color = args[i] - 40;
+				break;
+			}
+			case 48:	/* Set 256 bg color */
+			{
+				if (i == nargs)
+					break;		/* Invalid */
+				if (args[++i] != 5)
+					break;		/* Invalid */
+				if (i == nargs)
+					break;		/* Invalid */
+				i++;
+				a->color_bg = 1;
+				a->bg_color = args[i];
 				break;
 			}
 			case 49:	/* Reset background color to default */
@@ -941,6 +1267,7 @@ start_over:
  * State 7 is a "beep"
  * State 8 is a "tab"
  * State 9 is a "non-destructive space"
+ * State 10 is a "256 color code character" (\030)
  */
 static	unsigned char	ansi_state[128] = {
 /*	^@	^A	^B	^C	^D	^E	^F	^G(\a) */
@@ -948,9 +1275,9 @@ static	unsigned char	ansi_state[128] = {
 /*	^H	^I	^J(\n)	^K	^L(\f)	^M(\r)	^N	^O */
 	6,	8,	0,	6,	6,	5,	6,	4,  /* 010 */
 /*	^P	^Q	^R	^S	^T	^U	^V	^W */
-	6,	6,	6,	9,	6,	6,	4,	6,  /* 020 */
+	4,	6,	6,	9,	6,	6,	4,	6,  /* 020 */
 /*	^X	^Y	^Z	^[	^\	^]	^^	^_ */
-	6,	6,	6,	2,	6,	6,	6,	4,  /* 030 */
+	10,	6,	6,	2,	6,	6,	6,	4,  /* 030 */
 	0,	0,	0,	0,	0,	0,	0,	0,  /* 040 */
 	0,	0,	0,	0,	0,	0,	0,	0,  /* 050 */
 	0,	0,	0,	0,	0,	0,	0,	0,  /* 060 */
@@ -974,15 +1301,15 @@ static	unsigned char	ansi_state[128] = {
 	- = No transformation
 
 					Type
-    			0    1    2    3    4    5    6    7    8    9
-(Default)		-    -    -    -    A    -    -    T    T    T
-NORMALIZE		-    -    A    A    -    X    M    -    -    -
-MANGLE_ESCAPES		-    -    S    -    -    -    -    -    -    -
-STRIP_COLOR		-    -    -    X    -    -    -    -    -    -
-STRIP_*			-    -    -    -    X    -    -    -    -    -
-STRIP_UNPRINTABLE	-    X    S    S    X    X    X    X    -    -
-STRIP_OTHER		X    -    -    -    -    -    -    -    X    X
-(/SET ALLOW_C1)		-    X    -    -    -    -    -    -    -    -
+    			0    1    2    3    4    5    6    7    8    9  10
+(Default)		-    -    -    -    A    -    -    T    T    T   -
+NORMALIZE		-    -    A    A    -    X    M    -    -    -   A
+MANGLE_ESCAPES		-    -    S    -    -    -    -    -    -    -   -
+STRIP_COLOR		-    -    -    X    -    -    -    -    -    -   X
+STRIP_*			-    -    -    -    X    -    -    -    -    -   -
+STRIP_UNPRINTABLE	-    X    S    S    X    X    X    X    -    -   S
+STRIP_OTHER		X    -    -    -    -    -    -    -    X    X   -
+(/SET ALLOW_C1)		-    X    -    -    -    -    -    -    -    -   -
 */
 
 /*
@@ -1035,7 +1362,7 @@ unsigned char *	new_normalize_string (const unsigned char *str, int logical, int
 	int		strip_reverse, strip_bold, strip_blink, 
 			strip_underline, strip_altchar, strip_color, 
 			strip_all_off, strip_nd_space, boldback;
-	int		strip_unprintable, strip_other, strip_c1;
+	int		strip_unprintable, strip_other, strip_c1, strip_italic;
 	int		codepoint, state, cols;
 	char 		utf8str[16], *x;
 	size_t		(*attrout) (unsigned char *, Attribute *, Attribute *) = NULL;
@@ -1053,6 +1380,7 @@ unsigned char *	new_normalize_string (const unsigned char *str, int logical, int
 	strip_all_off 	= ((mangle & STRIP_ALL_OFF) != 0);
 	strip_unprintable = ((mangle & STRIP_UNPRINTABLE) != 0);
 	strip_other	= ((mangle & STRIP_OTHER) != 0);
+	strip_italic	= ((mangle & STRIP_ITALIC) != 0);
 
 	strip_c1	= !get_int_var(ALLOW_C1_CHARS_VAR);
 	boldback	= get_int_var(TERM_DOES_BRIGHT_BLINK_VAR);
@@ -1070,6 +1398,7 @@ unsigned char *	new_normalize_string (const unsigned char *str, int logical, int
 
 	/* Reset all attributes to zero */
 	a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
+	a.italic = 0;
 	a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
 	olda = a;
 
@@ -1220,6 +1549,7 @@ normal_char:
 			if (a.blink && strip_blink)		a.blink = 0;
 			if (a.underline && strip_underline)	a.underline = 0;
 			if (a.altchar && strip_altchar)		a.altchar = 0;
+			if (a.italic && strip_italic)		a.italic = 0;
 			if (strip_color)
 			{
 				a.color_fg = a.color_bg = 0;
@@ -1237,9 +1567,10 @@ normal_char:
 		}
 
 	        /*
-		 * Normalize ^C codes...
+		 * Normalize ^C codes...  And ^X codes...
 	         */
 		case 3:
+		case 10:
 		{
 		   if (strip_unprintable)
 			break;
@@ -1248,7 +1579,11 @@ normal_char:
 		   {
 			ssize_t	len;
 
-			len = read_color_seq(str, (void *)&a, boldback);
+			if (state == 3)
+				len = read_color_seq(str, (void *)&a, boldback);
+			else if (state == 10)
+				len = read_color256_seq(str, (void *)&a);
+
 			str += len;
 
 			/* Suppress the color if no color is permitted */
@@ -1298,11 +1633,16 @@ normal_char:
 				if (!strip_altchar)
 					a.altchar = !a.altchar;
 				break;
+			case ITALIC_TOG:
+				if (!strip_italic)
+					a.italic = !a.italic;
+				break;
 			case ALL_OFF:
 				if (!strip_all_off)
 				{
 				    a.reverse = a.bold = a.blink = 0;
 				    a.underline = a.altchar = 0;
+				    a.italic = 0;
 				    a.color_fg = a.color_bg = 0;
 				    a.bg_color = a.fg_color = 0;
 				    pos += attrout(output + pos, &olda, &a);
@@ -1365,6 +1705,7 @@ normal_char:
 	if (logical == 0)
 	{
 		a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
+		a.italic = 0;
 		a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
 		pos += attrout(output + pos, &olda, &a);
 	}
@@ -1390,6 +1731,7 @@ unsigned char *	denormalize_string (const unsigned char *str)
         /* Reset all attributes to zero */
         a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
         a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
+	a.italic = 0;
 	olda = a;
 
 	/* 
@@ -1492,10 +1834,11 @@ const	unsigned char	*cont_ptr;
         /* Reset all attributes to zero */
         a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
         a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
+	a.italic = 0;
         saved_a.bold = saved_a.underline = saved_a.reverse = 0;
 	saved_a.blink = saved_a.altchar = 0;
         saved_a.color_fg = saved_a.color_bg = saved_a.fg_color = 0;
-	saved_a.bg_color = 0;
+	saved_a.bg_color = saved_a.italic = 0;
 
 	/* do_indent = get_int_var(INDENT_VAR); */
 	do_indent = get_indent_by_winref(winref);
@@ -1894,6 +2237,7 @@ const	unsigned char	*cont_ptr;
 
         /* Reset all attributes to zero */
         a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
+	a.italic = 0;
         a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
 	pos += display_attributes(buffer + pos, &olda, &a);
 	buffer[pos] = '\0';
@@ -1945,6 +2289,7 @@ const 	unsigned char	*ptr;
         /* Reset all attributes to zero */
         a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
         a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
+	a.italic = 0;
 
         str = new_normalize_string(orig_str, 3, NORMALIZE);
 	buffer[0] = 0;
@@ -2106,6 +2451,7 @@ int 	output_with_count (const unsigned char *str1, int clreol, int output)
         /* Reset all attributes to zero */
         a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
         a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
+	a.italic = 0;
 
 	for (str = str1; str && *str; )
 	{

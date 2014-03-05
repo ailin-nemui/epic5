@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.101 2013/02/17 13:02:46 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.102 2014/03/05 14:40:56 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -217,6 +217,21 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 
 	current_numeric = numeric;	/* must be negative of numeric! */
 
+
+	/*
+	 * XXX-
+	 * We only have to worry about non-utf8 message anyways.
+	 * Those come into two waves:
+	 *	1. Specific words that might have come from users
+	 *	2. Anything else (that would have come from server)
+	 * Remember -- we only care about non-utf8 things.
+	 *	311	WHOISUSER	ArgList[0] (the realname)
+	 *	314	WHOWASUSER	ArgList[5] (the realname)
+	 *	322	LIST		ArgList[2] (the topic)
+	 *	332	TOPIC		ArgList[1] (the topic)
+	 *	352	WHOREPLY	ArgList[7] (the realname)
+	 */
+
 	/*
 	 * This first switch statement is only used for those numerics
 	 * which either need to perform some action before the numeric
@@ -320,7 +335,13 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 					get_server_group(from_server));
 		if ((new_servref = str_to_servref(str)) == NOSERV)
 			new_servref = str_to_newserv(str);
+
+		say("The server has asked you to switch to %s:%d.  I set up server refnum %d for you.", new_server, new_port, new_servref);
+		say("If you want to switch, do /SERVER %d", new_servref);
+
+#if 0
 		change_window_server(old_server, new_servref);
+#endif
 		from_server = old_server;
 		break;
 	}
