@@ -433,4 +433,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add support for 256 colors.  I should document all changes but i don't wanna
 * Document all the places where encoding translation should happen.
 * De-harshen some comments I wrote 20 years ago in anger.
+* Fix colors with high bit set. (rb Hellfire)
 

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.167 2014/03/05 14:40:56 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.168 2014/03/06 02:49:03 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -425,11 +425,15 @@ static int	read_attributes (const unsigned char *input, Attribute *a)
 	input++;
 	if (*input & 0x01) {	
 		a->color_fg = 1; 
-		a->fg_color = (0x80 * (*input & 0x04)) + (input[1] & 0x7F);
+		a->fg_color = input[1] & 0x7f;
+		if (*input & 0x04)
+			a->fg_color += 0x80;
 	}
 	if (*input & 0x02) {	
 		a->color_bg = 1; 
-		a->bg_color = (0x80 * (*input & 0x08)) + (input[2] & 0x7F);
+		a->bg_color = input[2] & 0x7f;
+		if (*input & 0x08)
+			a->bg_color += 0x80;
 	}
 
 	return 0;
