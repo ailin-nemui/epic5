@@ -434,4 +434,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Document all the places where encoding translation should happen.
 * De-harshen some comments I wrote 20 years ago in anger.
 * Fix colors with high bit set. (rb Hellfire)
-
+* Change ^X so it only supports two hex digits 00-FF
+* Fix QUOTE_CHARACTER (^Q)

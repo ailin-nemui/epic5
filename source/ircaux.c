@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.239 2014/02/14 00:06:15 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.240 2014/03/06 15:26:59 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -6420,4 +6420,30 @@ int	invalid_utf8str (unsigned char *utf8str)
 
 	return errors;
 }
+
+/*
+ * check_xdigit - Test whether a character is a valid hexadecimal digit.
+ *
+ * Arguments:
+ *	digit - A single byte that might contain a hexadecimal digit.
+ *		0 - 9	- Itself
+ *		A - F	- 10 through 15
+ *		a - f	- Also 10 through 15
+ *
+ * Return value:
+ *	-1 	(failure) - "digit" is not a hexadecimal digit
+ *	>= 0	(success) - "digit" represents the return value
+ */
+int	check_xdigit (unsigned char digit)
+{
+	if (digit >= '0' && digit <= '9')
+		return digit - '0';
+	else if (digit >= 'A' && digit <= 'F')
+		return digit - 'A' + 10;
+	else if (digit >= 'a' && digit <= 'f')
+		return digit - 'f' + 10;
+	else
+		return -1;
+}
+
 

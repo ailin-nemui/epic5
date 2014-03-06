@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.168 2014/03/06 02:49:03 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.169 2014/03/06 15:26:59 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -755,12 +755,12 @@ static ssize_t	read_color256_seq (const unsigned char *start, void *d)
 {
 	/* Local variables, of course */
 	const 	unsigned char *	ptr = start;
-		int		c1, c2, c3;
+		int		c1, c2;
 		Attribute *	a;
 		Attribute	ad;
 		int		fg;
-		int		val, val1, val2, val3;
-		int		noval;
+		int		val;
+		int		set;
 
         /* Reset all attributes to zero */
         ad.bold = ad.underline = ad.reverse = ad.blink = ad.altchar = 0;
@@ -788,6 +788,8 @@ static ssize_t	read_color256_seq (const unsigned char *start, void *d)
 		/*
 		 * If its just a lonely old ^X, then its probably a terminator.
 		 * Just skip over it and go on.
+		 * XXX Note -- this is invalid; but we're tolerant because
+		 * it's unambiguous.
 		 */
 		if (*ptr == 0)
 		{
@@ -802,7 +804,6 @@ static ssize_t	read_color256_seq (const unsigned char *start, void *d)
 		 * If the argument to ^X is -1, then we absolutely know that
 		 * this ends the code without starting a new one
 		 */
-		/* XXX *cough* is 'ptr[1]' valid here? */
 		else if (ptr[0] == '-' && ptr[1] == '1')
 		{
 			if (fg)
@@ -813,8 +814,10 @@ static ssize_t	read_color256_seq (const unsigned char *start, void *d)
 
 		/*
 		 * Further checks against a lonely old naked ^X.
+		 * XXX Note -- this is invalid; but we're tolerant 
+		 * (even though it's ambiguous)
 		 */
-		else if (!isdigit(ptr[0]) && ptr[0] != ',')
+		else if (check_xdigit(ptr[0]) == -1 && ptr[0] != ',')
 		{
 			if (fg)
 				a->color_fg = a->fg_color = 0;
@@ -826,114 +829,66 @@ static ssize_t	read_color256_seq (const unsigned char *start, void *d)
 		/*
 		 * Code certainly cant have more than three chars in it
 		 */
-		c1 = c2 = c3 = 0;
+		c1 = c2 = 0;
 		if ((c1 = ptr[0]))
-			if ((c2 = ptr[1]))
-				c3 = ptr[2];
+			c2 = ptr[1];
 
 		val = 0;
-		noval = 0;
-		val1 = val2 = val3 = 0;
 
-#define mkdigit(x) ((x) - '0')
-
-		/* Our action depends on the char immediately after the ^C. */
-		switch (c1)
+		/*
+		 * If there is a leading comma, then no color here.
+		 */
+		if (fg && c1 == ',')
 		{
-		    /* These might take one, two, or three characters */
-		    case '0':
-		    case '1':
-		    {
-			if (c2 >= '0' && c2 <= '9')
-			{
-				if (c3 >= '0' && c3 <= '9')
-					goto three_digits;
-				else
-					goto two_digits;
-			}
-			else
-				goto one_digit;
-			break;
-		    }
-
-		    case '2':
-		    {
-			if (c2 >= '0' && c2 <= '4')
-			{
-				if (c3 >= '0' && c3 <= '9')
-					goto three_digits;
-				else
-					goto two_digits;
-			}
-			else if (c2 == '5')
-			{
-				if (c3 >= '0' && c3 <= '5')
-					goto three_digits;
-				else
-					goto two_digits;
-			}
-			else if (c2 >= '6' && c2 <= '9')
-				goto two_digits;
-			else
-				goto one_digit;
-				
-			break;
-		    }
-
-		    case '3':
-		    case '4':
-		    case '5':
-		    case '6':
-		    case '7':
-		    case '8':
-		    case '9':
-		    {
-			if (c2 >= '0' && c2 <= '9')
-				goto two_digits;
-			else
-				goto one_digit;
-			break;
-		    }
-		    
-		    case ',':
-		    {
-			a->color_fg = 0;
-			a->fg_color = 0;
-			goto comma;
-		    }
-		    default:
-		    {
-			/* We tested this above so ... what happened here? */
-			break;
-		    }
+			ptr++;
+			continue;
 		}
 
-		panic(1, "read_color256_seq didn't properly parse %s", start);
+		/*
+		 * Highest priority -- check for two hex digits
+		 */
+		else if (check_xdigit(c1) != -1 && check_xdigit(c2) != -1)
+		{
+			set = 1;
+			val = check_xdigit(c1) * 16 + check_xdigit(c2);
+			ptr += 2;
+		}
+		/*
+		 * Third, check for one hex digit
+		 */
+		else if (check_xdigit(c1) != -1)
+		{
+			set = 1;
+			val = check_xdigit(c1);
+			ptr++;
+		}
+		/*
+		 * Fourth, check for an explicit "-1"
+		 */
+		else if (c1 == '-' && c2 == '1')
+		{
+			set = 0;
+			val = 0;
+			ptr += 2;
+		}
+		else
+		{
+			set = 0;
+			val = 0;
+		}
 
-three_digits:
-		val = mkdigit(*ptr);
-		ptr++;
-two_digits:
-		val *= 10;
-		val += mkdigit(*ptr);
-		ptr++;
-one_digit:
-		val *= 10;
-		val += mkdigit(*ptr);
-		ptr++;
 
 		if (fg)
 		{
-			a->color_fg = 1;
+			a->color_fg = set;
 			a->fg_color = val;
 		}
 		else
 		{
-			a->color_bg = 1;
+			a->color_bg = set;
 			a->bg_color = val;
 		}
 
-comma:
 		if (fg && *ptr == ',')
 		{
 			ptr++;
@@ -3767,6 +3722,8 @@ static	int		never_warn_again = 0;
  */
 static	void	edit_codepoint (u_32int_t key)
 {
+	int	old_quote_hit;
+
         if (dumb_mode)
                 return;
 
@@ -3794,12 +3751,16 @@ static	void	edit_codepoint (u_32int_t key)
 	 * quote_hit flag when we're done. (Is it cheaper to unconditionally
 	 * set it to 0, or to do a test-and-set?  Does it matter?)
 	 */
+	old_quote_hit = last_input_screen->quote_hit;
+
 	last_input_screen->last_key = handle_keypress(
 		last_input_screen->last_key,
 		last_input_screen->last_press, key,
 		last_input_screen->quote_hit);
 	get_time(&last_input_screen->last_press);
-	last_input_screen->quote_hit = 0;
+
+	if (old_quote_hit)
+		last_input_screen->quote_hit = 0;
 }
 
 

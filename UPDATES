@@ -1,9 +1,28 @@
 EPIC5-1.1.8
 
+*** News 03/06/2014 -- $cparse(%X) turns into a ^X
+	You can use %X in $cparse() to inject a ^X which might make it 
+	easier to handle 256 color support.  All the rules below still apply.
+
+		/echo $cparse(%kone %rtwo %X80buckle %XFFmy %X32shoe)
+
 *** News 03/05/2014 -- 256 color support (^X works like ^C)
-	You can now send 256 colors to your terminal emulator using
-	the ^X highlight character.  It works like ^C, but it supports
-	values 0-255 instead of just 0-15.
+	The ^X attribute allows you to set 256 colors (if your emulator
+	supports that).
+
+	The ^X attribute takes two hex digits to indicate a color between
+	00 and FF (0 to 255).
+
+		^X-1			Turn off color
+		^X00			Turn on fg color 0
+		....			....
+		^XFF			Turn on fg color 255
+		^X<number>,<number>	Turn on <fg>,<bg> colors
+					The <fg> number can be omitted.
+
+	The ^X attribute ALWAYS takes stuff after it.  You cannot use a naked
+	^X or you risk forwards incompatability.  I *will* be adding more 
+	stuff to ^X in the future so don't develop bad habits.
 
 	Caveat:
 	  256 color support isn't "standard" ansi so the client sends the 

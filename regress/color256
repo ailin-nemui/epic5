@@ -27,24 +27,24 @@ alias testcolor4 {
 }
 
 alias testcolor5 {
-	fe (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15) i
+	fe (0 1 2 3 4 5 6 7 8 9 A B C D E F) i
 	{
 		@str=[]
-		fe (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15) j
+		fe (0 1 2 3 4 5 6 7 8 9 A B C D E F) j
 		{
-			@str #= [${i*16+j} $[-3]{i*16+j}]
+			@str #= [$i$j $i$j]
 		}
 		echo $str
 	}
 }
 
 alias testcolor6 {
-	fe (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15) i
+	fe (0 1 2 3 4 5 6 7 8 9 A B C D E F) i
 	{
 		@str=[]
-		fe (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15) j
+		fe (0 1 2 3 4 5 6 7 8 9 A B C D E F) j
 		{
-			@str #= [,${i*16+j} $[-3]{i*16+j}]
+			@str #= [,$i$j $i$j]
 		}
 		echo $str
 	}
