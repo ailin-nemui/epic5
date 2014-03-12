@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.170 2014/03/12 02:38:19 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.171 2014/03/12 15:08:59 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -3696,9 +3696,10 @@ static	int		never_warn_again = 0;
 	codepoint = next_code_point(&s);
 	if (codepoint > -1)
 	{
-		edit_codepoint(codepoint);
+		/* Clear the buffer BEFORE dispatching the results */
 		workbuf_idx = 0;
 		workbuf[0] = 0;
+		edit_codepoint(codepoint);
 	}
 
 

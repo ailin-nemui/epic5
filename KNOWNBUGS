@@ -2,9 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Finish the translation cases that were documented.
-* <hellfire> hop: i noticed $tobase(<base> 0) returns nothing. 
-  <hellfire> while $strtol(<base> 0) does. 
+* Some things (left/right/mid/strlen/fec) aren't utf8 aware.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -450,4 +448,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /xdebug recode to debug recoding rules.  Help you help me!
 * Review the recode code and leave comments for future improvement
 * Don't allow the user to delete the magic recode rules.
-
+* Fix $tobase(<base> 0) to always return 0 instead of empty string.
+* Fix $"", caused by accumulator in translate_user_input not being cleaned.

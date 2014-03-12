@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.303 2014/03/06 15:26:59 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.304 2014/03/12 15:08:59 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -6729,6 +6729,10 @@ BUILT_IN_FUNCTION(function_tobase, input)
 #if 0
 	num = strtoimax(number, &after, 10);	/* Must not use GET_INT_ARG */
 #endif
+	/* The exponent routine below doesn't work for 0 */
+	if (num == 0)
+		RETURN_INT(num);
+
 	while (pow(base, len) <= num)
 		len++;
 
