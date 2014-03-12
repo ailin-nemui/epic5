@@ -3,6 +3,8 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Finish the translation cases that were documented.
+* <hellfire> hop: i noticed $tobase(<base> 0) returns nothing. 
+  <hellfire> while $strtol(<base> 0) does. 
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -436,3 +438,13 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix colors with high bit set. (rb Hellfire)
 * Change ^X so it only supports two hex digits 00-FF
 * Fix QUOTE_CHARACTER (^Q)
+* Lots of internal work to implement back-end of /encoding.
+* Add decide_encoding() to evaluate rules and pick one for non-utf8 stuff.
+* Add serverinfo_matches_servref() internal to decide if (si) works for a serv.
+* Add outbound_recode() internal to translate messages we're sending out
+* Add inbound_recode() internal to translate messages received from irc.
+* Add recode_with_iconv_t() internal function for the above.
+* Rewrite (inbound_recode()) privmsgs, notices, topics, all this good stuff
+* Rewrite (outbound_recode()) msgs, notices.
+* Withdraw the /server -encoding feature.
+* Add /xdebug recode to debug recoding rules.  Help you help me!

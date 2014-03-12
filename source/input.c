@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.79 2014/03/05 14:40:56 jnelson Exp $ */
+/* $EPIC: input.c,v 1.80 2014/03/12 02:38:19 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -480,7 +480,6 @@ const char *	prompt;
 		return;
 
 	/* Save the state of things */
-	old_do_echo = do_echo;
 	os = last_input_screen;
 	saved_current_window = current_window;
 	original_update = update;

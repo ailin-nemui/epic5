@@ -1,5 +1,67 @@
 EPIC5-1.1.8
 
+*** News 03/11/2014 -- New command, /ENCODING
+	The /ENCODING command is not really new, but it finally is in its
+	final form.
+
+	With /ENCODING you can specify rules that tell epic what encoding
+	you think other people are using.  Whenever epic receives a non-utf8
+	message, it will evaluate the rules to decide what encoding it should
+	treat the non-utf8 message.  Whenever you send an outbound message
+	to irc, epic will use the rules to decide if it should encode it 
+	in something other than utf-8.
+
+	This means you can talk to non-utf8 users, and their messages can
+	be made utf8 for you; and your (utf8) messages can be non-utf8 for
+	them.  This is full end-to-end recoding support.
+
+	The rules look like this, and are evaluated with this priority:
+		6. /ENCODING server/nickname
+		5. /ENCODING nickname
+		4. /ENCODING server/channel
+		3. /ENCODING channel
+		2. /ENCODING server
+		1. /ENCODING irc		(the "magic" rule)
+
+	In this case, "server" is anything that can be recognized:
+		* A server refnum
+		* A server "ourname"
+		* A server "itsname"
+		* A server group
+		* Any server altname
+
+	The client will evaluate each rule, and the "best match" is the
+	first rule that lands highest on that first list.  Hopefully it
+	should just be natural.  An example:
+
+		# All "efnet" servers use ISO-8859-1	(level 2)
+		/encoding efnet/ ISO-8859-1
+
+		# Except #epic, which uses CP437	(level 3)
+		/encoding #epic CP437
+
+		# Except zlonix, who uses KOI8-R	(level 5)
+		/encoding zlonix KOI8-R
+
+	So if you get something non-utf8 message over an "efnet" server,
+	it will be assumed to be ISO-8859-1.  Unless that message was 
+	sent to #epic -- then it is assumed to be CP437.  Unless that 
+	message was sent by zlonix, then it is KOI8-R.  In this way, you
+	can set defaults for channels and overrule it by invidual person.
+
+	SYNTAX:
+		If you do	/ENCODING <stuff>
+
+	If <stuff> is a channel, then <stuff> is treated as a channel.
+	If <stuff> is a number, then <stuff> is treated as a server refnum.
+	If <stuff> contains a slash, then anything before the slash is the
+		server part, and anything after the slash is the channel
+		or nickname part.  *You can omit before or after the slash
+		to make it unambiguous*
+	If <stuff> contains a dot, then <stuff> is treated as a server.
+	Otherwise, anything else is treated as a nickname.
+
+	
 *** News 03/06/2014 -- $cparse(%X) turns into a ^X
 	You can use %X in $cparse() to inject a ^X which might make it 
 	easier to handle 256 color support.  All the rules below still apply.
@@ -119,7 +181,7 @@ EPIC5-1.1.8
 	The $unicode() function converts text to unicode descriptors
 		$unicode(Ð) returns "U+0423"
 
-*** News 02/08/2014 -- New server flag, "encoding" 
+*** News 02/08/2014 -- New server flag, "encoding"  -- WITHDRAWN
 	Server descriptions now have an extra field "encoding" which is 
 	used when you receive a non-utf8 string from the server.
 
@@ -128,6 +190,8 @@ EPIC5-1.1.8
 
 	The default is "ISO-8859-1" for no particular reason.
 	This will be supplanted by a /recode command in the future!
+
+	*** This feature has been removed.  Do not use! ***
 
 EPIC5-1.1.7
 

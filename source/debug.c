@@ -1,4 +1,4 @@
-/* $EPIC: debug.c,v 1.29 2012/07/06 22:38:21 jnelson Exp $ */
+/* $EPIC: debug.c,v 1.30 2014/03/12 02:38:19 jnelson Exp $ */
 /*
  * debug.c -- controll the values of x_debug.
  *
@@ -83,6 +83,7 @@ static struct debug_opts opts[] =
 	{ "OLD_MATH",		0 },
 	{ "UNICODE",		DEBUG_UNICODE },
 	{ "DWORD",        	DEBUG_DWORD },
+	{ "RECODE",		DEBUG_RECODE },
 	{ "ALL",		~0},
 	{ NULL,			0 },
 };

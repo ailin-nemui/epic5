@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.169 2014/03/06 15:26:59 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.170 2014/03/12 02:38:19 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -1536,11 +1536,11 @@ normal_char:
 
 		   if (strip_color || normalize)
 		   {
-			ssize_t	len;
+			ssize_t	len = 0;
 
 			if (state == 3)
 				len = read_color_seq(str, (void *)&a, boldback);
-			else if (state == 10)
+			else 
 				len = read_color256_seq(str, (void *)&a);
 
 			str += len;

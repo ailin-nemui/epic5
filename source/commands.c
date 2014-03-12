@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.217 2014/02/19 13:44:53 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.218 2014/03/12 02:38:18 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -2993,7 +2993,7 @@ BUILT_IN_COMMAND(xtypecmd)
 		{
 			if (!my_strnicmp(arg, "LITERAL", 1))
 			{
-				while ((code_point = next_code_point(&args)))
+				while ((code_point = next_code_point((const unsigned char **)&args)))
 				{
 					if (code_point == -1)
 						args++;
@@ -3117,6 +3117,11 @@ void 	send_text (int server, const char *nick_list, const char *text, const char
 	int	old_window_display = window_display;
 	int	old_from_server;
 static	int	recursion = 0;
+	const char *target_encoding;
+	char	*buf2;
+	size_t	buf2len;
+	char *	extra = NULL;
+	const char	*mangle_text;
 
 	/*
 	 * XXXX - Heaven help us.
@@ -3165,12 +3170,14 @@ struct target_type target[4] =
 	    if (!*current_nick)
 		continue;
 
+	    mangle_text = outbound_recode(current_nick, from_server, text, &extra);
+
 	    if (*current_nick == '%')
 	    {
 		if ((i = get_process_index(&current_nick)) == -1)
 			say("Invalid process specification");
 		else
-			text_to_process(i, text, 1);
+			text_to_process(i, mangle_text, 1);
 	    }
 	    /*
 	     * Blank lines may be sent to /exec'd processes, but
@@ -3226,16 +3233,17 @@ struct target_type target[4] =
 		{
 			yell("No DCC CHAT connection open to %s", 
 				current_nick + 1);
+			new_free(&extra);
 			continue;
 		}
 
 		if ((key = is_crypted(current_nick, -1, ANYCRYPT)) != 0)
 		{
-			char *breakage = LOCAL_COPY(text);
+			char *breakage = LOCAL_COPY(mangle_text);
 			line = crypt_msg(breakage, key);
 		}
 		else
-			line = malloc_strdup(text);
+			line = malloc_strdup(mangle_text);
 
 		old_server = from_server;
 		from_server = NOSERV;
@@ -3257,22 +3265,25 @@ struct target_type target[4] =
 		if ((servref = str_to_servref(servername)) == NOSERV)
 		{
 			yell("Unknown server [%s] in target", servername);
+			new_free(&extra);
 			continue;
 		}
 
 		/* XXX -- Recursion is a hack. (but it works) */
 		send_text(servref, msgtarget, text, command, hook ? -1 : 0);
+		new_free(&extra);
 		continue;
 	    }
 	    else
 	    {
 		char *	copy = NULL;
 
-		/* XXX SHoudl we check for invalid from_server here? */
+		/* XXX Should we check for invalid from_server here? */
 
 		if (get_server_doing_notice(from_server))
 		{
 			say("You cannot send a message from within ON NOTICE");
+			new_free(&extra);
 			continue;
 		}
 
@@ -3285,12 +3296,12 @@ struct target_type target[4] =
 		{
 			int	l;
 
-			copy = LOCAL_COPY(text);
+			copy = LOCAL_COPY(mangle_text);
 			l = message_from(current_nick, target[i].mask);
 
 			if (hook && do_hook(target[i].hook_type, "%s %s", 
-						current_nick, copy))
-				put_it(target[i].format, current_nick, copy);
+						current_nick, text))
+				put_it(target[i].format, current_nick, text);
 			line = crypt_msg(copy, key);
 
 			send_to_server("%s %s :%s", 
@@ -3298,6 +3309,23 @@ struct target_type target[4] =
 			set_server_sent_nick(from_server, current_nick);
 
 			new_free(&line);
+			pop_message_from(l);
+		}
+		else if (extra)		/* Message was transcoded */
+		{
+			int	l;
+
+			l = message_from(current_nick, target[i].mask);
+
+			if (hook && do_hook(target[i].hook_type, "%s %s", 
+						current_nick, text))
+				put_it(target[i].format, current_nick, text);
+
+			send_to_server("%s %s :%s", 
+					target[i].command, current_nick, 
+					mangle_text);
+			set_server_sent_nick(from_server, current_nick);
+
 			pop_message_from(l);
 		}
 		else
@@ -3311,6 +3339,8 @@ struct target_type target[4] =
 				target[i].message = text;
 		}
 	    }
+
+	    new_free(&extra);
 	}
 
 	for (i = 0; i < 4; i++)

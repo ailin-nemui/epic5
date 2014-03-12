@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.240 2014/03/06 15:26:59 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.241 2014/03/12 02:38:19 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -6257,6 +6257,80 @@ int	recode_with_iconv (const char *from, const char *to, char **data, size_t *nu
                 break;
         }
 	iconv_close (iref);
+
+	new_free(data);
+	*data = retstr;
+	*numbytes = (dest_size - dest_left);
+	return (*numbytes);
+}
+
+/*
+ * recode_with_iconv_t -- copy and iconv convert a string.
+ * Arguments:
+ *	iref	- An (iconv_t) for your conversion.
+ *	data	- A pointer to *MALLOCED SPACE*
+ *		  The input value of (*data) _may be free'd_.
+ *		  The return value of (*data) _must be free'd_.
+ *		  IF NULL: error (returns 0)
+ *	numbytes - A pointer to an integer of how big (*data) is. 
+ *		   Only (*numbytes) of (*data) will be converted!
+ *		   The value of (*numbytes) will change if (*data) is changed.
+ *		   IF NULL: error (returns 0)
+ * Return Value:
+ *	0	- No changes were made (because of error)
+ *	>0	- The number of bytes in the output string
+ *
+ * Inspired liberally by howl's iconv support above.
+ */
+int	recode_with_iconv_t (iconv_t iref, char **data, size_t *numbytes)
+{
+	char *	dest_ptr = NULL;
+	size_t	dest_left = 0;
+	size_t	dest_size = 0;
+	int	n;
+	char *	work_data;
+	char *	retstr = NULL;
+
+	/*
+	 * Some sanity checks!
+	 */
+	if (!numbytes || !*numbytes)
+		return 0;
+	if (!data || !*data)
+		return 0;
+
+	dest_size = *numbytes;
+	dest_left = *numbytes;
+	RESIZE(retstr, char, dest_size);
+
+	work_data = *data;
+	dest_ptr = retstr;
+
+        while ((n = iconv(iref, (const char **)&work_data, numbytes, 
+				&dest_ptr, &dest_left)) != 0)
+        {
+                /* I *THINK* this is a hack. */ 
+                if (errno == EINVAL || errno == EILSEQ)
+                {
+                        (*work_data)++;
+                        (*numbytes)--;
+                        continue;
+                }
+
+		if (dest_left < 8)
+		{
+			size_t	offset;
+			offset = dest_ptr - retstr;
+
+			dest_size += 64;
+			dest_left += 64;
+			RESIZE(retstr, char, dest_size);
+			dest_ptr = retstr + offset;
+			continue;
+		}
+
+                break;
+        }
 
 	new_free(data);
 	*data = retstr;

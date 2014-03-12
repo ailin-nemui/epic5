@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.66 2014/03/06 15:26:59 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.67 2014/03/12 02:38:19 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -475,6 +475,9 @@ static void	key_exec_bt (Key *key)
 		nstr = kstr;
 		kslen--;
 
+		if (nstr < 0)
+			panic(1, "key_exec_bt: The string contained a high bit character but it shouldn't.");
+
 		while (nstr != (kstr + kslen)) 
 		{
 			if (nstr == kstr) /* beginning of string */
@@ -587,7 +590,7 @@ void *	handle_keypress (void *lastp, Timeval pressed, u_32int_t keyx, int quote_
 {
 	Key 	*kp, 
 		*last;
-	char 	key;
+	unsigned char 	key;
 
 	/* we call the timeout code here, too, just to be safe. */
 	last = timeout_keypress(lastp, pressed);

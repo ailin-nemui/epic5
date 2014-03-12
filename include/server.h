@@ -46,7 +46,9 @@ typedef struct ServerInfo
         const char *  server_type;
         const char *  proto_type;
 	const char *  vhost;
+#if 0
 	const char *  default_encoding;
+#endif
 } ServerInfo;
 
 /* Server: a structure for the server_list */
@@ -134,6 +136,11 @@ const	AI	*next_addr;		/* The next one to try upon failure */
         char *          sent_body;
 }	Server;
 extern	Server	**server_list;
+
+	int     serverinfo_matches_servref	(ServerInfo *, int);
+        int     clear_serverinfo (ServerInfo *s);
+        int     str_to_serverinfo (char *str, ServerInfo *s);
+
 #endif	/* NEED_SERVER_LIST */
 
 	extern	int	number_of_servers;

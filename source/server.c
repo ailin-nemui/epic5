@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.263 2014/03/03 15:14:56 jnelson Exp $ */
+/* $EPIC: server.c,v 1.264 2014/03/12 02:38:19 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -71,8 +71,8 @@
 
 /************************************************************************/
 static void	reset_server_altnames (int refnum, char *new_altnames);
-static int	clear_serverinfo (ServerInfo *s);
-static	int	str_to_serverinfo (char *str, ServerInfo *s);
+	int	clear_serverinfo (ServerInfo *s);
+	int	str_to_serverinfo (char *str, ServerInfo *s);
 static	void	free_serverinfo (ServerInfo *s);
 static	int	serverinfo_to_servref (ServerInfo *s);
 static	int	serverinfo_to_newserv (ServerInfo *s);
@@ -80,7 +80,7 @@ static 	void 	remove_from_server_list (int i);
 static	char *	shortname (const char *oname);
 
 
-static int	clear_serverinfo (ServerInfo *s)
+int	clear_serverinfo (ServerInfo *s)
 {
         s->refnum = NOSERV;
         s->host = NULL;
@@ -91,7 +91,9 @@ static int	clear_serverinfo (ServerInfo *s)
         s->server_type = NULL;
 	s->proto_type = NULL;
 	s->vhost = NULL;
+#if 0
 	s->default_encoding = NULL;
+#endif
 	s->freestr = NULL;		/* XXX ? */
 	s->fulldesc = NULL;		/* XXX ? */
 	s->clean = 1;
@@ -113,17 +115,16 @@ static int	clear_serverinfo (ServerInfo *s)
  * 'type'     is the server protocol type, either "IRC" or "IRC-SSL"
  * 'proto'    is the socket protocol type, either 'tcp4' or 'tcp6' or neither.
  * 'vhost'    is the virtual hostname to use for this connection.
- * 'encoding' is the encoding non-utf8 strings should assumed to be
  *
  * --
  * A new-style server description is a colon separated list of values:
  *
  *   host=HOST	   port=PORTNUM   pass=PASSWORD 
  *   nick=NICK     group=GROUP    type=PROTOCOL_TYPE
- *   proto=SOCKETYPE  vhost=HOST  encoding=ICONV
+ *   proto=SOCKETYPE  vhost=HOST  
  *
  * for example:
- *	host=irc.server.com:group=efnet:type=IRC-SSL:encoding=ISO-8859-1
+ *	host=irc.server.com:group=efnet:type=IRC-SSL
  * 
  * The command type ("host", "port") can be abbreviated as long as it's
  * not ambiguous:
@@ -158,7 +159,7 @@ enum serverinfo_fields { HOST, PORT, PASS, NICK, GROUP, TYPE, PROTO, VHOST, ENCO
  * Return value:	
  *	This function returns 0
  */
-static	int	str_to_serverinfo (char *str, ServerInfo *s)
+int	str_to_serverinfo (char *str, ServerInfo *s)
 {
 	char *	descstr;
 	ssize_t span;
@@ -307,8 +308,6 @@ static	int	str_to_serverinfo (char *str, ServerInfo *s)
 		    else
 			s->vhost = descstr;
 		}
-		else if (fieldnum == ENCODING)
-			s->default_encoding = descstr;
 
 		/*
 		 * We go one past "type" because we want to allow
@@ -368,7 +367,6 @@ static	int	preserve_serverinfo (ServerInfo *si)
 	malloc_strcat2_c(&resultstr, si->vhost, ":", &clue);
 	if (si->vhost && strchr(si->vhost, ':'))
 	   malloc_strcat_c(&resultstr, "]", &clue);
-	malloc_strcat2_c(&resultstr, si->default_encoding, ":", &clue);
 
 	new_free(&si->freestr);
 	new_free(&si->fulldesc);
@@ -414,8 +412,6 @@ static	void	update_serverinfo (ServerInfo *old_si, ServerInfo *new_si)
 		old_si->proto_type = new_si->proto_type;
 	if (new_si->vhost)
 		old_si->vhost = new_si->vhost;
-	if (new_si->default_encoding)
-		old_si->default_encoding = new_si->default_encoding;
 
 	preserve_serverinfo(old_si);
 	return;
@@ -423,12 +419,122 @@ static	void	update_serverinfo (ServerInfo *old_si, ServerInfo *new_si)
 
 
 /*
+ * serverinfo_matches_servref - See if a serverinfo could describe a server
+ *
+ * Arguments:
+ *	si	A temporary ServerInfo previously passed to str_to_serverinfo.
+ *	servref	A server that might be correctly described by 'si'.
+ *
+ * Return value:
+ *	The server refnum of the server that matches 'si',
+ *	or NOSERV if there is no server that matches.
+ */
+int	serverinfo_matches_servref (ServerInfo *si, int servref)
+{
+	Server *s;
+	int	j;
+
+	if (!si->host && si->refnum == NOSERV)
+		return 0;
+
+	/* If this server was deleted, ignore it. */
+	if (!(s = get_server(servref)))
+		return 0;
+
+	/* If the server doesn't have a hostname, it's bogus. */
+	if (!s->info || !s->info->host)
+		return 0;
+
+	/*
+	 * The servref can match...
+	 */
+	if (si->refnum != NOSERV && si->refnum == servref)
+		return 1;
+
+	/*
+	 * The "hostname" you request can actually be a refnum,
+	 * and if it is this server's refnum, then we're done.
+	 */
+	if (si->host && is_number(si->host) && atol(si->host) == servref)
+		return 1;
+
+	/*
+	 * If "hostname" is not a refnum, then we see if the
+	 * vitals match this server (or not)
+	 */
+
+	/*
+	 * IMPORTANT -- every server refnum is uniquely defined as
+	 * a (hostname, port, password) tuple.  The only place
+	 * this referential integrity is enforced is here.
+	 * So if you're changing this code, don't screw that up!
+	 * Unless you're here to screw it up, of course.
+	 */
+
+	/* If you requested a specific port, IT MUST MATCH.  */
+	/* If you don't specify a port, then any port is fine */
+	if (si->port != 0 && si->port != s->info->port)
+		return 0;
+
+	/* If you specified a password, IT MUST MATCH */
+	/* If you don't specify a password, then any pass is fine */
+	if (si->password && !s->info->password)
+		return 0;
+	if (si->password && !wild_match(si->password, s->info->password))
+		return 0;
+
+	/*
+	 * At this point, we're looking to match your provided
+	 * host against something reasonable.
+	 *  1. The "ourname"  (the internet hostname)
+	 *  2. The "itsname"  (the server's logical hostname on
+	 *		       irc, which may or may not have anything
+	 *		       to do with its internet hostname)
+	 *  3. The Server Group
+	 *  4. Any "altname"
+	 *
+	 * IMPORTANT! All of the above do WILDCARD MATCHING, so 
+	 * that means hostname like "*.undernet.org" will match
+	 * on an undernet server, even if you don't know the 
+	 * exact name!
+	 *
+	 * IMPORTANT -- Please remember -- the lowest numbered 
+	 * refnum that matches ANY of the four will be our winner!
+	 * That means if server refnum 0 has an altname of 
+	 * "booya" and server refnum 1 has a group of "booya",
+	 * then server 0 wins!
+	 */
+
+	if (s->info->host && wild_match(si->host, s->info->host))
+		return 1;
+
+	if (s->itsname && wild_match(si->host, s->itsname))
+		return 1;
+
+	if (s->info->group && wild_match(si->host, s->info->group))
+		return 1;
+
+	for (j = 0; j < s->altnames->numitems; j++)
+	{
+		if (!s->altnames->list[j].name)
+			continue;
+
+		if (wild_match(si->host, s->altnames->list[j].name))
+			return 1;
+	}
+
+	return 0;
+}
+
+
+/*
  * serverinfo_to_servref - Convert a temporary serverinfo into a server refnum
+ *			   Returns the FIRST server that seems a match.
  *
  * Arguments:
  *	si	A temporary ServerInfo previously passed to str_to_serverinfo.
  * Return value:
- *	The server refnum of the server that matches 'si',
+ *	The first server refnum that matches 'si',
  *	or NOSERV if there is no server that matches.
  * Notes:
  *	If this function returns NOSERV, you can call serverinfo_to_newserv()
@@ -449,93 +555,11 @@ static	int	serverinfo_to_servref (ServerInfo *si)
 	{
 	    for (i = 0; i < number_of_servers; i++)
 	    {
-		/* If this server was deleted, ignore it. */
-		if (!(s = get_server(i)))
+		if (is_server_open(i) != opened)
 			continue;
 
-		/* If the server doesn't have a hostname, it's bogus. */
-		if (!s->info || !s->info->host)
-			continue;
-
-		/*
-		 * The "hostname" you request can actually be a refnum,
-		 * and if it is this server's refnum, then we're done.
-		 */
-		if (si->host && is_number(si->host) && atol(si->host) == i)
+		if (serverinfo_matches_servref(si, i))
 			return i;
-
-		/*
-		 * If "hostname" is not a refnum, then we see if the
-		 * vitals match this server (or not)
-		 */
-
-		/* 
-		 * For vitals matching, we will prefer open servers in
-		 * the first pass -- but accept closed servers if no
-		 * open servers qualify.
-		 */
-		if (opened == 1 && s->des < 0)
-			continue;
-
-		/*
-		 * IMPORTANT -- every server refnum is uniquely defined as
-		 * a (hostname, port, password) tuple.  The only place
-		 * this referential integrity is enforced is here.
-		 * So if you're changing this code, don't screw that up!
-		 * Unless you're here to screw it up, of course.
-		 */
-
-		/* If you requested a specific port, IT MUST MATCH.  */
-		/* If you don't specify a port, then any port is fine */
-		if (si->port != 0 && si->port != s->info->port)
-			continue;
-
-		/* If you specified a password, IT MUST MATCH */
-		/* If you don't specify a password, then any pass is fine */
-		if (si->password && !s->info->password)
-			continue;
-		if (si->password && !wild_match(si->password, s->info->password))
-			continue;
-
-		/*
-		 * At this point, we're looking to match your provided
-		 * host against something reasonable.
-		 *  1. The "ourname"  (the internet hostname)
-		 *  2. The "itsname"  (the server's logical hostname on
-		 *		       irc, which may or may not have anything
-		 *		       to do with its internet hostname)
-		 *  3. The Server Group
-		 *  4. Any "altname"
-		 *
-		 * IMPORTANT! All of the above do WILDCARD MATCHING, so 
-		 * that means hostname like "*.undernet.org" will match
-		 * on an undernet server, even if you don't know the 
-		 * exact name!
-		 *
-		 * IMPORTANT -- Please remember -- the lowest numbered 
-		 * refnum that matches ANY of the four will be our winner!
-		 * That means if server refnum 0 has an altname of 
-		 * "booya" and server refnum 1 has a group of "booya",
-		 * then server 0 wins!
-		 */
-
-		if (s->info->host && wild_match(si->host, s->info->host))
-			return i;
-
-		if (s->itsname && wild_match(si->host, s->itsname))
-			return i;
-
-		if (s->info->group && wild_match(si->host, s->info->group))
-			return i;
-
-		for (j = 0; j < s->altnames->numitems; j++)
-		{
-			if (!s->altnames->list[j].name)
-				continue;
-
-			if (wild_match(si->host, s->altnames->list[j].name))
-				return i;
-		}
 	    }
 	}
 
@@ -658,7 +682,6 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 
 	s->stricmp_table = 1;		/* By default, use rfc1459 */
 	s->funny_match = NULL;
-	s->default_encoding = NULL;
 
 	s->ssl_enabled = FALSE;
 
@@ -913,28 +936,25 @@ void 	display_server_list (void)
 		 * XXX Ugh.  I should build this up bit by bit.
 		 */
 		if (!s->nickname)
-			say("\t%d) %s %d [%s] %s [%s] (vhost: %s) (non-utf8 encoding: %s)",
+			say("\t%d) %s %d [%s] %s [%s] (vhost: %s)",
 				i, s->info->host, s->info->port, 
 				get_server_group(i), get_server_type(i),
 				server_states[get_server_status(i)],
-				get_server_vhost(i),
-				get_server_default_encoding(i));
+				get_server_vhost(i));
 		else if (is_server_open(i))
-			say("\t%d) %s %d (%s) [%s] %s [%s] (vhost: %s) (non-utf8 encoding: %s)", 
+			say("\t%d) %s %d (%s) [%s] %s [%s] (vhost: %s)",
 				i, s->info->host, s->info->port,
 				s->nickname, get_server_group(i),
 				get_server_type(i),
 				server_states[get_server_status(i)],
-				get_server_vhost(i),
-				get_server_default_encoding(i));
+				get_server_vhost(i));
 		else
-			say("\t%d) %s %d (was %s) [%s] %s [%s] (vhost: %s) (non-utf8 encoding: %s)", 
+			say("\t%d) %s %d (was %s) [%s] %s [%s] (vhost: %s)",
 				i, s->info->host, 
 				s->info->port, s->nickname, get_server_group(i),
 				get_server_type(i),
 				server_states[get_server_status(i)],
-				get_server_vhost(i),
-				get_server_default_encoding(i));
+				get_server_vhost(i));
 	}
 }
 
@@ -1584,6 +1604,7 @@ return_from_ssl_detour:
 
 					if (translation)
 						translate_from_server(buffer);
+#if 0
 					if (invalid_utf8str(buffer))
 					{
 					    char *buf2;
@@ -1600,6 +1621,7 @@ return_from_ssl_detour:
 					    strlcpy(buffer, buf2, sizeof(buffer));
 					    new_free(&buf2);
 					}
+#endif
 
 					parsing_server_index = i;
 					parse_server(buffer, sizeof buffer);
@@ -3131,6 +3153,7 @@ const char	*get_server_itsname (int refnum)
 		return s->info->host;
 }
 
+#if 0
 const char *	get_server_default_encoding (int servref )
 {
 	Server *s;
@@ -3143,7 +3166,7 @@ const char *	get_server_default_encoding (int servref )
 	else
 		return "<none>";
 }
-
+#endif
 
 int	get_server_protocol_state (int refnum)
 {
