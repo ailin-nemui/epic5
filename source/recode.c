@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.8 2014/03/12 14:36:26 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.9 2014/03/12 19:18:05 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -900,7 +900,7 @@ BUILT_IN_COMMAND(encoding)
 
 	/* If there is not already a rule, create a new (blank) one. */
 	/* XXX TODO - Creating a new rule should be in its own function */
-	if (!recode_rules[x])
+	if (x == MAX_RECODING_RULES || recode_rules[x] == NULL)
 	{
 		for (x = 0; x < MAX_RECODING_RULES; x++)
 		{

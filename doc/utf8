@@ -5,10 +5,10 @@ Project 1: Scripts (done)
   All output will be translated from utf8 at display time. (done)
   Column counting is not in the scope of this project.
 
-Project 2: Targets
-  All targets (channels and nicknames) shall be maintained in a table
-  Each target shall be associated with an encoding
-  Strings to and from the target shall be converted to/from utf8
+Project 2: Targets (done)
+  All targets (channels and nicknames) shall be maintained in a table (done)
+  Each target shall be associated with an encoding (done)
+  Strings to and from the target shall be converted to/from utf8 (done)
 
 Project 3: Column Counting  (done)
   The output code needs to know how to count utf8 strings properly (done)
@@ -22,16 +22,17 @@ Project 4: Input handling (done)
 		(done)
 
 
-Helpful notes provided by people:
+Helpful notes provided by people: 
 <Q_> hop: The console is set with LC_CTYPE.  You can use nl_langinfo(CODESET)
-+to convert it to the character encoding. 
++to convert it to the character encoding.  
 <Q_> Please atleast use that when it's available. 
+(done)
 
 $xform(ICONV "from/to" string) needs to allow optional "from" or "to" to 
 translate from or to the user's effective translation w/o the script having
-to know what it is.
+to know what it is. 
 
 Adding support for $hookctl(SET HOOK -1 ARGS ....) would allow people to 
 rewrite $* for an /on event, which would work great with $xform() to do 
-script-level iconv handling.
+script-level iconv handling. (done)
 
