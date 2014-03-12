@@ -448,3 +448,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Rewrite (outbound_recode()) msgs, notices.
 * Withdraw the /server -encoding feature.
 * Add /xdebug recode to debug recoding rules.  Help you help me!
+* Review the recode code and leave comments for future improvement
+* Don't allow the user to delete the magic recode rules.
+

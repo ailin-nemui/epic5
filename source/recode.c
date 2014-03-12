@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.7 2014/03/12 02:38:19 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.8 2014/03/12 14:36:26 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -135,7 +135,8 @@
  *	/ENCODING /hop ISO-8859-15
  *
  * We only want to set it for 'hop' on EFNet:
- * (non-EFNet 'hop's would still be UTF-8 unless another rule said different)
+ * (non-EFNet 'hop's would use the fallback 'irc' rule unless another rule 
+ *  said different)
  *	/ENCODING EFNet/hop ISO-8859-15
  *
  * We know that on #happyfuntime on EFNet, people use ISO-8859-8.
@@ -156,16 +157,21 @@
  *	/ENCODING /console ISO-8859-15
  */
 
+/*
+ * XXX TODO -- "target" should be broken into 'server_part' and 'target_part'.
+ * XXX TODO -- "server_part" should be cached in a (ServerInfo *) object.
+ */
 struct RecodeRule {
 	char *	target;
 	char *	encoding;
 	iconv_t	inbound_handle;
 	iconv_t outbound_handle;
 };
-
 typedef struct RecodeRule RecodeRule;
 
-/* Sigh -- hard limits make me sad */
+/*
+ * XXX TODO -- There shouldn't be a hard limit on number of rules 
+ */
 #define MAX_RECODING_RULES 128
 RecodeRule **	recode_rules = NULL;
 
@@ -206,10 +212,17 @@ void	init_recodings (void)
 	if (!my_stricmp(console_encoding, "US-ASCII"))
 		console_encoding = "ISO-8859-1";
 
+	/*
+	 * XXX TODO -- Pull out into a function to grow the rule set
+	 */
 	recode_rules = (RecodeRule **)new_malloc(sizeof(RecodeRule *) * MAX_RECODING_RULES);
 	for (x = 0; x < MAX_RECODING_RULES; x++)
 		recode_rules[x] = NULL;
 
+	/*
+	 * XXX TODO -- There should be a function to create a new rule
+	 * XXX TODO -- These rules should be protected from deletion
+	 */
 	/* Rule 0 is "console" */
 	recode_rules[0] = (RecodeRule *)new_malloc(sizeof(RecodeRule));
 	recode_rules[0]->target = malloc_strdup("console");
@@ -232,10 +245,11 @@ void	init_recodings (void)
 	recode_rules[2]->outbound_handle = 0;
 }
 
+
 /*
  * find_recoding - Return the encoding for 'target'.
  *		  NOTE - "target" is an EXACT match.  So it's only suitable
- *		  for finding magic targets (console/irc/scripts)
+ *		  for finding the magic targets (console/irc/scripts).
  *		  For non-exact matches, use decide_encoding().
  *
  * Arguments:
@@ -267,6 +281,9 @@ const char *	find_recoding (const char *target, iconv_t *inbound, iconv_t *outbo
 	if (!recode_rules[x])
 		return NULL;
 
+	/*
+	 * XXX TODO - Creating iconv_t handles should be in its own func.
+	 */
 	/* If requested, provide an (iconv_t) used for messages FROM person */
 	if (inbound)
 	{
@@ -302,21 +319,17 @@ const char *	find_recoding (const char *target, iconv_t *inbound, iconv_t *outbo
  *	code	 - A pointer where we can stash the (iconv_t) to use.
  *
  * Return Value:
- *	If "orig_msg" is a UTF-8 string, then NULL is returned, indicating
- *	that no recoding is required.
+ *	Returns the "encoding" of most appropriate rule.
+ *	Stores into *code an (iconv_t) for the translation you want to do.
  *
- *	Otherwise, the following rules are applied:
- *	     1. /ENCODING server/nickname
- *	     2. /ENCODING /nickname
- *	     3. /ENCODING server/channel
- *	     4. /ENCODING /channel
- *	     5. /ENCODING server/
- *	     6. /ENCODING irc
- *
- * 	For now, I'm not going to permit wildcards, because I think they
- *	just make things too confusing.  "empty" parts indicate a wildcard.
- *	ie, "/ENCODING server/" is meant to be "/ENCODING server/<star>".
- *	Perhaps I will add syntactic sugar to recognize and ignore *'s.
+ * Notes:
+ *	Recode rules are evaluated for the "best match", given this priority.
+ *	     6. /ENCODING server/nickname
+ *	     5. /ENCODING /nickname
+ *	     4. /ENCODING server/channel
+ *	     3. /ENCODING /channel
+ *	     2. /ENCODING server/
+ *	     1. /ENCODING irc
  *
  *	"SERVER" is itself a tricky thing, because there are many ways to
  *	refer to a server.  We have a helper function that tells us whether
@@ -340,10 +353,10 @@ static char *	decide_encoding (const unsigned char *from, const unsigned char *t
 	ServerInfo si;
 
 	/*
-	 * XXX Originally, I did 6 passes over the rules, doing lots
-	 * of crazy complicated stuff, but that got too complicated.
-	 * Now what I do is evaluate each rule ONCE and give it a score.
-	 * Highest scoring rule is tracked, and final winner is used.
+	 * Evaluate each rule.
+	 *	1. Does it apply to this message?
+	 *	2. What is its score (priority)?
+	 *	3. Is it the best match so far?
 	 */
 	for (i = 0; i < MAX_RECODING_RULES; i++)
 	{
@@ -352,6 +365,12 @@ static char *	decide_encoding (const unsigned char *from, const unsigned char *t
 		char *	target_part = NULL;
 		int	this_score;
 
+		/* 
+		 * XXX TODO - When you delete a rule, it leaves a gap.
+		 * The gaps should probably be auto-closed so we know
+		 * when we've checked the rules, instead of iterating over
+		 * all 128 of them every time.
+		 */
 		if (!recode_rules[i])
 			continue;	/* XXX or break;? */
 
@@ -359,6 +378,7 @@ static char *	decide_encoding (const unsigned char *from, const unsigned char *t
 			yell("Evaluating rule %d: %s", i, recode_rules[i]->target);
 
 		/* Skip rules without targets */
+		/* BTW, this is "impossible", so a panic may be better */
 		if (recode_rules[i]->target == NULL)
 		{
 			if (x_debug & DEBUG_RECODE)
@@ -366,18 +386,27 @@ static char *	decide_encoding (const unsigned char *from, const unsigned char *t
 			continue;
 		}
 
-		if (!my_stricmp(recode_rules[i]->target, "irc"))
+		/* Special case the magic fallback rule. */
+		/*
+		 * XXX TODO -- Not all messages that will go through this
+		 * function are from irc.  There should be a way to say 
+		 * which magic rule we want to use.
+		 */
+		if (from && !my_stricmp(recode_rules[i]->target, "irc"))
 		{
 			if (x_debug & DEBUG_RECODE)
-				yell("irc magic rule ok");
+				yell("irc magic rule ok for inbound msg");
 			goto target_ok;
 		}
 
 		/**********************************************************/
 		/* 
 		 *
-		 * 1. Split the "target" into a server part and
+		 * 0. Split the "target" into a server part and
 		 *     a target part.
+		 *
+		 * XXX TODO - This should be done once, when the rule
+		 * 	      is initially created.
 		 *
 		 */
 
@@ -436,12 +465,15 @@ static char *	decide_encoding (const unsigned char *from, const unsigned char *t
 		/**********************************************************/
 		/*
 		 *
-		 * 2a. Is the Server acceptable?
+		 * 1a. Is the Server acceptable?
 		 *
 		 */
 		/* If the rule doesn't limit the server, then it's ok */
 		/* If there is a server part, it must match our refnum */
-		/* XXX We should be caching the ServerInfo here */
+		/* 
+		 * XXX TODO - The ServerInfo should be created once 
+		 * 	when the rule is initially created.
+		 */
 		if (server_part != NULL)
 		{
 			clear_serverinfo(&si);
@@ -458,7 +490,7 @@ static char *	decide_encoding (const unsigned char *from, const unsigned char *t
 
 		/*
 		 *
-		 * 2b. Is the Target acceptable?
+		 * 1b. Is the Target acceptable?
 		 *
 		 */
 
@@ -474,7 +506,7 @@ static char *	decide_encoding (const unsigned char *from, const unsigned char *t
 		 * If I'm sending the message and this rule isn't to 
 		 * whomever i'm sending it to, it's not valid.
 		 */
-		if (!from)
+		if (from == NULL)
 		{
 			if (!my_stricmp(target_part, target))
 			{
@@ -526,7 +558,7 @@ target_ok:
 		/**********************************************************/
 		/*
 		 *
-		 * 3. Decide what the score for this rule should be
+		 * 2. Decide what the score for this rule should be
 		 *     60. /ENCODING server/nickname
 		 *     50. /ENCODING /nickname
 		 *     40. /ENCODING server/channel
@@ -561,7 +593,7 @@ target_ok:
 
 		/*
 		 * 
-		 * 4. Decide if this is the best rule (so far)
+		 * 3. Decide if this is the best rule (so far)
 		 *
 		 */
 		if (this_score > winning_score)
@@ -575,15 +607,22 @@ target_ok:
 
 
 	/*
-	 * We must have picked *some* rule (even if it was just "irc")
+	 * If there is no winner (which should only happen if we're
+	 * sending an outbound message), then UTF-8 it is!
 	 */
+	if (winner == -1 && from == NULL)
+		return NULL;
 	if (winner == -1)
 		panic(1, "Did not find a recode rule for %d/%s/%s", 
-				server, from, target);
+					server, from, target);
 
 	i = winner;
 
 	/* If from == NULL, we are sending the message outbound */
+	/*
+	 * XXX TODO - The code to handle iconv_t creation should be in its
+	 *	own function.
+	 */
 	if (from == NULL)
 	{
 	    if (recode_rules[i]->outbound_handle == 0)
@@ -699,6 +738,9 @@ const char *	inbound_recode (const char *from, int server, const char *to, const
 		return message;
 
 	/* If no recoding is necessary, then we're done. */
+	/*
+	 * XXX TODO -- This should be impossible.  A panic is probably better.
+	 */
 	if (!(encoding = decide_encoding(from, to, server, &i)))
 		return message;
 
@@ -749,13 +791,44 @@ int     ucs_to_console (u_32int_t codepoint, unsigned char *deststr, size_t dest
 	return 0;
 }
 
+/*
+ * The /ENCODING command:
+ *
+ *	/ENCODING			Output all recode rules
+ *	/ENCODING <rule>		Output one recode rule
+ *	/ENCODING <rule> NONE		Remove a recoding rule
+ *	/ENCODING <rule> <encoding>	Create/modify a recoding rule
+ *
+ * Recoding rules look like:
+ *		server/nickname		(Containing a slash)
+ *		nickname		(Not a number or containing a dot)
+ *		server/channel		(Containing a slash)
+ *		channel			(Starting with #, &, etc)
+ *		server			(A number, or containing a dot)
+ *	the literal string "irc" (cannot delete)
+ *
+ * The "server" part can be:
+ *		A server refnum (number)
+ *		A server "ourname" (with a dot)
+ *		A server "itsname" (with a dot)
+ *		A server group 
+ *		Any server altname 
+ * If the "server" part is not a number, or does not contain a dot, make
+ * sure to follow it with a slash so it's not mistaken for a nick!
+ *
+ * If the "nick" part is any of "irc", "console", or "scripts", make sure
+ * to precede it with a slash so it's not mistaken for a magic rule!
+ *
+ * The "encoding" can be anything that iconv_open(3) will accept.
+ * The "encoding" should not be anything that would yield a non-c-string.
+ */
 BUILT_IN_COMMAND(encoding)
 {
-	char *arg;
-	const char *encoding;
-	int	x;
-	const char *server = NULL;
-	const char *target = NULL;
+	char *		arg;
+	const char *	encoding;
+	int		x;
+	const char *	server = NULL;
+	const char *	target = NULL;
 
 	/* /ENCODING    	-> Output all rules */
 	if (!(arg = next_arg(args, &args)))
@@ -785,7 +858,6 @@ BUILT_IN_COMMAND(encoding)
 					recode_rules[x]->encoding);
 		}
 
-		/* Show the encoding for TARGET */
 		return;
 	}
 
@@ -800,6 +872,15 @@ BUILT_IN_COMMAND(encoding)
 
 	if (!my_stricmp(encoding, "none"))
 	{
+		/* XXX TODO - The magic rules should identify themselves */
+		/* XXX Hardcoding 2 here is an abomination */
+		if (x <= 2)
+		{
+			say("You cannot remove a fallback rule");
+			return;
+		}
+
+		/* XXX TODO - Removing a rule should be in its own func */
 		if (recode_rules[x])
 		{
 			iconv_close(recode_rules[x]->inbound_handle);
@@ -818,6 +899,7 @@ BUILT_IN_COMMAND(encoding)
 	}
 
 	/* If there is not already a rule, create a new (blank) one. */
+	/* XXX TODO - Creating a new rule should be in its own function */
 	if (!recode_rules[x])
 	{
 		for (x = 0; x < MAX_RECODING_RULES; x++)
@@ -841,6 +923,7 @@ BUILT_IN_COMMAND(encoding)
 
 	/* 
 	 * Modify the existing (or newly created) rule 
+	 * XXX TODO - Modifying a rule should be in its own function 
 	 */
 
 	/* Save the new encoding */
@@ -863,5 +946,4 @@ BUILT_IN_COMMAND(encoding)
 	say("Encoding for %s is now %s", recode_rules[x]->target, 
 					 recode_rules[x]->encoding);
 }
-
 
