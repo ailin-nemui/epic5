@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.102 2014/03/05 14:40:56 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.103 2014/03/12 21:04:11 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -183,6 +183,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	int	old_current_numeric = current_numeric;
 	int	numeric;
 	int	l;
+	char *	extra = NULL;
 
 	/* All numerics must be in the range (000, 999) */
 	if (!comm || !*comm)
@@ -401,6 +402,51 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		goto END;
         }
 
+	/*	311	WHOISUSER	ArgList[0] (the realname) */
+	case 311:		/* #define RPL_WHOISUSER        311 */
+	{
+		const char *nick, *user, *host, *channel, *name;
+
+		PasteArgs(ArgList, 4);
+		if (!(nick = ArgList[0]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+		if (!(user = ArgList[1]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+		if (!(host = ArgList[2]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+		if (!(channel = ArgList[3]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+		if (!(name = ArgList[4]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+
+		/* XXX - This is playing fast and loose with PasteArgs */
+		ArgList[4] = inbound_recode(nick, from_server, channel, name, &extra);
+		break;
+	}
+
+	/*	314	WHOWASUSER	ArgList[5] (the realname) */
+	case 314:		/* #define RPL_WHOWASUSER       314 */
+	{
+		const char *nick, *user, *host, *unused, *name;
+
+		PasteArgs(ArgList, 4);
+		if (!(nick = ArgList[0]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+		if (!(user = ArgList[1]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+		if (!(host = ArgList[2]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+		if (!(unused = ArgList[3]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+		if (!(name = ArgList[4]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+
+		/* XXX - This is playing fast and loose with PasteArgs */
+		ArgList[4] = inbound_recode(nick, from_server, nick, name, &extra);
+		break;
+	}
+
+
 	case 340:		/* #define RPL_USERIP?          340 */
 		if (!get_server_005(from_server, "USERIP"))
 			break;
@@ -436,6 +482,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		break;
 	}
 
+	/*	322	LIST		ArgList[2] (the topic)	  */
 	case 322:		/* #define RPL_LIST             322 */
 	{
 		const char *channel, *user_cnt, *line;
@@ -448,6 +495,11 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(user_cnt = ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
+		if (!(line = ArgList[2]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+
+		/* XXX - This is playing fast and loose with PasteArgs */
+		ArgList[2] = inbound_recode(channel, from_server, channel, line, &extra);
 		if (!(line = ArgList[2]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
@@ -545,6 +597,23 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		break;
 	}
 
+	/*	332	TOPIC		ArgList[1] (the topic)	  */
+	case 332:		/* #define RPL_TOPIC            332 */
+	{
+		const char *channel, *topic;
+
+		PasteArgs(ArgList, 1);
+		if (!(channel = ArgList[0]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+		if (!(topic = ArgList[1]))
+			{ rfc1459_odd(from, comm, ArgList); goto END; }
+
+		ArgList[1] = inbound_recode(channel, from_server, channel, topic, &extra);
+		break;
+	}
+
+
+	/*	352	WHOREPLY	ArgList[7] (the realname) */
 	case 352:		/* #define RPL_WHOREPLY         352 */
 		whoreply(from_server, NULL, comm, ArgList);
 		goto END;

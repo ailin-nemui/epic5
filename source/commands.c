@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.218 2014/03/12 02:38:18 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.219 2014/03/12 21:04:11 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -829,11 +829,13 @@ BUILT_IN_COMMAND(e_topic)
 
 	if (is_channel(arg))
 	{
+		/* XXX TODO - We should outbound_recode(args) here. */
 		if ((args && *args) || clear_topic)
 			send_to_server("TOPIC %s :%s", arg, args);
 		else
 			send_to_server("TOPIC %s", arg);
 	}
+	/* XXX TODO - We should outbound_recode(args) here. */
 	else if (channel)
 		send_to_server("TOPIC %s :%s", channel, args_copy);
 	else
@@ -2494,6 +2496,8 @@ BUILT_IN_COMMAND(send_2comm)
 			target = "*";	/* what-EVER */
 	}
 
+	/* XXX TODO - we should outbound_recode(reason) here. */
+
 	if (reason && *reason)
 		send_to_server("%s %s :%s", command, target, reason);
 	else
@@ -2588,6 +2592,8 @@ BUILT_IN_COMMAND(send_kick)
 	comment = args?args:empty_string;
 	if (!strcmp(channel, "*"))
 		channel = get_echannel_by_refnum(0);
+
+	/* XXX TODO - We should outbound_recode(comment) here */
 
 	send_to_server("KICK %s %s :%s", channel, kickee, comment);
 }
@@ -3296,18 +3302,17 @@ struct target_type target[4] =
 		{
 			int	l;
 
-			copy = LOCAL_COPY(mangle_text);
 			l = message_from(current_nick, target[i].mask);
-
 			if (hook && do_hook(target[i].hook_type, "%s %s", 
 						current_nick, text))
 				put_it(target[i].format, current_nick, text);
-			line = crypt_msg(copy, key);
 
+			copy = LOCAL_COPY(mangle_text);
+			line = crypt_msg(copy, key);
 			send_to_server("%s %s :%s", 
 					target[i].command, current_nick, line);
-			set_server_sent_nick(from_server, current_nick);
 
+			set_server_sent_nick(from_server, current_nick);
 			new_free(&line);
 			pop_message_from(l);
 		}

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.264 2014/03/12 02:38:19 jnelson Exp $ */
+/* $EPIC: server.c,v 1.265 2014/03/12 21:04:11 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -512,6 +512,11 @@ int	serverinfo_matches_servref (ServerInfo *si, int servref)
 		return 1;
 
 	if (s->info->group && wild_match(si->host, s->info->group))
+		return 1;
+
+	if (get_server_005(servref, "NETWORK") && 
+			wild_match(si->host, 
+				   get_server_005(servref, "NETWORK")))
 		return 1;
 
 	for (j = 0; j < s->altnames->numitems; j++)
