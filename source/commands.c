@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.219 2014/03/12 21:04:11 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.220 2014/03/13 15:31:07 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -807,6 +807,8 @@ BUILT_IN_COMMAND(e_topic)
 	char	*args_copy;
 	const char *channel = get_echannel_by_refnum(0);
 	const char *arg;
+	const char *recode_text;
+	char *	extra = NULL;
 
 	if (!args)
 		return;
@@ -829,15 +831,21 @@ BUILT_IN_COMMAND(e_topic)
 
 	if (is_channel(arg))
 	{
-		/* XXX TODO - We should outbound_recode(args) here. */
 		if ((args && *args) || clear_topic)
-			send_to_server("TOPIC %s :%s", arg, args);
+		{
+			recode_text = outbound_recode(arg, from_server, args, &extra);
+			send_to_server("TOPIC %s :%s", arg, recode_text);
+			new_free(&extra);
+		}
 		else
 			send_to_server("TOPIC %s", arg);
 	}
-	/* XXX TODO - We should outbound_recode(args) here. */
 	else if (channel)
-		send_to_server("TOPIC %s :%s", channel, args_copy);
+	{
+		recode_text = outbound_recode(channel, from_server, args, &extra);
+		send_to_server("TOPIC %s :%s", channel, recode_text);
+		new_free(&extra);
+	}
 	else
 		say("You are not on a channel in this window.");
 }
@@ -2496,10 +2504,15 @@ BUILT_IN_COMMAND(send_2comm)
 			target = "*";	/* what-EVER */
 	}
 
-	/* XXX TODO - we should outbound_recode(reason) here. */
-
 	if (reason && *reason)
-		send_to_server("%s %s :%s", command, target, reason);
+	{
+		const char *recode_text;
+		char *extra = NULL;
+
+		recode_text = outbound_recode(target, from_server, reason, &extra);
+		send_to_server("%s %s :%s", command, target, recode_text);
+		new_free(&extra);
+	}
 	else
 		send_to_server("%s %s", command, target);
 }
@@ -2574,6 +2587,8 @@ BUILT_IN_COMMAND(send_kick)
 	char	*kickee;
 	const char	*comment;
 	const char	*channel;
+	const char *	recode_text;
+	char *	extra = NULL;
 
 	char usage[] = "Usage: KICK <channel|*> <nickname> [comment]";
 
@@ -2593,9 +2608,9 @@ BUILT_IN_COMMAND(send_kick)
 	if (!strcmp(channel, "*"))
 		channel = get_echannel_by_refnum(0);
 
-	/* XXX TODO - We should outbound_recode(comment) here */
-
-	send_to_server("KICK %s %s :%s", channel, kickee, comment);
+	recode_text = outbound_recode(channel, from_server, comment, &extra);
+	send_to_server("KICK %s %s :%s", channel, kickee, recode_text);
+	new_free(&extra);
 }
 
 /*
@@ -3127,7 +3142,7 @@ static	int	recursion = 0;
 	char	*buf2;
 	size_t	buf2len;
 	char *	extra = NULL;
-	const char	*mangle_text;
+	const char	*recode_text;
 
 	/*
 	 * XXXX - Heaven help us.
@@ -3176,14 +3191,14 @@ struct target_type target[4] =
 	    if (!*current_nick)
 		continue;
 
-	    mangle_text = outbound_recode(current_nick, from_server, text, &extra);
+	    recode_text = outbound_recode(current_nick, from_server, text, &extra);
 
 	    if (*current_nick == '%')
 	    {
 		if ((i = get_process_index(&current_nick)) == -1)
 			say("Invalid process specification");
 		else
-			text_to_process(i, mangle_text, 1);
+			text_to_process(i, recode_text, 1);
 	    }
 	    /*
 	     * Blank lines may be sent to /exec'd processes, but
@@ -3245,11 +3260,11 @@ struct target_type target[4] =
 
 		if ((key = is_crypted(current_nick, -1, ANYCRYPT)) != 0)
 		{
-			char *breakage = LOCAL_COPY(mangle_text);
+			char *breakage = LOCAL_COPY(recode_text);
 			line = crypt_msg(breakage, key);
 		}
 		else
-			line = malloc_strdup(mangle_text);
+			line = malloc_strdup(recode_text);
 
 		old_server = from_server;
 		from_server = NOSERV;
@@ -3307,7 +3322,7 @@ struct target_type target[4] =
 						current_nick, text))
 				put_it(target[i].format, current_nick, text);
 
-			copy = LOCAL_COPY(mangle_text);
+			copy = LOCAL_COPY(recode_text);
 			line = crypt_msg(copy, key);
 			send_to_server("%s %s :%s", 
 					target[i].command, current_nick, line);
@@ -3328,7 +3343,7 @@ struct target_type target[4] =
 
 			send_to_server("%s %s :%s", 
 					target[i].command, current_nick, 
-					mangle_text);
+					recode_text);
 			set_server_sent_nick(from_server, current_nick);
 
 			pop_message_from(l);

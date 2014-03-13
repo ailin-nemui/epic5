@@ -457,3 +457,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Leave notes to add support for outbound topic/kick/part/etc.
 * Add /encoding support for CTCPs (reported by zlonix)
 * Fix /encoding support for PARTs (found by zlonix)
+* Add /encoding support for outbound KICKs/TOPICs/etc
+
