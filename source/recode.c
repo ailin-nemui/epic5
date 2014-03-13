@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.9 2014/03/12 19:18:05 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.10 2014/03/13 14:41:52 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -722,6 +722,10 @@ const char *	inbound_recode (const char *from, int server, const char *to, const
 	char *	encoding;
 	char *	new_buffer;
 	size_t	new_buffer_len;
+
+	/* Nothing in, nothing out.  Should this be handled differently? */
+	if (!message)
+		return NULL;
 
 	/* 
 	 * XXX Some day, it'd be cool to do statistical analysis of the

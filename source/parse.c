@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.101 2014/03/12 02:38:19 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.102 2014/03/13 14:41:52 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1128,9 +1128,6 @@ static void	p_part (const char *from, const char *comm, const char **ArgList)
 		{ rfc1459_odd(from, comm, ArgList); return; }
 	if (!(reason = ArgList[1])) { }
 
-	/* ENCODING - "reason" should be translated */
-	reason = inbound_recode(from, from_server, channel, reason, &extra);
-
 	if ((check_ignore_channel(from, FromUserHost, 
 				channel, LEVEL_PART) != IGNORED)
 		&& !new_check_flooding(from, FromUserHost, channel,
@@ -1139,6 +1136,8 @@ static void	p_part (const char *from, const char *comm, const char **ArgList)
 		l = message_from(channel, LEVEL_PART);
 		if (reason)		/* Dalnet part messages */
 		{
+			reason = inbound_recode(from, from_server, channel, 
+						reason, &extra);
 			if (do_hook(PART_LIST, "%s %s %s %s", 
 				from, channel, FromUserHost, reason))
 			    say("%s has left channel %s because (%s)", 
