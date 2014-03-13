@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.59 2009/07/05 04:29:44 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.60 2014/03/13 13:19:15 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -625,6 +625,7 @@ char *	do_ctcp (const char *from, const char *to, char *str)
 	int	allow_ctcp_reply = 1;
 static	time_t	last_ctcp_parsed = 0;
 	int	l;
+	char	*extra = NULL;
 
 	int delim_char = charcount(str, CTCP_DELIM_CHAR);
 
@@ -735,6 +736,11 @@ static	time_t	last_ctcp_parsed = 0;
 			if (!strcmp(ctcp_command, ctcp_cmd[i].name))
 				break;
 
+                inbound_recode(from, from_server, to, ctcp_argument, &extra);
+		/* XXX I only do this to avoid (const char *) -> (char *) */
+		if (extra)
+			ctcp_argument = extra;
+
 		/*
 		 * We didnt find it?
 		 */
@@ -757,6 +763,7 @@ static	time_t	last_ctcp_parsed = 0;
 			time(&last_ctcp_parsed);
 			allow_ctcp_reply = 0;
 			pop_message_from(l);
+			new_free(&extra);
 			continue;
 		}
 
@@ -819,6 +826,7 @@ static	time_t	last_ctcp_parsed = 0;
 		    }
 		}
 		new_free(&ptr);
+		new_free(&extra);
 		pop_message_from(l);
 	}
 
@@ -985,6 +993,8 @@ void	send_ctcp (int type, const char *to, int datatag, const char *format, ...)
 		*putbuf2;
 	int	len;
 	int	l;
+	const char *pb;
+	char	*extra = NULL;
 
 	/* Make sure that the final \001 doesnt get truncated */
 	if ((len = IRCD_BUFFER_SIZE - (12 + strlen(to))) <= 0)
@@ -999,13 +1009,17 @@ void	send_ctcp (int type, const char *to, int datatag, const char *format, ...)
 		vsnprintf(putbuf, BIG_BUFFER_SIZE, format, args);
 		va_end(args);
 
+		pb = outbound_recode(to, from_server, putbuf, &extra);
+
 		do_hook(SEND_CTCP_LIST, "%s %s %s %s", 
 				ctcp_type[type], to, 
-				ctcp_cmd[datatag].name, putbuf);
+				ctcp_cmd[datatag].name, pb);
 		snprintf(putbuf2, len, "%c%s %s%c", 
 				CTCP_DELIM_CHAR, 
-				ctcp_cmd[datatag].name, putbuf, 
+				ctcp_cmd[datatag].name, pb, 
 				CTCP_DELIM_CHAR);
+
+		new_free(&extra);
 	}
 	else
 	{

@@ -455,4 +455,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make serverinfo_matches_servref() honor 005 NETWORK value.
 * Add /encoding support for 311, 314, 322, 332, and 352 numerics (*gulp*)
 * Leave notes to add support for outbound topic/kick/part/etc.
-
+* Add /encoding support for CTCPs
