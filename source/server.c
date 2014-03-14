@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.265 2014/03/12 21:04:11 jnelson Exp $ */
+/* $EPIC: server.c,v 1.266 2014/03/14 22:18:06 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1267,6 +1267,7 @@ void	do_server (int fd)
 	char	buffer[IO_BUFFER_SIZE + 1];
 	int	des,
 		i, l;
+	char *extra = NULL;
 
 	for (i = 0; i < number_of_servers; i++)
 	{
@@ -1602,16 +1603,13 @@ return_from_ssl_detour:
 					if (*end == '\r')
 						*end-- = '\0';
 
-					/* XXX We set message_from above. */
-					/* l2 = message_from(NULL, LEVEL_OTHER); */
-					if (x_debug & DEBUG_INBOUND)
-						yell("[%d] <- [%s]", s->des, buffer);
-
 					if (translation)
-						translate_from_server(buffer);
+						translate_from_server(bufptr);
+					rfc1459_any_to_utf8(bufptr, sizeof(buffer), &extra);
+					if (extra)
+						bufptr = extra;
+
 #if 0
-					if (invalid_utf8str(buffer))
-					{
 					    char *buf2;
 					    size_t buf2len;
 					    const char *e;
@@ -1625,13 +1623,18 @@ return_from_ssl_detour:
 					    recode_with_iconv(e, NULL, &buf2, &buf2len);
 					    strlcpy(buffer, buf2, sizeof(buffer));
 					    new_free(&buf2);
-					}
 #endif
 
+					if (x_debug & DEBUG_INBOUND)
+						yell("[%d] <- [%s]", 
+							s->des, bufptr);
+
 					parsing_server_index = i;
-					parse_server(buffer, sizeof buffer);
+					/* XXX What should 2nd arg be? */
+					parse_server(bufptr, sizeof buffer);
 					parsing_server_index = NOSERV;
-					/* pop_message_from(l2); */
+
+					new_free(&extra);
 					break;
 				}
 			}

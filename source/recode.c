@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.10 2014/03/13 14:41:52 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.11 2014/03/14 22:18:06 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -157,15 +157,18 @@
  *	/ENCODING /console ISO-8859-15
  */
 
-/*
- * XXX TODO -- "target" should be broken into 'server_part' and 'target_part'.
- * XXX TODO -- "server_part" should be cached in a (ServerInfo *) object.
- */
 struct RecodeRule {
 	char *	target;
 	char *	encoding;
+
+	char *	target_copy;
+	char *	server_part;
+	char *	target_part;
+	ServerInfo si;
+
 	iconv_t	inbound_handle;
 	iconv_t outbound_handle;
+	int	magic;		/* 0 - can be deleted; 1 - cannot be deleted */
 };
 typedef struct RecodeRule RecodeRule;
 
@@ -174,6 +177,193 @@ typedef struct RecodeRule RecodeRule;
  */
 #define MAX_RECODING_RULES 128
 RecodeRule **	recode_rules = NULL;
+static int	update_recoding_encoding (RecodeRule *r, const char *encoding);
+
+/*
+ * create_recoding_rule - Create a new Recoding Rule from scratch
+ *
+ * Arguments:
+ *	target	 - The target this rule will apply to.  The syntax of this
+ *		   argument is discussed extensively in this file.
+ *	encoding - The encoding that this rule will use for this target.
+ *		   MAY BE NULL -- See below
+ *	magic	 - 0 if this is a user-created rule; 1 if this is a system rule
+ *
+ * Return Value:
+ *	A new RecodeRule that you should assign to recode_rules[x], where x
+ *	is any open slot in recode_rules.
+ *
+ * Notes:
+ *	If "encoding" is NULL, then the new rule IS NOT COMPLETE and MUST
+ *	NOT BE USED until you call update_recoding_encoding() FIRST!
+ *	After you complete the new rule, you can assign to recode_rules.
+ *	Assigning an incomplete rule to recode_rules will lead to a crash.
+ */
+static RecodeRule *	create_recoding_rule (const char *target, const char *encoding, int magic)
+{
+	RecodeRule *	r;
+	char *	target_copy;
+
+	r = (RecodeRule *)new_malloc(sizeof(RecodeRule));
+	r->target = malloc_strdup(target);
+	if (encoding)
+		r->encoding = malloc_strdup(encoding);
+	else
+		r->encoding = NULL;
+	r->server_part = NULL;
+	r->target_part = NULL;
+	clear_serverinfo(&r->si);
+	r->inbound_handle = 0;
+	r->outbound_handle = 0;
+
+
+	/* 
+	 * Turn "target" into "server_part" and "target_part"
+	 * and "si"
+	 * Magic rules do not get this treatment.
+	 */
+	if (magic == 0)
+	{
+		target_copy = r->target_copy = malloc_strdup(r->target);
+
+		/* A channel is a channel! */
+		if (is_channel(target_copy))
+		{
+			r->server_part = NULL;
+			r->target_part = target_copy;
+		}
+
+		/* A number is a server! */
+		if (is_number(target_copy))
+		{
+			r->server_part = target_copy;
+			r->target_part = NULL;
+		}
+
+		/* 
+		 * Anything that isn't a channel that contains a 
+		 * slash is a [server]/[target]
+		 */
+		else if (strchr(target_copy, '/'))
+		{
+			r->server_part = target_copy;
+			r->target_part = strchr(target_copy, '/');
+			*r->target_part++ = 0;
+		}
+
+		/*
+		 * Anything that isn't a channel or has a slash but
+		 * has a dot in it, is a server
+		 */
+		else if (strchr(target_copy, '.'))
+		{
+			r->server_part = target_copy;
+			r->target_part = NULL;
+		}
+
+		/* Everything else is a nickname. */
+		else
+		{
+			r->server_part = NULL;
+			r->target_part = target_copy;
+		}
+
+		if (r->server_part && !*r->server_part)
+			r->server_part = NULL;
+		if (r->target_part && !*r->target_part)
+			r->target_part = NULL;
+
+		if (x_debug & DEBUG_RECODE)
+			yell("Server part [%s], target part [%s]", 
+				r->server_part, r->target_part);
+
+		/**********************************************************/
+		/* If the rule doesn't limit the server, then it's ok */
+		if (r->server_part != NULL)
+		{
+			clear_serverinfo(&r->si);
+			str_to_serverinfo(r->server_part, &r->si);
+		}
+	}
+
+	return r;
+}
+
+/*
+ * update_recoding_encoding - Change the encoding of a new or existing rule
+ *
+ * Arguments:
+ *	r	 - A RecodeRule that is either new or existing
+ *	encoding - The encoding this rule should use.
+ *
+ * Return Value:
+ *	returns 0;
+ *
+ * Note: If you call create_recoding_rule() with "encoding" == NULL, then 
+ * 	you __MUST__ call this function immediately to set the encoding.  
+ *	Failure to do so will probably call a NULL deref when the rule 
+ *	actually gets evaluated.
+ */
+static int	update_recoding_encoding (RecodeRule *r, const char *encoding)
+{
+	/* Save the new encoding */
+	malloc_strcpy(&r->encoding, encoding);
+
+	/* Invalidate prior iconv handles */
+	if (r->inbound_handle != 0)
+	{
+		iconv_close(r->inbound_handle);
+		r->inbound_handle = 0;
+	}
+	if (r->outbound_handle != 0)
+	{
+		iconv_close(r->outbound_handle);
+		r->outbound_handle = 0;
+	}
+
+	return 0;
+}
+
+
+/*
+ * check_recoding_iconv - Return (iconv_t) handles for transcoding
+ *
+ * Arguments:
+ *	r	 - A RecodeRule that you want to use
+ *	inbound	 - A place to put an (iconv_t) if you're using this rule
+ *		   to process an INCOMING message.  May be NULL.
+ *	outbound - A place to put an (iconv_t) if you're using this rule
+ *		   to process an OUTBOUND message.  May be NULL.
+ *
+ * Return Value:
+ *	Returns the encoding as a string (r->encoding);
+ */
+static const char *	check_recoding_iconv (RecodeRule *r, iconv_t *inbound, iconv_t *outbound)
+{
+	/* If requested, provide an (iconv_t) used for messages FROM person */
+	if (inbound)
+	{
+		if (r->inbound_handle == 0)
+			r->inbound_handle = iconv_open("UTF-8", r->encoding);
+		*inbound = r->inbound_handle;
+	}
+
+	/* If requested, provide an (iconv_t) used for messages TO person */
+	if (outbound)
+	{
+		if (r->outbound_handle == 0)
+		{
+			char *str;
+			str = malloc_strdup2(r->encoding, "//TRANSLIT");
+			r->outbound_handle = iconv_open(str, "UTF-8");
+			new_free(&str);
+		}
+		*outbound = r->outbound_handle;
+	}
+
+	return r->encoding;
+}
+
 
 /*
  * init_recodings - Set up the three "magic" /RECODE rules at start-up
@@ -219,30 +409,14 @@ void	init_recodings (void)
 	for (x = 0; x < MAX_RECODING_RULES; x++)
 		recode_rules[x] = NULL;
 
-	/*
-	 * XXX TODO -- There should be a function to create a new rule
-	 * XXX TODO -- These rules should be protected from deletion
-	 */
 	/* Rule 0 is "console" */
-	recode_rules[0] = (RecodeRule *)new_malloc(sizeof(RecodeRule));
-	recode_rules[0]->target = malloc_strdup("console");
-	recode_rules[0]->encoding = malloc_strdup(console_encoding);
-	recode_rules[0]->inbound_handle = 0;
-	recode_rules[0]->outbound_handle = 0;
+	recode_rules[0] = create_recoding_rule("console", console_encoding, 1);
 
 	/* Rule 1 is "scripts" */
-	recode_rules[1] = (RecodeRule *)new_malloc(sizeof(RecodeRule));
-	recode_rules[1]->target = malloc_strdup("scripts");
-	recode_rules[1]->encoding = malloc_strdup("CP437");
-	recode_rules[1]->inbound_handle = 0;
-	recode_rules[1]->outbound_handle = 0;
+	recode_rules[1] = create_recoding_rule("scripts", "CP437", 1);
 
 	/* Rule 2 is "irc" */
-	recode_rules[2] = (RecodeRule *)new_malloc(sizeof(RecodeRule));
-	recode_rules[2]->target = malloc_strdup("irc");
-	recode_rules[2]->encoding = malloc_strdup("ISO-8859-1");
-	recode_rules[2]->inbound_handle = 0;
-	recode_rules[2]->outbound_handle = 0;
+	recode_rules[2] = create_recoding_rule("irc", "ISO-8859-1", 1);
 }
 
 
@@ -281,32 +455,8 @@ const char *	find_recoding (const char *target, iconv_t *inbound, iconv_t *outbo
 	if (!recode_rules[x])
 		return NULL;
 
-	/*
-	 * XXX TODO - Creating iconv_t handles should be in its own func.
-	 */
-	/* If requested, provide an (iconv_t) used for messages FROM person */
-	if (inbound)
-	{
-		if (recode_rules[x]->inbound_handle == 0)
-			recode_rules[x]->inbound_handle = iconv_open("UTF-8", recode_rules[x]->encoding);
-		*inbound = recode_rules[x]->inbound_handle;
-	}
-
-	/* If requested, provide an (iconv_t) used for messages TO person */
-	if (outbound)
-	{
-		if (recode_rules[x]->outbound_handle == 0)
-		{
-			char *str;
-			str = malloc_strdup2(recode_rules[x]->encoding, "//TRANSLIT");
-			recode_rules[x]->outbound_handle = iconv_open(str, "UTF-8");
-			new_free(&str);
-		}
-		*outbound = recode_rules[x]->outbound_handle;
-	}
-
 	/* Return the encoding name itself */
-	return recode_rules[x]->encoding;
+	return check_recoding_iconv(recode_rules[x], inbound, outbound);
 }
 
 /*
@@ -345,7 +495,7 @@ const char *	find_recoding (const char *target, iconv_t *inbound, iconv_t *outbo
  *	be used, and I don't want to make it complicated to figure that out.
  *
  */
-static char *	decide_encoding (const unsigned char *from, const unsigned char *target, int server, iconv_t *code)
+static const char *	decide_encoding (const unsigned char *from, const unsigned char *target, int server, iconv_t *code)
 {
 	int	i = 0;
 	int	winner = -1;
@@ -360,9 +510,7 @@ static char *	decide_encoding (const unsigned char *from, const unsigned char *t
 	 */
 	for (i = 0; i < MAX_RECODING_RULES; i++)
 	{
-		char *	target_copy;
-		char *	server_part = NULL;
-		char *	target_part = NULL;
+		RecodeRule *r;
 		int	this_score;
 
 		/* 
@@ -371,15 +519,15 @@ static char *	decide_encoding (const unsigned char *from, const unsigned char *t
 		 * when we've checked the rules, instead of iterating over
 		 * all 128 of them every time.
 		 */
-		if (!recode_rules[i])
+		if (!(r = recode_rules[i]))
 			continue;	/* XXX or break;? */
 
 		if (x_debug & DEBUG_RECODE)
-			yell("Evaluating rule %d: %s", i, recode_rules[i]->target);
+			yell("Evaluating rule %d: %s", i, r->target);
 
 		/* Skip rules without targets */
 		/* BTW, this is "impossible", so a panic may be better */
-		if (recode_rules[i]->target == NULL)
+		if (r->target == NULL)
 		{
 			if (x_debug & DEBUG_RECODE)
 				yell("No target.");
@@ -392,7 +540,7 @@ static char *	decide_encoding (const unsigned char *from, const unsigned char *t
 		 * function are from irc.  There should be a way to say 
 		 * which magic rule we want to use.
 		 */
-		if (from && !my_stricmp(recode_rules[i]->target, "irc"))
+		if (from && !my_stricmp(r->target, "irc"))
 		{
 			if (x_debug & DEBUG_RECODE)
 				yell("irc magic rule ok for inbound msg");
@@ -400,67 +548,9 @@ static char *	decide_encoding (const unsigned char *from, const unsigned char *t
 		}
 
 		/**********************************************************/
-		/* 
-		 *
-		 * 0. Split the "target" into a server part and
-		 *     a target part.
-		 *
-		 * XXX TODO - This should be done once, when the rule
-		 * 	      is initially created.
-		 *
-		 */
-
-		target_copy = LOCAL_COPY(recode_rules[i]->target);
-
-		/* A channel is a channel! */
-		if (is_channel(target_copy))
-		{
-			server_part = NULL;
-			target_part = target_copy;
-		}
-
-		/* A number is a server! */
-		if (is_number(target_copy))
-		{
-			server_part = target_copy;
-			target_part = NULL;
-		}
-
-		/* 
-		 * Anything that isn't a channel that contains a 
-		 * slash is a [server]/[target]
-		 */
-		else if (strchr(target_copy, '/'))
-		{
-			server_part = target_copy;
-			target_part = strchr(target_copy, '/');
-			*target_part++ = 0;
-		}
-
-		/*
-		 * Anything that isn't a channel or has a slash but
-		 * has a dot in it, is a server
-		 */
-		else if (strchr(target_copy, '.'))
-		{
-			server_part = target_copy;
-			target_part = NULL;
-		}
-
-		/* Everything else is a nickname. */
-		else
-		{
-			server_part = NULL;
-			target_part = target_copy;
-		}
-
-		if (server_part && !*server_part)
-			server_part = NULL;
-		if (target_part && !*target_part)
-			target_part = NULL;
-
 		if (x_debug & DEBUG_RECODE)
-			yell("Server part [%s], target part [%s]", server_part, target_part);
+			yell("Server part [%s], target part [%s]", 
+				r->server_part, r->target_part);
 
 		/**********************************************************/
 		/*
@@ -470,15 +560,9 @@ static char *	decide_encoding (const unsigned char *from, const unsigned char *t
 		 */
 		/* If the rule doesn't limit the server, then it's ok */
 		/* If there is a server part, it must match our refnum */
-		/* 
-		 * XXX TODO - The ServerInfo should be created once 
-		 * 	when the rule is initially created.
-		 */
-		if (server_part != NULL)
+		if (r->server_part != NULL)
 		{
-			clear_serverinfo(&si);
-			str_to_serverinfo(server_part, &si);
-			if (!serverinfo_matches_servref(&si, server))
+			if (!serverinfo_matches_servref(&r->si, server))
 			{
 				if (x_debug & DEBUG_RECODE)
 					yell("Server part does not match expectations for %d"), server;
@@ -495,7 +579,7 @@ static char *	decide_encoding (const unsigned char *from, const unsigned char *t
 		 */
 
 		/* If the rule doesn't limit the target, then it's ok */
-		if (target_part == NULL)
+		if (r->target_part == NULL)
 		{
 			if (x_debug & DEBUG_RECODE)
 				yell("No target part -- ok");
@@ -508,7 +592,7 @@ static char *	decide_encoding (const unsigned char *from, const unsigned char *t
 		 */
 		if (from == NULL)
 		{
-			if (!my_stricmp(target_part, target))
+			if (!my_stricmp(r->target_part, target))
 			{
 				if (x_debug & DEBUG_RECODE)
 					yell("Outbound message - Target matches sender -- ok");
@@ -528,14 +612,14 @@ static char *	decide_encoding (const unsigned char *from, const unsigned char *t
 		 */
 		else
 		{
-			if (!my_stricmp(target_part, target))
+			if (!my_stricmp(r->target_part, target))
 			{
 				if (x_debug & DEBUG_RECODE)
 					yell("Inbound message - Target matches recipient -- ok");
 				goto target_ok;
 			}
 
-			if (!my_stricmp(target_part, from))
+			if (!my_stricmp(r->target_part, from))
 			{
 				if (x_debug & DEBUG_RECODE)
 					yell("inbound message - target matches sender -- ok");
@@ -567,21 +651,21 @@ target_ok:
  		 *     10. /ENCODING irc		(magic rule)
 		 *
 		 */
-		if (server_part != NULL && target_part != NULL &&
-					!is_channel(target_part))
+		if (r->server_part != NULL && r->target_part != NULL &&
+					    !is_channel(r->target_part))
 			this_score = 60;
-		else if (server_part == NULL && target_part != NULL &&
-						!is_channel(target_part))
+		else if (r->server_part == NULL && r->target_part != NULL &&
+					    !is_channel(r->target_part))
 			this_score = 50;
-		else if (server_part != NULL && target_part != NULL &&
-						is_channel(target_part))
+		else if (r->server_part != NULL && r->target_part != NULL &&
+					    is_channel(r->target_part))
 			this_score = 40;
-		else if (server_part == NULL && target_part != NULL && 
-						is_channel(target_part))
+		else if (r->server_part == NULL && r->target_part != NULL && 
+					    is_channel(r->target_part))
 			this_score = 30;
-		else if (server_part != NULL && target_part == NULL)
+		else if (r->server_part != NULL && r->target_part == NULL)
 			this_score = 20;
-		else if (!my_stricmp(recode_rules[i]->target, "irc"))
+		else if (!my_stricmp(r->target, "irc"))
 			this_score = 10;
 		/* This is in case someone tries to be too clever */
 		else
@@ -616,35 +700,12 @@ target_ok:
 		panic(1, "Did not find a recode rule for %d/%s/%s", 
 					server, from, target);
 
-	i = winner;
 
 	/* If from == NULL, we are sending the message outbound */
-	/*
-	 * XXX TODO - The code to handle iconv_t creation should be in its
-	 *	own function.
-	 */
 	if (from == NULL)
-	{
-	    if (recode_rules[i]->outbound_handle == 0)
-	    {
-		char *str;
-		str = malloc_strdup2(recode_rules[i]->encoding, "//TRANSLIT");
-		recode_rules[i]->outbound_handle = iconv_open(str, "UTF-8");
-		new_free(&str);
-	    }
-
-	    *code = recode_rules[i]->outbound_handle;
-	}
-
+	    return check_recoding_iconv(recode_rules[winner], NULL, code);
 	else
-	{
-	    if (recode_rules[i]->inbound_handle == 0)
-		recode_rules[i]->inbound_handle = iconv_open("UTF-8", 
-						recode_rules[i]->encoding);
-	    *code = recode_rules[i]->inbound_handle;
-	}
-
-	return recode_rules[i]->encoding;
+	    return check_recoding_iconv(recode_rules[winner], code, NULL);
 }
 
 /*
@@ -670,7 +731,7 @@ target_ok:
 const char *	outbound_recode (const char *to, int server, const char *message, char **extra)
 {
 	iconv_t	i;
-	char *	encoding;
+	const char *	encoding;
 	char *	new_buffer;
 	size_t	new_buffer_len;
 	
@@ -719,7 +780,7 @@ const char *	inbound_recode (const char *from, int server, const char *to, const
 {
 	iconv_t	i;
 	char *	msg;
-	char *	encoding;
+	const char *	encoding;
 	char *	new_buffer;
 	size_t	new_buffer_len;
 
@@ -876,16 +937,18 @@ BUILT_IN_COMMAND(encoding)
 
 	if (!my_stricmp(encoding, "none"))
 	{
-		/* XXX TODO - The magic rules should identify themselves */
-		/* XXX Hardcoding 2 here is an abomination */
-		if (x <= 2)
+		if (!recode_rules[x])
+			say("There is no encoding for %s", arg);
+
+		/* You can't delete the system rules */
+		else if (recode_rules[x]->magic == 1)
 		{
 			say("You cannot remove a fallback rule");
 			return;
 		}
 
 		/* XXX TODO - Removing a rule should be in its own func */
-		if (recode_rules[x])
+		else
 		{
 			iconv_close(recode_rules[x]->inbound_handle);
 			recode_rules[x]->inbound_handle = 0;
@@ -896,14 +959,11 @@ BUILT_IN_COMMAND(encoding)
 			new_free((char **)&recode_rules[x]);
 			say("Removed encoding for %s", arg);
 		}
-		else
-			say("There is no encoding for %s", arg);
 
 		return;
 	}
 
 	/* If there is not already a rule, create a new (blank) one. */
-	/* XXX TODO - Creating a new rule should be in its own function */
 	if (x == MAX_RECODING_RULES || recode_rules[x] == NULL)
 	{
 		for (x = 0; x < MAX_RECODING_RULES; x++)
@@ -916,35 +976,17 @@ BUILT_IN_COMMAND(encoding)
 			say("Sorry, no more room for recoding rules!");
 			return;
 		}
-		recode_rules[x] = (RecodeRule *)new_malloc(sizeof(RecodeRule));
-		recode_rules[x]->target = malloc_strdup(arg);
-		recode_rules[x]->inbound_handle = 0;
-		recode_rules[x]->outbound_handle = 0;
-		recode_rules[x]->encoding = NULL;
+
+		/* We don't set up the encoding here -- fallthrough below */
+		recode_rules[x] = create_recoding_rule(arg, NULL, 0);
 
 		/* FALLTHROUGH -- set me up below here */
 	}
 
 	/* 
 	 * Modify the existing (or newly created) rule 
-	 * XXX TODO - Modifying a rule should be in its own function 
 	 */
-
-	/* Save the new encoding */
-	malloc_strcpy(&recode_rules[x]->encoding, encoding);
-
-	/* Invalidate prior iconv handles */
-	if (recode_rules[x]->inbound_handle != 0)
-	{
-		iconv_close(recode_rules[x]->inbound_handle);
-		recode_rules[x]->inbound_handle = 0;
-	}
-	if (recode_rules[x]->outbound_handle != 0)
-	{
-		iconv_close(recode_rules[x]->outbound_handle);
-		recode_rules[x]->outbound_handle = 0;
-	}
-
+	update_recoding_encoding(recode_rules[x], encoding);
 
 	/* Declare what the new encoding is */
 	say("Encoding for %s is now %s", recode_rules[x]->target, 

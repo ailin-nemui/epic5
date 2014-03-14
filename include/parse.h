@@ -24,6 +24,7 @@ extern	int		 num_protocol_cmds;
 const 	char	*PasteArgs 	(const char **, int);
 	void	parse_server 	(const char *, size_t);
 	int	is_channel	(const char *);
+	void    rfc1459_any_to_utf8 (char *, size_t, char **);
 
 extern	const char	*FromUserHost;
 

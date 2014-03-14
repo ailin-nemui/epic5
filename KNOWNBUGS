@@ -3,7 +3,8 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Some things (left/right/mid/strlen/fec) aren't utf8 aware.
-* Add support for /encoding for outbound commands (topic/kick/etc)
+* Create $recodectl()
+* We need to recode outbound channels and nicks for non-utf8 servers.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -458,4 +459,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /encoding support for CTCPs (reported by zlonix)
 * Fix /encoding support for PARTs (found by zlonix)
 * Add /encoding support for outbound KICKs/TOPICs/etc
+* Create internal rfc1459_any_to_utf8 to preprocess before parse_server().
+* Tokenize recode rule "target" at create time instead of every evaluation
+* This is part of a larger code cleanup for recode.c
 

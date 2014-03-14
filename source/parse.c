@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.102 2014/03/13 14:41:52 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.103 2014/03/14 22:18:06 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1592,3 +1592,224 @@ void 	parse_server (const char *orig_line, size_t orig_line_size)
 	FromUserHost = OldFromUserHost;
 	from_server = -1;
 }
+
+/*
+ * rfc1459_any_to_utf8	- Pre-process an RFC1459 message so it's in utf8.
+ *
+ * Arguments:
+ *	buffer - A null terminated RFC1459 message (not in utf8 already)
+ *		 Upon return, if possible, will hold the message in utf8.
+ *		 If not possible, 'extra' will hold the message.
+ *	buffsiz - How many bytes 'buffer' can hold.
+ *	extra - A pointer to NULL -- if 'buffer' is bigger than 'buffsiz'
+ *		after converting to utf8, then this will be set to a 
+ *		new_malloc()ed string.  YOU MUST new_free() THIS IF IT IS SET!
+ *
+ * This function divides an RFC1459 message into two parts
+ *	1. The "server part"
+ *	2. The "payload part"
+ * The "server part" is formatted by the server, and contains nicks and 
+ * channel names, and those will be encoded with the server's encoding.
+ * The "payload part" is encoded with whatever the sender of the message
+ * is using, which may not be the same thing as the server.
+ *
+ * The "server part" is recoded first -- which yields utf8 channels and nicks,
+ * which are then used to recode the "payload part".  The two parts are put
+ * back together into "buffer" unless the result is bigger than "buffsiz" 
+ * in which case it's put into a new_malloc()ed buffer stashed in 'extra'.
+ *
+ * XXX Ugh.  I hate that I made this so complicated just to generalize this.
+ */
+void	rfc1459_any_to_utf8 (char *buffer, size_t buffsiz, char **extra)
+{
+	char *	server_part;
+	char *	payload_part;
+	size_t	bytes_needed = 0;
+	char *	from = NULL, *to = NULL;
+	char *  endp;
+	char *	extra_server_part = NULL;
+	char *	extra_payload_part = NULL;
+	int	bytes;
+
+	if (x_debug & DEBUG_RECODE)
+		yell(">> Received %s", buffer);
+
+	/* If the data is already utf8, then do nothing. */
+	if ((bytes = invalid_utf8str(buffer)) == 0)
+	{
+		return;
+	}
+	else
+	{
+		if (x_debug & DEBUG_RECODE)
+			yell(">> There are %d invalid utf8 sequences...", bytes);
+	}
+
+	/* 
+	 * Point the "server part" at the start, and move the 
+	 * "payload part" to the argument starting with colon.
+	 */
+	server_part = buffer;
+	for (payload_part = server_part; *payload_part; payload_part++)
+	{
+		if (payload_part[0] == ' ' && payload_part[1] == ':')
+		{
+			*payload_part++ = 0;	/* Whack the space */
+			if (x_debug & DEBUG_RECODE)
+				yell(">> Found payload (%d bytes): %s", 
+					strlen(payload_part), payload_part);
+			break;
+		}
+	}
+
+	if (x_debug & DEBUG_RECODE)
+	{
+		yell(">> server part is %s, payload_part is %s", 
+			server_part, payload_part);
+	}
+
+	/* 
+	 * If "payload_part" is pointing at a nul here, there was no payload.
+	 */
+
+
+	/*
+	 * If the server part is not in utf8, then we need to convert it to
+	 * utf8 using the server's encoding to get nicks and channels in utf8.
+	 */
+	if (invalid_utf8str(server_part))
+	{
+		if (x_debug & DEBUG_RECODE)
+			say(">> Need to recode server part for %d", from_server);
+
+		/* 
+		 * XXX The use of the bogus nick "zero" is just because
+		 * ``from'' can't be NULL, but we want it to use the 
+		 * server's default encoding.
+		 */
+		inbound_recode(zero, from_server, NULL, server_part, &extra_server_part);
+		if (extra)
+			server_part = extra_server_part;
+
+		if (x_debug & DEBUG_RECODE)
+			say(">> Recoded server part: %s", server_part);
+	}
+
+	/*
+	 * If the payload part exists and is not valid utf8, then we need
+	 * to figure out who sent this message, and recode it with their
+	 * encoding.  This deals with channels and nicks already in utf8.
+	 */
+	if (*payload_part && invalid_utf8str(payload_part))
+	{
+		char *	server_part_copy;
+
+		if (x_debug & DEBUG_RECODE)
+			say(">> Need to recode payload part for %d", from_server);
+
+		server_part_copy = LOCAL_COPY(server_part);
+
+		/*
+		 * Figure out who the sender is (-> "from")
+		 * Put 'endp' at the start of the command word
+		 */
+		if (*server_part_copy == ':')
+		{
+			from = server_part_copy + 1;
+			for (endp = from; *endp; endp++)
+			{
+				if (*endp == '!')
+					*endp++ = 0;
+
+				/* Not connected, so don't "fix" it */
+				if (*endp == ' ')
+				{
+					*endp++ = 0;
+					break;
+				}
+			}
+
+			/* 
+			 * So now 'from' points to the nick or server
+			 * that sent us the message, and 'endp' points
+			 * at the word after the prefix 
+			 */
+		}
+		else
+		{
+			from = NULL;
+			endp = server_part_copy;
+		}
+
+		/* Skip over the command word */
+		for (; *endp; endp++)
+		{
+			if (*endp == ' ')
+			{
+				*endp++ = 0;
+				break;
+			}
+		}
+
+		/* "endp" points at the target word (or a nul) */
+		to = endp;
+		for (; *endp; endp++)
+		{
+			if (*endp == ' ')
+			{
+				*endp++ = 0;
+				break;
+			}
+		}
+
+		if (!*from)
+			from = NULL;
+		if (!*to)
+			to = NULL;
+
+		if (x_debug & DEBUG_RECODE)
+			say(">> Recoding payload from [%s], to [%s], server [%d]", 
+				from?from:"", to?to:"", from_server);
+
+		/* UTF8-ify the payload with 'from' and 'to' */
+		inbound_recode(from, from_server, to, payload_part, &extra_payload_part);
+		if (extra_payload_part)
+			payload_part = extra_payload_part;
+
+		if (x_debug & DEBUG_RECODE)
+			say(">> Recoded payload part: %s", payload_part);
+	}
+
+	if (x_debug & DEBUG_RECODE)
+		say(">> server part: %s", server_part);
+	if (x_debug & DEBUG_RECODE)
+		say(">> payload part: %s", payload_part);
+
+	/*
+	 * Now paste the two parts back together.
+	 */
+	bytes_needed = strlen(server_part);
+	if (*payload_part)
+		bytes_needed += strlen(payload_part) + 1;
+
+	if (bytes_needed > buffsiz)
+	{
+		*extra = new_malloc(bytes_needed + 2);
+		buffer = *extra;
+		buffsiz = bytes_needed + 1;
+	}
+
+	strlcpy(buffer, server_part, buffsiz);
+	if (*payload_part)
+	{
+		strlcat(buffer, " ", buffsiz);
+		strlcat(buffer, payload_part, buffsiz);
+	}
+
+	if (x_debug & DEBUG_RECODE)
+		say(">> Reconstituted UTF8 message: %s", buffer);
+
+	new_free(&extra_server_part);
+	new_free(&extra_payload_part);
+}
+
