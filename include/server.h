@@ -227,6 +227,8 @@ extern	const char *server_states[13];
 	void	flush_server			(int);
 	void	send_to_server			(const char *, ...) __A(1);
 	void	send_to_aserver			(int, const char *, ...) __A(2);
+	void	send_to_server_with_payload	(const char *, const char *, ...) __A(2);
+	void	send_to_aserver_with_payload	(int, const char *, const char *, ...) __A(3);
 	void	send_to_aserver_raw		(int, size_t len, const char *buffer);
 	int	grab_server_address		(int);
 	int	connect_to_server		(int);

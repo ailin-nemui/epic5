@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.220 2014/03/13 15:31:07 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.221 2014/03/15 15:51:44 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -834,7 +834,7 @@ BUILT_IN_COMMAND(e_topic)
 		if ((args && *args) || clear_topic)
 		{
 			recode_text = outbound_recode(arg, from_server, args, &extra);
-			send_to_server("TOPIC %s :%s", arg, recode_text);
+			send_to_server_with_payload(recode_text, "TOPIC %s", arg);
 			new_free(&extra);
 		}
 		else
@@ -843,7 +843,7 @@ BUILT_IN_COMMAND(e_topic)
 	else if (channel)
 	{
 		recode_text = outbound_recode(channel, from_server, args, &extra);
-		send_to_server("TOPIC %s :%s", channel, recode_text);
+		send_to_server_with_payload(recode_text, "TOPIC %s", channel);
 		new_free(&extra);
 	}
 	else
@@ -2510,7 +2510,7 @@ BUILT_IN_COMMAND(send_2comm)
 		char *extra = NULL;
 
 		recode_text = outbound_recode(target, from_server, reason, &extra);
-		send_to_server("%s %s :%s", command, target, recode_text);
+		send_to_server_with_payload(recode_text, "%s %s", command, target);
 		new_free(&extra);
 	}
 	else
@@ -2609,7 +2609,7 @@ BUILT_IN_COMMAND(send_kick)
 		channel = get_echannel_by_refnum(0);
 
 	recode_text = outbound_recode(channel, from_server, comment, &extra);
-	send_to_server("KICK %s %s :%s", channel, kickee, recode_text);
+	send_to_server_with_payload(recode_text, "KICK %s %s", channel, kickee);
 	new_free(&extra);
 }
 
@@ -3324,8 +3324,8 @@ struct target_type target[4] =
 
 			copy = LOCAL_COPY(recode_text);
 			line = crypt_msg(copy, key);
-			send_to_server("%s %s :%s", 
-					target[i].command, current_nick, line);
+			send_to_server_with_payload(line, "%s %s", 
+					target[i].command, current_nick);
 
 			set_server_sent_nick(from_server, current_nick);
 			new_free(&line);
@@ -3341,9 +3341,8 @@ struct target_type target[4] =
 						current_nick, text))
 				put_it(target[i].format, current_nick, text);
 
-			send_to_server("%s %s :%s", 
-					target[i].command, current_nick, 
-					recode_text);
+			send_to_server_with_payload(recode_text, "%s %s", 
+					target[i].command, current_nick);
 			set_server_sent_nick(from_server, current_nick);
 
 			pop_message_from(l);
@@ -3376,10 +3375,10 @@ struct target_type target[4] =
 		    put_it(target[i].format, target[i].nick_list, 
 				target[i].message);
 
-		send_to_server("%s %s :%s", 
+		send_to_server_with_payload(target[i].message,
+				"%s %s", 
 				target[i].command, 
-				target[i].nick_list, 
-				target[i].message);
+				target[i].nick_list);
 
 		new_free(&target[i].nick_list);
 		target[i].message = NULL;

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.266 2014/03/14 22:18:06 jnelson Exp $ */
+/* $EPIC: server.c,v 1.267 2014/03/15 15:51:44 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1647,17 +1647,44 @@ return_from_ssl_detour:
 
 
 /* SERVER OUTPUT STUFF */
-static void 	vsend_to_aserver (int, const char *format, va_list args);
+static void 	vsend_to_aserver_with_payload (int, const char *extra, const char *format, va_list args);
 void		send_to_aserver_raw (int, size_t len, const char *buffer);
 
+/*
+ * send_to_aserver - Send a message to a specific irc server
+ *
+ * Arguments:
+ *	refnum	- The server to send message to
+ *	format 	- The message to send. (in UTF8)
+ *
+ * Note: Message will be translated to server's encoding before sending.
+ */
 void	send_to_aserver (int refnum, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	vsend_to_aserver(refnum, format, args);
+	vsend_to_aserver_with_payload(refnum, NULL, format, args);
 	va_end(args);
 }
 
+/*
+ * send_to_aserver_with_payload
+ */
+void	send_to_aserver_with_payload (int refnum, const char *payload, const char *format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	vsend_to_aserver_with_payload(refnum, payload, format, args);
+	va_end(args);
+}
+/*
+ * send_to_server - Send a message to current irc server
+ *
+ * Arguments:
+ *	format 	- The message to send. (in UTF8)
+ *
+ * Note: Message will be translated to server's encoding before sending.
+ */
 void	send_to_server (const char *format, ...)
 {
 	va_list args;
@@ -1667,12 +1694,44 @@ void	send_to_server (const char *format, ...)
 		server = primary_server;
 
 	va_start(args, format);
-	vsend_to_aserver(server, format, args);
+	vsend_to_aserver_with_payload(server, NULL, format, args);
 	va_end(args);
 }
 
+/*
+ * send_to_server_with_payload
+ */
+void	send_to_server_with_payload (const char *payload, const char *format, ...)
+{
+	va_list args;
+	int	server;
+
+	if ((server = from_server) == NOSERV)
+		server = primary_server;
+
+	va_start(args, format);
+	vsend_to_aserver_with_payload(server, payload, format, args);
+	va_end(args);
+}
+
+
 /* send_to_server: sends the given info the the server */
-static void 	vsend_to_aserver (int refnum, const char *format, va_list args)
+/*
+ * vsend_to_aserver - Generalized message sending to irc.
+ *
+ * Arguments:
+ *	refnum	- The server to send message to
+ *	payload	- An *ALREADY RECODED* "payload" message to append
+ *	format	- The base part of the message (in UTF8)
+ *	args	- Args to 'format'.
+ *
+ * Note: "format" + "args" will be converted to the server's encoding.
+ * The resulting message will be:
+ *	[format+args after conversion] :[payload as-is]
+ * This allows you to send a message to someone encoded in one encoding,
+ * which refering to their channel or nick as the server wants.
+ */
+static void 	vsend_to_aserver_with_payload (int refnum, const char *payload, const char *format, va_list args)
 {
 	Server *s;
 	char	buffer[BIG_BUFFER_SIZE * 11 + 1]; /* make this buffer *much*
@@ -1680,46 +1739,90 @@ static void 	vsend_to_aserver (int refnum, const char *format, va_list args)
 	int	len,
 		des;
 	int	ofs;
+	const char *recode_text;
+	char *	extra = NULL;
 
 	if (!(s = get_server(refnum)))
 		return;
 
-	if (refnum != NOSERV && (des = s->des) != -1 && format)
-	{
-		/* Keep the results short, and within reason. */
-		len = vsnprintf(buffer, BIG_BUFFER_SIZE, format, args);
-
-		if (translation)
-			translate_to_server(buffer);
-
-		if (outbound_line_mangler)
-		{
-		    char *s2;
-		    s2 = new_normalize_string(buffer, 1, outbound_line_mangler);
-		    strlcpy(buffer, s2, sizeof(buffer));
-		    new_free(&s2);
-		}
-
-		s->sent = 1;
-		if (len > (IRCD_BUFFER_SIZE - 2) || len == -1)
-			buffer[IRCD_BUFFER_SIZE - 2] = 0;
-		if (x_debug & DEBUG_OUTBOUND)
-			yell("[%d] -> [%s]", des, buffer);
-		strlcat(buffer, "\r\n", sizeof buffer);
-
-		/* This "from_server" hack is for the benefit of do_hook. */
-		ofs = from_server;
-		from_server = refnum;
-		if (do_hook(SEND_TO_SERVER_LIST, "%d %d %s", from_server, des, buffer))
-			send_to_aserver_raw(refnum, strlen(buffer), buffer);
-		from_server = ofs;
-	}
-	else if (from_server == NOSERV)
+	/* No server or server is closed */
+	if (refnum == NOSERV || ((des = s->des) == -1))
         {
 	    if (do_hook(DISCONNECT_LIST,"No Connection to %d", refnum))
 		say("You are not connected to a server, "
 			"use /SERVER to connect.");
+	    return;
         }
+
+	/* No message to send */
+	if (!format)
+		return;
+
+
+	/****************************************/
+	/*
+	 * 1. Press and translate the server part
+	 */
+	/* Keep the results short, and within reason. */
+	len = vsnprintf(buffer, BIG_BUFFER_SIZE, format, args);
+
+#if 0
+	if (translation)
+		translate_to_server(buffer);
+#endif
+
+	if (outbound_line_mangler)
+	{
+	    char *s2;
+	    s2 = new_normalize_string(buffer, 1, outbound_line_mangler);
+	    strlcpy(buffer, s2, sizeof(buffer));
+	    new_free(&s2);
+	}
+
+	recode_text = outbound_recode(zero, refnum, buffer, &extra);
+	if (extra)
+	{
+		strlcpy(buffer, extra, sizeof(buffer));
+		new_free(&extra);
+	}
+
+	/****************************************/
+	/*
+	 * 2. Append the (already translated) payload part if necessary
+	 */
+	if (payload)
+	{
+		strlcat(buffer, " :", sizeof(buffer));
+		if (outbound_line_mangler)
+		{
+		    char *s2;
+		    s2 = new_normalize_string(payload, 1, outbound_line_mangler);
+		    strlcat(buffer, s2, sizeof(buffer));
+		    new_free(&s2);
+		}
+		else
+		    strlcat(buffer, payload, sizeof(buffer));
+	}
+
+	/****************************************/
+	/*
+	 * Send the resulting message out
+	 */
+	s->sent = 1;
+	if (len > (IRCD_BUFFER_SIZE - 2) || len == -1)
+		buffer[IRCD_BUFFER_SIZE - 2] = 0;
+	if (x_debug & DEBUG_OUTBOUND)
+		yell("[%d] -> [%s]", des, buffer);
+	strlcat(buffer, "\r\n", sizeof buffer);
+
+	/* This "from_server" hack is for the benefit of do_hook. */
+	ofs = from_server;
+	from_server = refnum;
+
+	/* XXX TODO - I don't like that this is ``encoded'' rather than utf8. */
+	if (do_hook(SEND_TO_SERVER_LIST, "%d %d %s", from_server, des, buffer))
+		send_to_aserver_raw(refnum, strlen(buffer), buffer);
+	from_server = ofs;
 }
 
 void	send_to_aserver_raw (int refnum, size_t len, const char *buffer)

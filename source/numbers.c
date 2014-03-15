@@ -1,4 +1,4 @@
-/* $EPIC: numbers.c,v 1.103 2014/03/12 21:04:11 jnelson Exp $ */
+/* $EPIC: numbers.c,v 1.104 2014/03/15 15:51:44 jnelson Exp $ */
 /*
  * numbers.c: handles all those strange numeric response dished out by that
  * wacky, nutty program we call ircd 
@@ -183,7 +183,6 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	int	old_current_numeric = current_numeric;
 	int	numeric;
 	int	l;
-	char *	extra = NULL;
 
 	/* All numerics must be in the range (000, 999) */
 	if (!comm || !*comm)
@@ -419,8 +418,6 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		if (!(name = ArgList[4]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
-		/* XXX - This is playing fast and loose with PasteArgs */
-		ArgList[4] = inbound_recode(nick, from_server, channel, name, &extra);
 		break;
 	}
 
@@ -441,8 +438,6 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		if (!(name = ArgList[4]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
-		/* XXX - This is playing fast and loose with PasteArgs */
-		ArgList[4] = inbound_recode(nick, from_server, nick, name, &extra);
 		break;
 	}
 
@@ -495,11 +490,6 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(user_cnt = ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(line = ArgList[2]))
-			{ rfc1459_odd(from, comm, ArgList); goto END; }
-
-		/* XXX - This is playing fast and loose with PasteArgs */
-		ArgList[2] = inbound_recode(channel, from_server, channel, line, &extra);
 		if (!(line = ArgList[2]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
@@ -607,9 +597,6 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(topic = ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-
-		ArgList[1] = inbound_recode(channel, from_server, channel, topic, &extra);
-		break;
 	}
 
 

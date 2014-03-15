@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.60 2014/03/13 13:19:15 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.61 2014/03/15 15:51:44 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -625,7 +625,6 @@ char *	do_ctcp (const char *from, const char *to, char *str)
 	int	allow_ctcp_reply = 1;
 static	time_t	last_ctcp_parsed = 0;
 	int	l;
-	char	*extra = NULL;
 
 	int delim_char = charcount(str, CTCP_DELIM_CHAR);
 
@@ -736,11 +735,6 @@ static	time_t	last_ctcp_parsed = 0;
 			if (!strcmp(ctcp_command, ctcp_cmd[i].name))
 				break;
 
-                inbound_recode(from, from_server, to, ctcp_argument, &extra);
-		/* XXX I only do this to avoid (const char *) -> (char *) */
-		if (extra)
-			ctcp_argument = extra;
-
 		/*
 		 * We didnt find it?
 		 */
@@ -763,7 +757,6 @@ static	time_t	last_ctcp_parsed = 0;
 			time(&last_ctcp_parsed);
 			allow_ctcp_reply = 0;
 			pop_message_from(l);
-			new_free(&extra);
 			continue;
 		}
 
@@ -826,7 +819,6 @@ static	time_t	last_ctcp_parsed = 0;
 		    }
 		}
 		new_free(&ptr);
-		new_free(&extra);
 		pop_message_from(l);
 	}
 

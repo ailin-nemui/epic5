@@ -462,4 +462,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Create internal rfc1459_any_to_utf8 to preprocess before parse_server().
 * Tokenize recode rule "target" at create time instead of every evaluation
 * This is part of a larger code cleanup for recode.c
+* Remove the per-message handling for /encoding since it's done globally now.
+* Change vsend_to_aserver so it does recoding.
+* This means outbound doesn't honor /set translation any more
+* This requires send_to_server_with_payload() since payloads already recoded
 

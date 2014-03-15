@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.103 2014/03/14 22:18:06 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.104 2014/03/15 15:51:44 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -248,7 +248,6 @@ static void	p_topic (const char *from, const char *comm, const char **ArgList)
 {
 	const char 	*channel, *new_topic;
 	int	l;
-	char *extra = NULL;
 
 	if (!(channel = ArgList[0])) 
 		{ rfc1459_odd(from, comm, ArgList); return; }
@@ -263,15 +262,11 @@ static void	p_topic (const char *from, const char *comm, const char **ArgList)
 				channel, new_topic, LEVEL_TOPIC))
 		return;
 
-	/* ENCODING - new_topic needs to be translated */
-	new_topic = inbound_recode(from, from_server, channel, new_topic, &extra);
-
 	l = message_from(channel, LEVEL_TOPIC);
 	if (do_hook(TOPIC_LIST, "%s %s %s", from, channel, new_topic))
 		say("%s has changed the topic on channel %s to %s",
 			from, check_channel_type(channel), new_topic);
 	pop_message_from(l);
-	new_free(&extra);
 }
 
 static void	p_wallops (const char *from, const char *comm, const char **ArgList)
@@ -279,7 +274,6 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 	const char 	*message;
 	int 	server_wallop;
 	int	l;
-	char *	extra = NULL;
 
 	if (!(message = ArgList[0]))
 		{ rfc1459_odd(from, comm, ArgList); return; }
@@ -300,13 +294,9 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 						LEVEL_OPERWALL, message))
 			return;
 
-		/* ENCODING - message needs to be translated */
-		message = inbound_recode(from, from_server, NULL, message, &extra);
-
 		l = message_from(NULL, LEVEL_OPERWALL);
 		retval = do_hook(OPERWALL_LIST, "%s %s", from, message + 11);
 		pop_message_from(l);
-		new_free(&extra);
 		if (!retval)
 			return;
 	}
@@ -325,9 +315,6 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 						LEVEL_WALLOP, message))
 		return;
 
-	/* ENCODING - message needs to be translated */
-	message = inbound_recode(from, from_server, NULL, message, &extra);
-
 	l = message_from(NULL, LEVEL_WALLOP);
 	if (do_hook(WALLOP_LIST, "%s %c %s", 
 				from, 
@@ -337,7 +324,6 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 				from, server_wallop ? empty_string : star, 
 				message);
 	pop_message_from(l);
-	new_free(&extra);
 }
 
 static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
@@ -348,7 +334,6 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	const char	*hook_format;
 	const char	*flood_channel = NULL;
 	int	l;
-	char *		extra = NULL;
 
 	PasteArgs(ArgList, 1);
 	if (!(target = ArgList[0]))
@@ -436,9 +421,6 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	{
 		int	do_return = 1;
 
-		/* ENCODING - message needs to be translated */
-		message = inbound_recode(from, from_server, real_target, message, &extra);
-
 		sed = 0;
 		l = message_from(target, level);
 		if (do_hook(ENCRYPTED_PRIVMSG_LIST, "%s %s %s", 
@@ -450,7 +432,6 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 			set_server_doing_privmsg(from_server, 0);
 			return;
 		}
-		new_free(&extra);
 	}
 
 	if (new_check_flooding(from, FromUserHost, flood_channel, 
@@ -466,9 +447,6 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 		set_server_public_nick(from_server, from);
 	else if (hook_type == MSG_LIST)
 		set_server_recv_nick(from_server, from);
-
-	/* ENCODING - message needs to be translated */
-	message = inbound_recode(from, from_server, real_target, message, &extra);
 
 	/* Go ahead and throw it to the user */
 	l = message_from(target, level);
@@ -501,8 +479,6 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 
 	/* Alas, this is not protected by protocol enforcement. :( */
 	notify_mark(from_server, from, 1, 0);
-
-	new_free(&extra);
 }
 
 static void	p_quit (const char *from, const char *comm, const char **ArgList)
@@ -511,7 +487,6 @@ static void	p_quit (const char *from, const char *comm, const char **ArgList)
 	int		one_prints = 1;
 	const char *	chan;
 	int		l;
-	char *		extra = NULL;
 
 	if (!(quit_message = ArgList[0]))
 		{ rfc1459_odd(from, comm, ArgList); return; }
@@ -528,9 +503,6 @@ static void	p_quit (const char *from, const char *comm, const char **ArgList)
 
 	if (check_flooding(from, FromUserHost, LEVEL_QUIT, quit_message))
 		goto remove_quitter;
-
-	/* ENCODING - quit_message needs to be translated */
-	quit_message = inbound_recode(from, from_server, NULL, quit_message, &extra);
 
 	for (chan = walk_channels(1, from); chan; chan = walk_channels(0, from))
 	{
@@ -564,7 +536,6 @@ static void	p_quit (const char *from, const char *comm, const char **ArgList)
 	 * until the top of the next minute.
 	 */
 	notify_mark(from_server, from, 0, 0);
-	new_free(&extra);
 
 remove_quitter:
 	/* Send all data about this unperson to the memory hole. */
@@ -739,7 +710,6 @@ static void	p_kill (const char *from, const char *comm, const char **ArgList)
 {
 	const char 	*victim, *reason;
 	int 	hooked;
-	char *	extra = NULL;
 
 	if (!(victim = ArgList[0]))
 		{ rfc1459_odd(from, comm, ArgList); return; }
@@ -776,9 +746,6 @@ static void	p_kill (const char *from, const char *comm, const char **ArgList)
 	 */
 	if (!reason) { reason = "No Reason Given"; }
 
-	/* ENCODING - should "reason" be translated here? */
-	reason = inbound_recode(from, from_server, NULL, reason, &extra);
-
 	if ((hooked = do_hook(DISCONNECT_LIST, "Killed by %s (%s)",
 						from, reason)))
 	{
@@ -786,7 +753,6 @@ static void	p_kill (const char *from, const char *comm, const char **ArgList)
 						from, reason);
 	}
 
-	new_free(&extra);
 
 	/* 
 	 * If we are a bot, and /on disconnect didnt hook, 
@@ -1022,7 +988,6 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 {
 	const char	*channel, *victim, *comment;
 	int	l;
-	char *	extra = NULL;
 
 	if (!(channel = ArgList[0]))
 		{ rfc1459_odd(from, comm, ArgList); return; }
@@ -1030,9 +995,6 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 		{ rfc1459_odd(from, comm, ArgList); return; }
 	if (!(comment = ArgList[2])) { comment = "(no comment)"; }
 
-
-	/* ENCODING - "comment" should be translated */
-	comment = inbound_recode(from, from_server, channel, comment, &extra);
 
 	/*
 	 * All this to handle being kicked...
@@ -1059,7 +1021,6 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 			 "Will not try to auto-rejoin", 
 				from, channel, comment);
 
-		    new_free(&extra);
 		    return;
 		}
 
@@ -1079,7 +1040,6 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 
 		remove_channel(channel, from_server);
 		update_all_status();
-		new_free(&extra);
 		return;
 	}
 
@@ -1114,14 +1074,12 @@ do_remove_nick:
 	 * Send all data for this unperson to the memory hole.
 	 */
 	remove_from_channel(channel, victim, from_server);
-	new_free(&extra);
 }
 
 static void	p_part (const char *from, const char *comm, const char **ArgList)
 {
 	const char	*channel, *reason;
 	int	l;
-	char *	extra = NULL;
 
 	PasteArgs(ArgList, 1);
 	if (!(channel = ArgList[0]))
@@ -1136,8 +1094,6 @@ static void	p_part (const char *from, const char *comm, const char **ArgList)
 		l = message_from(channel, LEVEL_PART);
 		if (reason)		/* Dalnet part messages */
 		{
-			reason = inbound_recode(from, from_server, channel, 
-						reason, &extra);
 			if (do_hook(PART_LIST, "%s %s %s %s", 
 				from, channel, FromUserHost, reason))
 			    say("%s has left channel %s because (%s)", 
@@ -1158,7 +1114,6 @@ static void	p_part (const char *from, const char *comm, const char **ArgList)
 	else
 		remove_from_channel(channel, from, from_server);
 
-	new_free(&extra);
 }
 
 /*
@@ -1203,7 +1158,6 @@ static int 	p_killmsg (const char *from, const char *to, const char *cline)
 	const char *reason;
 	char *line;
 	int   l, retval;
-	char *	extra = NULL;
 
 	l = message_from(to, LEVEL_OPNOTE);
 	line = LOCAL_COPY(cline);
@@ -1239,13 +1193,9 @@ static int 	p_killmsg (const char *from, const char *to, const char *cline)
 		reason = line;
 	}
 
-	/* ENCODING - "reason" should be translated */
-	reason = inbound_recode(from, from_server, NULL, reason, &extra);
-
 	retval = do_hook(KILL_LIST, "%s %s %s %s %s", from, poor_sap, bastard,
 					path_to_bastard, reason);
 	pop_message_from(l);
-	new_free(&extra);
 	return !retval;
 }
 
@@ -1259,15 +1209,11 @@ static 	void 	p_snotice (const char *from, const char *to, const char *line)
 	const char *	f;
 	int	l;
 	int	retval;
-	char *	extra = NULL;
 
 	f = from;
 	if (!f || !*f)
 		if (!(f = get_server_itsname(from_server)))
 			f = get_server_name(from_server);
-
-	/* ENCODING - "line" should be translated */
-	line = inbound_recode(from, from_server, NULL, line, &extra);
 
 	/* OPERator Notices */
 	if (!strncmp(line, "*** Notice -- ", 13))
@@ -1275,16 +1221,12 @@ static 	void 	p_snotice (const char *from, const char *to, const char *line)
 		if (!strncmp(line + 14, "Received KILL message for ", 26))
 		{
 			if (p_killmsg(f, to, line + 40))
-			{
-				new_free(&extra);
 				return;
-			}
 		}
 
 		l = message_from(to, LEVEL_OPNOTE);
 		retval = do_hook(OPER_NOTICE_LIST, "%s %s", f, line + 14);
 		pop_message_from(l);
-		new_free(&extra);
 		if (!retval)
 			return;
 	}
@@ -1305,7 +1247,6 @@ static 	void 	p_snotice (const char *from, const char *to, const char *line)
 	}
 
 	pop_message_from(l);
-	new_free(&extra);
 }
 
 /*
@@ -1319,7 +1260,6 @@ static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 	int		hook_type;
 	const char *	flood_channel = NULL;
 	int		l;
-	char *		extra = NULL;
 
 	PasteArgs(ArgList, 1);
 	if (!(target = ArgList[0]))
@@ -1390,9 +1330,6 @@ static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 		return;
 	}
 
-	/* ENCODING - "message" should be translated here */
-	message = inbound_recode(from, from_server, real_target, message, &extra);
-
 	/* Let the user know if it is an encrypted notice */
 	/* Note that this is always hooked, even during a flood */
 	if (sed)
@@ -1410,7 +1347,6 @@ static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 
 		if (do_return) {
 			set_server_doing_notice(from_server, 0);
-			new_free(&extra);
 			return;
 		}
 	}
@@ -1418,7 +1354,6 @@ static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 	if (new_check_flooding(from, FromUserHost, flood_channel, 
 					message, LEVEL_NOTICE)) {
 		set_server_doing_notice(from_server, 0);
-		new_free(&extra);
 		return;
 	}
 
@@ -1446,7 +1381,6 @@ static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 
 	/* Alas, this is not protected by protocol enforcement. :( */
 	notify_mark(from_server, from, 1, 0);
-	new_free(&extra);
 }
 
 void	rfc1459_odd (const char *from, const char *comm, const char **ArgList)
