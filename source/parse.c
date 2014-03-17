@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.104 2014/03/15 15:51:44 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.105 2014/03/17 01:55:49 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1622,7 +1622,7 @@ void	rfc1459_any_to_utf8 (char *buffer, size_t buffsiz, char **extra)
 		 * server's default encoding.
 		 */
 		inbound_recode(zero, from_server, NULL, server_part, &extra_server_part);
-		if (extra)
+		if (extra_server_part)
 			server_part = extra_server_part;
 
 		if (x_debug & DEBUG_RECODE)
