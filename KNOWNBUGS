@@ -466,4 +466,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This means outbound doesn't honor /set translation any more
 * This requires send_to_server_with_payload() since payloads already recoded
 * Fix typo causing payload not to be recoded properly.
+* Missing a break. d'oh.
 
