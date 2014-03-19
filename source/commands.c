@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.222 2014/03/19 14:40:15 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.223 2014/03/19 20:58:33 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -3191,10 +3191,11 @@ struct target_type target[4] =
 	    if (!*current_nick)
 		continue;
 
-	    if (invalid_utf8str(text))
-		recode_text = outbound_recode(current_nick, from_server, text, &extra);
-	    else
-		recode_text = extra = malloc_strdup(text);
+	    /* 
+	     * The OUTBOUND text is ALWAYS recoded.
+	     * In theory, 'text' should always be in utf8..
+	     */
+	    recode_text = outbound_recode(current_nick, from_server, text, &extra);
 
 	    if (*current_nick == '%')
 	    {
@@ -3341,8 +3342,8 @@ struct target_type target[4] =
 			l = message_from(current_nick, target[i].mask);
 
 			if (hook && do_hook(target[i].hook_type, "%s %s", 
-						current_nick, text))
-				put_it(target[i].format, current_nick, text);
+						current_nick, recode_text))
+				put_it(target[i].format, current_nick, recode_text);
 
 			send_to_server_with_payload(recode_text, "%s %s", 
 					target[i].command, current_nick);

@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.11 2014/03/14 22:18:06 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.12 2014/03/19 20:58:33 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -665,7 +665,7 @@ target_ok:
 			this_score = 30;
 		else if (r->server_part != NULL && r->target_part == NULL)
 			this_score = 20;
-		else if (!my_stricmp(r->target, "irc"))
+		else if (from && !my_stricmp(r->target, "irc"))
 			this_score = 10;
 		/* This is in case someone tries to be too clever */
 		else

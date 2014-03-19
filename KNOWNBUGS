@@ -468,4 +468,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix typo causing payload not to be recoded properly.
 * Missing a break. d'oh.
 * Outbound messages should not be recoded if they're already utf8.
-
+* Yes they must be! duh.  Square all this away with zlonix.
