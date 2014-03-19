@@ -467,4 +467,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This requires send_to_server_with_payload() since payloads already recoded
 * Fix typo causing payload not to be recoded properly.
 * Missing a break. d'oh.
+* Outbound messages should not be recoded if they're already utf8.
 
