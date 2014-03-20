@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.105 2014/03/17 01:55:49 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.106 2014/03/20 20:40:32 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1713,6 +1713,10 @@ void	rfc1459_any_to_utf8 (char *buffer, size_t buffsiz, char **extra)
 		if (x_debug & DEBUG_RECODE)
 			say(">> Recoded payload part: %s", payload_part);
 	}
+
+	/* Make copies just to get them out of 'buffer' */
+	server_part = LOCAL_COPY(server_part);
+	payload_part = LOCAL_COPY(payload_part);
 
 	if (x_debug & DEBUG_RECODE)
 		say(">> server part: %s", server_part);

@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.74 2014/03/12 21:04:11 jnelson Exp $ */
+/* $EPIC: who.c,v 1.75 2014/03/20 20:40:32 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -792,10 +792,7 @@ do
 	PasteArgs(ArgList, 6);
 	if (!(ircname  = ArgList[6]))
 		{ rfc1459_odd(from, comm, ArgList); break; }
-	ircname = inbound_recode(nick, from_server, channel, ircname, &extra);
-
 	name = LOCAL_COPY(ircname);
-	new_free(&extra);
 
 	if (*status == 'S')	/* this only true for the header WHOREPLY */
 	{

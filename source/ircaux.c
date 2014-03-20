@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.242 2014/03/20 15:25:54 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.243 2014/03/20 20:40:32 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -1284,20 +1284,35 @@ char *	double_quote (const char *str, const char *stuff, char *buffer)
 {
 	char	c;
 	int	pos;
+	int	everything = 0;
 
 	*buffer = 0;		/* Whatever */
 
 	if (!stuff)
 		return buffer;	/* Whatever */
+	if (*stuff == '*')		/* QUOTE ALL THE THINGS! */
+		everything = 1;
 
+	/* For every character... */
 	for (pos = 0; (c = *str); str++)
 	{
-		if (strchr(stuff, c))
+		/* Only 7 bit characters need quoting */
+		if ((c & 0x80) == 0x00)
 		{
-			if (c == '$')
-				buffer[pos++] = '$';
-			else
-				buffer[pos++] = '\\';
+			/* 
+			 * If it's not a letter or digit, and 'everything',
+			 * or if it's explicitly included in the list...
+			 * quote it.
+			 */
+			if ((everything && !isalpha(c) && !isdigit(c))
+				||
+			    (strchr(stuff, c)))
+			{
+				if (c == '$')
+					buffer[pos++] = '$';
+				else
+					buffer[pos++] = '\\';
+			}
 		}
 		buffer[pos++] = c;
 	}

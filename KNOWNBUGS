@@ -3,6 +3,7 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Some things (left/right/mid/strlen/fec) aren't utf8 aware.
+* $[num]var is not utf8 aware (as in $[9]1 for /on who)
 * Create $encodingctl()
 
 MEDIUM-TERM PROJECTS
@@ -473,4 +474,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Finnese invalid_utf8str() so it doesn't truncate partial cp's for non-utf8s
 * Warn if we try to do double-outbound-recoding
 * Be more sensible about handling string lengths in vsend_to_server()s.
-
+* Add $^*var to 'quote everything' (except letters and digits)
+* When recoding inbound, move server|payload part out of buffer first.
+* Don't double decode the ircname in whoreply.
