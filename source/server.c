@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.267 2014/03/15 15:51:44 jnelson Exp $ */
+/* $EPIC: server.c,v 1.268 2014/03/20 15:25:54 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1736,6 +1736,7 @@ static void 	vsend_to_aserver_with_payload (int refnum, const char *payload, con
 	Server *s;
 	char	buffer[BIG_BUFFER_SIZE * 11 + 1]; /* make this buffer *much*
 						  * bigger than needed */
+	int	server_part_len;
 	int	len,
 		des;
 	int	ofs;
@@ -1764,12 +1765,11 @@ static void 	vsend_to_aserver_with_payload (int refnum, const char *payload, con
 	 * 1. Press and translate the server part
 	 */
 	/* Keep the results short, and within reason. */
-	len = vsnprintf(buffer, BIG_BUFFER_SIZE, format, args);
+	server_part_len = vsnprintf(buffer, BIG_BUFFER_SIZE, format, args);
 
-#if 0
-	if (translation)
-		translate_to_server(buffer);
-#endif
+	/* XXX To be honest, this is so unlikely i'm not sure what to do here */
+	if (server_part_len == -1)
+		buffer[IRCD_BUFFER_SIZE - 200] = 0;
 
 	if (outbound_line_mangler)
 	{
@@ -1808,8 +1808,9 @@ static void 	vsend_to_aserver_with_payload (int refnum, const char *payload, con
 	/*
 	 * Send the resulting message out
 	 */
+	len = strlen(buffer);
 	s->sent = 1;
-	if (len > (IRCD_BUFFER_SIZE - 2) || len == -1)
+	if (len > (IRCD_BUFFER_SIZE - 2))
 		buffer[IRCD_BUFFER_SIZE - 2] = 0;
 	if (x_debug & DEBUG_OUTBOUND)
 		yell("[%d] -> [%s]", des, buffer);

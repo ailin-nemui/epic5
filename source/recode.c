@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.12 2014/03/19 20:58:33 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.13 2014/03/20 15:25:54 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -735,6 +735,9 @@ const char *	outbound_recode (const char *to, int server, const char *message, c
 	char *	new_buffer;
 	size_t	new_buffer_len;
 	
+	if (invalid_utf8str(message))
+		yell("WARNING - recoding outbound message, but it is not UTF8.  This will surely do the wrong thing.");
+
 	/* If there is no place to put the retval, don't do anything */
 	if (!extra)
 		return message;

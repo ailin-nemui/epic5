@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.241 2014/03/12 02:38:19 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.242 2014/03/20 15:25:54 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -6470,15 +6470,26 @@ int	invalid_utf8str (unsigned char *utf8str)
 	unsigned char *s;
 	int	code_point;
 	int	errors = 0;
+	int	count = 0;
 
 	s = utf8str;
 	while ((code_point = next_code_point((const unsigned char **)&s)))
 	{
+		/* The next byte did not start a utf8 code point */
 		if (code_point < 0)
 		{
+			/* Did it start an incomplete utf8 code point? */
 			int	x = partial_code_point(s);
 
-			if (x == 1)
+			/* 
+			 * If this is a partial/truncated code point:
+			 *  - And we have previously seen valid utf8
+			 *  - And we have not previously seen invalid utf8
+			 * Then we assume this is a partial/truncated code
+			 * point at the end of an otherwise valid string,
+			 * and chop it off.
+			 */
+			if (x == 1 && count > 0 && errors == 0)
 			{
 				*s = 0;
 				break;
@@ -6490,6 +6501,10 @@ int	invalid_utf8str (unsigned char *utf8str)
 				s++;
 			}
 		}
+
+		/* We count the number of valid utf8 points we've seen */
+		else
+			count++;
 	}
 
 	return errors;

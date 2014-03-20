@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.223 2014/03/19 20:58:33 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.224 2014/03/20 15:25:54 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -3341,9 +3341,13 @@ struct target_type target[4] =
 
 			l = message_from(current_nick, target[i].mask);
 
+			/*
+			 * TEXT is the original UTF8 string.
+			 * Recode_text is converted FOR IRC USE ONLY.
+			 */
 			if (hook && do_hook(target[i].hook_type, "%s %s", 
-						current_nick, recode_text))
-				put_it(target[i].format, current_nick, recode_text);
+						current_nick, text))
+				put_it(target[i].format, current_nick, text);
 
 			send_to_server_with_payload(recode_text, "%s %s", 
 					target[i].command, current_nick);

@@ -469,3 +469,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Missing a break. d'oh.
 * Outbound messages should not be recoded if they're already utf8.
 * Yes they must be! duh.  Square all this away with zlonix.
+* Fix send_text so it doesn't send non-utf8 text through /on send_msg
+* Finnese invalid_utf8str() so it doesn't truncate partial cp's for non-utf8s
+* Warn if we try to do double-outbound-recoding
+* Be more sensible about handling string lengths in vsend_to_server()s.
+
