@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.244 2014/03/21 03:12:28 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.245 2014/03/21 12:58:12 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -6613,7 +6613,7 @@ int	check_xdigit (unsigned char digit)
 	else if (digit >= 'A' && digit <= 'F')
 		return digit - 'A' + 10;
 	else if (digit >= 'a' && digit <= 'f')
-		return digit - 'f' + 10;
+		return digit - 'a' + 10;
 	else
 		return -1;
 }

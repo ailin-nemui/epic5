@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.113 2014/03/21 03:12:28 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.114 2014/03/21 12:58:12 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -546,7 +546,7 @@ int 	set_variable (const char *name, IrcVariable *var, const char *orig_value, i
 {
 	char	*rest;
 	int	changed = 0;
-	char	*value;
+	unsigned char	*value;
 	int	retval = 0;
 
 	if (orig_value)
@@ -572,22 +572,31 @@ int 	set_variable (const char *name, IrcVariable *var, const char *orig_value, i
 
 	    case CHAR_VAR:
 	    {
-		if (!value)
+		int	codepoint;
+
+		if (!value || !*value)
 		{
 			var->data->integer = ' ';
 			changed = 1;
+			break;
 		}
-		/* XXX TODO - This should support a single utf8 code point */
-		else if (value && *value && (value = next_arg(value, &rest)))
+
+		if ((codepoint = next_code_point(&value)) == -1)
 		{
-			if (strlen(value) > 1) {
-			    say("Value of %s must be a single character", name);
-			    retval = -1;
-			} else {
-			    var->data->integer = *value;
-			    changed = 1;
-			}
+			say("New value of %s could not be determined", name);
+			retval = -1;
+			break;
 		}
+
+		if (codepoint_numcolumns(codepoint) != 1)
+		{
+			say("New value of %s must be exactly 1 column wide", name);
+			retval = -1;
+			break;
+		}
+
+		var->data->integer = codepoint;
+		changed = 1;
 		break;
 	    }
 
@@ -878,9 +887,13 @@ char 	*make_string_var_bydata (int type, void *vp)
 			ret = malloc_strdup(var_settings[data->integer]);
 			break;
 		case CHAR_VAR:
-			/* XXX TODO - This should convert back to UTF8 */
-			ret = malloc_dupchar(data->integer);
+		{
+			char utf8str[16];
+
+			ucs_to_utf8(data->integer, utf8str, sizeof(utf8str));
+			ret = malloc_strdup(utf8str);
 			break;
+		}
 		default:
 			panic(1, "make_string_var_bydata: unrecognized type [%d]", type);
 	}

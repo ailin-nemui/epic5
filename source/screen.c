@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.171 2014/03/12 15:08:59 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.172 2014/03/21 12:58:12 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2738,7 +2738,7 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 	refnum = add_to_lastlog(window, str);
 
 	/* Add to scrollback + display... */
-	cols = window->my_columns - 1;
+	cols = window->my_columns;	/* Don't -1 this! already -1'd */
 	strval = new_normalize_string(str, 0, display_line_mangler);
         for (my_lines = prepare_display(window->refnum, strval, cols, &numl, 0); *my_lines; my_lines++)
 	{
@@ -2809,7 +2809,7 @@ void 	add_to_window_scrollback (Window *window, const unsigned char *str, intmax
 	int		numl = 0;
 
 	/* Normalize the line of output */
-	cols = window->my_columns - 1;
+	cols = window->my_columns;	/* Don't -1 this! Already -1'd! */
 	strval = new_normalize_string(str, 0, display_line_mangler);
         for (my_lines = prepare_display(window->refnum, strval, cols, &numl, 0); *my_lines; my_lines++)
 		add_to_scrollback(window, *my_lines, refnum);

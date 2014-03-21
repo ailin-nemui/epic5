@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.84 2014/03/02 17:15:56 jnelson Exp $ */
+/* $EPIC: status.c,v 1.85 2014/03/21 12:58:12 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -731,7 +731,7 @@ int	make_status (Window *window, Status *status)
 			unsigned char	utf8str[16];
 			int 		numf = 0;
 
-			if ((cols = codepoint_numcolumns(fillchar)) == -1)
+			if ((cols = codepoint_numcolumns(fillchar)) < 1)
 			{
 				/* Use space as fillchar if necessary */
 				fillchar = 32;
