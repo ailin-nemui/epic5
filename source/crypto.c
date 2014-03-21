@@ -1,4 +1,4 @@
-/* $EPIC: crypto.c,v 1.20 2014/01/14 03:56:01 jnelson Exp $ */
+/* $EPIC: crypto.c,v 1.21 2014/03/21 20:54:58 jnelson Exp $ */
 /*
  * crypto.c: SED/CAST5/BLOWFISH/AES encryption and decryption routines.
  *
@@ -177,9 +177,9 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 {
     do
     {
-	if (key->type == CAST5CRYPT || key->type == BLOWFISHCRYPT ||
-	    key->type == AES256CRYPT || key->type == AESSHA256CRYPT ||
-	    key->type == FISHCRYPT)
+	if (key->sed_type == CAST5CRYPT || key->sed_type == BLOWFISHCRYPT ||
+	    key->sed_type == AES256CRYPT || key->sed_type == AESSHA256CRYPT ||
+	    key->sed_type == FISHCRYPT)
 	{
 	    unsigned char *	outbuf = NULL;
 #ifdef HAVE_SSL
@@ -187,19 +187,19 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 	    int	bytes_to_trim;
 	    int ivsize, blocksize;
 
-	    if (key->type == CAST5CRYPT)
+	    if (key->sed_type == CAST5CRYPT)
 	    {
 		ivsize = 8, blocksize = 8;
 	    }
-	    else if (key->type == BLOWFISHCRYPT)
+	    else if (key->sed_type == BLOWFISHCRYPT)
 	    {
 		ivsize = 8, blocksize = 8;
 	    }
-	    else if (key->type == FISHCRYPT)
+	    else if (key->sed_type == FISHCRYPT)
 	    {
 		ivsize = 0, blocksize = 8;
 	    }
-	    else if (key->type == AES256CRYPT || key->type == AESSHA256CRYPT)
+	    else if (key->sed_type == AES256CRYPT || key->sed_type == AESSHA256CRYPT)
 	    {
 		ivsize = 16, blocksize = 16;
 	    }
@@ -219,13 +219,13 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 		break;
 	    }
 
-	    if (key->type == CAST5CRYPT)
+	    if (key->sed_type == CAST5CRYPT)
 		type = EVP_cast5_cbc();
-	    else if (key->type == BLOWFISHCRYPT)
+	    else if (key->sed_type == BLOWFISHCRYPT)
 		type = EVP_bf_cbc();
-	    else if (key->type == FISHCRYPT)
+	    else if (key->sed_type == FISHCRYPT)
 		type = EVP_bf_ecb();
-	    else if (key->type == AES256CRYPT || key->type == AESSHA256CRYPT)
+	    else if (key->sed_type == AES256CRYPT || key->sed_type == AESSHA256CRYPT)
 		type = EVP_aes_256_cbc();
 	    else
 		break;		/* Not supported */
@@ -245,7 +245,7 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 #endif
 	    return outbuf;
 	}
-	else if (key->type == SEDCRYPT || key->type == SEDSHACRYPT)
+	else if (key->sed_type == SEDCRYPT || key->sed_type == SEDSHACRYPT)
 	{
 		unsigned char *	text;
 
@@ -255,7 +255,7 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 		*retlen = len;
 		return text;
 	}
-	else if (key->type == PROGCRYPT)
+	else if (key->sed_type == PROGCRYPT)
 	{
 		unsigned char *retval;
 
@@ -264,7 +264,7 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 		return retval;
 	}
 	else
-		panic(1, "decipher_message: key->type %d is not valid", key->type);
+		panic(1, "decipher_message: key->sed_type %d is not valid", key->sed_type);
     }
     while (0);
 
@@ -374,31 +374,31 @@ unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, C
 	if (!orig_message || !key || !retlen)
 		return NULL;
 
-	if (key->type == CAST5CRYPT || key->type == BLOWFISHCRYPT ||
-	    key->type == FISHCRYPT ||
-	    key->type == AES256CRYPT || key->type == AESSHA256CRYPT)
+	if (key->sed_type == CAST5CRYPT || key->sed_type == BLOWFISHCRYPT ||
+	    key->sed_type == FISHCRYPT ||
+	    key->sed_type == AES256CRYPT || key->sed_type == AESSHA256CRYPT)
 	{
 	    unsigned char *ciphertext = NULL;
 #ifdef HAVE_SSL
 	    size_t	ivlen;
 	    const EVP_CIPHER *type;
 
-	    if (key->type == CAST5CRYPT)
+	    if (key->sed_type == CAST5CRYPT)
 	    {
 		type = EVP_cast5_cbc();
 		ivlen = 8;
 	    }
-	    else if (key->type == BLOWFISHCRYPT)
+	    else if (key->sed_type == BLOWFISHCRYPT)
 	    {
 		type = EVP_bf_cbc();
 		ivlen = 8;
 	    }
-	    else if (key->type == FISHCRYPT)
+	    else if (key->sed_type == FISHCRYPT)
 	    {
 		type = EVP_bf_ecb();
 		ivlen = 0;		/* XXX Sigh */
 	    }
-	    else if (key->type == AES256CRYPT || key->type == AESSHA256CRYPT)
+	    else if (key->sed_type == AES256CRYPT || key->sed_type == AESSHA256CRYPT)
 	    {
 		type = EVP_aes_256_cbc();
 		ivlen = 16;
@@ -416,7 +416,7 @@ unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, C
 #endif
 	    return ciphertext;
 	}
-	else if (key->type == SEDCRYPT || key->type == SEDSHACRYPT)
+	else if (key->sed_type == SEDCRYPT || key->sed_type == SEDSHACRYPT)
 	{
 		unsigned char *	ciphertext;
 
@@ -426,7 +426,7 @@ unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, C
 		*retlen = len;
 		return ciphertext;
 	}
-	else if (key->type == PROGCRYPT)
+	else if (key->sed_type == PROGCRYPT)
 	{
 		unsigned char *ciphertext;
 
@@ -435,7 +435,7 @@ unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, C
 		return ciphertext;
 	}
 	else
-		panic(1, "cipher_message: key->type %d is not valid", key->type);
+		panic(1, "cipher_message: key->sed_type %d is not valid", key->sed_type);
 
 	return NULL;
 }

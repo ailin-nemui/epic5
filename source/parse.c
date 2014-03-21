@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.106 2014/03/20 20:40:32 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.107 2014/03/21 20:54:58 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1560,6 +1560,7 @@ void	rfc1459_any_to_utf8 (char *buffer, size_t buffsiz, char **extra)
 	char *	payload_part;
 	size_t	bytes_needed = 0;
 	char *	from = NULL, *to = NULL;
+	char *	command = NULL;
 	char *  endp;
 	char *	extra_server_part = NULL;
 	char *	extra_payload_part = NULL;
@@ -1634,7 +1635,7 @@ void	rfc1459_any_to_utf8 (char *buffer, size_t buffsiz, char **extra)
 	 * to figure out who sent this message, and recode it with their
 	 * encoding.  This deals with channels and nicks already in utf8.
 	 */
-	if (*payload_part && invalid_utf8str(payload_part))
+	if (*payload_part && invalid_utf8str(payload_part)) do
 	{
 		char *	server_part_copy;
 
@@ -1676,6 +1677,7 @@ void	rfc1459_any_to_utf8 (char *buffer, size_t buffsiz, char **extra)
 		}
 
 		/* Skip over the command word */
+		command = endp;
 		for (; *endp; endp++)
 		{
 			if (*endp == ' ')
@@ -1701,6 +1703,42 @@ void	rfc1459_any_to_utf8 (char *buffer, size_t buffsiz, char **extra)
 		if (!*to)
 			to = NULL;
 
+		/*
+		 * XXX UGH! BLEH! HIDEOUS!
+		 *
+		 * Some things are not recode ready.  We must detect them and
+		 * then force them to recode on their own later.
+		 * This is where the special cases are handled.
+		 */
+
+		/*
+		 * Special case #1 -- CTCP messages
+		 * Description:
+		 *    A PRIVMSG or NOTICE where the first byte of the
+		 * 	payload is \001 and the final bytes of the payload
+		 *	are \001\r\n, and there are no intervening \001s 
+		 * 	shall be treated as a well-formed CTCP message/request
+		 *	and is not subject to recoding.
+		 */
+		if (!strcmp(command, "PRIVMSG") || !strcmp(command, "NOTICE"))
+		{
+			if (payload_part[0] == ':' && payload_part[1] == '\001')
+			{
+				const char *p;
+
+				/* The second \001 must be before newline */
+				p = strchr(payload_part + 2, '\001');
+				if (p && p[1] == 0)
+					break;
+
+				/* Otherwise it's nonsense; recode it */
+			}
+		}
+
+
+		/*
+		 * Everything else isn't subject to special casing.
+		 */
 		if (x_debug & DEBUG_RECODE)
 			say(">> Recoding payload from [%s], to [%s], server [%d]", 
 				from?from:"", to?to:"", from_server);
@@ -1713,6 +1751,7 @@ void	rfc1459_any_to_utf8 (char *buffer, size_t buffsiz, char **extra)
 		if (x_debug & DEBUG_RECODE)
 			say(">> Recoded payload part: %s", payload_part);
 	}
+	while (0);
 
 	/* Make copies just to get them out of 'buffer' */
 	server_part = LOCAL_COPY(server_part);

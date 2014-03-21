@@ -1,4 +1,4 @@
-/* $EPIC: crypt.c,v 1.44 2013/10/30 02:56:52 jnelson Exp $ */
+/* $EPIC: crypt.c,v 1.45 2014/03/21 20:54:58 jnelson Exp $ */
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
@@ -43,14 +43,14 @@
 #define CRYPT_BUFFER_SIZE (IRCD_BUFFER_SIZE - 50)	/* Make this less than
 							 * the transmittable
 							 * buffer */
-const char *	happykey (const char *key, int type);
+const char *	happykey (const char *key, int sed_type);
 
 /* crypt_list: the list of nicknames and encryption keys */
 static	Crypt	*crypt_list = (Crypt *) 0;
 
 struct ciphertypes {
-	int	flag;
-	int	ctcp_flag;
+	int	sed_type;
+	int	ctcp_type;
 	const char *flagname;
 	const char *username;
 	const char *ctcpname;
@@ -77,20 +77,20 @@ const char *allciphers = "SED, SEDSHA, CAST, BLOWFISH, AES or AESSHA";
 const char *allciphers = "SED or SEDSHA (sorry, no SSL support)";
 #endif
 
-static	Crypt *	internal_is_crypted (Char *nick, Char *serv, int type);
-static int	internal_remove_crypt (Char *nick, Char *serv, int type);
+static	Crypt *	internal_is_crypted (Char *nick, Char *serv, int sed_type);
+static int	internal_remove_crypt (Char *nick, Char *serv, int sed_type);
 
 /*
  * add_to_crypt: adds the nickname and key pair to the crypt_list.  If the
  * nickname is already in the list, then the key is changed the the supplied
  * key. 
  */
-static void	add_to_crypt (Char *nick, Char *serv, Char *key, Char *prog, int type)
+static void	add_to_crypt (Char *nick, Char *serv, Char *key, Char *prog, int sed_type)
 {
 	Crypt	*new_crypt;
 
 	/* Create a 'new_crypt' if one doesn't already exist */
-	if (!(new_crypt = internal_is_crypted(nick, serv, type)))
+	if (!(new_crypt = internal_is_crypted(nick, serv, sed_type)))
 	{
 		new_crypt = (Crypt *) new_malloc(sizeof(Crypt));
 		new_crypt->nick = NULL;
@@ -98,7 +98,7 @@ static void	add_to_crypt (Char *nick, Char *serv, Char *key, Char *prog, int typ
 		new_crypt->key = NULL;
 		new_crypt->keylen = 0;
 		new_crypt->prog = NULL;
-		new_crypt->type = type;
+		new_crypt->sed_type = sed_type;
 	}
 
 	/* Fill in the 'nick' field. */
@@ -109,15 +109,15 @@ static void	add_to_crypt (Char *nick, Char *serv, Char *key, Char *prog, int typ
 		malloc_strcpy(&new_crypt->serv, serv);
 
 	/* Fill in the 'key' field. */
-	if (type == AES256CRYPT || type == AESSHA256CRYPT || 
-		type == SEDSHACRYPT)
+	if (sed_type == AES256CRYPT || sed_type == AESSHA256CRYPT || 
+		sed_type == SEDSHACRYPT)
 	{
 		if (new_crypt->key == NULL)
 			new_crypt->key = new_malloc(32);
 		memset(new_crypt->key, 0, 32);
 		new_crypt->keylen = 32;
 
-		if (type == AES256CRYPT)
+		if (sed_type == AES256CRYPT)
 			memcpy(new_crypt->key, key, strlen(key));
 		else
 			sha256(key, strlen(key), new_crypt->key);
@@ -132,7 +132,7 @@ static void	add_to_crypt (Char *nick, Char *serv, Char *key, Char *prog, int typ
 	if (prog && *prog)
 	{
 		malloc_strcpy(&new_crypt->prog, prog);
-		new_crypt->type = PROGCRYPT;
+		new_crypt->sed_type = PROGCRYPT;
 	}
 	else
 		new_free(&new_crypt->prog);
@@ -141,13 +141,13 @@ static void	add_to_crypt (Char *nick, Char *serv, Char *key, Char *prog, int typ
 	add_to_list((List **)&crypt_list, (List *)new_crypt);
 }
 
-static	Crypt *	internal_is_crypted (Char *nick, Char *serv, int type)
+static	Crypt *	internal_is_crypted (Char *nick, Char *serv, int sed_type)
 {
         Crypt   *tmp;
 
         for (tmp = crypt_list; tmp; tmp = tmp->next)
         {
-                if (tmp->type != type)
+                if (tmp->sed_type != sed_type)
                         continue;
                 if (my_stricmp(tmp->nick, nick))
                         continue;
@@ -191,11 +191,11 @@ static void	cleanse_crypto_item (Crypt *item)
  * remove_crypt: removes the given nickname from the crypt_list, returning 0
  * if successful, and 1 if not (because the nickname wasn't in the list) 
  */
-static int	internal_remove_crypt (Char *nick, Char *serv, int type)
+static int	internal_remove_crypt (Char *nick, Char *serv, int sed_type)
 {
 	Crypt	*item = NULL;
 
-	if ((item = internal_is_crypted(nick, serv, type)) &&
+	if ((item = internal_is_crypted(nick, serv, sed_type)) &&
 		(remove_item_from_list((List **)&crypt_list, (List *)item)))
 	{
 		cleanse_crypto_item(item);
@@ -236,14 +236,18 @@ static	void	clear_crypto_list (void)
  *	6) The item doesn't have a servdesc.
  *
  * It's not supposed to be possible for two crypt keys to collide because
- * (nick, serv, type) is the primary key of the crypt list.
+ * (nick, serv, sed_type) is the primary key of the crypt list.
  */
 #define CHECK_NICK_AND_TYPE \
-	    if (tmp->nick && my_stricmp(tmp->nick, nick))	\
-		continue;					\
-	    if (type != ANYCRYPT && tmp->type != type)		\
-		if (type == SEDCRYPT && tmp->type != PROGCRYPT) \
-			continue;				\
+	    if (tmp->nick && my_stricmp(tmp->nick, nick))		\
+		continue;						\
+	    if (sed_type != ANYCRYPT && tmp->sed_type != sed_type)	\
+	    {								\
+		if (sed_type == SEDCRYPT && tmp->sed_type != PROGCRYPT) \
+			/* ok */;					\
+		else							\
+			continue;					\
+	    }
 
 #define CHECK_CRYPTO_LIST(x) \
 	for (tmp = crypt_list; tmp; tmp = tmp->next)		\
@@ -256,27 +260,31 @@ static	void	clear_crypto_list (void)
 Crypt *	is_crypted (Char *nick, int serv, int ctcp_type)
 {
 	Crypt *	tmp;
-	int	type = NOCRYPT;
+	int	sed_type = NOCRYPT;
 	int	i;
 
 	if (!crypt_list)
 		return NULL;
 
+	/* Convert CTCP_TYPE (ctcp.c:ctcp_cmd->id) into SED_TYPE */
+	/* Except that ANYCRYPT (== -1) matches anything */
 	if (ctcp_type != ANYCRYPT)
 	{
 		for (i = 0; ciphers[i].username; i++)
-			if (ciphers[i].ctcp_flag == ctcp_type)
-				type = ciphers[i].flag;
-		if (type == NOCRYPT)
+			if (ciphers[i].ctcp_type == ctcp_type)
+				sed_type = ciphers[i].sed_type;
+
+		if (sed_type == NOCRYPT)
 			return NULL;
 	}
 	else
-		type = ANYCRYPT;
+		sed_type = ANYCRYPT;
 
 	/* Look for the refnum -- Bummer, special case */
 	for (tmp = crypt_list; tmp; tmp = tmp->next)
 	{
 	    CHECK_NICK_AND_TYPE
+
 	    if (tmp->serv && is_number(tmp->serv) && atol(tmp->serv) == serv)
 		return tmp;
 	}
@@ -323,7 +331,7 @@ BUILT_IN_COMMAND(encrypt_cmd)
 	char	*nick = NULL, 
 		*key = NULL, 
 		*prog = NULL;
-	int	type = SEDCRYPT;
+	int	sed_type = SEDCRYPT;
 	char *	arg;
 	int	i;
 
@@ -334,15 +342,15 @@ BUILT_IN_COMMAND(encrypt_cmd)
 
 	    else if (*arg == '-')
 	    {
-		type = NOCRYPT;
+		sed_type = NOCRYPT;
 		for (i = 0; ciphers[i].username; i++)
 		{
 		    if (ciphers[i].flagname && 
 					!my_stricmp(arg,ciphers[i].flagname))
-			type = ciphers[i].flag;
+			sed_type = ciphers[i].sed_type;
 		}
 
-		if (type == NOCRYPT)
+		if (sed_type == NOCRYPT)
 		    goto usage_error;
 	    }
 	    else if (nick == NULL)
@@ -352,7 +360,7 @@ BUILT_IN_COMMAND(encrypt_cmd)
 	    else if (prog == NULL)
 	    {
 		prog = arg;
-		type = PROGCRYPT;
+		sed_type = PROGCRYPT;
 	    }
 	    else
 	    {
@@ -378,20 +386,20 @@ usage_error:
 
 	    if (key)
 	    {
-		add_to_crypt(nick, serv, key, prog, type);
+		add_to_crypt(nick, serv, key, prog, sed_type);
 		say("Will now cipher messages with '%s' on '%s' using '%s' "
 			"with the key '%s'.",
 				nick, serv ? serv : "<any>",
-				prog ? prog : ciphers[type].username, key);
+				prog ? prog : ciphers[sed_type].username, key);
 	    }
-	    else if (internal_remove_crypt(nick, serv, type))
+	    else if (internal_remove_crypt(nick, serv, sed_type))
 		say("Not ciphering messages with '%s' on '%s' using '%s'.",
 			nick, serv ? serv : "<any>",
-			prog ? prog : ciphers[type].username);
+			prog ? prog : ciphers[sed_type].username);
 	    else
 		say("Will no longer cipher messages with '%s' on '%s' using '%s'.",
 			nick, serv ? serv : "<any>",
-			prog ? prog : ciphers[type].username);
+			prog ? prog : ciphers[sed_type].username);
 	}
 
 	else if (crypt_list)
@@ -405,8 +413,8 @@ usage_error:
 				tmp->nick, 
 				tmp->serv ? tmp->serv : "<any>",
 				tmp->prog ? tmp->prog : 
-					ciphers[tmp->type].username, 
-				happykey(tmp->key, tmp->type));
+					ciphers[tmp->sed_type].username, 
+				happykey(tmp->key, tmp->sed_type));
 	}
 	else
 	    say("You are not ciphering messages with anyone.");
@@ -417,7 +425,7 @@ usage_error:
  *
  * Whenever you have a C string containing plain text and you want to 
  * convert it into something you can send over irc, you call is_crypted()
- * with the cipher type of "ANYCRYPT" to fetch a crypt key, and then you 
+ * with the cipher sed_type of "ANYCRYPT" to fetch a crypt key, and then you 
  * pass the string and the key to this function.  This function returns a
  * malloced string containing a payload that you can send in a PRIVMSG/NOTICE.
  *
@@ -449,12 +457,12 @@ char *	crypt_msg (const unsigned char *str, Crypt *key)
 		return ciphertext;	/* Here goes nothing! */
 	}
 
-	if (ciphers[key->type].ctcpname)
+	if (ciphers[key->sed_type].ctcpname)
 	     snprintf(buffer, sizeof(buffer), "%c%s %s%c",
-			CTCP_DELIM_CHAR, ciphers[key->type].ctcpname, 
+			CTCP_DELIM_CHAR, ciphers[key->sed_type].ctcpname, 
 			dest, CTCP_DELIM_CHAR);
 	else
-		panic(1, "crypt_msg: key->type == %d not supported.", key->type);
+		panic(1, "crypt_msg: key->sed_type == %d not supported.", key->sed_type);
 
 	new_free(&ciphertext);
 	new_free(&dest);
@@ -509,11 +517,11 @@ char *	decrypt_msg (const unsigned char *str, Crypt *key)
 	return plaintext;
 }
 
-const char *	happykey (const char *key, int type)
+const char *	happykey (const char *key, int sed_type)
 {
 	static char prettykey[BIG_BUFFER_SIZE];
 
-	if (type == AESSHA256CRYPT || type == SEDSHACRYPT)
+	if (sed_type == AESSHA256CRYPT || sed_type == SEDSHACRYPT)
 	{
 		int	i;
 		for (i = 0; i < 32; i++)		/* XXX */

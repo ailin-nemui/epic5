@@ -4,6 +4,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Some things (left/right/mid/strlen/fec) aren't utf8 aware.
 * Create $encodingctl()
+* Sending encrypted ctcp actions with recoding results in double encode
+  on the sending side.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -482,4 +484,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix typo in check_xdigit() that borked 256 colors
 * Fix $status_oneoff() to repeat with space if status bar is empty string.
 * Don't -1 the line len when passing to prepare_display(); already adjusted!
+* De-confuse ctcp_type and sed_type in the /encrypt stuff
+* Make encryption work again, with encoding (but not with recursive ctcps)
+* Write special handling for (defering) recoding of CTCPs until decrypted
 

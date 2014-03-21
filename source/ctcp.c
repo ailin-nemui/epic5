@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.61 2014/03/15 15:51:44 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.62 2014/03/21 20:54:58 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -226,10 +226,9 @@ CTCP_HANDLER(do_crypto)
 	if (!key || !ret) {
 		sed = 2;
 		malloc_strcpy(&ret2, "[ENCRYPTED MESSAGE]");
-	} else if (!*ret) {
-		sed = 2;
-		malloc_strcpy(&ret2, "[ENCRYPTED MESSAGE - BAD KEY?]");
 	} else {
+		char *extra = NULL;
+
 		/* 
 		 * There might be a CTCP message in there,
 		 * so we see if we can find it.
@@ -238,6 +237,22 @@ CTCP_HANDLER(do_crypto)
 			ret2 = malloc_strdup(do_ctcp(from, to, ret));
 		else if (get_server_doing_notice(from_server))
 			ret2 = malloc_strdup(do_notice_ctcp(from, to, ret));
+		else
+		{
+			ret2 = ret;
+			ret = NULL;
+		}
+
+		/*
+		 * We must recode to UTF8
+		 */
+                inbound_recode(from, from_server, to, ret2, &extra);
+                if (extra)
+		{
+			new_free(&ret2);
+			ret2 = extra;
+		}
+
 		sed = 1;
 	}
 

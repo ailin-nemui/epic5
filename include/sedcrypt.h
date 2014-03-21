@@ -31,7 +31,7 @@ typedef struct	CryptStru
 	char *	serv;
 	char *	key;
 	int	keylen;
-	int	type;
+	int	sed_type;
 	char *	prog;
 }	Crypt;
 
