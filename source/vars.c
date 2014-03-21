@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.112 2012/11/26 05:09:35 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.113 2014/03/21 03:12:28 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -577,6 +577,7 @@ int 	set_variable (const char *name, IrcVariable *var, const char *orig_value, i
 			var->data->integer = ' ';
 			changed = 1;
 		}
+		/* XXX TODO - This should support a single utf8 code point */
 		else if (value && *value && (value = next_arg(value, &rest)))
 		{
 			if (strlen(value) > 1) {
@@ -877,6 +878,7 @@ char 	*make_string_var_bydata (int type, void *vp)
 			ret = malloc_strdup(var_settings[data->integer]);
 			break;
 		case CHAR_VAR:
+			/* XXX TODO - This should convert back to UTF8 */
 			ret = malloc_dupchar(data->integer);
 			break;
 		default:

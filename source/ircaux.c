@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.243 2014/03/20 20:40:32 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.244 2014/03/21 03:12:28 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2228,47 +2228,115 @@ const char *	ftoa (double foo)
 }
 
 /*
- * Formats "src" into "dest" using the given length.  If "length" is
- * negative, then the string is right-justified.  If "length" is
- * zero, nothing happens.  Sure, i cheat, but its cheaper then doing
- * two snprintf's.
+ * strformat - Return 'src' so it is 'length' columns wide.
  *
- * Changed to use the PAD_CHAR variable, which allows the user to specify
- * what character should be used to "fill out" the padding.
+ * Arguments:
+ *	dest	- Where to return results. should be 6 times size of 'src'.
+ *	src	- A UTF8 string
+ *	length	- How many columns 'src' should take up
+ *		  If > 0, src is left justified
+ *		  If 0, error (dest is unchanged)
+ *		  If < 0, src is right justified
+ *	pad	- If 'src' is not 'length' columns wide, use this code
+ *		  point to pad it out.
+ *
+ * Note:
+ *	If 'src' is greater than 'length', then it is TRUNCATED.
+ *	If 'src' is less than 'length' then it will be left or right
+ *	padded with 'pad', (which should be a 1 column code point)
  */
-char *	strformat (char *dest, const char *src, ssize_t length, int pad)
+char *	strformat (char *dest, size_t destlen, const unsigned char *src, ssize_t length, int pad)
 {
-	char *		ptr1 = dest;
-	const char *	ptr2 = src;
-	int 		tmplen = length;
-	int 		abslen;
-	char 		padc;
+	int	srclen;		/* How many columns 'src' is */
+	int	srcuse;		/* How many columns filled by 'src' */
+	int	paduse;		/* How many columns filled by 'pad' */
+	char	padutf8[8];	/* 'pad' as a utf8 string */
+	int	padlen;		/* How many columns padutf8 takes */
+	int	padreps;	/* How many padutf8's we need in result */
+	int	i;
 
-	abslen = (length >= 0 ? length : -length);
-	if ((padc = (char)pad) == 0)
-		padc = ' ';
+	/* How many columns does the source string take up? */
+	srclen = display_column_count(src);
 
-	/* Cheat by spacing out 'dest' */
-	for (tmplen = abslen - 1; tmplen >= 0; tmplen--)
-		dest[tmplen] = padc;
-	dest[abslen] = 0;
-
-	/* Then cheat further by deciding where the string should go. */
-	if (length > 0)		/* left justified */
+	/*
+	 * Figure out how many columns to use from 'src'
+	 * and how many columns to use from 'pad'
+	 */
+	/* Right Justify */
+	if (length < 0)	
 	{
-		while ((length-- > 0) && *ptr2)
-			*ptr1++ = *ptr2++;
+		if (-length < srclen)
+		{
+			srcuse = -length;		/* Truncate! */
+			paduse = 0;
+		}
+		else
+		{
+			srcuse = srclen;
+			paduse = length + srclen;	/* Negative! */
+		}
 	}
-	else if (length < 0)	/* right justified */
+
+	/* This is nonsense - just cut it short */
+	else if (length == 0)
 	{
-		length = -length;
-		ptr1 = dest;
-		ptr2 = src;
-		if ((int)strlen(src) < length)
-			ptr1 += length - strlen(src);
-		while ((length-- > 0) && *ptr2)
-			*ptr1++ = *ptr2++;
+		*dest = 0;
+		return dest;
 	}
+
+	/* Left Justify */
+	else
+	{
+		if (length < srclen)
+		{
+			srcuse = length;		/* Truncate! */
+			paduse = 0;
+		}
+		else
+		{
+			srcuse = srclen;
+			paduse = length - srclen;	/* Positive! */
+		}
+	}
+
+	ucs_to_utf8(pad, padutf8, sizeof(padutf8));
+	if ((padlen = display_column_count(padutf8)) == 0)
+	{
+		pad = ' ';
+		strcpy(padutf8, " ");
+		padlen = 1;
+	}
+	padreps = paduse / padlen;
+
+
+	/* 
+	 * Create the result.
+	 * 'padreps' has the sign of 'length' (< 0 Left Justify, > 0 Right)
+	 * and it is the difference of 'length' and columns of 'src'.
+	 * So if 'length' is shorter than 'src', padreps is 0.
+	 */
+	*dest = 0;
+	for (i = padreps; i < 0; i++)
+		strlcat(dest, padutf8, destlen);
+	while (srcuse > 0)
+	{
+		int	codepoint;
+		int	cols;
+		char	utf8str[16];
+		char	utf8strlen;
+
+		codepoint = next_code_point(&src);
+		cols = codepoint_numcolumns(codepoint);
+		if (cols == -1)
+			cols = 1;	/* XXX is this right? */
+
+		ucs_to_utf8(codepoint, utf8str, sizeof(utf8str));
+		strlcat(dest, utf8str, destlen);
+		srcuse -= cols;
+	}
+	for (i = 0; i < padreps; i++)
+		strlcat(dest, padutf8, destlen);
+
 	return dest;
 }
 

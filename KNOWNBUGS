@@ -5,6 +5,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Some things (left/right/mid/strlen/fec) aren't utf8 aware.
 * $[num]var is not utf8 aware (as in $[9]1 for /on who)
 * Create $encodingctl()
+* $status_oneoff(1 %S) hangs.  And $status_oneoff(1 %{1}S) is one char too long.
+* Make CHAR /set's store as a unicode code point.  Test with PAD_CHAR especial.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -477,3 +479,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $^*var to 'quote everything' (except letters and digits)
 * When recoding inbound, move server|payload part out of buffer first.
 * Don't double decode the ircname in whoreply.
+* Rewrite strformat() to be utf8 aware.
+* Rewrite $pad() to be utf8 aware.

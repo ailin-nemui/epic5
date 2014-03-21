@@ -1,4 +1,4 @@
-/* $EPIC: expr.c,v 1.42 2014/02/06 17:14:24 jnelson Exp $ */
+/* $EPIC: expr.c,v 1.43 2014/03/21 03:12:27 jnelson Exp $ */
 /*
  * expr.c -- The expression mode parser and the textual mode parser
  * #included by alias.c -- DO NOT DELETE
@@ -1894,9 +1894,9 @@ static	void	TruncateAndQuote (char **buff, const char *add, ssize_t length, cons
 		 * of the function, so yes, we can reference "add" after
 		 * the end of this block.
 		 */
-		real_size = abs(length) + 1;
+		real_size = abs(length) * 6 + 1;
 		buffer = alloca(real_size);
-		add = strformat(buffer, add, length, get_int_var(PAD_CHAR_VAR));
+		add = strformat(buffer, real_size, add, length, get_int_var(PAD_CHAR_VAR));
 	}
 	if (quote_em && add)	/* add shouldnt ever be NULL, though! */
 	{

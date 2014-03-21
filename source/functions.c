@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.304 2014/03/12 15:08:59 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.305 2014/03/21 03:12:28 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -5282,27 +5282,28 @@ BUILT_IN_FUNCTION(function_pad, input)
 {
 	int	width;
 	size_t	awidth, len;
-	char	*pads;
+	unsigned char	*pads;
 	char	*retval;
+	size_t	retvalsiz;
+	int	codepoint;
 
 	GET_INT_ARG(width, input);
 	GET_DWORD_ARG(pads, input);
-	len = strlen(input);
+	len = display_column_count(input);
 
-	if (width > 0)
-		awidth = width;
-	else
-		awidth = -width;
+	if ((codepoint = next_code_point(&pads)) == -1)
+		codepoint = ' ';	/* Sigh */
 
-	if (awidth < len)
+	if ((awidth = labs(width)) < len)
 		RETURN_STR(input);
 
 	/* Don't allow this to be > 1MB to avoid malloc failure panic */
 	if (awidth > 1000000)
 		awidth = 1000000;
 
-	retval = new_malloc(awidth + 2);
-	return strformat(retval, input, width, (int)*pads);
+	retvalsiz = awidth * 6 + 2;
+	retval = new_malloc(retvalsiz);
+	return strformat(retval, retvalsiz, input, width, codepoint);
 }
 
 
