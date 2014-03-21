@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.305 2014/03/21 03:12:28 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.306 2014/03/21 22:01:33 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -986,25 +986,46 @@ static	char	*alias_server_version  (void)
 
 /*
  * Usage: $left(number text)
- * Returns: the <number> leftmost characters in <text>.
+ * Returns: the <number> leftmost code points in <text>.
  * Example: $left(5 the quick brown frog) returns "the q"
  *
  * Note: the difference between $[10]foo and $left(10 foo) is that the former
  * is padded and the latter is not.
+ *
+ * Note: This function counts code points, not columns!  So non-printable
+ * codepoints (like ^B/^V/^C) still count!
  */
 BUILT_IN_FUNCTION(function_left, word)
 {
-	int	count;
+	int		keepers,	/* The number of CPs to retain */
+			count,		/* How many we've copied so far */
+			code_point;	/* The current CP we're working on */
+	unsigned char 	*s;		/* Pointer at next CP */
 
-	GET_INT_ARG(count, word);
+	GET_INT_ARG(keepers, word);
 	RETURN_IF_EMPTY(word);
 
-	if (count < 0)
+	if (keepers <= 0)
 		RETURN_EMPTY;
 
-	if (strlen(word) > (size_t)count)
-		word[count] = 0;
+	/* Return the whole string if it's "short" */
+	if (keepers >= quick_code_point_count(word))
+		RETURN_STR(word);
 
+	count = 0;
+	s = word;
+	while ((code_point = next_code_point((const unsigned char **)&s)))
+	{
+		/* Invalid CPs count as 1, + we skip them. */
+		if (code_point == -1)
+			s++;
+
+		if (++count >= keepers)
+			break;
+	}
+
+	/* Chop the string off here */
+	*s = 0;
 	RETURN_STR(word);
 }
 
@@ -1015,18 +1036,37 @@ BUILT_IN_FUNCTION(function_left, word)
  */
 BUILT_IN_FUNCTION(function_right, word)
 {
-	int	count;
+	int	keepers,	/* The number of CPs to retain */
+		count,		/* How many we've copied so far */
+		code_point,	/* The current CP we're working on */
+		total,		/* How many CPs are in word */
+		ignores;	/* Leading CPs to ignore */
+	char 	*s;		/* Pointer at next CP */
 
-	GET_INT_ARG(count, word);
+	GET_INT_ARG(keepers, word);
 	RETURN_IF_EMPTY(word);
 
-	if (count < 0)
+	if (keepers <= 0)
 		RETURN_EMPTY;
 
-	if (strlen(word) > (size_t)count)
-		word += strlen(word) - count;
+	/* Return the whole string if it's "short" */
+	if (keepers >= ((total = quick_code_point_count(word))))
+		RETURN_STR(word);
 
-	RETURN_STR(word);
+	/* Skip the first 'ignores' CPs */
+	ignores = total - keepers;
+	s = word;
+	while ((code_point = next_code_point((const unsigned char **)&s)))
+	{
+		/* Invalid CPs count as 1, + we skip them. */
+		if (code_point == -1)
+			s++;
+
+		if (--ignores <= 0)
+			break;
+	}
+
+	RETURN_STR(s);
 }
 
 /*
@@ -1038,25 +1078,58 @@ BUILT_IN_FUNCTION(function_right, word)
  */
 BUILT_IN_FUNCTION(function_mid, word)
 {
-	int	start, length;
+	int	keepers,	/* The number of CPs to retain */
+		count,		/* How many we've copied so far */
+		code_point,	/* The current CP we're working on */
+		total;		/* How many CPs are in word */
+	int	start;
+	char 	*s;		/* Pointer at next CP */
+	char	*retval;
 
 	GET_INT_ARG(start, word);
-	GET_INT_ARG(length, word);
+	GET_INT_ARG(keepers, word);
 	RETURN_IF_EMPTY(word);
 
-	if (start < (int)strlen(word))
+	if (keepers <= 0)
+		RETURN_EMPTY;
+
+	if (start < 0)
+		RETURN_EMPTY;
+	if (start > quick_code_point_count(word))
+		RETURN_EMPTY;
+
+	/* Skip the initial CPs */
+	for (s = word, count = 0; count < start; count++)
 	{
-		word += start;
-		if (length < 0)
-			RETURN_EMPTY;
-
-		if ((size_t)length < strlen(word))
-			word[length] = 0;
+		/* Invalid CPs count as 1, and we skip them. */
+		code_point = next_code_point((const unsigned char **)&s);
+		if (code_point == -1)
+			s++;
 	}
-	else
-		word = endstr(word);
 
-	RETURN_STR(word);
+	/* This is our anchor */
+	retval = s;
+
+	/* Return the whole string if it's "short" */
+	if (keepers >= quick_code_point_count(retval))
+		RETURN_STR(retval);
+
+	/* Otherwise count off 'keepers' CPs */
+	count = 0;
+	s = retval;
+	while ((code_point = next_code_point((const unsigned char **)&s)))
+	{
+		/* Invalid CPs count as 1, + we skip them. */
+		if (code_point == -1)
+			s++;
+
+		if (++count >= keepers)
+			break;
+	}
+
+	/* Chop the string off here */
+	*s = 0;
+	RETURN_STR(retval);
 }
 
 
@@ -5291,7 +5364,7 @@ BUILT_IN_FUNCTION(function_pad, input)
 	GET_DWORD_ARG(pads, input);
 	len = display_column_count(input);
 
-	if ((codepoint = next_code_point(&pads)) == -1)
+	if ((codepoint = next_code_point((const unsigned char **)&pads)) == -1)
 		codepoint = ' ';	/* Sigh */
 
 	if ((awidth = labs(width)) < len)

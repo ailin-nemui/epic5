@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.114 2014/03/21 12:58:12 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.115 2014/03/21 22:01:33 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -581,7 +581,7 @@ int 	set_variable (const char *name, IrcVariable *var, const char *orig_value, i
 			break;
 		}
 
-		if ((codepoint = next_code_point(&value)) == -1)
+		if ((codepoint = next_code_point((const unsigned char **)&value)) == -1)
 		{
 			say("New value of %s could not be determined", name);
 			retval = -1;

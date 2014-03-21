@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.46 2013/07/28 23:16:14 jnelson Exp $ */
+/* $EPIC: if.c,v 1.47 2014/03/21 22:01:33 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -471,7 +471,7 @@ BUILT_IN_COMMAND(fe)
 		*var[255],
 		*word = NULL,
 		*todo = NULL,
-		fec_buffer[2];
+		fec_buffer[16];
 	unsigned	ind, x, y;
 	int     old_display;
 	int	doing_fe = !strcmp(command, "FE");
@@ -534,7 +534,7 @@ BUILT_IN_COMMAND(fe)
 	old_display = window_display;
 
 	if (!doing_fe)
-		{ word = fec_buffer; word[1] = 0; }
+		{ word = fec_buffer; }
 
 	placeholder = templist;
 
@@ -547,7 +547,16 @@ BUILT_IN_COMMAND(fe)
 			if (doing_fe)
 				word = next_func_arg(templist, &templist);
 			else
-				word[0] = *templist ? *templist++ : 0;
+			{
+				int	codepoint;
+				codepoint = next_code_point((const unsigned char **)&templist);
+				if (codepoint == -1)
+				{
+					templist++;
+					continue /* What to do? */;
+				}
+				ucs_to_utf8(codepoint, word, 16);
+			}
 
 			/* Something is really hosed if this happens */
 			if (!word)

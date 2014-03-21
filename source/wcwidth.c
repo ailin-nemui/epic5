@@ -223,6 +223,10 @@ int     next_code_point (const unsigned char **i)
         str = *i;
         a = b = c = d = 0;
 
+	/* Forcibly refuse to walk past the nul */
+	if (!str[0])
+		return 0;
+
         if (str[0])
         {
                 a = str[0];
@@ -472,4 +476,25 @@ int	input_column_count (const unsigned char *str)
 
 	return length;
 }
+
+/*
+ * This does a QUICK code point count.
+ * Every code point contains one (and only one) byte in the range:
+ *	0x00-0x7F
+ *	0xC0-0xFF
+ * This function doesn't attempt to validate broken utf8.
+ */
+int	quick_code_point_count (const unsigned char *str)
+{
+	const unsigned char *s;
+	int	count;
+
+	for (count = 0, s = str; *s; s++)
+	{
+		if (*s < 0x80 || *s >= 0xC0)
+			count++;
+	}
+	return count;
+}
+
 
