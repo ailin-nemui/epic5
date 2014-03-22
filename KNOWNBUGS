@@ -2,7 +2,12 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Some things (strlen/??) aren't utf8 aware.
+* These things need to be UTF8 aware
+	strlen	index		rindex	strip		toupper		
+	tolower	curpos		before	after		reverse		
+	center	fix_width 	split	chrq		translate	truncate
+	substr	rsubstr		count	msar		chop		rest
+	maxlen	indextoword	insert	wordtoindex	
 * Create $encodingctl()
 * Sending encrypted ctcp actions with recoding results in double encode
   on the sending side.
@@ -489,3 +494,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Write special handling for (defering) recoding of CTCPs until decrypted
 * Rewrite $left(), $right(), and $mid() to be utf8 aware.
 * Make /FEC utf8 aware.
+* Fix a double recode with outbound ctcps

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.224 2014/03/20 15:25:54 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.225 2014/03/22 15:42:53 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -639,7 +639,7 @@ BUILT_IN_COMMAND(send_to_query_first)
 	const char	*tmp;
 
 	tmp = get_target_by_refnum(0);
-	send_text(from_server, tmp, args, NULL, 1);
+	send_text(from_server, tmp, args, NULL, 1, 1);
 }
 
 BUILT_IN_COMMAND(send_to_channel_first)
@@ -647,9 +647,9 @@ BUILT_IN_COMMAND(send_to_channel_first)
 	const char	*tmp;
 
 	if ((tmp = get_echannel_by_refnum(0)))
-	    send_text(from_server, tmp, args, NULL, 1);
+	    send_text(from_server, tmp, args, NULL, 1, 1);
 	else if ((tmp = get_target_by_refnum(0)))
-	    send_text(from_server, tmp, args, NULL, 1);
+	    send_text(from_server, tmp, args, NULL, 1, 1);
 }
 
 /*
@@ -778,7 +778,7 @@ BUILT_IN_COMMAND(e_privmsg)
 		}
 		else if (!strcmp(nick, "*") && (!(nick = get_echannel_by_refnum(0))))
 			nick = zero;
-		send_text(from_server, nick, args, command, window_display);
+		send_text(from_server, nick, args, command, window_display, 1);
 		set_server_sent_body(from_server, args);
 	}
 	else 
@@ -3082,7 +3082,7 @@ static	int 	recursion = 0;
 	 * Dont hook /ON REDIRECT if we're being called recursively
 	 */
 	if (allow)
-		send_text(from_server, nick_list, text, command, hook);
+		send_text(from_server, nick_list, text, command, hook, 1);
 
 	recursion--;
 	from_server = old_from_server;
@@ -3127,7 +3127,7 @@ struct target_type
  * make sure that YOU dont send anything to the screen without checking first!
  */
 /* SENDTEXT -- Don't delete this, I search for it! */
-void 	send_text (int server, const char *nick_list, const char *text, const char *command, int hook)
+void 	send_text (int server, const char *nick_list, const char *text, const char *command, int hook, int already_encoded)
 {
 	int 	i, 
 		old_server;
@@ -3194,8 +3194,12 @@ struct target_type target[4] =
 	    /* 
 	     * The OUTBOUND text is ALWAYS recoded.
 	     * In theory, 'text' should always be in utf8..
+	     * But CTCPs are pre-encoded, so don't double recode those.
 	     */
-	    recode_text = outbound_recode(current_nick, from_server, text, &extra);
+	    if (!already_encoded)
+		recode_text = outbound_recode(current_nick, from_server, text, &extra);
+	    else
+		recode_text = text;
 
 	    if (*current_nick == '%')
 	    {
@@ -3295,7 +3299,7 @@ struct target_type target[4] =
 		}
 
 		/* XXX -- Recursion is a hack. (but it works) */
-		send_text(servref, msgtarget, text, command, hook ? -1 : 0);
+		send_text(servref, msgtarget, text, command, hook ? -1 : 0, already_encoded);
 		new_free(&extra);
 		continue;
 	    }
@@ -3827,7 +3831,7 @@ static	unsigned 	level = 0;
 	 * statement to the current target.
 	 */
 	if (interactive && cmdchar_used == 0)
-		send_text(from_server, get_target_by_refnum(0), stmt, NULL, 1);
+		send_text(from_server, get_target_by_refnum(0), stmt, NULL, 1, 1);
 
 	/* 
 	 * Statement that starts with a { is a block statement.

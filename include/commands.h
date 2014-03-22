@@ -33,7 +33,7 @@ extern	int	need_defered_commands;
 	int     parse_statement 	(const char *, int, const char *);
 
 	BUILT_IN_COMMAND(load);
-	void	send_text	 	(int, const char *, const char *, const char *, int);
+	void	send_text	 	(int, const char *, const char *, const char *, int, int);
 	int	redirect_text		(int, const char *, const char *, char *, int);
 	int	command_exist		(char *);
 	BUILT_IN_COMMAND(e_channel);
