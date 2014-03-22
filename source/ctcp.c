@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.64 2014/03/22 17:11:29 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.65 2014/03/22 23:25:16 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -67,7 +67,7 @@
 #define CTCP_INLINE	2	/* Expands to an inline value */
 #define CTCP_NOLIMIT	4	/* Limit of one per privmsg. */
 #define CTCP_TELLUSER	8	/* Tell the user about it. */
-
+#define CTCP_NORECODE	16	/* Don't recode message: ctcp func handles */
 static	int 	split_CTCP (char *, char *, char *);
 
 /*
@@ -123,25 +123,32 @@ static CtcpEntry ctcp_cmd[] =
 		do_version, 	NULL },
 
 	/* Common ones to people using strong crypto */
-	{ "AESSHA256-CBC",	CTCP_AESSHA256,	CTCP_INLINE | CTCP_NOLIMIT,
+	{ "AESSHA256-CBC",	CTCP_AESSHA256,	
+			CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
 		"transmit aes256-cbc ciphertext using a sha256 key",
 		do_crypto, 	do_crypto },
-	{ "AES256-CBC",		CTCP_AES256,	CTCP_INLINE | CTCP_NOLIMIT,
+	{ "AES256-CBC",		CTCP_AES256,	
+			CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
 		"transmit aes256-cbc ciphertext",
 		do_crypto, 	do_crypto },
-	{ "CAST128ED-CBC",	CTCP_CAST5, 	CTCP_INLINE | CTCP_NOLIMIT,
+	{ "CAST128ED-CBC",	CTCP_CAST5, 	
+			CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
 		"transmit cast5-cbc ciphertext",
 		do_crypto, 	do_crypto},
-	{ "BLOWFISH-CBC",	CTCP_BLOWFISH,	CTCP_INLINE | CTCP_NOLIMIT,
+	{ "BLOWFISH-CBC",	CTCP_BLOWFISH,	
+			CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
 		"transmit blowfish-cbc ciphertext",
 		do_crypto, 	do_crypto },
-	{ "FISH",		CTCP_FISH,	CTCP_INLINE | CTCP_NOLIMIT,
+	{ "FISH",		CTCP_FISH,	
+			CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
 		"transmit FiSH (blowfish-ecb with sha256'd key) ciphertext",
 		do_crypto, 	do_crypto },
-	{ "SED",		CTCP_SED, 	CTCP_INLINE | CTCP_NOLIMIT,
+	{ "SED",		CTCP_SED, 	
+			CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
 		"transmit simple_encrypted_data ciphertext",
 		do_crypto, 	do_crypto },
-	{ "SEDSHA",		CTCP_SEDSHA, 	CTCP_INLINE | CTCP_NOLIMIT,
+	{ "SEDSHA",		CTCP_SEDSHA, 	
+			CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
 		"transmit simple_encrypted_data ciphertext using a sha256 key",
 		do_crypto, 	do_crypto },
 
@@ -229,6 +236,9 @@ CTCP_HANDLER(do_crypto)
 	} else {
 		char *extra = NULL;
 
+		/* We might not need to recode since do_ctcp now does it */
+		/* We just need to decrypt */
+#if 0
 		/*
 		 * We must recode to UTF8
 		 */
@@ -238,6 +248,7 @@ CTCP_HANDLER(do_crypto)
 			new_free(&ret);
 			ret = extra;
 		}
+#endif
 
 		/* 
 		 * There might be a CTCP message in there,
@@ -640,6 +651,7 @@ char *	do_ctcp (const char *from, const char *to, char *str)
 	int	allow_ctcp_reply = 1;
 static	time_t	last_ctcp_parsed = 0;
 	int	l;
+	char *	extra = NULL;
 
 	int delim_char = charcount(str, CTCP_DELIM_CHAR);
 
@@ -761,6 +773,7 @@ static	time_t	last_ctcp_parsed = 0;
 			 */
 			if (do_hook(CTCP_REQUEST_LIST, "%s %s %s %s",
 				from, to, ctcp_command, ctcp_argument))
+			{
 			    if (do_hook(CTCP_LIST, "%s %s %s %s", from, to, 
 						ctcp_command, ctcp_argument))
 			    {
@@ -769,10 +782,21 @@ static	time_t	last_ctcp_parsed = 0;
 					*ctcp_argument ? ": " : empty_string, 
 					ctcp_argument);
 			    }
+			}
 			time(&last_ctcp_parsed);
 			allow_ctcp_reply = 0;
 			pop_message_from(l);
 			continue;
+		}
+
+		if (!(ctcp_cmd[i].flag & CTCP_NORECODE))
+		{
+		   /*
+		    * We must recode to UTF8
+		    */
+		   inbound_recode(from, from_server, to, ctcp_argument, &extra);
+		   if (extra)
+			ctcp_argument = extra;
 		}
 
 		/* 
@@ -833,6 +857,7 @@ static	time_t	last_ctcp_parsed = 0;
 					ctcp_argument);
 		    }
 		}
+		new_free(&extra);
 		new_free(&ptr);
 		pop_message_from(l);
 	}

@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.306 2014/03/21 22:01:33 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.307 2014/03/22 23:25:16 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3561,7 +3561,7 @@ BUILT_IN_FUNCTION(function_numwords, input)
 
 BUILT_IN_FUNCTION(function_strlen, input)
 {
-	RETURN_INT(strlen(input));
+	RETURN_INT(quick_code_point_count(input));
 }
 
 BUILT_IN_FUNCTION(function_aliasctl, input)

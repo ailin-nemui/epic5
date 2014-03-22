@@ -3,14 +3,14 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * These things need to be UTF8 aware
-	strlen	index		rindex	strip		toupper		
-	tolower	curpos		before	after		reverse		
+		index		rindex	strip		toupper		
+	tolower	curpos		before	after		reverse		pass
 	center	fix_width 	split	chrq		translate	truncate
 	substr	rsubstr		count	msar		chop		rest
 	maxlen	indextoword	insert	wordtoindex	
+* These functions have been converted
+	strlen
 * Create $encodingctl()
-* Sending encrypted ctcp actions with recoding results in double encode
-  on the sending side.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -499,3 +499,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't double-recode ctcp's!
 * Inbound recoding of CTCPs must happen *before* processing, not afterwards
 * This fixes /encode + /encrypt + /me
+* Convert $strlen() to utf8-aware, many others to follow
+* Add new flag "CTCP_NORECODE" which tells do_ctcp not to recode first.
+* This allows non-encryption ctcps to automatically be recoded.
+* This fixes /me yet again.
+
