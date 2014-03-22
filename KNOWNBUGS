@@ -495,3 +495,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Rewrite $left(), $right(), and $mid() to be utf8 aware.
 * Make /FEC utf8 aware.
 * Fix a double recode with outbound ctcps
+* Extend send_text() with a new flag saying if text already recoded
+* Don't double-recode ctcp's!
+* Inbound recoding of CTCPs must happen *before* processing, not afterwards
+* This fixes /encode + /encrypt + /me
