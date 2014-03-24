@@ -3,13 +3,14 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * These things need to be UTF8 aware
-		index		rindex	strip		toupper		
+	strip	toupper		
 	tolower	curpos		before	after		reverse		pass
 	center	fix_width 	split	chrq		translate	truncate
-	substr	rsubstr		count	msar		chop		rest
-	maxlen	indextoword	insert	wordtoindex	
+	substr	rsubstr		msar	rest		insert
 * These functions have been converted
-	strlen
+	strlen	chop	index	rindex	indextoword	wordtoindex	maxlen
+* These functions didn't need to be converted after all
+	count
 * Create $encodingctl()
 
 MEDIUM-TERM PROJECTS
@@ -503,4 +504,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add new flag "CTCP_NORECODE" which tells do_ctcp not to recode first.
 * This allows non-encryption ctcps to automatically be recoded.
 * This fixes /me yet again.
+* Create internal cpindex() and rcpindex(), like [r]sindex(), but works on CPs
+* Adjust internal chop() to work on code points. 
+* Make a first pass to choke if /encoding argument is not valid locale.
+* Write some more internal CP based functions in wcwidth.c
+* Rewrite/ensure these functions are UTF8 aware:
+	strlen	chop	index	rindex	indextoword	wordtoindex	maxlen
 

@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.13 2014/03/20 15:25:54 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.14 2014/03/24 20:39:45 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -345,7 +345,11 @@ static const char *	check_recoding_iconv (RecodeRule *r, iconv_t *inbound, iconv
 	{
 		if (r->inbound_handle == 0)
 			r->inbound_handle = iconv_open("UTF-8", r->encoding);
-		*inbound = r->inbound_handle;
+
+		if (r->inbound_handle == (iconv_t)-1)
+			say("The inbound encoding %s is not valid", r->encoding);
+		else
+			*inbound = r->inbound_handle;
 	}
 
 	/* If requested, provide an (iconv_t) used for messages TO person */
@@ -356,6 +360,11 @@ static const char *	check_recoding_iconv (RecodeRule *r, iconv_t *inbound, iconv
 			char *str;
 			str = malloc_strdup2(r->encoding, "//TRANSLIT");
 			r->outbound_handle = iconv_open(str, "UTF-8");
+
+			if (r->outbound_handle == (iconv_t)-1)
+				say("The outbound encoding %s is not valid", str);
+			else
+				*outbound = r->outbound_handle;
 			new_free(&str);
 		}
 		*outbound = r->outbound_handle;
@@ -745,6 +754,8 @@ const char *	outbound_recode (const char *to, int server, const char *message, c
 	/* If no recoding is necessary, then we're done. */
 	if (!(encoding = decide_encoding(NULL, to, server, &i)))
 		return message;
+	if (i == (iconv_t) -1)
+		return message;
 
 	new_buffer = malloc_strdup(message);
 	new_buffer_len = strlen(message) + 1;
@@ -811,6 +822,8 @@ const char *	inbound_recode (const char *from, int server, const char *to, const
 	 */
 	if (!(encoding = decide_encoding(from, to, server, &i)))
 		return message;
+	if (i == (iconv_t) -1)
+		return message;
 
 	new_buffer = malloc_strdup(message);
 	new_buffer_len = strlen(message) + 1;
@@ -844,6 +857,8 @@ int     ucs_to_console (u_32int_t codepoint, unsigned char *deststr, size_t dest
 
 	utf8strsiz = ucs_to_utf8(codepoint, utf8str, 16) + 1;
 	find_recoding("console", NULL, &xlat);
+
+	/* XXX What to do is 'xlat' is (iconv_t)-1? */
 
 	s = utf8str;
 	x = deststr;

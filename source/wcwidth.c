@@ -497,4 +497,50 @@ int	quick_code_point_count (const unsigned char *str)
 	return count;
 }
 
+/*
+ * previous_code_point	- Move *i back one code point.
+ *
+ * Arguments:
+ *	st	The first byte of whatever string 'i' is pointing to.
+ *	i	A pointer to the start of a CP.
+ *
+ * Return Value:
+ *	- If *i points at the first byte of a code point, then 
+ *	  the code point that ends at the byte *i - 1.
+ *	- If *i does not point at the first byte of a code point,
+ *	  then the code that that contains *i.
+ *	In both cases, *i is moved to the first byte of the code
+ *	point whose value is returned.
+ */
+int     previous_code_point (const unsigned char *st, const unsigned char **i)
+{
+	const unsigned char *	c;
+
+	c = *i;
+	if (c > st && (*c < 0x80 || *c >= 0xC0))
+		c--;
+
+	while (c > st && (*c >= 0x80 && *c < 0xC0))
+		c--;
+
+	*i = c;
+	return next_code_point(&c);
+}
+
+
+/*
+ * This does a QUICK count of the CP "index" of 'loc' in 'str'.
+ */
+int	quick_code_point_index (const unsigned char *str, const unsigned char *loc)
+{
+	const unsigned char *s;
+	int	count;
+
+	for (count = 0, s = str; *s && s < loc; s++)
+	{
+		if (*s < 0x80 || *s >= 0xC0)
+			count++;
+	}
+	return count;
+}
 

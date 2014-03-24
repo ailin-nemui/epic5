@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.1433 2014/03/22 23:25:16 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.1434 2014/03/24 20:39:45 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20140116";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1764;
+const unsigned long	commit_id = 1765;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -1013,7 +1013,7 @@ static void check_password (void)
 #else
 	fprintf(stderr, "Passwd: ");
 	fgets(input_passwd, INPUT_PASSWD_LEN - 1, stdin);
-	chop(input_passwd);
+	chop(input_passwd, 1);
 #endif
 	if (strcmp(input_passwd, PASSWORD))
 		execl(SPOOF_PROGRAM, SPOOF_PROGRAM, NULL);

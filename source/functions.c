@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.307 2014/03/22 23:25:16 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.308 2014/03/24 20:39:45 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1288,12 +1288,13 @@ BUILT_IN_FUNCTION(function_tdiff, input)
  */
 BUILT_IN_FUNCTION(function_index, input)
 {
-	char	*schars;
-	char	*iloc;
+	char *schars;
+	size_t	cpoffset;
 
 	GET_DWORD_ARG(schars, input);
-	iloc = sindex(input, schars);
-	RETURN_INT(iloc ? iloc - input : -1);
+	cpoffset = -1;
+	cpindex((const unsigned char *)input, (const unsigned char *)schars, 1, &cpoffset);
+	RETURN_INT(cpoffset);
 }
 
 /*
@@ -1306,15 +1307,19 @@ BUILT_IN_FUNCTION(function_index, input)
  */
 BUILT_IN_FUNCTION(function_rindex, word)
 {
-	char	*chars, *last;
+	char	*chars;
+	size_t	cpoffset;
 
 	/* need to find out why ^x doesnt work */
 	GET_DWORD_ARG(chars, word);
+	cpoffset = -1;
 	if (!*word || !*chars)
 		RETURN_INT(-1);
 
-	last = rsindex(word + strlen(word) - 1, word, chars, 1);
-	RETURN_INT(last ? last - word : -1);
+	rcpindex((const unsigned char *)word + strlen(word), 
+		 (const unsigned char *)word, 
+		 (const unsigned char *)chars, 1, &cpoffset);
+	RETURN_INT(cpoffset);
 }
 
 /*
@@ -5889,7 +5894,7 @@ BUILT_IN_FUNCTION(function_maxlen, input)
 	{
 		GET_FUNC_ARG(arg, input)
 
-		if ((len = strlen(arg)) > maxlen)
+		if ((len = quick_code_point_count(arg)) > maxlen)
 			maxlen = len;
 	}
 
@@ -6053,27 +6058,35 @@ BUILT_IN_FUNCTION(function_hash_32bit, input)
  */
 BUILT_IN_FUNCTION(function_indextoword, input)
 {
-	int	pos;
-	size_t	len;
+	unsigned char *s;
+	int	pos, count;
+	int	i;
 
 	GET_INT_ARG(pos, input);
-	if (pos < 0)
-		RETURN_EMPTY;
-	len = strlen(input);
-	if (pos < 0 || pos > (int)len)
+	count = quick_code_point_count(input);
+	if (pos < 0 || pos > count)
 		RETURN_EMPTY;
 
-	/* 
-	 * XXX
-	 * Using 'word_count' to do this is a really lazy cop-out, but it
-	 * renders the desired effect and its pretty cheap.  Anyone want
-	 * to bicker with me about it?
+	s = input;
+	for (i = 0; i < pos; i++)
+		next_code_point((const unsigned char *)&s);
+
+	/*
+	 * This is a special case to handle multiple runs of words.
+	 * According to our wacky word rules, the *FIRST* space after
+	 * a word belongs to the previous word; but the second and
+	 * subsequent spaces belong to the following word. (urgh).
+	 *
+	 * In order to "fake" this, we put a non-space character right
+	 * here to make it "count" as a word if it isn't the first one.
+	 * But naturally, we only do that if we're not at the eos.
 	 */
-	/* Truncate the string if neccesary */
-	if (pos + 1 < (int)len) {
-		input[pos] = 'x';
-		input[pos + 1] = 0;
+	if (*s)
+	{
+		*s = 'x';
+		*++s = 0;
 	}
+
 	RETURN_INT(count_words(input, DWORD_DWORDS, "\"") - 1);
 }
 
@@ -6241,11 +6254,12 @@ BUILT_IN_FUNCTION(function_wordtoindex, input)
 {
 	int		wordnum;
 	const char *	ptr;
+	int		cpindex;
 
 	GET_INT_ARG(wordnum, input);
 	real_move_to_abs_word(input, &ptr, wordnum, DWORD_DWORDS, "\"");
-
-	RETURN_INT((int)(ptr - input));
+	cpindex = quick_code_point_index((const unsigned char *)input, (const unsigned char *)ptr);
+	RETURN_INT(cpindex);
 }
 
 /*

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.245 2014/03/21 12:58:12 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.246 2014/03/24 20:39:45 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -694,15 +694,25 @@ int	server_strnicmp (const unsigned char *str1, const unsigned char *str2, size_
 	return my_table_strnicmp(str1, str2, n, table);
 }
 
-/* chop -- chops off the last character. capiche? */
-char *	chop (char *stuff, size_t nchar)
+/* chop -- chops off the last 'nchar' code points. */
+char *	chop	(char *stuff, size_t nchar)
 {
-	size_t sl = strlen(stuff);
+	size_t	sl;
+
+	sl = quick_code_point_count(stuff);	
 
 	if (nchar > 0 && sl > 0 &&  nchar <= sl)
-		stuff[sl - nchar] = 0;
+	{
+		char *s;
+		int	i;
+
+		s = stuff + strlen(stuff);
+		for (i = 0; i < nchar; i++)
+			previous_code_point(stuff, (const unsigned char **)&s);
+		*s++ = 0;
+	}
 	else if (nchar > sl)
-		stuff[0] = 0;
+		*stuff = 0;
 
 	return stuff;
 }
@@ -1136,6 +1146,94 @@ char *	rsindex (char *string, char *start, char *group, int howmany)
 	}
 	return NULL;
 }
+
+
+/*
+ * cpindex - Find the 'howmany'th instance of any of the codepoints in 'search'
+ *	     and return a pointer to that place; and calculate the character
+ *	     offset from the front of the string (for use with $mid())
+ *
+ * Arguments:
+ *	string	- A UTF8 string to be searched
+ *	search	- One or more code points to look for in 'string'
+ *		  if search[0] is ^, then the string is inverted.
+ *	howmany	- Return the 'howmany'th match (usually 1)
+ *	cpoffset - Returns which codepoint in 'string' has the found character.
+ *
+ * Return Value:
+ *	The location of the characters. if found.
+ *	NULL if the character(s) are not found.
+ *	'cpoffset' is unchanged if not found.
+ */
+const unsigned char *	cpindex (const unsigned char *string, const unsigned char *search, int howmany, size_t *cpoffset)
+{
+	const unsigned char *s, *p;
+	int	c, d;
+	int	found = 0;
+	int	inverted = 0;
+
+	if (*search == '^')
+	{
+		inverted = 1;
+		search++;
+	}
+
+	p = string;
+	while ((c = next_code_point(&p)))
+	{
+		s = search;
+		while ((d = next_code_point(&s)))
+		{
+			if ((c == d) + inverted == 1)
+			{
+				if (++found >= howmany)
+				{
+					previous_code_point(string, &p);
+					*cpoffset = quick_code_point_index(string, p);
+					return p;
+				}
+				break;
+			}
+		}
+	}
+
+	return NULL;
+}
+
+const unsigned char *	rcpindex (const unsigned char *where, const unsigned char *string, const unsigned char *search, int howmany, size_t *cpoffset)
+{
+	const unsigned char *s, *p;
+	int	c, d;
+	int	found = 0;
+	int	inverted = 0;
+
+	if (*search == '^')
+	{
+		inverted = 1;
+		search++;
+	}
+
+	p = where;
+	while ((c = previous_code_point(string, &p)))
+	{
+		s = search;
+		while ((d = next_code_point(&s)))
+		{
+			if ((c == d) + inverted == 1)
+			{
+				if (++found >= howmany)
+				{
+					*cpoffset = quick_code_point_index(string, p);
+					return p;
+				}
+				break;
+			}
+		}
+	}
+
+	return NULL;
+}
+
 
 /* is_number: returns true if the given string is a number, false otherwise */
 int	is_number (const char *str)
