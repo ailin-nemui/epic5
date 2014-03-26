@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.14 2014/03/24 20:39:45 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.15 2014/03/26 23:32:39 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -39,6 +39,7 @@
 #include "server.h"
 #include <langinfo.h>
 #include <locale.h>
+#include <wctype.h>
 
 /*
  * Here's the plan...
@@ -1010,4 +1011,33 @@ BUILT_IN_COMMAND(encoding)
 	say("Encoding for %s is now %s", recode_rules[x]->target, 
 					 recode_rules[x]->encoding);
 }
+
+static	locale_t	utf8_locale = 0;
+
+void	create_utf8_locale (void)
+{
+	utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
+}
+
+int	mkupper_l (int codepoint)
+{
+	if (utf8_locale)
+		return towupper_l(codepoint, utf8_locale);
+	else if (codepoint >= 0x80)
+		return codepoint;
+	else
+		return toupper(codepoint);
+}
+
+
+int	mklower_l (int codepoint)
+{
+	if (utf8_locale)
+		return towlower_l(codepoint, utf8_locale);
+	else if (codepoint >= 0x80)
+		return codepoint;
+	else
+		return tolower(codepoint);
+}
+
 

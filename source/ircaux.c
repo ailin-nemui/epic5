@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.247 2014/03/26 20:44:57 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.248 2014/03/26 23:32:39 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -368,36 +368,72 @@ void malloc_dump (const char *file) {
 #endif
 }
 
+/*
+ * Now *technically* there could be a problem if uppercase of a code point
+ * took more bytes than the original one.  So we pay attention to that.
+ */
 char *	upper (char *str)
 {
-	char	*ptr = (char *) 0;
+	char 	*s, *p;
+	int	c, d;
+	char	*x, *y;
 
-	if (str)
+	s = str;
+	while (x = s, (c = next_code_point((const unsigned char **)&s)))
 	{
-		ptr = str;
-		for (; *str; str++)
+		d = mkupper_l(c);
+		if (c != d)
 		{
-			if (islower(*str))
-				*str = toupper(*str);
+			char c_utf8str[16];
+			char d_utf8str[16];
+
+			ucs_to_utf8(c, c_utf8str, sizeof(c_utf8str));
+			ucs_to_utf8(d, d_utf8str, sizeof(d_utf8str));
+			if (strlen(c_utf8str) != strlen(d_utf8str))
+			{
+				yell("The string [%s] contains a character [%s] whose upper case version [%s] is not the same length.  I didn't convert it for your safety.", str, c_utf8str, d_utf8str);
+				continue;
+			}
+
+			y = d_utf8str;
+			while (x < s)
+				*x++ = *y++;
 		}
 	}
-	return (ptr);
+
+	return str;
 }
 
 char *	lower (char *str)
 {
-	char *ptr = NULL;
+	char 	*s, *p;
+	int	c, d;
+	char	*x, *y;
 
-	if (str)
+	s = str;
+	while (x = s, (c = next_code_point((const unsigned char **)&s)))
 	{
-		ptr = str;
-		for (; *str; str++)
+		d = mklower_l(c);
+		if (c != d)
 		{
-			if (isupper(*str))
-				*str = tolower(*str);
+			char c_utf8str[16];
+			char d_utf8str[16];
+
+			ucs_to_utf8(c, c_utf8str, sizeof(c_utf8str));
+			ucs_to_utf8(d, d_utf8str, sizeof(d_utf8str));
+			if (strlen(c_utf8str) != strlen(d_utf8str))
+			{
+				yell("The string [%s] contains a character [%s] whose upper case version [%s] is not the same length.  I didn't convert it for your safety.", str, c_utf8str, d_utf8str);
+				continue;
+			}
+
+			y = d_utf8str;
+			while (x < s)
+				*x++ = *y++;
 		}
 	}
-	return ptr;
+
+	return str;
 }
 
 /* case insensitive string searching */
@@ -654,26 +690,59 @@ int     my_table_strnicmp (const unsigned char *str1, const unsigned char *str2,
                  stricmp_tables[table][(unsigned short)*str2]) : 0);
 } 
 
+int	utf8_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n)
+{
+	const unsigned char 	*s1, *s2;
+	int	c1, c2;
+	int	u1, u2;
+
+	s1 = str1;
+	s2 = str2;
+
+	while (n-- > 0)
+	{
+		c1 = next_code_point(&s1);
+		c2 = next_code_point(&s2);
+
+		if (c1 == -1 || c2 == -1)
+			return *s1 - *s2;	/* What to do here? */
+
+		u1 = mkupper_l(c1);
+		u2 = mkupper_l(c2);
+
+		if (u1 != u2)
+			return c1 - c2;
+		if (u1 == 0)
+			return 0;
+	}
+
+	return 0;
+}
+
 
 /* XXX Never turn these functions into macros, we create fn ptrs to them! */
 int	my_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n)
 {
-	return my_table_strnicmp(str1, str2, n, 0);
+	return utf8_strnicmp(str1, str2, n);
+	/* return my_table_strnicmp(str1, str2, n, 0); */
 }
 
 int	my_stricmp (const unsigned char *str1, const unsigned char *str2)
 {
-	return my_table_strnicmp(str1, str2, UINT_MAX, 0);
+	return utf8_strnicmp(str1, str2, UINT_MAX);
+	/* return my_table_strnicmp(str1, str2, UINT_MAX, 0); */
 }
 
 int	ascii_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n)
 {
-	return my_table_strnicmp(str1, str2, n, 0);
+	return utf8_strnicmp(str1, str2, n);
+	/* return my_table_strnicmp(str1, str2, n, 0); */
 }
 
 int	ascii_stricmp (const unsigned char *str1, const unsigned char *str2)
 {
-	return my_table_strnicmp(str1, str2, UINT_MAX, 0);
+	return utf8_strnicmp(str1, str2, UINT_MAX);
+	/* return my_table_strnicmp(str1, str2, UINT_MAX, 0); */
 }
 
 int	rfc1459_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n)
@@ -691,7 +760,10 @@ int	server_strnicmp (const unsigned char *str1, const unsigned char *str2, size_
 	int	table;
 
 	table = get_server_stricmp_table(servref);
-	return my_table_strnicmp(str1, str2, n, table);
+	if (table == 1)
+		return my_table_strnicmp(str1, str2, n, table);
+	else
+		return utf8_strnicmp(str1, str2, n);
 }
 
 /* chop -- chops off the last 'nchar' code points. */

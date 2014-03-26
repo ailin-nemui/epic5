@@ -3,12 +3,12 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * These things need to be UTF8 aware
-	strip	toupper		
-	tolower	curpos		before	after		reverse		pass
-	center	fix_width 	split	chrq		translate	truncate
-	substr	rsubstr		msar	rest		insert
+	reverse	pass
+	center	fix_width 	chrq		translate	truncate
+	substr	rsubstr		msar		rest		insert
 * These functions have been converted
 	strlen	chop	index	rindex	indextoword	wordtoindex	maxlen
+	strip	split	before	after	curpos		toupper		tolower
 * These functions didn't need to be converted after all
 	count
 * Create $encodingctl()
@@ -516,3 +516,12 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Eliminate usage of internal sindex() -> strchr(), strpbrk(), or cpindex().
 * Rewrite/ensure these functions are UTF8 aware:
 	strip	split	before	after	curpos
+* At startup, create a (locale_t) that points to "en_US.UTF-8" for ctype funcs
+* Create internal mkupper_l and mklower_l to convert codepoints to upper/lower
+* Rewrite internal upper()/lower() to use mk(upper|lower)_l.
+* This makes $toupper() and $tolower() utf8 aware. yay!  And other stuff!
+* Implement internal utf8_strnicmp and use it for my_str[n]icmp.
+* This means things like case insensitive aliases work for non-english! yay!
+* Rewrite/ensure these functions are UTF8 aware:
+	toupper	tolower
+
