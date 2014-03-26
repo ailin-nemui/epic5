@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.246 2014/03/24 20:39:45 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.247 2014/03/26 20:44:57 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -1068,6 +1068,7 @@ char *	check_nickname (char *nick, int unused)
 	return *nick ? nick : NULL;
 }
 
+#if 0
 /*
  * sindex: much like index(), but it looks for a match of any character in
  * the group, and returns that position.  If the first character is a ^, then
@@ -1146,7 +1147,7 @@ char *	rsindex (char *string, char *start, char *group, int howmany)
 	}
 	return NULL;
 }
-
+#endif
 
 /*
  * cpindex - Find the 'howmany'th instance of any of the codepoints in 'search'
@@ -1229,6 +1230,8 @@ const unsigned char *	rcpindex (const unsigned char *where, const unsigned char 
 				break;
 			}
 		}
+		if (p == string)
+			break;
 	}
 
 	return NULL;
@@ -5021,45 +5024,181 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
  * Justify is -1 for left, 0 for center, or 1 for right; only -1 is supported
  * for now.
  */
-char *	fix_string_width (const char *orig_str, int justify, char fillchar, size_t newlen)
+
+
+/* 
+ * fix_string_width - Format "orig_str" so it takes up 'newlen' columns
+ *
+ * Arguments:
+ *	orig_str - The string to be formatted
+ *	justify	 - -1 : Left Justify; 0 : Center; 1 : Right Justify
+ *	fillchar - A Code Point to use to fill (usually a space)
+ *	newlen	 - How many columns the result should be.
+ *
+ * For this function, "length" means "display columns", as opposed to 
+ * a count of "bytes" or "code points" like other columns use.
+ *
+ * If "orig_str" is longer than "newlen", then it is truncated per "justify"
+ *	-1	Left Justify: The right part is chopped off
+ *	 0	Center: Approximately the same amount is taken off both sides
+ *	 1 	Right Justify: The left part is chopped off.
+ *
+ * If "orig_str" is shorter than "newlen" then extra chars are added 
+ * per "justify"
+ *	-1	Left Justify: "fillchar" is added to the end of the string
+ *	0	Center: Approximately the same is added to both sides
+ *	1	Right Justify: "fillchar" is added to the start of string
+ *
+ * In any case, the result should be 'newlen' columns.
+ * Now technically, 'fillchar' could be a multi-byte character, which may
+ * result in a string that can't be exactly 'newlen' columns.  That would
+ * be terrible, wouldn't it?  Don't do that.
+ *
+ */
+char *	fix_string_width (const char *orig_str, int justify, int fillchar, size_t newlen)
 {
-	char *	word;
-	char *	retval;
-	size_t	len;
+	/* In this legacy implementation, only justify == -1 is supported */
+	/* It is also not utf8 aware. */
 
-	if (justify != -1)
-		return NULL;
+        char *  word;
+        char *  retval;
+        size_t  len;
 
-	word = new_normalize_string(orig_str, 3, display_line_mangler);
+        if (justify != -1)
+                return NULL;
+
+        word = new_normalize_string(orig_str, 3, display_line_mangler);
+        len = output_with_count(word, 0, 0);
+        if (len < newlen)               /* Extend it */
+        {
+                char    filler[2];
+                ssize_t numchars;
+
+                /* add */
+                filler[0] = (char)fillchar;
+                filler[1] = 0;
+
+                numchars = newlen - len;
+                while (numchars-- > 0)
+                        malloc_strcat_c(&word, filler, NULL);
+                retval = denormalize_string(word);
+        }
+        else if (len > newlen)          /* Truncate it */
+        {
+                unsigned char **prepared = NULL;
+                int     my_lines = 1;
+
+                prepared = prepare_display(-1, word, newlen-1, &my_lines,
+                                                PREPARE_NOWRAP);
+                retval = denormalize_string(prepared[0]);
+        }
+        else            /* 'word' is already the correct width */
+                retval = denormalize_string(word);
+
+        new_free(&word);
+        return retval;
+
+
+#if 0
+	int	fill_left, fill_right;
+	int	chop_left, chop_right;
+	char 	*word, *retval, *result, *s;
+	size_t	len, fill_len;
+	unsigned char utf8str[16];
+	size_t	utf8strlen;
+	int	i;
+	char	*input;
+
+	input = LOCAL_COPY(orig_str;
+	fill_left = fill_right = chop_left = chop_right = 0;
+
+	/*
+	 * First, convert the string to something we can work with...
+	 */
+	word = new_normalize_string(input, 3, display_line_mangler);
+
+	/* 
+	 * How "long" is the string, in columns?
+	 */
 	len = output_with_count(word, 0, 0);
-	if (len < newlen)		/* Extend it */
+
+	/*
+	 * We can now calculate our four magic values:
+	 *	1. How many columns to chop off the left
+	 *	2. How many columns to chop off the right
+	 *	3. How many columns to fill on the left
+	 *	4. How many columns to fill on the right.
+	 */
+	if (len < newlen)
 	{
-		char	filler[2];
-		ssize_t	numchars;
+		size_t	excess_cols;
 
-		/* add */
-		filler[0] = fillchar;
-		filler[1] = 0;
-
-		numchars = newlen - len;
-		while (numchars-- > 0)
-			malloc_strcat_c(&word, filler, NULL);
-		retval = denormalize_string(word);
+		excess_cols = newlen - len;
+		if (justify == -1)
+			fill_right = excess_cols;
+		else if (justify == 0)
+		{
+			fill_right = excess_cols / 2;
+			fill_left = excess_cols - fill_right;
+		}
+		else
+			fill_left = excess_cols;
 	}
-	else if (len > newlen)		/* Truncate it */
+	else if (len == newlen)
+		/* Nothing to change */;
+	else 		/* len > newlen */
 	{
-		unsigned char **prepared = NULL;
-		int	my_lines = 1;
+		size_t	deficit_cols;
 
-		prepared = prepare_display(-1, word, newlen-1, &my_lines, 
-						PREPARE_NOWRAP);
-		retval = denormalize_string(prepared[0]);
+		deficit_cols = len - newlen;
+		if (justify == -1)
+			chop_right = deficit_cols;
+		else if (justify == 0)
+		{
+			chop_right = deficit_cols / 2;
+			chop_left = deficit_cols - chop_right;
+		}
+		else
+			chop_left = deficit_cols;
 	}
-	else		/* 'word' is already the correct width */
-		retval = denormalize_string(word);
 
-	new_free(&word);
-	return retval;
+	/* Convert the fillchar to a string */
+	if ((fill_len = codepoint_numcolumns(fillchar)) <= 0)
+	{
+		fillchar = ' ';		/* No time for this nonsense. */
+		fill_len = 1;
+	}
+	ucs_to_utf8(fillchar, utf8str, sizeof(utf8str));
+
+	/* How big will the resulting string be? */
+	retvalsiz = (strlen(word) + 
+			    (strlen(utf8str) * (fill_left + fill_right)) + 20);
+	retval = new_malloc(retvalsiz + 1);
+	*retval = 0;
+
+	/* Do the left pad */
+	for (i = 0; i < fill_left / fill_len; i++)
+		strlcat(retval, utf8str, retvalsiz);
+
+	/* Chop off the left side */
+	s = input;
+	for (i = 0; i < chop_left; i++)
+		next_code_point(&s);
+
+	/* Chop off the right side */
+	chop(
+
+	/* Copy the main string */
+	strlcat(retval, s, retvalsiz);
+
+	/* Do the right pad */
+	for (i = 0; i < fill_right / fill_len; i++)
+		strlcat(retval, utf8str, retvalsiz);
+
+	result = denormalize_string(retval);
+	new_free(&retval);
+	return result;
+#endif
 }
 
 /****************************************************************************/

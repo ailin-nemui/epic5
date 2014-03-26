@@ -1,4 +1,4 @@
-/* $EPIC: words.c,v 1.24 2012/11/23 16:04:49 jnelson Exp $ */
+/* $EPIC: words.c,v 1.25 2014/03/26 20:44:57 jnelson Exp $ */
 /*
  * words.c -- right now it just holds the stuff i wrote to replace
  * that beastie arg_number().  Eventually, i may move all of the
@@ -66,26 +66,27 @@
  */
 char *	search_for (char *start, char **mark, char *chars, int how)
 {
+	const unsigned char *s, *p;
+	size_t	cpoffset = -1;
+
 	if (!mark)
 		return NULL;		/* Take THAT! */
-
         if (!*mark)
                 *mark = start;
 
+	s = *mark;
+	p = chars;
+
         if (how > 0)   /* forward search */
-        {
-		*mark = sindex(*mark, chars);
-		how--;
-		for (;(how > 0) && *mark && **mark;how--)
-			*mark = sindex(*mark+1, chars);
-	}
+		s = cpindex(s, p, how, &cpoffset);
 
 	else if (how == 0)
 		return NULL;
 
 	else  /* how < 0 */
-		*mark = rsindex(*mark, start, chars, -how);
+		s = rcpindex(s + strlen(s), start, p, -how, &cpoffset);
 
+	*mark = (char *)(intptr_t)s;
 	return *mark;
 }
 
@@ -844,7 +845,7 @@ char *	real_extract (char *start, int firstword, int lastword, int extended)
 	/* 
 	 * When we find the last word, we need to move to the 
          * END of the word, so that word 3 to 3, would include
-	 * all of word 3, so we sindex to the space after the word
+	 * all of word 3, so we move to the space after the word
  	 */
 	/* EOS is a #define meaning "end of string" */
 	if (lastword == EOS)

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.226 2014/03/22 17:11:29 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.227 2014/03/26 20:44:57 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -1907,7 +1907,7 @@ static void	loader_std (const char *file_contents, off_t file_contents_size, con
 		char    *optr = start;
 
 		/* Skip slashed brackets */
-		while ((ptr = sindex(optr, "{};/")) && 
+		while ((ptr = strpbrk(optr, "{};/")) && 
 			ptr != optr && ptr[-1] == '\\')
 		    optr = ptr + 1;
 

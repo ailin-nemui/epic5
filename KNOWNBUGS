@@ -510,4 +510,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Write some more internal CP based functions in wcwidth.c
 * Rewrite/ensure these functions are UTF8 aware:
 	strlen	chop	index	rindex	indextoword	wordtoindex	maxlen
-
+* Write a half-finished reimplementation of $fix_width() that is commented out
+* Fix rcpindex() when the search char isn't in the string
+* Fix search_for() which makes $before() and $after() utf8 aware.
+* Eliminate usage of internal sindex() -> strchr(), strpbrk(), or cpindex().
+* Rewrite/ensure these functions are UTF8 aware:
+	strip	split	before	after	curpos

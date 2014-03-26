@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.65 2014/03/22 23:25:16 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.66 2014/03/26 20:44:57 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -593,7 +593,7 @@ CTCP_HANDLER(do_ping_reply)
 
 	tsec = t.tv_sec - orig;
 
-	if ((ptr = sindex(cmd, " .")))
+	if ((ptr = strchr(cmd, ' ')) || (ptr = strchr(cmd, '.')))
 	{
 		*ptr++ = 0;
 		tusec = t.tv_usec - my_atol(ptr);

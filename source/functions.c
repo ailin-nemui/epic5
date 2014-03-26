@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.308 2014/03/24 20:39:45 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.309 2014/03/26 20:44:57 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1423,32 +1423,46 @@ BUILT_IN_FUNCTION(function_userhost, input)
  *	    argument removed.
  * Example: $strip(f free fine frogs) returns "ree ine rogs"
  *
- * Note: it can be difficult (actually, not possible) to remove spaces from
- *       a string using this function.  To remove spaces, simply use this:
- *		$tr(/ //$text)
- *
- *	 Actually, i recommend not using $strip() at all and just using
- *		$tr(/characters//$text)
- *	 (but then again, im biased. >;-)
+ * To remove spaces, use $strip(" " text)
  */
 BUILT_IN_FUNCTION(function_strip, input)
 {
-	char	*result;
-	char	*chars;
-	char	*cp, *dp;
+	char *	search;
+	const unsigned char 	*s, *p;
+	int	c, d;
+	int	found;
+	char *	result, *r;
 
-	GET_DWORD_ARG(chars, input);
+	GET_DWORD_ARG(search, input);
 	RETURN_IF_EMPTY(input);
 
-	result = (char *)new_malloc(strlen(input) + 1);
-	for (cp = input, dp = result; *cp; cp++)
-	{
-		/* This is expensive -- gotta be a better way */
-		if (!strchr(chars, *cp))
-			*dp++ = *cp;
-	}
-	*dp = '\0';
+	r = result = (char *)new_malloc(strlen(input) + 1);
 
+	found = 0;
+	p = input;
+	while ((c = next_code_point(&p)))
+	{
+		found = 0;
+		s = search;
+		while ((d = next_code_point(&s)))
+		{
+			if (c == d)
+			{
+				found = 1;
+				break;
+			}
+		}
+		if (!found)
+		{
+			unsigned char utf8str[16];
+			unsigned char *x;
+
+			ucs_to_utf8(c, utf8str, sizeof(utf8str));
+			for (x = utf8str; *x; x++)
+				*r++ = *x;
+		}
+	}
+	*r = 0;
 	return result;		/* DONT USE RETURN_STR HERE! */
 }
 
@@ -2893,7 +2907,8 @@ BUILT_IN_FUNCTION(function_fix_width, word)
         int 	width;
         char *	justify;
 	int	justifynum = -1;
-	char *	fillchar;
+	char *	fillchar_str;
+	int	fillchar;
         char *	retval;
 
         GET_INT_ARG(width, word);
@@ -2907,22 +2922,75 @@ BUILT_IN_FUNCTION(function_fix_width, word)
 		RETURN_EMPTY;
 
 	GET_DWORD_ARG(fillchar, word);
+	fillchar = next_code_point((const unsigned char *)&fillchar);
 
-	retval = fix_string_width(word, justifynum, *fillchar, width);
+	retval = fix_string_width(word, justifynum, fillchar, width);
 	RETURN_MSTR(retval);
 }
 
+/*
+ * Why does this look so much like cpindex?
+ * Because code points can take up different sizes.
+ * So if the user tries to split on a 2-byte code point, we can't
+ * just replace it with one space -- or two spaces -- in place!
+ * No, we have to copy the whole string, byte by byte to do it right.
+ */
 BUILT_IN_FUNCTION(function_split, word)
 {
-	char	*chrs;
-	char	*pointer;
+	unsigned char 	*search;
+	int		inverted = 0;
+	unsigned char 	*retval, *r;
+const	unsigned char	*p, *s;
+	int		c, d;
+	int		found;
 
-	chrs = next_arg(word, &word);
-	pointer = word;
-	while ((pointer = sindex(pointer,chrs)))
-		*pointer++ = ' ';
+	/* 
+	 * What chars does the user want converted to space? 
+	 * This has "sindex" semantics -- so a leading ^ inverts the set 
+	 */
+	search = next_arg(word, &word);
+	if (*search == '^')
+	{
+		inverted = 1;
+		search++;
+	}
 
-	RETURN_STR(word);
+	/* The return value will not be shorter than the input */
+	r = retval = new_malloc(strlen(word) + 1);
+
+	/* For each code point in the source string... */
+	p = word;
+	while ((c = next_code_point(&p)))
+	{
+		/* Look for that same code point in the search string */
+		found = 0;
+		s = search;
+		while ((d = next_code_point(&s)))
+		{
+			if ((c == d) + inverted == 1)
+			{
+				found = 1;
+				break;
+			}
+		}
+
+		/* If we found a match, put a space here. */
+		if (found)
+			*r++ = ' ';
+		/* Otherwise, copy the code point over */
+		else
+		{
+			unsigned char utf8str[16];
+			char *x;
+
+			ucs_to_utf8(c, utf8str, sizeof(utf8str));
+			for (x = utf8str; *x; x++)
+				*r++ = *x;
+		}
+	}
+
+	*r = 0;
+	return retval;
 }
 
 /*
@@ -3924,7 +3992,7 @@ BUILT_IN_FUNCTION(function_glob, word)
 
 		for (i = 0; i < globbers.gl_pathc; i++)
 		{
-			if (sindex(globbers.gl_pathv[i], " \""))
+			if (strpbrk(globbers.gl_pathv[i], " \""))
 			{
 				size_t size;
 				char *b;
@@ -3978,7 +4046,7 @@ BUILT_IN_FUNCTION(function_globi, word)
 
 		for (i = 0; i < globbers.gl_pathc; i++)
 		{
-			if (sindex(globbers.gl_pathv[i], " \""))
+			if (strpbrk(globbers.gl_pathv[i], " \""))
 			{
 				size_t size;
 				char *b;

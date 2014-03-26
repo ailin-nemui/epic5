@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.80 2014/03/12 02:38:19 jnelson Exp $ */
+/* $EPIC: input.c,v 1.81 2014/03/26 20:44:57 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -286,7 +286,15 @@ int	cursor_position (void *vp)
 	Screen *s = (Screen *)vp;
 	if (!s)
 		return -1;
-	return s->il->logical_chars[s->il->logical_cursor];
+
+	/* 
+	 * This used to return a byte offset into the input line,
+	 * because of $mid() and stuff.  But now that those funcs
+	 * are all utf8 aware, we want to actually return the logical
+	 * character itself.
+	 */
+	/*return s->il->logical_chars[s->il->logical_cursor]; */
+	return s->il->logical_cursor;
 }
 
 #define LOGICAL_LOCATION	LOGICAL_CHARS[LOGICAL_CURSOR]

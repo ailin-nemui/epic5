@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.168 2013/10/30 02:56:52 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.169 2014/03/26 20:44:57 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -2054,7 +2054,7 @@ jumpstart_get:
 		    set_server_protocol_state(from_server, 0);
 		    send_ctcp(CTCP_PRIVMSG, user, CTCP_DCC,
 #if 1
-				sindex(dcc->description, space)
+				strchr(dcc->description, ' ')
 					? "RESUME \"%s\" %s %ld"
 					: "RESUME %s %s %ld",
 				dcc->description,

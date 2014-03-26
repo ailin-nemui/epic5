@@ -1,4 +1,4 @@
-/* $EPIC: names.c,v 1.83 2013/07/28 23:52:58 jnelson Exp $ */
+/* $EPIC: names.c,v 1.84 2014/03/26 20:44:57 jnelson Exp $ */
 /*
  * names.c: Channels and Nicks and Servers, oh my!
  *
@@ -1015,7 +1015,7 @@ int 	is_channel_private (const char *channel, int server_index)
 	Channel *tmp = find_channel(channel, server_index);
 
 	if (tmp)
-		return (sindex(tmp->base_modes, "ps") ? 1 : 0);
+		return (strpbrk(tmp->base_modes, "ps") ? 1 : 0);
 	return 0;
 }
 
