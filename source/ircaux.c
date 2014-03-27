@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.248 2014/03/26 23:32:39 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.249 2014/03/27 19:28:08 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -555,19 +555,28 @@ int	remove_from_comma_list (char *str, const char *what)
 	return removed;
 }
 
-char *	next_in_div_list (char *str, char **after, char delim)
+char *	next_in_div_list (char *str, char **after, int delim)
 {
-	*after = str;
+	unsigned char *s, *p;
+	int	c;
 
-	while (*after && **after && **after != delim)
-		(*after)++;
-
-	if (*after && **after == delim)
+	s = str;
+	while (p = s, (c = next_code_point((const unsigned char **)&s)))
 	{
-		**after = 0;
-		(*after)++;
+		if (c == -1)
+		{
+			s++;
+			continue;
+		}
+
+		if (c == delim)
+		{
+			*p++ = 0;	/* Terminate the old string */
+			break;
+		}
 	}
 
+	*after = s;	/* Pointing at the new string */
 	return str;
 }
 
@@ -4998,19 +5007,33 @@ int	vmy_strnicmp (size_t len, char *str, ...)
 	return (cmp == NULL) ? 0 : ret;
 }
 
+/*
+ * XXX I don't like that this iterates over the string byte by byte,
+ * especially when 'oldstr' or 'newstr' might be multi-bytes.
+ * This runs a non-zero risk (i guess?) of the subsequent bytes of a 
+ * utf8 sequence matching up previous bytes of a utf8 sequence.
+ * But I don't believe that's valid -- I should just rewrite it to be safer.
+ */
 char *	substitute_string (const char *string, const char *oldstr, const char *newstr, int case_sensitive, int global)
 {
 	char *	retval;
 	int	i;
 	size_t	retvalsize;
-	size_t	oldlen;
+	size_t	oldlen, oldcplen;
 	size_t	newlen;
 	size_t	stringlen;
 	const char *	p;
 	int	max_matches;
 
+	/* 
+	 * For string sensitive cases, we use regular old strncmp,
+	 * which doesn't know about utf8 and doesn't care.
+	 * For string INSENSITIVE cases, we use our strnicmp,
+	 * which DOES know about utf8, and works on code points, not bytes.
+	 */
 	if (!(oldlen = strlen(oldstr)))
 		return malloc_strdup(string);
+	oldcplen = quick_code_point_count(oldstr);
 
 	/* XXX ok. so it's lame. */
 	if (global)
@@ -5030,7 +5053,13 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
 	retval = new_malloc(retvalsize);
 	i = 0;
 
-	/* For each character in the input string... */
+	/*
+	 * XXX At first glance this seems horrible, but really, it's not!
+	 * So strn[i]cmp() is O(N), that's true, but it returns immediately
+	 * upon the first failure -- which means that for each non-matching
+	 * position, strnicmp is O(1); so doing this for each byte is not
+	 * fully O(N^2).
+	 */
 	for (p = string; *p; p++)
 	{
 	    /* If we are still willing to make substitutions... */
@@ -5047,7 +5076,7 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
 		/* For case insensitive searches, we use my_strnicmp */
 		else
 		{
-			if (!my_strnicmp(p, oldstr, oldlen))
+			if (!my_strnicmp(p, oldstr, oldcplen))
 				found = 1;
 		}
 

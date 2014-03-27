@@ -219,6 +219,15 @@ int     next_code_point (const unsigned char **i)
         unsigned char    a, b, c, d;
         const unsigned char *str;
         int     result = -1;
+static	const unsigned char *sanity = NULL;
+
+	if (*i == sanity)
+	{
+		yell("XXX####XXX NEXT_CODE_POINT LOOP XXX####XXX");
+		yell("The previous call to next_code_point failed and it was immediately called again with the same (broken) string.  This will result in an infinite loop.  I'm returning 0 hoping to stop this.");
+		return 0;
+	}
+
 
         str = *i;
         a = b = c = d = 0;
@@ -303,10 +312,14 @@ int     next_code_point (const unsigned char **i)
 
 	/* If result is -1, something is wrong */
 	if (result == -1)
-		;
+	{
+		sanity = *i;
 /*
 		yell("next_code_point: result == -1 for [%s] [%d] [%d] [%d] [%d]", (*i), (int)a, (int)b, (int)c, (int)d);
 */
+	}
+	else
+		sanity = NULL;
 
         return result;
 }
@@ -499,6 +512,9 @@ int	quick_code_point_count (const unsigned char *str)
 
 /*
  * previous_code_point	- Move *i back one code point.
+ *			 *** IMPORTANT ***
+ *			 This is technically a "quick" function since it
+ *			 does not validate the string is well formed utf8.
  *
  * Arguments:
  *	st	The first byte of whatever string 'i' is pointing to.
@@ -509,6 +525,7 @@ int	quick_code_point_count (const unsigned char *str)
  *	  the code point that ends at the byte *i - 1.
  *	- If *i does not point at the first byte of a code point,
  *	  then the code that that contains *i.
+ *	- If *i points at the start of string (st), returns 0 so you can stop.
  *	In both cases, *i is moved to the first byte of the code
  *	point whose value is returned.
  */
@@ -517,6 +534,9 @@ int     previous_code_point (const unsigned char *st, const unsigned char **i)
 	const unsigned char *	c;
 
 	c = *i;
+	if (c == st)
+		return 0;		/* Time to stop */
+
 	if (c > st && (*c < 0x80 || *c >= 0xC0))
 		c--;
 

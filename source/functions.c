@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.309 2014/03/26 20:44:57 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.310 2014/03/27 19:28:08 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1033,6 +1033,7 @@ BUILT_IN_FUNCTION(function_left, word)
  * Usage: $right(number text)
  * Returns: the <number> rightmost characters in <text>.
  * Example: $right(5 the quick brown frog) returns " frog"
+ * XXX This function should use previous_code_point() like $rest() does.
  */
 BUILT_IN_FUNCTION(function_right, word)
 {
@@ -1075,6 +1076,7 @@ BUILT_IN_FUNCTION(function_right, word)
  * Example: $mid(3 4 the quick brown frog) returns " qui"
  *
  * Note: the first character is numbered zero.
+ * XXX It's a shame this isn't generalized and shared with other funcs.
  */
 BUILT_IN_FUNCTION(function_mid, word)
 {
@@ -2512,15 +2514,32 @@ BUILT_IN_FUNCTION(function_revw, words)
 
 BUILT_IN_FUNCTION(function_reverse, words)
 {
-	int     length = strlen(words);
-	char    *booya = (char *) 0;
-	int     x = 0;
+	char *	retval;
+	int	retval_size;
+	unsigned char	*x, *y, *p, *r;
 
-	booya = (char *)new_malloc(length+1);
-	for(length--; length >= 0; length--,x++)
-		booya[x] = words[length];
-	booya[x]='\0';
-	return (booya);
+	retval_size = strlen(words);
+	r = retval = new_malloc(retval_size + 1);
+
+	/* Start at the end of the string */
+	x = words + strlen(words);
+
+	/* Walk back each code point from the end... */
+	while (p = x, (previous_code_point(words, (const unsigned char **)&x)))
+	{
+		/* Save our place */
+		y = x;
+
+		/* Copy all bytes for this code point */
+		while (x < p)
+			*r++ = *x++;
+
+		/* Restore our place */
+		x = y;
+	}
+
+	*r = 0;
+	return retval;
 }
 
 /*
@@ -2798,7 +2817,7 @@ BUILT_IN_FUNCTION(function_sar, input)
 	int	variable = 0, 
 		global = 0, 
 		case_sensitive = 0;
-	char	delimiter;
+	int	delimiter;
 	char *	last_segment;
 	char *	text;
 	char *	after;
@@ -2825,7 +2844,9 @@ BUILT_IN_FUNCTION(function_sar, input)
 			RETURN_EMPTY;
 		else
 		{
-			delimiter = *input++;
+			while ((delimiter = next_code_point((const unsigned char **)&input)) == -1)
+				input++;
+
 			break;
 		}
 	}
@@ -2921,8 +2942,8 @@ BUILT_IN_FUNCTION(function_fix_width, word)
 	else
 		RETURN_EMPTY;
 
-	GET_DWORD_ARG(fillchar, word);
-	fillchar = next_code_point((const unsigned char *)&fillchar);
+	GET_DWORD_ARG(fillchar_str, word);
+	fillchar = next_code_point((const unsigned char **)&fillchar_str);
 
 	retval = fix_string_width(word, justifynum, fillchar, width);
 	RETURN_MSTR(retval);
@@ -3771,24 +3792,50 @@ BUILT_IN_FUNCTION(function_geom, words)
         return malloc_sprintf(NULL, "%d %d", col, li);
 }
 
-BUILT_IN_FUNCTION(function_pass, words)
+/*
+ * This is basically the opposite of $strip().
+ * The only difference is the "found" versus "!found"
+ * XXX What a shame to have two functions differing by only one byte.
+ */
+BUILT_IN_FUNCTION(function_pass, input)
 {
-	char *lookfor;
-	char *final, *ptr;
+	char *	search;
+	const unsigned char 	*s, *p;
+	int	c, d;
+	int	found;
+	char *	result, *r;
 
-	GET_DWORD_ARG(lookfor, words);
-	final = (char *)new_malloc(strlen(words) + 1);
-	ptr = final;
+	GET_DWORD_ARG(search, input);
+	RETURN_IF_EMPTY(input);
 
-	while (*words)
+	r = result = (char *)new_malloc(strlen(input) + 1);
+
+	found = 0;
+	p = input;
+	while ((c = next_code_point(&p)))
 	{
-		if (strchr(lookfor, *words))
-			*ptr++ = *words;
-		words++;
-	}
+		found = 0;
+		s = search;
+		while ((d = next_code_point(&s)))
+		{
+			if (c == d)
+			{
+				found = 1;
+				break;
+			}
+		}
+		if (found)
+		{
+			unsigned char utf8str[16];
+			unsigned char *x;
 
-	*ptr = 0;
-	return final;
+			ucs_to_utf8(c, utf8str, sizeof(utf8str));
+			for (x = utf8str; *x; x++)
+				*r++ = *x;
+		}
+	}
+	*r = 0;
+	return result;		/* DONT USE RETURN_STR HERE! */
 }
 
 BUILT_IN_FUNCTION(function_repeat, words)
@@ -4802,13 +4849,16 @@ BUILT_IN_FUNCTION(function_msar, input)
 	int	variable = 0, 
 		global = 0, 
 		case_sensitive = 0;
-	char	delimiter;
+	int	delimiter;
 	char *	last_segment;
 	char *	text;
 	char *	after;
 	char *	workbuf = NULL;
 	char *	search;
 	char *	replace;
+	size_t	cpoffset;
+	char	*s, *p;
+	unsigned char	delimstr[16];
 
 	/*
 	 * Scan the leading part of the argument list, slurping up any
@@ -4829,20 +4879,31 @@ BUILT_IN_FUNCTION(function_msar, input)
 			RETURN_EMPTY;
 		else
 		{
-			delimiter = *input++;
+			while ((delimiter = next_code_point((const unsigned char **)&input)) == -1)
+				input++;
 			break;
 		}
 	}
 
+	ucs_to_utf8(delimiter, delimstr, sizeof(delimstr));
+
 	/* Now that we have the delimiter, find out what we're substituting */
-	if (!(last_segment = strrchr(input, delimiter)))
+	if (!(last_segment = rcpindex(input + strlen(input), input, delimstr, 1, &cpoffset)))
 		RETURN_EMPTY;
 
 	/* 
 	 * The last segment is either a text string, or a variable.  If it
 	 * is a variable, look up its value.
+	 *
+	 * XXX This two-step is required because the delimiter might be
+	 * more than one byte.  So we null out the first byte, but move
+	 * last segment to the first byte of the following CP.
 	 */
-	*last_segment++ = 0;
+	p = s = last_segment;
+	next_code_point((const unsigned char **)&s);
+	*p = 0;
+	last_segment = s;
+
 	if (variable == 1) 
 		text = get_variable(last_segment);
 	else
@@ -5596,33 +5657,48 @@ BUILT_IN_FUNCTION(function_isnumber, input)
 
 /*
  * $rest(index string)
- * Returns 'string' starting at the 'index'th character
+ * 	Returns 'string' starting at the 'index'th character
+ * $rest(string)
+ * 	Returns 'string' without the first character.
  * Just like $restw() does for words.
+ * Technically, 'index' can be negative, but this isn't documented.
  */
 BUILT_IN_FUNCTION(function_rest, input)
 {
 	int	start = 1;
 	char *	test_input;
 	int	len;
+	char *	x;
 
 	/*
-	 * XXX - This is a total hack.  I know it.
+	 * XXX - The 'index' argument should not be optional.
+	 * So we have to determine if the 1st word is a number.
 	 */
 	test_input = input;
 	parse_number(&test_input);
 	if (test_input > input && my_isspace(*test_input))
 		GET_INT_ARG(start, input);
 
-	len = (int)strlen(input);
+	len = quick_code_point_count(input);
 
 	if (start >= len || -start >= len)
 		RETURN_EMPTY;
 	else if (start >= 0)
-		RETURN_STR(input + start);
+	{
+		/* Skip 'start' code points at the start */
+		x = input;
+		while (start-- > 0)
+			next_code_point((const unsigned char **)&x);
+		RETURN_STR(x);
+	}
 	else
-		input[len + start] = 0;
-
-	RETURN_STR(input);
+	{
+		/* Walk 'start' code points from the end */
+		x = input + strlen(input);
+		while (start++ < 0)
+			previous_code_point(input, (const unsigned char **)&x);
+		RETURN_STR(x);
+	}
 }
 
 

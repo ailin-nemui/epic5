@@ -3,14 +3,15 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * These things need to be UTF8 aware
-	reverse	pass
-	center	fix_width 	chrq		translate	truncate
-	substr	rsubstr		msar		rest		insert
+	center	fix_width 	chrq	translate
+	substr	rsubstr		insert
 * These functions have been converted
-	strlen	chop	index	rindex	indextoword	wordtoindex	maxlen
-	strip	split	before	after	curpos		toupper		tolower
+	strlen	chop	index	rindex	indextoword	wordtoindex	
+	maxlen 	strip	split	before	after		curpos		
+	toupper	tolower reverse	rest	pass		
+	sar	msar
 * These functions didn't need to be converted after all
-	count
+	count	truncate
 * Create $encodingctl()
 
 MEDIUM-TERM PROJECTS
@@ -524,4 +525,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This means things like case insensitive aliases work for non-english! yay!
 * Rewrite/ensure these functions are UTF8 aware:
 	toupper	tolower
+* Add sanity check to next_code_point() to warn if i do something stupid.
+* Revise next_in_div_list to take CP so $[m]sar() can take arbitrary delims
+* Revise substitute_string to handle case insensitivity as utf8 aware.
+* Rewrite/ensure these functions are UTF8 aware:
+	reverse	rest	pass	sar	msar
 
