@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.227 2014/03/26 20:44:57 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.228 2014/03/28 13:31:35 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -896,8 +896,9 @@ BUILT_IN_COMMAND(xechocmd)
 
 	while (more && args && *args == '-')
 	{
-	    switch (toupper(args[1]))
+	    switch (args[1])
 	    {
+		case 'c':
 		case 'C':	/* CURRENT (output to user's current window) */
 		{
 			next_arg(args, &args);
@@ -905,6 +906,7 @@ BUILT_IN_COMMAND(xechocmd)
 			break;
 		}
 
+		case 'l':
 		case 'L':
 		{
 		    Window *w;
@@ -912,7 +914,7 @@ BUILT_IN_COMMAND(xechocmd)
 		    flag_arg = next_arg(args, &args);
 
 		    /* LINE (output to scratch window) */
-		    if (toupper(flag_arg[2]) == 'I') 
+		    if (flag_arg[2] == 'i' || flag_arg[2] == 'I')
 		    {
 			int to_line = 0;
 			int display_lines;
@@ -956,6 +958,7 @@ BUILT_IN_COMMAND(xechocmd)
 		     break;
 		}
 
+		case 't':
 		case 'T':
 		{
 			/* Chew up the argument. */
@@ -968,6 +971,7 @@ BUILT_IN_COMMAND(xechocmd)
 			break;
 		}
 
+		case 'v':
 		case 'V':	/* VISUAL (output to a visible window) */
 		{
 			/* Chew up the argument. */
@@ -992,6 +996,7 @@ BUILT_IN_COMMAND(xechocmd)
 			break;
 		}
 
+		case 'w':
 		case 'W':	/* WINDOW (output to specified window) */
 		{
 			Window *w;
@@ -1021,6 +1026,7 @@ BUILT_IN_COMMAND(xechocmd)
 			break;
 		}
 
+		case 'e':
 		case 'E':
 		{
 			double	timeout = 0;
@@ -1038,12 +1044,13 @@ BUILT_IN_COMMAND(xechocmd)
 
 			break;
 		}
+		case 'a':
 		case 'A':	/* ALL (output to all windows) */
 		case '*':
 		{
 			flag_arg = next_arg(args, &args);
 
-			if (toupper(flag_arg[2]) == 'S')
+			if (flag_arg[2] == 's' || flag_arg[2] == 'S')
 				all_windows_for_server = 1;
 			else
 				all_windows = 1;
@@ -1051,6 +1058,7 @@ BUILT_IN_COMMAND(xechocmd)
 			break;
 		}
 
+		case 'b':
 		case 'B':	/* WITH BANNER */
 		{
 			next_arg(args, &args);
@@ -1058,6 +1066,7 @@ BUILT_IN_COMMAND(xechocmd)
 			break;
 		}
 
+		case 'r':
 		case 'R':   /* RAW OUTPUT TO TERMINAL */
 		{
 			Window *wx;
@@ -1080,6 +1089,7 @@ BUILT_IN_COMMAND(xechocmd)
 			return;
 		}
 
+		case 'n':
 		case 'N': /* NOLOG (dont add to lastlog) */
 		{
 			next_arg(args, &args);
@@ -1087,6 +1097,7 @@ BUILT_IN_COMMAND(xechocmd)
 			break;
 		}
 
+		case 's':
 		case 'S': /* SAY (dont output if suppressing output) */
 		{
 			next_arg(args, &args);
@@ -1095,6 +1106,7 @@ BUILT_IN_COMMAND(xechocmd)
 			break;
 		}
 
+		case 'x':
 		case 'X': /* X -- allow all attributes to be outputted */
 		{
 			next_arg(args, &args);
@@ -1103,6 +1115,7 @@ BUILT_IN_COMMAND(xechocmd)
 			break;
 		}
 
+		case 'f':
 		case 'F': /* DO not notify for hidden windows (%F) */
 		{
 			next_arg(args, &args);
@@ -3231,13 +3244,16 @@ struct target_type target[4] =
 	     */
 	    else if (*current_nick == '@' && is_number(current_nick + 1))
 		target_file_write(current_nick + 1, text);
-	    else if (*current_nick == '@' && toupper(current_nick[1]) == 'W' 
+	    else if (*current_nick == '@' 
+			&& (current_nick[1] == 'W' || current_nick[1] == 'w')
 			&& is_number(current_nick + 1))
 		target_file_write(current_nick + 1, text);
-	    else if (*current_nick == '@' && toupper(current_nick[1]) == 'L' 
+	    else if (*current_nick == '@' 
+			&& (current_nick[1] == 'L' || current_nick[1] == 'l')
 			&& is_number(current_nick + 1))
 		target_file_write(current_nick + 1, text);
-	    else if (*current_nick == '@' && toupper(current_nick[1]) == 'E')
+	    else if (*current_nick == '@' 
+			&& (current_nick[1] == 'E' || current_nick[1] == 'e'))
 	    {
 		/* XXX this is probably cheating. */
 		char *ptr = NULL;

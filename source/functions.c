@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.310 2014/03/27 19:28:08 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.311 2014/03/28 13:31:35 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -688,7 +688,9 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "SETITEM",            function_setitem 	},
 	{ "SHIFT",		function_shift 		},
 	{ "SHIFTBRACE",		function_shiftbrace	},
+#if 0
 	{ "SHIFTSEG",           function_shiftseg       },
+#endif
 	{ "SIN",		function_sin		},
 	{ "SINH",		function_sinh		},
 	{ "SORT",		function_sort		},
@@ -2619,6 +2621,7 @@ char *function_shiftbrace (char *word)
 	RETURN_MSTR(booya);
 }
 
+#if 0
 char *function_shiftseg (char *input)
 {
 	char *var;
@@ -2662,6 +2665,7 @@ char *function_shiftseg (char *input)
 
 	return blah;
 }
+#endif
 
 char *function_shift (char *word)
 {
@@ -2710,7 +2714,7 @@ char *function_unshift (char *word)
 	else if (!*var || *word)
 		RETURN_EMPTY;
 
-	upper(value);
+	upper(var);
 	value = get_variable(var);
 	if (!word || !*word)
 		return value;
@@ -2888,28 +2892,40 @@ BUILT_IN_FUNCTION(function_center, word)
 {
 	size_t  fieldsize,
 		stringlen,
+		cols,		/* Apparently "columns" is taken */
 		pad;
 	char    *padc;
+	char	*copy;
 
 	/* The width they want */
 	GET_INT_ARG(fieldsize, word)
 
-	/* The width we have */
-	stringlen = strlen(word);
+	/* 
+	 * XXX This is copied from function_printlen(). 
+	 * This should probably be a generic operation.
+	 */
+        copy = new_normalize_string(word, 2, NORMALIZE); 
+        cols = output_with_count(copy, 0, 0);
+	stringlen = strlen(copy);
+        new_free(&copy);
 
 	/* The string is wider than the field, just return it */
-	if (stringlen > fieldsize)
+	if (cols > fieldsize)
 		RETURN_STR(word);
 
 	/*
 	 * Calculate how much space we need.
-	 * For a string of length N, centered in a field of length X,
+	 * For a string N columns wide, centered in a field of length X,
 	 * N / 2 is the size of the string in each half of the field;
 	 * (X - N) / 2 is the size of the space in each half of the field;
 	 * Therefore, the size of the field is:
 	 *      N + ((X - N) / 2)
+	 *
+	 * Since the string may be utf8, we must use the column count to
+	 * determine how many bytes to add; but we must use the actual 
+	 * string length to decide how big the result is.
 	 */
-	pad = stringlen + ((fieldsize - stringlen) / 2);
+	pad = stringlen + ((fieldsize - cols) / 2);
 	padc = (char *)new_malloc(pad + 1);
 	snprintf(padc, pad + 1, "%*s", (int)pad, word);  /* Right justify it */
 	return padc;
@@ -3042,7 +3058,7 @@ BUILT_IN_FUNCTION(function_chr, word)
 	int	code_point;
 
 	cnt = count_words(word, DWORD_DWORDS, "\"");
-	ack = aboo = new_malloc(cnt * 2 + 7);
+	ack = aboo = new_malloc(cnt * 6 + 7);
 
 	while ((blah = next_func_arg(word, &word)))
 	{
@@ -3069,7 +3085,7 @@ BUILT_IN_FUNCTION(function_chr, word)
 			bytes++;
 		}
 
-		if (bytes >= (cnt * 2))
+		if (bytes >= (cnt * 6))
 			break;
 	}
 
@@ -3091,28 +3107,70 @@ BUILT_IN_FUNCTION(function_chr, word)
  * Example:
  * $chr(104 105 33 0 134 104 105 33 0) returns "hi\0\\hi!\0"
  *	because the string undergoes CTCP QUOTING before being returned.
+ *
+ * XXX This is a clone of function_chr() except for the transformation
+ * at the end.  How bogus.
  */
 BUILT_IN_FUNCTION(function_chrq, word)
 {
 	char *	aboo = NULL;
 	char *	ack;
 	char *	blah;
-	size_t	cnt;
-	char *	ret;
 	size_t	bytes = 0;
+	size_t	cnt;
+	char 	*s, *x;
+	unsigned char 	utf8str[8];
+	int	code_point;
+	char	*ret;
 
 	cnt = count_words(word, DWORD_DWORDS, "\"");
-	ack = aboo = alloca(cnt + 1);
+	ack = aboo = new_malloc(cnt * 6 + 7);
 
 	while ((blah = next_func_arg(word, &word)))
 	{
-		*ack++ = (char)my_atol(blah);
-		if (bytes++ >= cnt)
+		if (blah[0] == 'U' && blah[1] == '+')
+		{
+			blah += 2;
+			code_point = strtol(blah, &x, 16);
+
+			/* If it's invalid, skip it */
+			if (blah == x)
+				continue;
+
+			/*
+			 * As a SPECIAL CASE code point 0 gets copied.
+			 */
+			if (code_point == 0)
+			{
+				*ack++ = 0;
+				bytes++;
+			}
+			
+			/* Otherwise, convert to utf8 */
+			else
+			{
+			    ucs_to_utf8(code_point, utf8str, sizeof(utf8str));
+			    for (x = utf8str; *x; x++)
+			    {
+				*ack++ = *x;
+				bytes++;
+			    }
+			}
+		}
+		else
+		{
+			*ack++ = (char)my_atol(blah);
+			bytes++;
+		}
+
+		if (bytes >= (cnt * 6))
 			break;
 	}
-	*ack = 0;
 
-	ret = transform_string_dyn("+URL", aboo, bytes, NULL);
+	*ack = 0;
+	ret = transform_string_dyn("+CTCP", aboo, bytes, NULL);
+	new_free(&aboo);
+
 	RETURN_MSTR(ret);
 }
 
@@ -3386,74 +3444,166 @@ BUILT_IN_FUNCTION(function_convert, words)
 	RETURN_STR(ret);		/* Dont put function call in macro! */
 }
 
-BUILT_IN_FUNCTION(function_translate, words)
+/*
+ * $tr([delim][chars-out][delim][chars-in][delim][text])
+ *
+ * For the string [text], replace any instances of any character
+ * in [chars-out] with the corresponding character in [chars-in].
+ *
+ * Example:
+ *	$tr(/abc/def/happy happy job job/)
+ * Means apply these transforms:
+ *	a -> d
+ *	b -> e
+ *	c -> f
+ * So the result is:
+ *	hdppy hdppy joe joe
+ *
+ * This is *NOT* case insensitive, like you might expect.  Oh well!
+ */
+
+BUILT_IN_FUNCTION(function_translate, input)
 {
-	char *	oldc, 
-	     *	newc, 
-	     *	text,
-	     *	ptr,
-		delim;
-	int 	size_old, 
-		size_new,
-		x;
+	int		delim, codepoint;
+	unsigned char 	*s, *p;
+	unsigned char	*chars_in, *chars_out, *text;
+	char		*retval, *r;
+	int		char_out, char_in;
+	unsigned char 	utf8str[16];
 
-	RETURN_IF_EMPTY(words);
+	RETURN_IF_EMPTY(input);
 
-	oldc = words;
-	/* First character can be a slash.  If it is, we just skip over it */
-	delim = *oldc++;
-	newc = strchr(oldc, delim);
+	/* 
+	 * The first CP we see is the delimiter. 
+	 * By convention, this is a slash ('/'), but it doesn't have to be.
+	 */
+	s = input;
+	while ((delim = next_code_point((const unsigned char **)&s)) == -1)
+		s++;
 
-	if (!newc)
-		RETURN_EMPTY;	/* no text in, no text out */
+	/*
+	 * The chars to swap out begin after the delim.
+	 */
+	chars_out = s;
 
-	text = strchr(++newc, delim);
-
-	if (newc == oldc)
-		RETURN_EMPTY;
-
-	if (!text)
-		RETURN_EMPTY;
-	*text++ = 0;
-
-	if (newc == text)
+	/*
+	 * Now we look for the next delim...
+	 */
+	for (;;)
 	{
-		*newc = 0;
-		newc = endstr(newc);
-	}
-	else
-		newc[-1] = 0;
+		p = s;
+		while ((codepoint = next_code_point((const unsigned char **)&s)) == -1)
+			s++;
+		if (codepoint == 0)
+			RETURN_EMPTY;
 
-	/* this is cheating, but oh well, >;-) */
-	text = malloc_strdup(text);
-
-	size_new = strlen(newc);
-	size_old = strlen(oldc);
-
-	for (ptr = text; ptr && *ptr; ptr++)
-	{
-		for (x = 0; x < size_old; x++)
+		/* 
+		 * Since the delim might be multiple bytes,
+		 * we keep a pointer to the start of each CP.
+		 * If we find the delim, we null out the first
+		 * byte.
+		 */
+		if (codepoint == delim)
 		{
-			if (*ptr == oldc[x])
+			*p = 0;
+			break;
+		}
+	}
+
+	/*
+	 * The chars to swap in begin after the delim.
+	 */
+	chars_in = s;
+
+	/*
+	 * Now we look for the final delim...
+	 */
+	for (;;)
+	{
+		p = s;
+		while ((codepoint = next_code_point((const unsigned char **)&s)) == -1)
+			s++;
+		if (codepoint == 0)
+			RETURN_EMPTY;
+
+		/* 
+		 * Since the delim might be multiple bytes,
+		 * we keep a pointer to the start of each CP.
+		 * If we find the delim, we null out the first
+		 * byte.
+		 */
+		if (codepoint == delim)
+		{
+			*p = 0;
+			break;
+		}
+	}
+
+	text = s;
+
+	/*
+	 * The worst case is replacing every byte in 'text' with a 
+	 * 6 byte utf8 code point.  
+	 */
+	r = retval = new_malloc(strlen(text) * 6 + 6);
+
+	/*
+	 * Now we walk every code point in text, deciding what to do.
+	 */
+	for (;;)
+	{
+		while ((codepoint = next_code_point((const unsigned char **)&text)) == -1)
+			text++;
+
+		/* The only way out is when we get the final nul. */
+		if (codepoint == 0)
+		{
+			*r = 0;
+			RETURN_MSTR(retval);
+		}
+
+		/*
+		 * For each byte, determine whether it is in the 'chars_out'
+		 * string.  If it is, replace it with the corresponding
+		 * byte in 'chars_in'
+		 *
+		 * XXX IMPORTANT!  We depend strongly on next_code_point()
+		 * refusing to walk off the end of a string here to handle
+		 * cases where the chars_out is shorter than chars_in.
+		 * The effect is that the "replaced" character is a nul,
+		 * which removes the character.  If next_code_point() ever
+		 * stops doing that, this will need to be rewritten.
+		 */
+		s = chars_out;
+		p = chars_in;
+		for (;;)
+		{
+			char_out = next_code_point((const unsigned char **)&s);
+			char_in = next_code_point((const unsigned char **)&p);
+
+			/* 
+			 * This CP was not in 'char_out' -- copy it.
+			 */
+			if (char_out == 0)
+				break;
+			/*
+			 * The CP was found -- change it to the right one.
+			 */
+			else if (codepoint == char_out)
 			{
-				/* 
-				 * Check to make sure we arent
-				 * just eliminating the character.
-				 * If we arent, put in the new char,
-				 * otherwise ov_strcpy it away
-				 */
-				if (size_new)
-					*ptr = newc[(x<size_new)?x:size_new-1];
-				else
-				{
-					ov_strcpy(ptr, ptr+1);
-					ptr--;
-				}
+				codepoint = char_in;
 				break;
 			}
 		}
+
+		/*
+		 * Convert the code point back to a string and copy it in.
+		 */
+		ucs_to_utf8(codepoint, utf8str, sizeof(utf8str));
+		s = utf8str;
+		while (*s)
+			*r++ = *s++;
 	}
-	return text;
 }
 
 BUILT_IN_FUNCTION(function_server_version, word)
@@ -6257,22 +6407,34 @@ BUILT_IN_FUNCTION(function_ttyname, input)
  * NOTE: Positions are numbered from 0
  * EX: $insert(3 baz foobarbooya) returns "foobazbarbooya"
  */
-BUILT_IN_FUNCTION(function_insert, word)
+BUILT_IN_FUNCTION(function_insert, input)
 {
+	unsigned char *s, *p;
+	char 	*first_part, *second_part, *extra;
 	int	where;
-	char *	inserted;
-	char *	result;
+	char	*retval;
 
-	GET_INT_ARG(where, word);
-	GET_DWORD_ARG(inserted, word);
+	GET_INT_ARG(where, input);
+	GET_DWORD_ARG(extra, input);
 
-	if (where <= 0)
-		result = NULL;
-	else
-		result = strext(word, word + where);
+	s = first_part = input;
+	for (;;)
+	{
+		if (where <= 0)
+			break;
+		if (!*s)
+			break;
 
-	malloc_strcat2(&result, inserted, word + where);
-	return result;				/* DONT USE RETURN_STR HERE! */
+		while (next_code_point((const unsigned char **)&s) == -1)
+			s++;
+		where--;
+	}
+
+	second_part = LOCAL_COPY(s);
+	*s = 0;
+
+	retval = malloc_strdup3(first_part, extra, second_part);
+	RETURN_MSTR(retval);
 }
 
 BUILT_IN_FUNCTION(function_stat, words)

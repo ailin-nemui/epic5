@@ -3,16 +3,17 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * These things need to be UTF8 aware
-	center	fix_width 	chrq	translate
-	substr	rsubstr		insert
+	fix_width 	substr		rsubstr		
+	numsort (num_sort_it)		wildcard matching
 * These functions have been converted
 	strlen	chop	index	rindex	indextoword	wordtoindex	
 	maxlen 	strip	split	before	after		curpos		
 	toupper	tolower reverse	rest	pass		
-	sar	msar
+	sar	msar	center	tr	chrq		insert
 * These functions didn't need to be converted after all
 	count	truncate
 * Create $encodingctl()
+* configure --enable-debug should make sure CFLAGS is -ggdb3, no -O.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -530,4 +531,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Revise substitute_string to handle case insensitivity as utf8 aware.
 * Rewrite/ensure these functions are UTF8 aware:
 	reverse	rest	pass	sar	msar
+* De-emphasize toupper() and tolower(), which are not utf8 aware
+* Comment out $shiftseg() until I learn more about it (needs utf8)
+* Rewrite/ensure these functions are UTF8 aware:
+	center	tr	chrq	insert
 
