@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.67 2014/03/12 02:38:19 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.68 2014/03/28 18:12:33 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -475,15 +475,16 @@ static void	key_exec_bt (Key *key)
 		nstr = kstr;
 		kslen--;
 
-		if (nstr < 0)
-			panic(1, "key_exec_bt: The string contained a high bit character but it shouldn't.");
-
 		while (nstr != (kstr + kslen)) 
 		{
+			/* This used to be a panic, but that seems excessive */
+			if (*nstr < 0)
+				return;		/* Very bad -- bail */
+
 			if (nstr == kstr) /* beginning of string */
-				kp = &head_keymap[*nstr];
+				kp = &head_keymap[(unsigned char)*nstr];
 			else if (kp->map != NULL)
-				kp = &kp->map[*nstr];
+				kp = &kp->map[(unsigned char)*nstr];
 			else
 				break; /* no luck here */
 			nstr++;
@@ -1142,7 +1143,7 @@ static int	bind_compressed_string (char *keyseq, int slen, const char *bindstr, 
 			yell("Cannot bind sequences containing high bit chars");
 			return 0;
 		}
-		node = &map[*s];
+		node = &map[(unsigned char)*s];
 
 		/*
 		 * As long as we are not at the final key of the sequence,
@@ -1217,7 +1218,10 @@ static Key *	find_sequence (Key *top, const char *seq, int slen)
 	 */
 	for (s = seq, map = top; slen > 0; slen--, s++)
 	{
-		node = &map[*s];
+		if (*s < 0)
+			return NULL;
+
+		node = &map[(unsigned char)*s];
 
 		if (slen > 1 && !node->map)
 			return NULL;
@@ -1577,7 +1581,10 @@ void	do_stack_bind (int type, char *arg)
 		map = head_keymap;
 		while (slen) 
 		{
-			key = &map[*s++];
+			if (*s < 0)
+				return;
+
+			key = &map[(unsigned char)*s++];
 			slen--;
 			if (slen) 
 			{

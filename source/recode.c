@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.15 2014/03/26 23:32:39 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.16 2014/03/28 18:12:33 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -744,8 +744,12 @@ const char *	outbound_recode (const char *to, int server, const char *message, c
 	const char *	encoding;
 	char *	new_buffer;
 	size_t	new_buffer_len;
-	
-	if (invalid_utf8str(message))
+	char *copy;
+
+	/* XXX Creating a copy just to avoid const is bogus */
+	/* XXX Should there be an invalid_utf8str_notrim? */
+	copy = LOCAL_COPY(message);
+	if (invalid_utf8str(copy))
 		yell("WARNING - recoding outbound message, but it is not UTF8.  This will surely do the wrong thing.");
 
 	/* If there is no place to put the retval, don't do anything */

@@ -2,16 +2,16 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* These things need to be UTF8 aware
-	fix_width 	substr		rsubstr		
-	numsort (num_sort_it)		wildcard matching
 * These functions have been converted
 	strlen	chop	index	rindex	indextoword	wordtoindex	
 	maxlen 	strip	split	before	after		curpos		
 	toupper	tolower reverse	rest	pass		
 	sar	msar	center	tr	chrq		insert
+	substr		rsubstr		
 * These functions didn't need to be converted after all
-	count	truncate
+	count	truncate	wildcard matching
+* These undocumented and unused functions were defered until later
+	fix_width	shiftseg	numsort (sort of)
 * Create $encodingctl()
 * configure --enable-debug should make sure CFLAGS is -ggdb3, no -O.
 
@@ -535,4 +535,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Comment out $shiftseg() until I learn more about it (needs utf8)
 * Rewrite/ensure these functions are UTF8 aware:
 	center	tr	chrq	insert
-
+* Rewrite/ensure these functions are UTF8 aware:
+	substr	rsubstr
+* Fix many warnings suggested by the compiler

@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.81 2014/03/26 20:44:57 jnelson Exp $ */
+/* $EPIC: input.c,v 1.82 2014/03/28 18:12:32 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -926,7 +926,7 @@ const char *	prompt;
 		max = last_input_screen->co;
 		max -= PHYSICAL_CURSOR;
 
-		term_echo(do_echo);
+		old_do_echo = term_echo(do_echo);
 
 		if (input_column_count(INPUT_BUFFER + LOGICAL_LOCATION) > max) 
 		{

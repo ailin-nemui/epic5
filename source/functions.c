@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.311 2014/03/28 13:31:35 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.312 2014/03/28 18:12:32 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -5038,7 +5038,7 @@ BUILT_IN_FUNCTION(function_msar, input)
 	ucs_to_utf8(delimiter, delimstr, sizeof(delimstr));
 
 	/* Now that we have the delimiter, find out what we're substituting */
-	if (!(last_segment = rcpindex(input + strlen(input), input, delimstr, 1, &cpoffset)))
+	if (!(last_segment = (char *)(intptr_t)rcpindex(input + strlen(input), input, delimstr, 1, &cpoffset)))
 		RETURN_EMPTY;
 
 	/* 
@@ -6363,7 +6363,7 @@ BUILT_IN_FUNCTION(function_indextoword, input)
 
 	s = input;
 	for (i = 0; i < pos; i++)
-		next_code_point((const unsigned char *)&s);
+		next_code_point((const unsigned char **)&s);
 
 	/*
 	 * This is a special case to handle multiple runs of words.

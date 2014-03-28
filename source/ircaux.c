@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.249 2014/03/27 19:28:08 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.250 2014/03/28 18:12:32 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -439,45 +439,69 @@ char *	lower (char *str)
 /* case insensitive string searching */
 ssize_t	stristr (const char *start, const char *srch)
 {
-        int     x = 0;
-	const char *source = start;
+	const char *p;
+	int	srchlen;
+	int	d;
 
-        if (!source || !*source || !srch || !*srch || strlen(source) < strlen(srch))
+	/* There must be both a source string and a search string */
+	if (!start || !*start || !srch || !*srch)
 		return -1;
 
-        while (*source)
-        {
-                if (source[x] && toupper(source[x]) == toupper(srch[x]))
-			x++;
-                else if (srch[x])
-			source++, x = 0;
-		else
-			return source - start;
-        }
+	srchlen = quick_code_point_count(srch);
+
+	/* The search string must be shorter than the source string */
+	if (srchlen > quick_code_point_count(start))
+		return -1;
+
+	p = start;
+	for (;;)
+	{
+		if (!my_strnicmp(p, srch, srchlen))
+			return quick_code_point_index(start, p);
+
+		while ((d = next_code_point((const unsigned char **)&p)) == -1)
+			p++;
+
+		/* Not found */
+		if (d == 0)
+			return -1;
+	}
+
 	return -1;
 }
 
 /* case insensitive string searching from the end */
 ssize_t	rstristr (const char *start, const char *srch)
 {
-	const char *ptr;
-	int x = 0;
+	const char *p;
+	int	srchlen;
+	int	d, i;
 
-        if (!start || !*start || !srch || !*srch || strlen(start) < strlen(srch))
+	/* There must be both a source string and a search string */
+	if (!start || !*start || !srch || !*srch)
 		return -1;
 
-	ptr = start + strlen(start) - strlen(srch);
+	srchlen = quick_code_point_count(srch);
 
-	while (ptr >= start)
-        {
-		if (!srch[x])
-			return ptr - start;
+	/* The search string must be shorter than the source string */
+	if (srchlen > quick_code_point_count(start))
+		return -1;
 
-		if (toupper(ptr[x]) == toupper(srch[x]))
-			x++;
-		else
-			ptr--, x = 0;
+	/* Start looking at <srclen> code points from the end of <start>. */
+	p = start + strlen(start);
+	for (i = 1; i < srchlen; i++)
+		previous_code_point(start, (const unsigned char **)&p);
+
+	for (;;)
+	{
+		if (!my_strnicmp(p, srch, srchlen))
+			return quick_code_point_index(start, p);
+
+		if ((d = previous_code_point(start, (const unsigned char **)&p)) == 0)
+			return -1;		/* Not found */
+
 	}
+
 	return -1;
 }
 
