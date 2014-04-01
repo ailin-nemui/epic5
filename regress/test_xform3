@@ -1,0 +1,55 @@
+for ii from 1 to 32 step 1 {
+ @ :ct = repeat($ii a)
+ @ :xf = xform("+CAST +B64" googled $ct))
+
+ if (ct != xform("-B64 -CAST" googled $xf)) {
+   echo Wrong decryption for $ii of a's
+   echo Clear text          : $ct
+   echo Decrypted with xform: $xform("-B64 -CAST" googled $xf)
+   echo CAST;
+ }
+}
+for ii from 1 to 32 step 1 {
+ @ :ct = repeat($ii a)
+ @ :xf = xform("+BF +B64" googled $ct))
+
+ if (ct != xform("-B64 -BF" googled $xf)) {
+   echo Wrong decryption for $ii of a's
+   echo Clear text          : $ct
+   echo Decrypted with xform: $xform("-B64 -BF" googled $xf)
+   echo BF;
+ }
+}
+for ii from 1 to 32 step 1 {
+ @ :ct = repeat($ii a)
+ @ :xf = xform("+FISH +B64" googled $ct))
+
+ if (ct != xform("-B64 -FISH" googled $xf)) {
+   echo Wrong decryption for $ii of a's
+   echo Clear text          : $ct
+   echo Decrypted with xform: $xform("-B64 -FISH" googled $xf)
+   echo FISH;
+ }
+}
+for ii from 1 to 32 step 1 {
+ @ :ct = repeat($ii a)
+ @ :xf = xform("+AES +B64" googled $ct))
+
+ if (ct != xform("-B64 -AES" googled $xf)) {
+   echo Wrong decryption for $ii of a's
+   echo Clear text          : $ct
+   echo Decrypted with xform: $xform("-B64 -AES" googled $xf)
+   echo AES;
+ }
+}
+for ii from 1 to 32 step 1 {
+ @ :ct = repeat($ii a)
+ @ :xf = xform("+AESSHA +B64" googled $ct))
+
+ if (ct != xform("-B64 -AESSHA" googled $xf)) {
+   echo Wrong decryption for $ii of a's
+   echo Clear text          : $ct
+   echo Decrypted with xform: $xform("-B64 -AESSHA" googled $xf)
+   echo AESSHA;
+ }
+}

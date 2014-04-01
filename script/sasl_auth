@@ -3,24 +3,20 @@ if (word(2 $loadinfo()) != [pf]) {
 	return;
 };
 
-if (!symbolctl(get perl 1 builtin_function)) {
-	xecho -b ERROR: sasl_auth: load: client compiled without Perl support: abort loading;
-	return;
-};
-
 package sasl_auth;
 
 ## SASL authentication script for EPIC5.
 ## Written by zlonix@efnet, public domain.
 ##
-## Version: 1.0
-##  - Initial roll-out (January, 2014)
+## Version: 1.0 (January, 2014)
+##  - Initial roll-out
+##
+## Version: 1.1 (March, 2014)
+##  - Perl is not required anymore
+##
 
 ## This script implements SASL authentication, primarily used on
-## Freenode network. Currently only PLAIN method is supported.  The
-## script depends on Perl being compiled in and builtins script being
-## loaded (provides $servername() function). Perl support is need for
-## handling NUL characters during creation of authentication string.
+## Freenode network. Currently only PLAIN method is supported.
 ##
 ## !!! WARNING  !!! WARNING !!! WARNING !!! WARNING !!! WARNING !!!
 ##    Never forget that your password may be intercepted, which
@@ -87,9 +83,7 @@ alias sasl_auth (server, method, user, password, void) {
 };
 
 alias sasl_auth.plain (nick, password, void) {
-	@ perl(use MIME::Base64);
-	@ :b64 = perl(encode_base64(join("\0", EPIC::expr("nick"), EPIC::expr("nick") , EPIC::expr("password"))));
-	return $b64;
+	return $xform("-CTCP +B64" $nick\\0$nick\\0$password);
 };
 
 alias sasl_auth.setstate (server, state, void) {

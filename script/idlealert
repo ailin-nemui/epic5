@@ -74,31 +74,30 @@ alias idlealert.setup (void) {
 	};
 };
 
-addset idlealert bool {
-	if (*0 == [ON]) {
-		idlealert.clean;
-		idlealert.setup;
-	} else {
-		idlealert.clean;
+alias idlealert (void) {
+	if (idlealert == [off]) {
+		xecho -b Idlealert: set idlealert is OFF;
+		return;
+	};
+
+	if (!@idlealert_list) {
+		xecho -b Idlealert: set idlealert_list is EMPTY;
+		return;
+	};
+
+	fe ($idlealert_list) nick {
+		if (match(*/* $nick) > 0) {
+			@ :net = after(/ $nick);
+			@ :nick = before(/ $nick);
+
+			if (@::idlealert[time][$net][$nick]) {
+				xecho -b $nick/$net has been idle $tdiff($::idlealert[time][$net][$nick]);
+			} else {
+				xecho -b $nick/$net not monitored;
+			};
+		};
 	};
 };
-set idlealert off;
-
-addset idlealert_interval int {
-	idlealert.clean;
-	idlealert.setup;
-};
-set idlealert_interval 60;
-
-addset idlealert_list str;
-
-addset idlealert_threshold int {
-	idlealert.clean;
-	idlealert.setup;
-};
-set idlealert_threshold 600;
-
-
 
 on #-005 500 "*" {
 	idlealert.timer.init $serverctl(GET $servernum($0) 005 NETWORK);
@@ -183,17 +182,19 @@ alias idlealert.addhooks (nick) {
 		@ :net = serverctl(GET $servernum() 005 NETWORK);
 
 		if (*2 >= idlealert_threshold && findw($1 $idlealert[idle][$net]) == -1) {
-			xecho -b Idlealert: $1 \($idlealert[$servername()][$1]\) on server $0 become idle;
+			xecho -l user1 -b Idlealert: $1 \($idlealert[$servername()][$1]\) on server $0 become idle;
 			@ push(idlealert[idle][$net] $1);
 			@ idlealert[notified][$net] = remw($1 $idlealert[notified][$net]);
+			@ ::idlealert[time][$net][$1] = *2;
 			return;
 		};
 
 		@ :on_irc = time() - *3;
 		if (*2 < idlealert_threshold && findw($1 $idlealert[idle][$net]) != -1 && findw($1 $idlealert[notified][$net]) == -1 && *2 != on_irc) {
-			xecho -b Idlealert: $1 \($idlealert[$servername()][$1]\) on server $0 not idle anymore;
+			xecho -l user1 -b Idlealert: $1 \($idlealert[$servername()][$1]\) on server $0 not idle anymore [has been idle for $tdiff($::idlealert[time][$net][$1])];
 			@ idlealert[idle][$net] = remw($1 $idlealert[idle][$net]);
 			@ push(idlealert[notified][$net] $1);
+			@ ::idlealert[time][$net][$1] = *2;
 			return;
 		};
 		
@@ -221,3 +222,26 @@ alias idlealert.delhooks (nick) {
 	
 	on ^318 -'% $nick *';
 };
+
+addset idlealert bool {
+	if (*0 == [ON]) {
+		idlealert.clean;
+		idlealert.setup;
+	} else {
+		idlealert.clean;
+	};
+};
+
+addset idlealert_interval int {
+	idlealert.clean;
+	idlealert.setup;
+};
+set idlealert_interval 60;
+
+addset idlealert_list str;
+
+addset idlealert_threshold int {
+	idlealert.clean;
+	idlealert.setup;
+};
+set idlealert_threshold 600;

@@ -216,6 +216,7 @@ alias xmsglog.help (void) {
 	echo;
 	echo /xmsglog [-m <type>] [-f <nick>] [-t <nick>] [-w <nick>] [-h <hostname>];
 	echo          [-n <net>] [-s <server>] [-l] [-d] [-r] [-p <count>] [body];
+#	echo          [-o <file>] [-z <file>] [body];
 	echo   -m: type of the message to be searched, possible arguments: privmsg, notice,;
 	echo       dccchat;
 	echo   -f: search messages which came from specified <nick>;
@@ -231,6 +232,9 @@ alias xmsglog.help (void) {
 	echo   -r: print raw line from the archive, without formaing;
 	echo   -p: print no more than last <count> matching lines of your query;
 	echo;
+#	echo   -o: save output to the <file>;
+#	echo   -z: encrypt <file> (password will be asked interactively);
+#	echo;
 	echo   Everything what won't be processed as flags will be interpreted as a pattern;
 	echo   to search inside the body of the message.;
 	echo;
@@ -277,6 +281,8 @@ alias xmsglog.output (flags qwords 1, ...) {
 	@ :line_number = word(1 $unsplit(" " $flags));
 	@ :print_date = word(2 $unsplit(" " $flags));
 	@ :print_raw = word(3 $unsplit(" " $flags));
+#	@ :save = word(4 $unsplit(" " $flags));
+#	@ :file = word(5 $unsplit(" " $flags));
 	
 	if (print_raw == 1) {
 		echo ${print_line ? [$line_number ] : []}${print_date ? [[$strftime($0 %H:%M %d-%b %Y)] ] :[]}$*;

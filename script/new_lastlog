@@ -1,0 +1,49 @@
+if (word(2 $loadinfo()) != [pf]) {
+	load -pf $word(1 $loadinfo());
+	return;
+};
+
+if (info(i) < 1730 || J !~ [EPIC5*]) {
+	xecho -b ERROR: new_lastlog: load: EPIC5 (rev. 1730) or newer is required;
+	return;
+};
+
+package new_lastlog;
+
+## New lastlog script for EPIC5.
+## Written by zlonix@efnet, public domain.
+##
+## Version: 1.0 (Febrary, 2014)
+##  - Initial roll-out
+
+## By default your /lastlog command searches only current window lastlog, since
+## EPIC5 revision 1730, new flag '-global' has been added to allow you to search
+## using all your windows at once.
+##
+## This script add new tunable setting, which allow you to switch default
+## behaviour of lastlog command to new one, where '-global' is always passed.
+##
+##  /set lastlog_global [on|off|toggle] - search all windows when using /lastlog
+##
+## Also it adds several one line aliases for daily lastlog usage, look at
+## aliases itself to get the best description what they're doing.
+
+@ symbolctl(create lastlog_global);
+@ symbolctl(set lastlog_global 1 builtin_variable type bool);
+@ symbolctl(set lastlog_global 1 builtin_variable script {
+	if (*0 == [on]) {
+		^alias lastlog //lastlog -global $$*
+	} else {
+		^alias -lastlog
+	}
+});
+
+alias glastlog //lastlog -global $$*;
+
+alias gtlastlog //lastlog -global -target $${*0 ? [$*] : T ? T : []};
+
+alias gtplastlog //lastlog -global -publics -target $${*0 ? [$*] : C ? C : []};
+
+alias gtmlastlog //lastlog -global -msgs $${*0 ? [-target $*] : []};
+
+set lastlog_global off;
