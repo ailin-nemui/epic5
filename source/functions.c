@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.312 2014/03/28 18:12:32 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.313 2014/04/01 18:11:14 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1442,7 +1442,6 @@ BUILT_IN_FUNCTION(function_strip, input)
 
 	r = result = (char *)new_malloc(strlen(input) + 1);
 
-	found = 0;
 	p = input;
 	while ((c = next_code_point(&p)))
 	{
@@ -3960,7 +3959,6 @@ BUILT_IN_FUNCTION(function_pass, input)
 
 	r = result = (char *)new_malloc(strlen(input) + 1);
 
-	found = 0;
 	p = input;
 	while ((c = next_code_point(&p)))
 	{

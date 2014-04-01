@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.82 2014/03/28 18:12:32 jnelson Exp $ */
+/* $EPIC: input.c,v 1.83 2014/04/01 18:11:14 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -1185,8 +1185,6 @@ BUILT_IN_KEYBINDING(input_beginning_of_line)
  */
 BUILT_IN_KEYBINDING(input_end_of_line)
 {
-        size_t len=strlen(INPUT_BUFFER);
-
 	while ((input_move_cursor(RIGHT, 0)))
 		;
 
@@ -1298,8 +1296,11 @@ BUILT_IN_KEYBINDING(input_add_character)
 	unsigned char utf8str[8];
 	int	utf8strlen;
 
+#if 0
+	/* This test isn't used, but should it be? */
 	if ((numcols = codepoint_numcolumns(key)) == -1)
 		numcols = 1;
+#endif
 
 	utf8strlen = ucs_to_utf8(key, utf8str, sizeof(utf8str));
 

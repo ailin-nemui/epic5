@@ -538,3 +538,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Rewrite/ensure these functions are UTF8 aware:
 	substr	rsubstr
 * Fix many warnings suggested by the compiler
+* Zlonix updated idlealert, sasl_auth, xmsglog, and added new_lastlog.
+* I had added contrib/utf8.c and regress/test_xform3 regress/test_xform4.
+* Fix many warnings/bugs suggested by clang's static analyzer
+

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.250 2014/03/28 18:12:32 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.251 2014/04/01 18:11:14 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -389,14 +389,14 @@ char *	upper (char *str)
 
 			ucs_to_utf8(c, c_utf8str, sizeof(c_utf8str));
 			ucs_to_utf8(d, d_utf8str, sizeof(d_utf8str));
-			if (strlen(c_utf8str) != strlen(d_utf8str))
+			if (strlen(d_utf8str) != (s - x))
 			{
 				yell("The string [%s] contains a character [%s] whose upper case version [%s] is not the same length.  I didn't convert it for your safety.", str, c_utf8str, d_utf8str);
 				continue;
 			}
 
 			y = d_utf8str;
-			while (x < s)
+			while (*y)
 				*x++ = *y++;
 		}
 	}
@@ -421,14 +421,14 @@ char *	lower (char *str)
 
 			ucs_to_utf8(c, c_utf8str, sizeof(c_utf8str));
 			ucs_to_utf8(d, d_utf8str, sizeof(d_utf8str));
-			if (strlen(c_utf8str) != strlen(d_utf8str))
+			if (strlen(d_utf8str) != (s - x))
 			{
 				yell("The string [%s] contains a character [%s] whose upper case version [%s] is not the same length.  I didn't convert it for your safety.", str, c_utf8str, d_utf8str);
 				continue;
 			}
 
 			y = d_utf8str;
-			while (x < s)
+			while (*y)
 				*x++ = *y++;
 		}
 	}
@@ -2508,7 +2508,6 @@ char *	strformat (char *dest, size_t destlen, const unsigned char *src, ssize_t 
 	ucs_to_utf8(pad, padutf8, sizeof(padutf8));
 	if ((padlen = display_column_count(padutf8)) == 0)
 	{
-		pad = ' ';
 		strcpy(padutf8, " ");
 		padlen = 1;
 	}
@@ -6868,6 +6867,9 @@ int	strext2 (unsigned char **cut, unsigned char *buffer, int part2, int part3)
 	size_t	cutlen;
 	size_t	newlen;
 
+	if (part3 <= part2)
+		return 0;		/* Nothing to extract */
+
 	buflen = strlen(buffer);	/* XXX Should be passed in as param */
 	if (part2 > buflen)
 		return 0;		/* Nothing to extract */
@@ -6876,6 +6878,9 @@ int	strext2 (unsigned char **cut, unsigned char *buffer, int part2, int part3)
 
 	/* Copy the cut part */
 	newlen = part3 - part2 + 1;
+	if (newlen <= 0)
+		return 0;		/* Uh, what? */
+
 	RESIZE(*cut, char, newlen);
 	p = *cut;
 	s = buffer + part2;

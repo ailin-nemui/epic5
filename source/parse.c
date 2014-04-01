@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.107 2014/03/21 20:54:58 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.108 2014/04/01 18:11:14 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1698,9 +1698,9 @@ void	rfc1459_any_to_utf8 (char *buffer, size_t buffsiz, char **extra)
 			}
 		}
 
-		if (!*from)
+		if (from && !*from)
 			from = NULL;
-		if (!*to)
+		if (to && !*to)
 			to = NULL;
 
 		/*

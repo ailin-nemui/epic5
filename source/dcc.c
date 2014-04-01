@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.169 2014/03/26 20:44:57 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.170 2014/04/01 18:11:14 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -259,22 +259,21 @@ static DCC_list *	get_dcc_by_refnum (int refnum)
  */
 static void	dcc_remove_from_list (DCC_list *erased)
 {
-	DCC_list *prev = NULL;
-
 	if (x_debug & DEBUG_DCC_XMIT)
 		yell("Removing %p from dcc list", erased);
 
-	if (erased != ClientList)
+	if (erased == ClientList)
+		ClientList = erased->next;
+	else
 	{
+		DCC_list *prev = NULL;
+
 		for (prev = ClientList; prev; prev = prev->next)
 			if (prev->next == erased)
 				break;
+		if (prev)
+			prev->next = erased->next;
 	}
-
-	if (erased == ClientList)
-		ClientList = erased->next;
-	else if (prev)
-		prev->next = erased->next;
 }
 
 /*

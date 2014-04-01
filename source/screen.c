@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.172 2014/03/21 12:58:12 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.173 2014/04/01 18:11:14 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -829,11 +829,9 @@ static ssize_t	read_color256_seq (const unsigned char *start, void *d)
 		/*
 		 * Code certainly cant have more than three chars in it
 		 */
-		c1 = c2 = 0;
+		c2 = 0;
 		if ((c1 = ptr[0]))
 			c2 = ptr[1];
-
-		val = 0;
 
 		/*
 		 * If there is a leading comma, then no color here.

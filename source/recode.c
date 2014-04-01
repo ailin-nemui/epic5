@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.16 2014/03/28 18:12:33 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.17 2014/04/01 18:11:14 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -575,7 +575,7 @@ static const char *	decide_encoding (const unsigned char *from, const unsigned c
 			if (!serverinfo_matches_servref(&r->si, server))
 			{
 				if (x_debug & DEBUG_RECODE)
-					yell("Server part does not match expectations for %d"), server;
+					yell("Server part does not match expectations for %d", server);
 				continue;
 			}
 		}
@@ -854,7 +854,7 @@ int     ucs_to_console (u_32int_t codepoint, unsigned char *deststr, size_t dest
 {
 	char	utf8str[16];
 	size_t	utf8strsiz;
-	iconv_t	xlat;
+	iconv_t	xlat = (iconv_t)-1;
 	int	n;
 	char *	x;
 	const char *	s;
@@ -864,6 +864,8 @@ int     ucs_to_console (u_32int_t codepoint, unsigned char *deststr, size_t dest
 	find_recoding("console", NULL, &xlat);
 
 	/* XXX What to do is 'xlat' is (iconv_t)-1? */
+	if (xlat == (iconv_t)-1)
+		return -1;	/* What to do? */
 
 	s = utf8str;
 	x = deststr;

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.268 2014/03/20 15:25:54 jnelson Exp $ */
+/* $EPIC: server.c,v 1.269 2014/04/01 18:11:14 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1273,6 +1273,7 @@ void	do_server (int fd)
 	{
 		ssize_t	junk;
 		char 	*bufptr = buffer;
+		int	retval = 0;
 
 		if (!(s = get_server(i)))
 			continue;
@@ -1416,7 +1417,6 @@ void	do_server (int fd)
 		else if (s->status == SERVER_CONNECTING)
 		{
 			ssize_t c;
-			int  retval;
 			SS	 name;
 
 			if (x_debug & DEBUG_SERVER_CONNECT)
@@ -1546,7 +1546,6 @@ return_from_ssl_detour:
 		else if (s->status == SERVER_SSL_CONNECTING)
 		{
 			ssize_t c;
-			int  retval;
 
 			if (x_debug & DEBUG_SERVER_CONNECT)
 				yell("do_server: server [%d] finished ssl setup", i);
@@ -1740,7 +1739,6 @@ static void 	vsend_to_aserver_with_payload (int refnum, const char *payload, con
 	int	len,
 		des;
 	int	ofs;
-	const char *recode_text;
 	char *	extra = NULL;
 
 	if (!(s = get_server(refnum)))
@@ -1779,7 +1777,7 @@ static void 	vsend_to_aserver_with_payload (int refnum, const char *payload, con
 	    new_free(&s2);
 	}
 
-	recode_text = outbound_recode(zero, refnum, buffer, &extra);
+	outbound_recode(zero, refnum, buffer, &extra);
 	if (extra)
 	{
 		strlcpy(buffer, extra, sizeof(buffer));

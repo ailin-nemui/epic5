@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.68 2014/03/28 18:12:33 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.69 2014/04/01 18:11:14 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -909,7 +909,6 @@ static char *	bind_string_compress (const char *str, int *len)
 	char 	*new, 
 		*s,
 		c;
-const 	char 	*oldstr;
 
 #define isoctaln(x) ((x) > 47 && (x) < 56)
 
@@ -918,7 +917,6 @@ const 	char 	*oldstr;
 	s = new = new_malloc(strlen(str) + 1); 
 			/* we will always make the string smaller. */
 
-	oldstr = str;
 	*len = 0;
 	while (*str) 
 	{
@@ -1208,7 +1206,7 @@ static int	bind_compressed_string (char *keyseq, int slen, const char *bindstr, 
 static Key *	find_sequence (Key *top, const char *seq, int slen)
 {
 	const char *	s;
-	Key *		node;
+	Key *		node = NULL;	/* Just in case 'slen' is 0 */
 	Key *		map;
 
 	/*
@@ -1230,7 +1228,7 @@ static Key *	find_sequence (Key *top, const char *seq, int slen)
 
 	return node;
 }
-    
+
 /*
  * init_keys -- Bootstrap the keybinding system.
  *		1. Create the initial keyspace (head_keymap)

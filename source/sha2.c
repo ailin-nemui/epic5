@@ -29,7 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: sha2.c,v 1.7 2013/07/28 23:16:14 jnelson Exp $
+ * $Id: sha2.c,v 1.8 2014/04/01 18:11:14 jnelson Exp $
  */
 #include "irc.h"
 #include "ircaux.h"
@@ -342,7 +342,16 @@ static void	SHA256_Transform (SHA256_CTX *context, const sha2_word32 *data)
 	context->state[7] += h;
 
 	/* Clean up */
-	a = b = c = d = e = f = g = h = T1 = T2 = 0;
+	memset(&a, 0, sizeof(a));
+	memset(&b, 0, sizeof(b));
+	memset(&c, 0, sizeof(c));
+	memset(&d, 0, sizeof(d));
+	memset(&e, 0, sizeof(e));
+	memset(&f, 0, sizeof(f));
+	memset(&g, 0, sizeof(g));
+	memset(&h, 0, sizeof(h));
+	memset(&T1, 0, sizeof(T1));
+	memset(&T2, 0, sizeof(T2));
 }
 
 static void	SHA256_Update (SHA256_CTX *context, const sha2_byte *data, size_t len) 
@@ -377,7 +386,8 @@ static void	SHA256_Update (SHA256_CTX *context, const sha2_byte *data, size_t le
 			MEMCPY_BCOPY(&context->buffer[usedspace], data, len);
 			context->bitcount += len << 3;
 			/* Clean up: */
-			usedspace = freespace = 0;
+			memset(&usedspace, 0, sizeof(usedspace));
+			memset(&freespace, 0, sizeof(freespace));
 			return;
 		}
 	}
@@ -394,7 +404,8 @@ static void	SHA256_Update (SHA256_CTX *context, const sha2_byte *data, size_t le
 		context->bitcount += len << 3;
 	}
 	/* Clean up: */
-	usedspace = freespace = 0;
+	memset(&usedspace, 0, sizeof(usedspace));
+	memset(&freespace, 0, sizeof(freespace));
 }
 
 static void 	SHA256_Final (sha2_byte *digest, SHA256_CTX *context) 
@@ -459,7 +470,7 @@ static void 	SHA256_Final (sha2_byte *digest, SHA256_CTX *context)
 
 	/* Clean up state data: */
 	MEMSET_BZERO(context, sizeof(*context));
-	usedspace = 0;
+	memset(&usedspace, 0, sizeof(usedspace));
 }
 
 static char *	SHA256_End (SHA256_CTX *context, char *buffer) 
