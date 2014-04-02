@@ -547,4 +547,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Put in references to two wiki pages I need to document
 	http://epicsol.org/encodings_and_locales
 	http://epicsol.org/encoding
-
+* Server names can contain '*'s. (rb zlonix)
