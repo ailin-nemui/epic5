@@ -541,4 +541,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Zlonix updated idlealert, sasl_auth, xmsglog, and added new_lastlog.
 * I had added contrib/utf8.c and regress/test_xform3 regress/test_xform4.
 * Fix many warnings/bugs suggested by clang's static analyzer
+* Add sanity checking for encodings, so we can warn the user
+* Specifically check the locale encoding for sanity, use ISO-8859-1 as fallback
+* Warn the user if /encoding encoding is unusable -- and don't switch over.
+* Put in references to two wiki pages I need to document
+	http://epicsol.org/encodings_and_locales
+	http://epicsol.org/encoding
 

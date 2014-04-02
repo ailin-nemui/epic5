@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.17 2014/04/01 18:11:14 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.18 2014/04/02 17:35:47 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -180,6 +180,18 @@ typedef struct RecodeRule RecodeRule;
 RecodeRule **	recode_rules = NULL;
 static int	update_recoding_encoding (RecodeRule *r, const char *encoding);
 
+
+/* 
+ * ENCODING_FROM_LOCALE	- Used for "console" if "nl_langinfo(CODESET)"
+ *				was acceptable.
+ * ENCODING_FALLBACK	- Used from init_recodings, if locale didn't work
+ * ENCODING_FROM_USER	- Used by the /ENCODING command.
+ */
+#define	ENCODING_FROM_LOCALE	1
+#define ENCODING_FALLBACK	2
+#define ENCODING_FROM_USER	3
+
+
 /*
  * create_recoding_rule - Create a new Recoding Rule from scratch
  *
@@ -187,8 +199,11 @@ static int	update_recoding_encoding (RecodeRule *r, const char *encoding);
  *	target	 - The target this rule will apply to.  The syntax of this
  *		   argument is discussed extensively in this file.
  *	encoding - The encoding that this rule will use for this target.
+ *		   IF NOT NULL, YOU *_MUST_* HAVE PREVIOUSLY PASSED THIS
+ *		   ARGUMENT TO sanity_check_encoding() AND IT RETURNED 0.
  *		   MAY BE NULL -- See below
  *	magic	 - 0 if this is a user-created rule; 1 if this is a system rule
+ *	source	 - Who chose "encoding" -- use the ENCODING_* macros above.
  *
  * Return Value:
  *	A new RecodeRule that you should assign to recode_rules[x], where x
@@ -200,7 +215,7 @@ static int	update_recoding_encoding (RecodeRule *r, const char *encoding);
  *	After you complete the new rule, you can assign to recode_rules.
  *	Assigning an incomplete rule to recode_rules will lead to a crash.
  */
-static RecodeRule *	create_recoding_rule (const char *target, const char *encoding, int magic)
+static RecodeRule *	create_recoding_rule (const char *target, const char *encoding, int magic, int source)
 {
 	RecodeRule *	r;
 	char *	target_copy;
@@ -296,6 +311,8 @@ static RecodeRule *	create_recoding_rule (const char *target, const char *encodi
  * Arguments:
  *	r	 - A RecodeRule that is either new or existing
  *	encoding - The encoding this rule should use.
+ *		   YOU *_MUST_* HAVE PREVIOUSLY PASSED THIS  ARGUMENT TO 
+ *		   sanity_check_encoding() AND IT RETURNED 0.
  *
  * Return Value:
  *	returns 0;
@@ -395,11 +412,16 @@ static const char *	check_recoding_iconv (RecodeRule *r, iconv_t *inbound, iconv
  *
  * After this function returns, you can use the /RECODE command to set up 
  * extra rules that will handle stuff from irc.
+ *
+ * NOTE -- THIS FUNCTION IS CALLED BEFORE SCREENS ARE SET UP
+ * You must do printf() and fgets() to talk to the user.
  */ 
 void	init_recodings (void)
 {
 	int	x;
 	const char *	console_encoding;
+	int	help_me = 0;
+	int	reason;
 
 	/* 
 	 * By default use whatever the LC_ALL variable says.
@@ -409,8 +431,12 @@ void	init_recodings (void)
 	 * if it is wrong at runtime.
 	 */
 	console_encoding = nl_langinfo(CODESET);
-	if (!my_stricmp(console_encoding, "US-ASCII"))
+	reason = ENCODING_FROM_LOCALE;
+	if (sanity_check_encoding(console_encoding))
+	{
 		console_encoding = "ISO-8859-1";
+		reason = ENCODING_FALLBACK;
+	}
 
 	/*
 	 * XXX TODO -- Pull out into a function to grow the rule set
@@ -419,14 +445,45 @@ void	init_recodings (void)
 	for (x = 0; x < MAX_RECODING_RULES; x++)
 		recode_rules[x] = NULL;
 
+	/* XXX TODO - Sanity check the encodings first */
+	while (sanity_check_encoding(console_encoding))
+	{
+		fprintf(stderr, "Help!  Your system doesn't have the %s encoding\n", console_encoding);
+		help_me++;
+	}
+
+	if (sanity_check_encoding("ISO-8859-1"))
+	{
+		fprintf(stderr, "Help!  Your system doesn't have the ISO-8859-1 encoding\n");
+		help_me++;
+	}
+
+	if (sanity_check_encoding("CP437"))
+	{
+		fprintf(stderr, "Help!  Your system doesn't have the CP437 encoding\n");
+		help_me++;
+	}
+
+	if (help_me)
+	{
+		fprintf(stderr, "EPIC Version 5 - Commit Id (%d)\n", commit_id);
+		fprintf(stderr, "Unfortunately, your iconv is missing important character encodings, and EPIC won't be able to operate properly without them.\n");
+		fprintf(stderr, "Please contact #epic on EFNet or jnelson@epicsol.org for more information.\n");
+		fprintf(stderr, "Also, check http://epicsol.org/encodings_and_locales\n");
+		fprintf(stderr, "Sorry about that...\n");
+		exit(1);
+	}
+
+
 	/* Rule 0 is "console" */
-	recode_rules[0] = create_recoding_rule("console", console_encoding, 1);
+	recode_rules[0] = create_recoding_rule("console", console_encoding, 1, reason);
 
 	/* Rule 1 is "scripts" */
-	recode_rules[1] = create_recoding_rule("scripts", "CP437", 1);
+	recode_rules[1] = create_recoding_rule("scripts", "CP437", 1, ENCODING_FALLBACK);
 
 	/* Rule 2 is "irc" */
-	recode_rules[2] = create_recoding_rule("irc", "ISO-8859-1", 1);
+	recode_rules[2] = create_recoding_rule("irc", "ISO-8859-1", 1, ENCODING_FALLBACK);
+		reason = ENCODING_FALLBACK;
 }
 
 
@@ -919,6 +976,7 @@ BUILT_IN_COMMAND(encoding)
 	int		x;
 	const char *	server = NULL;
 	const char *	target = NULL;
+	int		reason;
 
 	/* /ENCODING    	-> Output all rules */
 	if (!(arg = next_arg(args, &args)))
@@ -932,6 +990,7 @@ BUILT_IN_COMMAND(encoding)
 				recode_rules[x]->encoding);
 		}
 
+		say("For more information about encoding, http://epicsol.org/encoding");
 		return;
 	}
 
@@ -948,6 +1007,7 @@ BUILT_IN_COMMAND(encoding)
 					recode_rules[x]->encoding);
 		}
 
+		say("For more information about encoding, http://epicsol.org/encoding");
 		return;
 	}
 
@@ -988,6 +1048,26 @@ BUILT_IN_COMMAND(encoding)
 		return;
 	}
 
+	if ((reason = sanity_check_encoding(encoding)))
+	{
+		if (reason == -1)
+		{
+			say("/ENCODING: The encoding %s does not exist on your system.", encoding);
+			say("   It might be mis-spelled, or just not available.");
+		}
+		else if (reason == -2)
+		{
+			say("/ENCODING: The encoding %s cannot be converted to UTF-8 on your system.", encoding);
+			say("   Unfortunately you can't use this encoding.");
+		}
+		else if (reason == -3)
+		{
+			say("/ENCODING: The encoding %s exists, but a lot of code points do not convert to UTF-8.", encoding);
+			say("   Unfortunately you can't use this encoding.");
+		}
+		return;
+	}
+
 	/* If there is not already a rule, create a new (blank) one. */
 	if (x == MAX_RECODING_RULES || recode_rules[x] == NULL)
 	{
@@ -1003,7 +1083,7 @@ BUILT_IN_COMMAND(encoding)
 		}
 
 		/* We don't set up the encoding here -- fallthrough below */
-		recode_rules[x] = create_recoding_rule(arg, NULL, 0);
+		recode_rules[x] = create_recoding_rule(arg, NULL, 0, ENCODING_FROM_USER);
 
 		/* FALLTHROUGH -- set me up below here */
 	}
@@ -1046,4 +1126,79 @@ int	mklower_l (int codepoint)
 		return tolower(codepoint);
 }
 
+/*
+ * sanity_check_encoding - Make sure an encoding exists and is 8 bits.
+ *
+ * Arguments:
+ * 	encoding 	- A new encoding user wants to use
+ *
+ * Return value:
+ *	 0 - This encoding is suitable for use (exists, 8 bit clean)
+ *	-1 - The encoding does not exist (could not be converted to itself)
+ *	-2 - The encoding exists but doesn't convert to UTF-8 at all
+ *	-3 - The encoding exists but too many code points don't convert
+ */
+int	sanity_check_encoding (const char *encoding)
+{
+	iconv_t		ti;
+	unsigned char	c, *cstr;
+	size_t		c_size;
+	char		utf8str[16], *x;
+	size_t		x_size;
+	int		i, n, errors;
+
+
+	/*
+	 * An encoding is acceptable IF AND ONLY IF:
+	 * 1. It is "UTF-8", or 
+	 * 2. It exists and can be converted to UTF-8
+	 * 3. Most of the characters convert
+	 */
+
+	/* 1. It is "UTF-8" */
+	if (!strcmp(encoding, "UTF-8"))
+		return 0;
+
+	/* 2a. It exists */
+	ti = iconv_open(encoding, encoding);
+	if (ti == (iconv_t)-1)
+	{
+		say("Unfortunately, the encoding %s does not appear to be supported by your system", encoding);
+		say("Possible causes:");
+		say(" 1. It might be mis-spelled");
+		say(" 2. It is not available on your system");
+		return -1;
+	}
+	iconv_close(ti);
+
+	/* 2b. and can be converted to UTF-8 */
+	ti = iconv_open("UTF-8", encoding);
+	if (ti == (iconv_t)-1)
+	{
+		say("Unfortunately, your system does not know how to convert the encoding %s to UTF-8", encoding);
+		return -2;
+	}
+
+	/* 3. Most of the characters convert */
+	errors = 0;
+	for (i = 32; i < 255; i++)
+	{
+		c = (unsigned char)i;
+		cstr = &c;
+		c_size = 1;
+		x = utf8str;
+		x_size = sizeof(utf8str);
+
+		if ((n = iconv(ti, &cstr, &c_size, &x, &x_size)) != 0)
+		{
+			if (errno == EINVAL || errno == EILSEQ)
+				errors++;
+		}
+	}
+
+	if (errors >= 24)
+		return -3;		/* Too many. */
+
+	return 0;
+}
 

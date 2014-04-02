@@ -7,7 +7,7 @@
  *
  * See the COPYRIGHT file, or do a HELP IRCII COPYRIGHT 
  *
- * @(#)$Id: ircaux.h,v 1.124 2014/03/27 19:28:08 jnelson Exp $
+ * @(#)$Id: ircaux.h,v 1.125 2014/04/02 17:35:46 jnelson Exp $
  */
 
 #ifndef _IRCAUX_H_
@@ -320,6 +320,7 @@ extern	int     invalid_utf8str (unsigned char *utf8str);
 extern	void    create_utf8_locale (void);
 extern	int	mkupper_l	(int);
 extern	int	mklower_l	(int);
+extern	int	sanity_check_encoding (const char *);
 
 /******* recode.c ******/
 extern	void		init_recodings	(void);
