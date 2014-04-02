@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.18 2014/04/02 17:35:47 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.19 2014/04/02 21:11:11 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -1054,18 +1054,19 @@ BUILT_IN_COMMAND(encoding)
 		{
 			say("/ENCODING: The encoding %s does not exist on your system.", encoding);
 			say("   It might be mis-spelled, or just not available.");
+			return;
 		}
 		else if (reason == -2)
 		{
 			say("/ENCODING: The encoding %s cannot be converted to UTF-8 on your system.", encoding);
 			say("   Unfortunately you can't use this encoding.");
+			return;
 		}
 		else if (reason == -3)
 		{
 			say("/ENCODING: The encoding %s exists, but a lot of code points do not convert to UTF-8.", encoding);
-			say("   Unfortunately you can't use this encoding.");
+			say("   If you have trouble typing some letters, this is probably the reason.");
 		}
-		return;
 	}
 
 	/* If there is not already a rule, create a new (blank) one. */

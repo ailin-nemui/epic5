@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.229 2014/04/01 18:11:14 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.230 2014/04/02 21:11:11 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -806,6 +806,7 @@ BUILT_IN_COMMAND(e_topic)
 	int	clear_topic = 0;
 	const char *channel = get_echannel_by_refnum(0);
 	const char *arg;
+	char *	args_copy;
 	const char *recode_text;
 	char *	extra = NULL;
 
@@ -814,6 +815,15 @@ BUILT_IN_COMMAND(e_topic)
 
 	if (*args == '-')
 		clear_topic = 1, args++;
+
+	/*
+	 * You can do
+	 *   	/TOPIC #chan blahblah blah
+	 * or	
+	 * 	/TOPIC blahblah blah
+	 * So we keep a copy just in case it's the latter.
+	 */
+	args_copy = LOCAL_COPY(args);
 
 	if (!(arg = next_arg(args, &args)))
 		arg = channel;
@@ -839,7 +849,7 @@ BUILT_IN_COMMAND(e_topic)
 	}
 	else if (channel)
 	{
-		recode_text = outbound_recode(channel, from_server, args, &extra);
+		recode_text = outbound_recode(channel, from_server, args_copy, &extra);
 		send_to_server_with_payload(recode_text, "TOPIC %s", channel);
 		new_free(&extra);
 	}

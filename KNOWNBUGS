@@ -548,3 +548,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 	http://epicsol.org/encodings_and_locales
 	http://epicsol.org/encoding
 * Server names can contain '*'s. (rb zlonix)
+* Fix /topic when you don't supply a channel (rb zlonix)
