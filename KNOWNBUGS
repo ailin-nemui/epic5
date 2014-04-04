@@ -2,18 +2,11 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* These functions have been converted
-	strlen	chop	index	rindex	indextoword	wordtoindex	
-	maxlen 	strip	split	before	after		curpos		
-	toupper	tolower reverse	rest	pass		
-	sar	msar	center	tr	chrq		insert
-	substr		rsubstr		
-* These functions didn't need to be converted after all
-	count	truncate	wildcard matching
 * These undocumented and unused functions were defered until later
 	fix_width	shiftseg	numsort (sort of)
 * Create $encodingctl()
 * configure --enable-debug should make sure CFLAGS is -ggdb3, no -O.
+* Create the wiki help pages for locales and stuff referred to.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -549,3 +542,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 	http://epicsol.org/encoding
 * Server names can contain '*'s. (rb zlonix)
 * Fix /topic when you don't supply a channel (rb zlonix)
+* EPIC5-1.1.8 released here (Atavistic) (Commit ID: 775)
