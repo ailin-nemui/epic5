@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.251 2014/04/01 18:11:14 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.252 2014/04/09 17:54:14 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -6985,4 +6985,12 @@ int	check_xdigit (unsigned char digit)
 		return -1;
 }
 
+
+/*
+ * Returns the number of seconds between 't' and startup.
+ */
+double	time_since_startup (Timeval t)
+{
+	return time_diff(start_time, t);
+}
 

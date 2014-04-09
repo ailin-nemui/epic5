@@ -547,3 +547,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This is exposed via undocumented $help_topics() function.
 * Explicitly set LC_NUMERIC to "C" because otherwise math parser breaks
 * Reset /window activity when a window becomes current (as in /window notified)
+* Create stub for $encodingctl(), and spec it, but not implemented yet.
+* Create internal time_since_startup() function (for eventual load logging)
+* recode.c needs to include <xlocale.h> because of newlocale(3).
+* Add new "source" flag to recode rules, to tell user where rule came from.
+

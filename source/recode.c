@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.19 2014/04/02 21:11:11 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.20 2014/04/09 17:54:14 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -33,6 +33,7 @@
 
 #define NEED_SERVER_LIST
 #include "irc.h"
+#include "functions.h"
 #include "ircaux.h"
 #include "output.h"
 #include "parse.h"
@@ -40,6 +41,7 @@
 #include <langinfo.h>
 #include <locale.h>
 #include <wctype.h>
+#include <xlocale.h>
 
 /*
  * Here's the plan...
@@ -170,6 +172,7 @@ struct RecodeRule {
 	iconv_t	inbound_handle;
 	iconv_t outbound_handle;
 	int	magic;		/* 0 - can be deleted; 1 - cannot be deleted */
+	int	source;		/* See ENCODING_* below */
 };
 typedef struct RecodeRule RecodeRule;
 
@@ -190,6 +193,20 @@ static int	update_recoding_encoding (RecodeRule *r, const char *encoding);
 #define	ENCODING_FROM_LOCALE	1
 #define ENCODING_FALLBACK	2
 #define ENCODING_FROM_USER	3
+
+static const char *source_explain (int console, int source)
+{
+	if (source == ENCODING_FROM_LOCALE)
+		return "(Automatically set because of your locale)";
+	else if (source == ENCODING_FALLBACK && console == 1)
+		return "(Hardcoded default because your locale couldn't be found)";
+	else if (source == ENCODING_FALLBACK && console == 0)
+		return "(Default value)";
+	else if (source == ENCODING_FROM_USER)
+		return "(Set by user)";
+	else
+		return "";
+}
 
 
 /*
@@ -231,7 +248,7 @@ static RecodeRule *	create_recoding_rule (const char *target, const char *encodi
 	clear_serverinfo(&r->si);
 	r->inbound_handle = 0;
 	r->outbound_handle = 0;
-
+	r->source = source;
 
 	/* 
 	 * Turn "target" into "server_part" and "target_part"
@@ -983,11 +1000,16 @@ BUILT_IN_COMMAND(encoding)
 	{
 		for (x = 0; x < MAX_RECODING_RULES; x++)
 		{
+			int console = 0;
+
 			if (!recode_rules[x])
 				continue;
-			say("Encoding for %s is %s", 
+			if (!strcmp(recode_rules[x]->target, "console"))
+				console = 1;
+			say("Encoding for %s is %s : %s", 
 				recode_rules[x]->target,
-				recode_rules[x]->encoding);
+				recode_rules[x]->encoding,
+				source_explain(console, recode_rules[x]->source));
 		}
 
 		say("For more information about encoding, http://epicsol.org/encoding");
@@ -999,12 +1021,17 @@ BUILT_IN_COMMAND(encoding)
 	{
 		for (x = 0; x < MAX_RECODING_RULES; x++)
 		{
+			int console = 0;
+
 			if (!recode_rules[x])
 				continue;
+			if (!strcmp(recode_rules[x]->target, "console"))
+				console = 1;
 			if (!my_stricmp(arg, recode_rules[x]->target))
-				say("Encoding for %s is %s", 
+				say("Encoding for %s is %s : %s", 
 					recode_rules[x]->target,
-					recode_rules[x]->encoding);
+					recode_rules[x]->encoding,
+					source_explain(console, recode_rules[x]->source));
 		}
 
 		say("For more information about encoding, http://epicsol.org/encoding");
@@ -1201,5 +1228,49 @@ int	sanity_check_encoding (const char *encoding)
 		return -3;		/* Too many. */
 
 	return 0;
+}
+
+
+/*
+ * $encodingctl(REFNUMS)
+ *	Returns refnums for all current recoding rules
+ * $encodingctl(MATCH server sender receiver)
+ *	Returns the refnum of the rule that would apply to a message sent by 
+ *	"sender" to "receiver" over "server".
+ *	If all else fails, it returns the "irc" rule!
+ * $encodingctl(GET 0 TARGET)
+ *	Return the raw "target" value for a rule.
+ * $encodingctl(GET 0 ENCODING)
+ *	Return the raw "encoding" value for a rule.
+ * $encodingctl(SET 0 ENCODING char-encoding)
+ *	Change the encoding to a new value.  "char-encoding" must be valid.
+ *	Returns 1 if successful, 0 if error (not found)
+ * $encodingctl(GET 0 SERVER_PART)
+ *	Return what client thinks the 'server part' of "target" is.
+ * $encodingctl(GET 0 TARGET_PART)
+ *	Return what client thinks the 'nick/chan' of "target" is.
+ * $encodingctl(GET 0 SERVER_PART_DESC)
+ *	Return a server description (ie, /server host:port:...) for server part.
+ * $encodingctl(GET 0 MAGIC)
+ *	If this is a magic/builtin rule, return 1, otherwise return 0.
+ * $encodingctl(GET 0 SOURCE)
+ *	1	Magic rule only : Value was derived from user's locale
+ *	2	Magic rule only : Hardcoded default value
+ *	3	All rules : Value was last set by the user
+ * $encodingctl(DELETE refnum)
+ *	Remove a rule -- you can't delete magic rules
+ *	1 if rule was removed, 0 if failed (magic rule, not found)
+ * $encodingctl(CREATE target char-encoding)
+ *	Create a rule -- you can't create duplicate rules
+ *	Only 128 rules can be created (will change in future)
+ *	1 if a rule was created, 0 if failed (duplicate, no more room, 
+ *						not a valid encoding)
+ * $encodingctl(CHECK char-encoding)
+ *	Check whether char-encoding is acceptable before using it.
+ *
+ */
+char *	function_encodingctl (char *input)
+{
+	RETURN_EMPTY;
 }
 

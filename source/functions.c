@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.314 2014/04/09 17:51:08 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.315 2014/04/09 17:54:14 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -508,6 +508,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "DELITEMS",           function_delitems	},
 	{ "DEUHC",		function_deuhc		},
 	{ "DIFF",               function_diff 		},
+	{ "ENCODINGCTL",	function_encodingctl	},
 	{ "ENCRYPTPARM",	function_encryptparm	},
 	{ "EOF",		function_eof 		},
 	{ "EPIC",		function_epic		},
@@ -3864,34 +3865,38 @@ BUILT_IN_FUNCTION(function_fsize, words)
 
 /* 
  * Contributed by CrowMan
- * I changed two instances of "RETURN_INT(result)"
- * (where result was a null pointer) to RETURN_STR(empty_string)
- * because i dont think he meant to return a null pointer as an int value.
+ * Updated by caf to allow selection of any hashing method supported by the
+ * system.
  */
 /*
- * $crypt(password seed)
- * What it does: Returns a 13-char encrypted string when given a seed and
- *    password. Returns zero (0) if one or both args missing. Additional
- *    args ignored.
- * Caveats: Password truncated to 8 chars. Spaces allowed, but password
- *    must be inside "" quotes.
+ * $crypt(password salt)
+ * 
+ * This returns a password hash when given a salt and password.  The function
+ * supports all hashing methods supported by the local C library, with the
+ * hashing method selected by the format of the salt string.  See your local
+ * crypt(3) man page for details.
+ *
+ * All systems (and older versions of EPIC) support the classic DES-based UNIX
+ * hashing function, which is selected by a two-character salt in the range 
+ * [a-zA-Z0-9./].  This method returns a 13-char string and truncates the
+ * supplied password to 8 characters.  It is also comically weak in the modern
+ * era.
+ *
+ * Returns an empty string if one or both args missing, or if crypt() fails.
+ *
  * Credits: Thanks to Strongbow for showing me how crypt() works.
  * Written by: CrowMan
  */
-/* Some systems use (char *) and some use (const char *) as arguments. */
-char *crypt(); 
 BUILT_IN_FUNCTION(function_crypt, words)
 {
-        char pass[9];
-        char seed[3];
-        char *blah, *bleh;
+	/* Some systems use (char *) and some use (const char *) as arguments. */
+	extern char *crypt(); 
+	char *pass, *salt;
 	char *ret;
 
-	GET_DWORD_ARG(blah, words)
-	GET_DWORD_ARG(bleh, words)
-	strlcpy(pass, blah, sizeof pass);
-	strlcpy(seed, bleh, sizeof seed);
-	ret = crypt(pass, seed);
+	GET_DWORD_ARG(pass, words)
+	GET_DWORD_ARG(salt, words)
+	ret = crypt(pass, salt);
 	RETURN_STR(ret);		/* Dont call function in macro! */
 }
 
