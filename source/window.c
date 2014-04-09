@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.239 2014/04/01 18:11:14 jnelson Exp $ */
+/* $EPIC: window.c,v 1.240 2014/04/09 17:51:08 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -801,6 +801,7 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
 	screen->visible_windows++;
 	new_w->screen = screen;
 	new_w->notified = 0;
+	new_w->current_activity = 0;
 
 	/*
 	 * If this is the first window to go on the screen
@@ -1076,6 +1077,7 @@ static void 	swap_window (Window *v_window, Window *window)
 	window_body_needs_redraw(window);
 	window_statusbar_needs_redraw(window);
 	window->notified = 0;
+	window->current_activity = 0;
 
 	/*
 	 * Transfer current_window if the current window is being swapped out
@@ -2869,6 +2871,7 @@ static void 	clear_window (Window *window)
 
 	window->scrolling_top_of_display = window->display_ip;
 	window->notified = 0;
+	window->current_activity = 0;
 	recalculate_window_cursor_and_display_ip(window);
 
 	window_body_needs_redraw(window);
@@ -7114,4 +7117,12 @@ void	window_change_server (Window * win, int server)
 	update_all_status();
 }
 
+
+void    help_topics_window (FILE *f)
+{                                                                               
+        int     x;
+                                                                                
+        for (x = 0; options[x].func; x++)
+                fprintf(f, "window %s\n", options[x].command);
+}
 

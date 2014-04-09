@@ -1,4 +1,4 @@
-/* $EPIC: hook.c,v 1.93 2012/11/27 22:50:57 jnelson Exp $ */
+/* $EPIC: hook.c,v 1.94 2014/04/09 17:51:08 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
@@ -2798,3 +2798,13 @@ char *hookctl (char *input)
 	}
 	RETURN_EMPTY;
 }
+
+void    help_topics_on (FILE *f)
+{
+        int     x;
+
+        for (x = 0; x < NUMBER_OF_LISTS; x++)
+		if (!isdigit(*hook_functions[x].name))
+			fprintf(f, "on %s\n", hook_functions[x].name);
+}
+

@@ -6,7 +6,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 	fix_width	shiftseg	numsort (sort of)
 * Create $encodingctl()
 * configure --enable-debug should make sure CFLAGS is -ggdb3, no -O.
-* Create the wiki help pages for locales and stuff referred to.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -543,3 +542,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Server names can contain '*'s. (rb zlonix)
 * Fix /topic when you don't supply a channel (rb zlonix)
 * EPIC5-1.1.8 released here (Atavistic) (Commit ID: 775)
+* Fix from freebsd to avoid checking yes(1) as ruby executable in configure
+* Create functions to enumerate what should be documented in wiki
+* This is exposed via undocumented $help_topics() function.
+* Explicitly set LC_NUMERIC to "C" because otherwise math parser breaks
+* Reset /window activity when a window becomes current (as in /window notified)

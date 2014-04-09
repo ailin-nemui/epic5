@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.170 2014/04/01 18:11:14 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.171 2014/04/09 17:51:07 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -4502,3 +4502,12 @@ char *	dccctl (char *input)
 
 	RETURN_MSTR(retval);
 }
+
+void    help_topics_dcc (FILE *f)
+{
+        int     x;
+
+        for (x = 0; dcc_commands[x].name; x++)
+                fprintf(f, "dcc %s\n", dcc_commands[x].name);
+}
+

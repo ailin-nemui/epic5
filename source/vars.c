@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.115 2014/03/21 22:01:33 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.116 2014/04/09 17:51:08 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -1213,5 +1213,13 @@ void	do_stack_set (int type, char *args)
 		say("Unknown STACK type ??");
 }
 #endif
+
+void    help_topics_set (FILE *f)
+{                                                                               
+        int     i;
+
+	for (i = 0; i < var_bucket->numitems; i++)
+                fprintf(f, "set %s\n", var_bucket->list[i].name);
+}
 
 

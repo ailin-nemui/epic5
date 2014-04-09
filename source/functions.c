@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.313 2014/04/01 18:11:14 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.314 2014/04/09 17:51:08 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -272,6 +272,7 @@ static	char
 	*function_glob		(char *),
 	*function_globi		(char *),
 	*function_hash_32bit	(char *),
+	*function_help_topics	(char *),
 	*function_hookctl	(char *),
 	*function_iconvctl	(char *),
 	*function_idle		(char *),
@@ -554,6 +555,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "GLOB",		function_glob		},
 	{ "GLOBI",		function_globi		},
 	{ "HASH_32BIT",		function_hash_32bit	},
+	{ "HELP_TOPICS",	function_help_topics	},
 	{ "HOOKCTL",		function_hookctl	},
 	{ "ICONVCTL",		function_iconvctl	},
 	{ "IDLE",		function_idle		},
@@ -7694,4 +7696,68 @@ BUILT_IN_FUNCTION(function_channelsyncing, word)
 	RETURN_INT(retval);
 }
 
+void	help_topics_commands(FILE *);
+void	help_topics_functions(FILE *);
+void	help_topics_scripts(FILE *);
+void	help_topics_bind(FILE *);
+void	help_topics_ctcp(FILE *);
+void	help_topics_dcc(FILE *);
+void	help_topics_on(FILE *);
+void	help_topics_set(FILE *);
+void	help_topics_window(FILE *);
+
+void    help_topics_functions (FILE *f)
+{
+        int     x;
+
+        for (x = 0; built_in_functions[x].name; x++)
+                fprintf(f, "function %s\n", built_in_functions[x].name);
+}
+
+void	help_topics_scripts (FILE *f)
+{
+	char	dir[1024];
+	DIR *	d;
+	struct dirent *e;
+
+	snprintf(dir, 1024, "../script");
+	if (!(d = opendir(dir)))
+	{
+		yell("Could not open dir %s", dir);
+		return;
+	}
+
+	while ((e = readdir(d)))
+	{
+		if (*e->d_name == '.')
+			continue;
+		fprintf(f, "script %s\n", e->d_name);
+	}
+
+	closedir(d);
+}
+
+BUILT_IN_FUNCTION(function_help_topics, word)
+{
+	FILE *f;
+
+	if (!(f = fopen("help_topics.txt", "w")))
+	{
+		yell("Could not open \"help_topics.txt\"");
+		return;
+	}
+
+	help_topics_commands(f);
+	help_topics_functions(f);
+	help_topics_scripts(f);
+	help_topics_bind(f);
+	help_topics_ctcp(f);
+	help_topics_dcc(f);
+	help_topics_on(f);
+	help_topics_set(f);
+	help_topics_window(f);
+	fclose(f);
+	say("Done.  Check help_topics.txt");
+	RETURN_EMPTY;
+}
 

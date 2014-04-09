@@ -45,5 +45,6 @@ const   char *  current_filename        (void);
 const   char *  current_loader          (void);
         int     current_line            (void);
 const   char *  current_package         (void);
+	void	help_topics_commands	(FILE *);
 
 #endif /* __commands_h__ */

@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.230 2014/04/02 21:11:11 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.231 2014/04/09 17:51:07 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -4013,4 +4013,13 @@ BUILT_IN_COMMAND(botmodecmd)
 	}
 #endif
 }
+
+void	help_topics_commands (FILE *f)
+{
+	int	x;
+
+	for (x = 0; irc_command[x].name; x++)
+		fprintf(f, "command %s\n", irc_command[x].name);
+}
+
 
