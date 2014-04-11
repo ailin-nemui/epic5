@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.20 2014/04/09 17:54:14 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.21 2014/04/11 15:12:26 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -197,7 +197,7 @@ static int	update_recoding_encoding (RecodeRule *r, const char *encoding);
 static const char *source_explain (int console, int source)
 {
 	if (source == ENCODING_FROM_LOCALE)
-		return "(Automatically set because of your locale)";
+		return "(From locale)";
 	else if (source == ENCODING_FALLBACK && console == 1)
 		return "(Hardcoded default because your locale couldn't be found)";
 	else if (source == ENCODING_FALLBACK && console == 0)
@@ -249,6 +249,7 @@ static RecodeRule *	create_recoding_rule (const char *target, const char *encodi
 	r->inbound_handle = 0;
 	r->outbound_handle = 0;
 	r->source = source;
+	r->magic = magic;
 
 	/* 
 	 * Turn "target" into "server_part" and "target_part"
@@ -1006,7 +1007,7 @@ BUILT_IN_COMMAND(encoding)
 				continue;
 			if (!strcmp(recode_rules[x]->target, "console"))
 				console = 1;
-			say("Encoding for %s is %s : %s", 
+			say("[%d] Encoding for %s is %s : %s", x,
 				recode_rules[x]->target,
 				recode_rules[x]->encoding,
 				source_explain(console, recode_rules[x]->source));
@@ -1237,7 +1238,11 @@ int	sanity_check_encoding (const char *encoding)
  * $encodingctl(MATCH server sender receiver)
  *	Returns the refnum of the rule that would apply to a message sent by 
  *	"sender" to "receiver" over "server".
- *	If all else fails, it returns the "irc" rule!
+ *	- "sender" should be a star ("*") if we're sending it.
+ *		(XXX I don't like this, but I'll leave the regret to later)
+ *	- "server" must be a server refnum and not a name or anything else.
+ *	  	(I may loosen this in the future)
+ *	- If all else fails, it returns the "irc" rule!
  * $encodingctl(GET 0 TARGET)
  *	Return the raw "target" value for a rule.
  * $encodingctl(GET 0 ENCODING)
@@ -1271,6 +1276,161 @@ int	sanity_check_encoding (const char *encoding)
  */
 char *	function_encodingctl (char *input)
 {
+	int	refnum, len;
+	char 	*listc;
+	char 	*ret = NULL;
+	RecodeRule *r;
+
+	GET_FUNC_ARG(listc, input);
+	len = strlen(listc);
+
+	if (!my_strnicmp(listc, "REFNUMS", len)) {
+		char *retval = NULL;
+		size_t clue = 0;
+		int	i;
+
+		for (i = 0; i < MAX_RECODING_RULES; i++)
+		{
+		    if (recode_rules[i])
+			malloc_strcat_word_c(&retval, space,
+						ltoa(i), DWORD_NO, &clue);
+		}
+		RETURN_MSTR(retval);
+	} else if (!my_strnicmp(listc, "MATCH", len)) {
+		int	servref;
+		char 	*sender, *receiver;
+		const char *retval;
+
+		GET_INT_ARG(servref, input);
+		GET_FUNC_ARG(sender, input);
+		GET_FUNC_ARG(receiver, input);
+
+		/* If we're sending it... */
+		if (!strcmp(sender, "->"))
+			sender = NULL;
+
+		retval = decide_encoding(sender, receiver, servref, NULL);
+		RETURN_STR(retval);
+	} else if (!my_strnicmp(listc, "GET", len)) {
+		GET_INT_ARG(refnum, input);
+		if (refnum < 0 || refnum > MAX_RECODING_RULES - 1)
+			RETURN_EMPTY;
+		if (!(r = recode_rules[refnum]))
+			RETURN_EMPTY;
+
+		GET_FUNC_ARG(listc, input);
+		len = strlen(listc);
+
+		if (!my_strnicmp(listc, "TARGET", len)) {
+			RETURN_STR(r->target);
+		} else if (!my_strnicmp(listc, "ENCODING", len)) {
+			RETURN_STR(r->encoding);
+		} else if (!my_strnicmp(listc, "SERVER_PART", len)) {
+			RETURN_STR(r->server_part);
+		} else if (!my_strnicmp(listc, "TARGET_PART", len)) {
+			RETURN_STR(r->target_part);
+		} else if (!my_strnicmp(listc, "SERVER_PART_DESC", len)) {
+			/* XXX */
+		} else if (!my_strnicmp(listc, "MAGIC", len)) {
+			RETURN_INT(r->magic);
+		} else if (!my_strnicmp(listc, "SOURCE", len)) {
+			RETURN_INT(r->source);
+		} else {
+			RETURN_EMPTY;
+		}
+		RETURN_EMPTY;
+	} else if (!my_strnicmp(listc, "SET", len)) {
+		GET_INT_ARG(refnum, input);
+		if (refnum < 0 || refnum > MAX_RECODING_RULES - 1)
+			RETURN_EMPTY;
+		if (!(r = recode_rules[refnum]))
+			RETURN_EMPTY;
+
+		GET_FUNC_ARG(listc, input);
+		len = strlen(listc);
+
+		if (!my_strnicmp(listc, "ENCODING", len)) {
+			int	sanity;
+
+			GET_FUNC_ARG(listc, input);
+			sanity = sanity_check_encoding(listc);
+			if (sanity == 0 || sanity == -3)
+				update_recoding_encoding(r, listc);
+			RETURN_INT(sanity);
+		} else {
+			RETURN_EMPTY;
+		}
+		RETURN_EMPTY;
+	
+	} else if (!my_strnicmp(listc, "DELETE", len)) {
+		GET_INT_ARG(refnum, input);
+		if (refnum < 0 || refnum > MAX_RECODING_RULES - 1)
+			RETURN_EMPTY;
+		if (!(r = recode_rules[refnum]))
+			RETURN_EMPTY;
+		if (r->magic == 1)
+			RETURN_INT(0);
+
+		/* XXXX TODO - Removing a rule should be in its own func. */
+		/* Check encoding command for the other impl of this */
+		iconv_close(recode_rules[refnum]->inbound_handle);
+		recode_rules[refnum]->inbound_handle = 0;
+		iconv_close(recode_rules[refnum]->outbound_handle);
+		recode_rules[refnum]->outbound_handle = 0;
+		new_free(&recode_rules[refnum]->encoding);
+		new_free(&recode_rules[refnum]->target);
+		new_free((char **)&recode_rules[refnum]);
+		RETURN_INT(1);
+	} else if (!my_strnicmp(listc, "CHECK", len)) {
+		int	retval;
+
+		GET_FUNC_ARG(listc, input);
+		retval = sanity_check_encoding(listc);
+		RETURN_INT(retval);
+	} else if (!my_strnicmp(listc, "CREATE", len)) {
+		char 	*target, *encoding;
+		int	sanity, x;
+
+		GET_FUNC_ARG(target, input);
+		GET_FUNC_ARG(encoding, input);
+
+		/* First, sanity check the encoding */
+		sanity = sanity_check_encoding(encoding);
+		if (! (sanity == 0 || sanity == -3) )
+			RETURN_INT(-1);
+
+		/* Next, check to see if the rule already exists */
+		for (x = 0; x < MAX_RECODING_RULES; x++)
+		{
+			if (!recode_rules[x])
+				continue;       /* XXX or break; ? */
+			if (!my_stricmp(target, recode_rules[x]->target))
+				break;
+		}
+
+		/* There is not already a rule, good. */
+		if (x == MAX_RECODING_RULES || recode_rules[x] == NULL)
+		{
+			for (x = 0; x < MAX_RECODING_RULES; x++)
+			{
+				if (!recode_rules[x])
+					break;
+			}
+			if (x == MAX_RECODING_RULES)
+				RETURN_EMPTY;
+
+			/* Don't set the encoding here -- fallthrough */
+			recode_rules[x] = create_recoding_rule(target, NULL, 
+							0, ENCODING_FROM_USER);
+		}
+
+		/* Set the encoding for new rule (or update existing rule) */
+		update_recoding_encoding(recode_rules[x], encoding);
+		RETURN_INT(x);
+	} else {
+		RETURN_EMPTY;
+	}
+
 	RETURN_EMPTY;
 }
 

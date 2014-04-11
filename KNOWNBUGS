@@ -4,8 +4,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * These undocumented and unused functions were defered until later
 	fix_width	shiftseg	numsort (sort of)
-* Create $encodingctl()
-* configure --enable-debug should make sure CFLAGS is -ggdb3, no -O.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -551,4 +549,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Create internal time_since_startup() function (for eventual load logging)
 * recode.c needs to include <xlocale.h> because of newlocale(3).
 * Add new "source" flag to recode rules, to tell user where rule came from.
-
+* Implement $encodingctl().
+* RecodeRule->magic wasn't being set correctly.
+* Output the recode rule refnum for /encoding

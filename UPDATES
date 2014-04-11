@@ -1,5 +1,91 @@
 EPIC5-1.1.8
 
+*** News 04/11/2014 -- New function, $encodingctl()
+	The $encodingctl() gives you a lower level interface to the 
+	encoding system.  
+
+	The behavior of $encodingctl() is ugly and I regret several of
+	the decisions I've made already, but that's the way it goes...
+
+	As with other $*ctl() functions, if there was not information in
+	the argument list to decide what you wanted to do, it will return
+	the empty string.
+
+	- $encodingctl(REFNUMS)
+	Return all recode rule refnums.
+
+	- $encodingctl(MATCH servref sender receiver)
+	Decide which recode rule would be used for a message sent by
+		"sender" to 'receiver' over the server 'servref'.
+	If you are the sender, use $servernick().
+	Return value:
+	 empty_string - an argument is missing, or servref is not an integer
+	 anything else - the rule that would be used.
+
+	- $encodingctl(GET refnum <OPERATION>)
+	Get an attribute of a recode rule:
+	  -> Returns empty string if <refnum> is not a valid recode rule
+	  -> Returns empty string if no <operation> specified.
+
+	  - $encodingctl(GET refnum TARGET)
+	  Return the complete "target" part of the rule; this is whatever
+	  you passed to the /encoding command.
+
+	  - $encodingctl(GET refnum ENCODING)
+	  Return the complete "encoding" part of the rule; this is whatever
+	  you passed to the /encoding command.
+
+	  - $encodingctl(GET refnum SERVER_PART)
+	  Return the 'server part' of the target.  This is the part before
+	  the slash, or the empty string if there is no server part.
+
+	  - $encodingctl(GET refnum TARGET_PART)
+	  Return the 'target part' of the target.  This is the part after
+	  the slash, or the empty string if there is no target part.
+
+	  - $encodingctl(GET refnum SERVER_PART_DESC)
+	  This returns nothing for now.  Maybe someday it will return a
+	  server description (ie, host:port:...)
+
+	  - $encodingctl(GET refnum MAGIC)
+	   1 if this rule is a "system rule" and cannot be deleted.
+	   0 if this is a user rule, and can be deleted.
+
+	  - $encodingctl(GET refnum SOURCE)
+	   1 - Set at boot-up by using your locale (CODESET)
+	   2 - Set at boot-up from hardcoded defaults
+	   3 - Set by the user
+
+	- $encodingctl(SET refnum <OPERATION>)
+	Change an attribute of a recode rule
+	  -> Returns empty string if <refnum> is not a valid recode rule.
+	  -> Returns empty string if no <operation> specified.
+
+	  - $encodingctl(SET refnum ENCODING new-encoding)
+	    Empty String - New-encoding was not specified
+	    0 - Changed: The new encoding was set successfully
+	   -1 - Not changed: The new encoding does not exist on your system
+	   -2 - Not changed: The new encoding does not convert to UTF-8
+	   -3 - Changed: The new encoding PARTIALLY converts to UTF-8
+
+	- $encodingctl(DELETE refnum)
+	Delete a recoding rule:
+	 Empty String - <refnum> was not a valid recode rule.
+	 0 - <refnum> is a magic rule and may not be deleted
+	 1 - <refnum> was successfully deleted.
+
+	- $encodingctl(CHECK encoding)
+	Determine whether or not <encoding> could be used in recoding rules:
+	  Empty String - <encoding> was not specified.
+	  0 - Acceptable: The encoding is acceptable for use
+	 -1 - Unacceptable: The encoding does not exist on your system
+	 -2 - Unacceptable: The encoding does not convert to UTF-8
+	 -3 - Partially Acceptable: The encoding PARTIALLY converts to UTF-8
+
+	- $encodingctl(CREATE target encoding)
+	Basically the same thing as /encoding target encoding
+	Returns the refnum of the new rule.
+
 *** News 03/11/2014 -- New command, /ENCODING
 	The /ENCODING command is not really new, but it finally is in its
 	final form.

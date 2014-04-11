@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.252 2014/04/09 17:54:14 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.253 2014/04/11 15:12:26 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -453,12 +453,41 @@ ssize_t	stristr (const char *start, const char *srch)
 	if (srchlen > quick_code_point_count(start))
 		return -1;
 
+	/*
+	 * For each byte in 'start' (-> p)
+ 	 *  - If 'srch' exists here
+	 *	Return this position as code points into 'start'.
+	 *	(Counting code points instead of bytes makes this utf-8 aware)
+ 	 *  - Grab the next code point from "here"
+	 *  - If there is no code point here, skip this byte
+	 *	[see note below]
+	 *  - If this code point is nul, then we didn't find 'srch'.
+	 */
 	p = start;
 	for (;;)
 	{
 		if (!my_strnicmp(p, srch, srchlen))
 			return quick_code_point_index(start, p);
 
+		/*
+		 * Although we support 'start' and 'srch' being UTF-8,
+		 * why do we walk 'start' byte-by-byte instead of 
+		 * codepoint-by-codepoint?
+		 *
+		 * 1. We know both strings are in the same encoding, so
+		 *    my_strnicmp() is valid.
+		 * 2. No valid UTF-8 string would match a string that begins 
+		 *    with an invalid/partial UTF-8 sequence, so if 'p' points 
+		 *    in the middle of a sequence, it will fail quickly.
+		 * 
+		 * Technically, this fails to maximize the awesome, but it
+		 * works, so I don't care.
+		 *
+		 * One possible way to increase the awesome would be to create
+		 * a new next_code_point() type function that would resync
+		 * 'p' to the next code point, instead of just returning -1
+		 * to indicate "lack of sync".
+		 */
 		while ((d = next_code_point((const unsigned char **)&p)) == -1)
 			p++;
 
@@ -471,6 +500,7 @@ ssize_t	stristr (const char *start, const char *srch)
 }
 
 /* case insensitive string searching from the end */
+/* All the comments from stristr() apply here */
 ssize_t	rstristr (const char *start, const char *srch)
 {
 	const char *p;
