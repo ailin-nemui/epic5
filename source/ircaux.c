@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.253 2014/04/11 15:12:26 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.254 2014/04/11 20:38:58 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2492,7 +2492,7 @@ char *	strformat (char *dest, size_t destlen, const unsigned char *src, ssize_t 
 	int	i;
 
 	/* How many columns does the source string take up? */
-	srclen = display_column_count(src);
+	srclen = quick_display_column_count(src);
 
 	/*
 	 * Figure out how many columns to use from 'src'
@@ -2536,7 +2536,7 @@ char *	strformat (char *dest, size_t destlen, const unsigned char *src, ssize_t 
 	}
 
 	ucs_to_utf8(pad, padutf8, sizeof(padutf8));
-	if ((padlen = display_column_count(padutf8)) == 0)
+	if ((padlen = quick_display_column_count(padutf8)) == 0)
 	{
 		strcpy(padutf8, " ");
 		padlen = 1;
@@ -5211,6 +5211,7 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
  */
 char *	fix_string_width (const char *orig_str, int justify, int fillchar, size_t newlen)
 {
+#if 0
 	/* In this legacy implementation, only justify == -1 is supported */
 	/* It is also not utf8 aware. */
 
@@ -5251,108 +5252,125 @@ char *	fix_string_width (const char *orig_str, int justify, int fillchar, size_t
 
         new_free(&word);
         return retval;
-
-
-#if 0
-	int	fill_left, fill_right;
-	int	chop_left, chop_right;
-	char 	*word, *retval, *result, *s;
-	size_t	len, fill_len;
-	unsigned char utf8str[16];
-	size_t	utf8strlen;
-	int	i;
-	char	*input;
-
-	input = LOCAL_COPY(orig_str;
-	fill_left = fill_right = chop_left = chop_right = 0;
+#endif
 
 	/*
-	 * First, convert the string to something we can work with...
+	 * Here's the plan....
+	 * 
+	 * let 'input' be normalized 'new_str'
+	 * let 'input_col' = column_count(input).
+	 * let 'fill_col' = quick_column_count(fillchar).
+	 * we want a string taking up 'newlen' columns,
+	 * where 'input_str' is 'justify'd in it.
+	 *
+	 * We want to calculate:
+	 * 1) How many columns to chop off the left of input_str
+	 * 2) How many columns to chop off the right of input_str
+	 * 3) How many instances of 'pad' on the left
+	 * 4) How many instances of 'pad' on the right
+	 *
+	 *	col_adjustments = newlen - str_col
+	 *	if (col_adjustments < 0)	// orig_str too big 
+	 *		if (justify = left)
+	 *			right_chop = (-col_adjustments)
+	 *		else if (justify = center)
+	 * 			left_chop = (-col_adjustments) / 2;
+	 *			right_chop = (-col_adjustments) - left_chop;
+	 *		else (justify = right)
+	 *			left_chop = (-col_adjustments)
+	 *	else if (col_adjustments == 0)	// orig_str is exactly right
+	 *		left_chop = 0
+	 *		right_chop = 0
+	 *	else 				// orig_str too short
+	 *		if (justify = left)
+	 *			right_add = (-col_adjustments)
+	 *		else if (justify = center)
+	 *			left_add = (-col_adjustments) / 2
+	 *			right_add = (-col_adjustments) - left_add
+	 *		else (justify = right)
+	 *			left_add = (-col_adjustments)
+	 *
+	 *	new_str = orig_str
+	 *	for (x = 0, x < left_chop; x++)
+	 *		chop_column(&new_str);
+	 *	for (x = 0, x < right_chop; x++)
+	 *		chop_column_end(&new_str);
+	 *	for (x = 0; x < left_add; x++)
+	 *		left_padstr += fill_col
+	 *	for (x = 0; x < right_add; x++)
+	 *		right_padstr += fill_col
+	 *	result = left_padstr + new_str + right_padstr
 	 */
-	word = new_normalize_string(input, 3, display_line_mangler);
 
-	/* 
-	 * How "long" is the string, in columns?
-	 */
-	len = output_with_count(word, 0, 0);
+	char *	orig_str_copy;
+	char *	input;
+	int	input_cols;
+	char	fillstr[16];
+	int	fill_cols;
+	int	adjust_columns;
+	int	left_chop = 0, right_chop = 0;
+	int	left_add = 0, right_add = 0;
+	char *	new_str;
+	char *	retval = NULL;
+	char *	result;
+	size_t	cluep = 0;
+	int	x;
 
-	/*
-	 * We can now calculate our four magic values:
-	 *	1. How many columns to chop off the left
-	 *	2. How many columns to chop off the right
-	 *	3. How many columns to fill on the left
-	 *	4. How many columns to fill on the right.
-	 */
-	if (len < newlen)
-	{
-		size_t	excess_cols;
+	/* Normalize and count the input string */
+	orig_str_copy = LOCAL_COPY(orig_str);
+	input = new_normalize_string(orig_str_copy, 0, display_line_mangler);
+	input_cols = output_with_count(input, 0, 0);
 
-		excess_cols = newlen - len;
-		if (justify == -1)
-			fill_right = excess_cols;
-		else if (justify == 0)
-		{
-			fill_right = excess_cols / 2;
-			fill_left = excess_cols - fill_right;
-		}
-		else
-			fill_left = excess_cols;
-	}
-	else if (len == newlen)
-		/* Nothing to change */;
-	else 		/* len > newlen */
-	{
-		size_t	deficit_cols;
-
-		deficit_cols = len - newlen;
-		if (justify == -1)
-			chop_right = deficit_cols;
-		else if (justify == 0)
-		{
-			chop_right = deficit_cols / 2;
-			chop_left = deficit_cols - chop_right;
-		}
-		else
-			chop_left = deficit_cols;
-	}
-
-	/* Convert the fillchar to a string */
-	if ((fill_len = codepoint_numcolumns(fillchar)) <= 0)
+	/* Normalize and count the fill char */
+	if ((fill_cols = codepoint_numcolumns(fillchar)) != 1)
 	{
 		fillchar = ' ';		/* No time for this nonsense. */
-		fill_len = 1;
+		fill_cols = 1;
 	}
-	ucs_to_utf8(fillchar, utf8str, sizeof(utf8str));
+	ucs_to_utf8(fillchar, fillstr, sizeof(fillstr));
 
-	/* How big will the resulting string be? */
-	retvalsiz = (strlen(word) + 
-			    (strlen(utf8str) * (fill_left + fill_right)) + 20);
-	retval = new_malloc(retvalsiz + 1);
-	*retval = 0;
+	/* How many columns do we need to adjust? */
+	adjust_columns = newlen - input_cols;
 
-	/* Do the left pad */
-	for (i = 0; i < fill_left / fill_len; i++)
-		strlcat(retval, utf8str, retvalsiz);
+	/* Now figure out left/right chop, left/right pad */
+	if (adjust_columns < 0) {		/* string is too long */
+		if (justify == -1)
+			right_chop = -adjust_columns;
+		else if (justify == 0) {
+			left_chop = (-adjust_columns) / 2;
+			right_chop = (-adjust_columns) - left_chop;
+		} else	/* justify == 1 */ 
+			left_chop = -adjust_columns;
+	} else if (adjust_columns == 0) {
+		left_chop = 0;
+		right_chop = 0;
+	} else	/* adjust_columns > 0 */ {	/* string is too short */
+		if (justify == -1)
+			right_add = adjust_columns;
+		else if (justify == 0) {
+			left_add = adjust_columns / 2;
+			right_add = adjust_columns - left_chop;
+		} else
+			left_add = adjust_columns;
+	}
 
-	/* Chop off the left side */
-	s = input;
-	for (i = 0; i < chop_left; i++)
-		next_code_point(&s);
+	/* Do the chops */
+	new_str = input;
+	chop_columns((unsigned char **)&new_str, left_chop);
+	chop_final_columns((unsigned char **)&new_str, right_chop);
 
-	/* Chop off the right side */
-	chop(
-
-	/* Copy the main string */
-	strlcat(retval, s, retvalsiz);
-
-	/* Do the right pad */
-	for (i = 0; i < fill_right / fill_len; i++)
-		strlcat(retval, utf8str, retvalsiz);
+	/* Assemble the final string */
+	for (x = 0; x < left_add; x++)
+		malloc_strcat_c(&retval, fillstr, &cluep);
+	malloc_strcat_c(&retval, new_str, &cluep);
+	for (x = 0; x < right_add; x++)
+		malloc_strcat_c(&retval, fillstr, &cluep);
 
 	result = denormalize_string(retval);
+
+	new_free(&input);
 	new_free(&retval);
 	return result;
-#endif
 }
 
 /****************************************************************************/

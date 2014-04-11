@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.315 2014/04/09 17:54:14 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.316 2014/04/11 20:38:57 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -2957,6 +2957,10 @@ BUILT_IN_FUNCTION(function_fix_width, word)
         GET_FUNC_ARG(justify, word);
 	if (!my_strnicmp(justify, "left", 1))
 		justifynum = -1;
+	else if (!my_strnicmp(justify, "center", 1))
+		justifynum = 0;
+	else if (!my_strnicmp(justify, "right", 1))
+		justifynum = 1;
 	else
 		RETURN_EMPTY;
 
@@ -5651,7 +5655,7 @@ BUILT_IN_FUNCTION(function_pad, input)
 
 	GET_INT_ARG(width, input);
 	GET_DWORD_ARG(pads, input);
-	len = display_column_count(input);
+	len = quick_display_column_count(input);
 
 	if ((codepoint = next_code_point((const unsigned char **)&pads)) == -1)
 		codepoint = ' ';	/* Sigh */

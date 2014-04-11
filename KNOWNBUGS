@@ -2,8 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* These undocumented and unused functions were defered until later
-	fix_width	shiftseg	numsort (sort of)
+<none>
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -552,3 +551,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Implement $encodingctl().
 * RecodeRule->magic wasn't being set correctly.
 * Output the recode rule refnum for /encoding
+* Rewrite internal fix_string_with(), with new chop_[final_]columns() funcs.
+* Extend $fix_width() to support 'c'enter and 'r'ight justify, and UTF8 aware.
+

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.173 2014/04/01 18:11:14 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.174 2014/04/11 20:38:58 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -1673,9 +1673,17 @@ normal_char:
 
 /* 
  * XXX I'm not sure where this belongs, but for now it goes here.
- * This function takes a type-1 normalized string (with the attribute
- * markers) and converts them back to logical characters.  This is needed
- * for lastlog and the status line and so forth.
+ * This function converts a type-0 normalized string (with the attribute
+ * markers) into a type-1 normalized string (with the logical characters 
+ * the user understands).  
+ *
+ * denormalize_string - Convert a Type 0 Normalized String into Type 1
+ *
+ * Arguments 
+ *	str 	- A Type 0 normalized string (ie, returned by 
+ *			new_normalize_string() with logical == 0 or 3)
+ * Return Value:
+ *	A Type 1 normalized string (with ^B, ^V, ^C, ^_s, etc)
  */
 unsigned char *	denormalize_string (const unsigned char *str)
 {
@@ -3888,5 +3896,161 @@ static void	destroy_prompt (Screen *s, WaitPrompt **oldprompt)
 	new_free((char **)oldprompt);
 
 	update_input(last_input_screen, UPDATE_ALL);
+}
+
+/* 
+ * chop_columns - Remove the first 'num' columns from 'str'.
+ * Arguments:
+ *	str	- A pointer to a Type 0 normalized string
+ *		  Passing in a non-normalized string will probably crash
+ * Return Value:
+ *	'str' is changed to point to the start of the 'num'th column
+ *	in the original value of 'str'.
+ *
+ * Example:
+ *	*str = "one two three"
+ *	num = 2
+ * results in
+ *	*str = "e two three"
+ *
+ * This is modeled after output_with_count, and denormalize_string().
+ * All these functions should be refactored somehow.  Too much copypasta!
+ */
+void	chop_columns (unsigned char **str, size_t num)
+{
+	char 	*s, *x;
+	int	i, d, c;
+	int	codepoint, cols;
+
+	if (!str || !*str)
+		return;
+
+	for (s = *str; s && *s; s = x)
+	{
+		/* 
+		 * This resyncs to UTF-8; 
+		 * In the worst case, eventually codepoint == 0 at EOS.
+		 */
+		x = s;
+		while ((codepoint = next_code_point((const unsigned char **)&x)) == -1)
+			x++;
+
+		/* 
+		 * \006 is the "attribute marker" which is followed by
+		 * four bytes which we don't care about.  the whole
+	 	 * thing takes up 0 columns.
+		 */
+		if (codepoint == 6)
+		{
+			for (i = 0; i < 4; i++)
+			{
+				x++;
+				if (!*x)
+					break;
+			}
+			continue;
+		}
+		/* \007 is the beep -- and we don't care. */
+		else if (codepoint == 7)
+			continue;
+		/* The ND_SPACE does take up a column */
+		else if (codepoint == ND_SPACE)
+			cols = 1;
+		/* Everything else is evaluated by codepoint_numcolumns */
+		else 
+		{
+			cols = codepoint_numcolumns(codepoint);
+			if (cols == -1)
+				cols = 0;
+		}
+
+		/*
+		 * NOW -- here is the tricky part....
+		 *
+		 * Why did we do the above on 'x' ?
+		 * Because we need to keep slurping up code points
+		 * after 'num == 0' because of things like continuation
+		 * points and highlight chars.
+		 * So once num == 0 *AND* we have a cp that takes up a column,
+		 * that's where we stop.
+		 */
+		if (num <= 0 && cols > 0)
+		{
+			break;	/* Remember, DON'T include the char we 
+				 * just evaluated! */
+		}
+
+		num -= cols;
+	}
+
+	*str = s;
+}
+
+
+/*
+ * I suppose this is cheating -- but since it is only used by 
+ * $fix_width(), do i really care?
+ */
+void	chop_final_columns (unsigned char **str, size_t num)
+{
+	char 	*s, *x;
+	int	i, d, c;
+	int	cols, numcols, codepoint;
+
+	if (!str || !*str)
+		return;
+
+	/* 
+	 * Why do i go forward rather than backward?
+	 * The attribute marker includes 4 printable chars,
+	 * so we cannot just evalute the length of a string
+	 * from the end->start without accounting for that.
+	 * so it just makes more sense to go start->end
+	 * even though that's not optimally efficient.
+	 */
+	for (s = *str; s && *s; s = x)
+	{
+		/* 
+		 * This resyncs to UTF-8; 
+		 * In the worst case, eventually codepoint == 0 at EOS.
+		 */
+		x = s;
+		while ((codepoint = next_code_point((const unsigned char **)&x)) == -1)
+			x++;
+
+		/* 
+		 * \006 is the "attribute marker" which is followed by
+		 * four bytes which we don't care about.  the whole
+	 	 * thing takes up 0 columns.
+		 */
+		if (codepoint == 6)
+		{
+			x += 4;
+			continue;
+		}
+		/* \007 is the beep -- and we don't care. */
+		else if (codepoint == 7)
+			continue;
+		else
+		{
+			/* Skip unprintable chars */
+			cols = codepoint_numcolumns(codepoint);
+			if (cols == -1)
+				continue;
+
+			/* 
+			 * Now we're looking at a printable char. 
+			 * Is string, starting at this char, <= our target? 
+			 * If so, then we're done. 
+			 */
+			numcols = output_with_count(s, 0, 0);
+			if (numcols <= num)
+			{
+				/* Truncate and stop */
+				*s = 0;
+				break;
+			}
+		}
+	}
 }
 

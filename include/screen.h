@@ -149,6 +149,9 @@ const	unsigned char *all_off			(void);
 
 	unsigned char *prepare_display2	(const unsigned char *, int, int, char, int);
 
+	void	chop_columns (unsigned char **, size_t);
+	void	chop_final_columns (unsigned char **, size_t);
+
 /* Dont do any word-wrapping, just truncate each line at its place. */
 #define PREPARE_NOWRAP	0x01
 

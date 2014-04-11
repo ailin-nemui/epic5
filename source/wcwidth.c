@@ -454,7 +454,25 @@ int	grab_codepoint (const unsigned char *x)
 	return next_code_point(&str);
 }
 
-int	display_column_count (const unsigned char *str)
+/*
+ * quick_display_column_count - How many columns would 'str' take up?
+ *
+ * Arguments:
+ *	str	- A UTF-8 string
+ *
+ * Return Value:
+ * 	The number of columns 'str' would take up.
+ *
+ * IMPORTANT NOTE!
+ *	This function does NOT properly handle attribute markers that
+ *	take following characters (^C, ^X).  Whereas it properly ignores
+ *	things like ^V, ^B, ^C02 would result in "2" rather than "0".
+ *
+ *	The correct way to get column counts is found in 
+ *	ircaux.c:fix_string_width(), which involves using 
+ *	new_normalize_string() and output_with_count().
+ */
+int	quick_display_column_count (const unsigned char *str)
 {
 	const unsigned char *s;
 	int	code_point;
