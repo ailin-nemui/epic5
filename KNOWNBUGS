@@ -554,3 +554,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Rewrite internal fix_string_with(), with new chop_[final_]columns() funcs.
 * Extend $fix_width() to support 'c'enter and 'r'ight justify, and UTF8 aware.
 * EPIC5-1.1.9 released here (Desquamation) (Commit: 1780)
+* Fix compile error in function_help_topics
+* EPIC5-1.1.10 released here (Desquamation) (Commit: 1781)
+
