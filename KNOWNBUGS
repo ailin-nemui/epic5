@@ -538,7 +538,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 	http://epicsol.org/encoding
 * Server names can contain '*'s. (rb zlonix)
 * Fix /topic when you don't supply a channel (rb zlonix)
-* EPIC5-1.1.8 released here (Atavistic) (Commit ID: 775)
+* EPIC5-1.1.8 released here (Atavistic) (Commit ID: 1775)
 * Fix from freebsd to avoid checking yes(1) as ruby executable in configure
 * Create functions to enumerate what should be documented in wiki
 * This is exposed via undocumented $help_topics() function.
@@ -553,4 +553,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Output the recode rule refnum for /encoding
 * Rewrite internal fix_string_with(), with new chop_[final_]columns() funcs.
 * Extend $fix_width() to support 'c'enter and 'r'ight justify, and UTF8 aware.
-
+* EPIC5-1.1.9 released here (Desquamation) (Commit: 1780)
