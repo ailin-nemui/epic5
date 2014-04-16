@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.174 2014/04/11 20:38:58 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.175 2014/04/16 20:29:59 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -3777,10 +3777,12 @@ void	fire_wait_prompt (u_32int_t key)
         unsigned char   utf8str[8];
 
 	oldprompt = last_input_screen->promptlist;
+	last_input_screen->promptlist = oldprompt->next;
+	last_input_screen->il = oldprompt->saved_input_line;
+	update_input(last_input_screen, UPDATE_ALL);
+
 	ucs_to_utf8(key, utf8str, sizeof(utf8str));
 	(*oldprompt->func)(oldprompt->data, utf8str);
-
-	last_input_screen->promptlist = oldprompt->next;
 	destroy_prompt(last_input_screen, &oldprompt);
 
 }
@@ -3790,9 +3792,11 @@ void	fire_normal_prompt (const char *utf8str)
 	WaitPrompt *	oldprompt;
 
 	oldprompt = last_input_screen->promptlist;
-	(*oldprompt->func)(oldprompt->data, utf8str);
-
 	last_input_screen->promptlist = oldprompt->next;
+	last_input_screen->il = oldprompt->saved_input_line;
+	update_input(last_input_screen, UPDATE_ALL);
+
+	(*oldprompt->func)(oldprompt->data, utf8str);
 	destroy_prompt(last_input_screen, &oldprompt);
 }
 
@@ -3885,7 +3889,7 @@ void 	add_wait_prompt (const char *prompt, void (*func)(char *data, const char *
 
 static void	destroy_prompt (Screen *s, WaitPrompt **oldprompt)
 {
-	s->il = (*oldprompt)->saved_input_line;
+	/* s->il = (*oldprompt)->saved_input_line; */
 
 	new_free(&(*oldprompt)->my_input_line->ind_right);
 	new_free(&(*oldprompt)->my_input_line->ind_left);

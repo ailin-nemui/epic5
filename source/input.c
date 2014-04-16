@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.83 2014/04/01 18:11:14 jnelson Exp $ */
+/* $EPIC: input.c,v 1.84 2014/04/16 20:29:59 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -480,6 +480,7 @@ const char *	prompt;
 	Window 	*saved_current_window;
 	int	cols_used;
 	int	original_update;
+	Screen	*oos;
 
 	/*
 	 * No input line in dumb or bg mode.
@@ -491,6 +492,7 @@ const char *	prompt;
 	os = last_input_screen;
 	saved_current_window = current_window;
 	original_update = update;
+	oos = output_screen;
 
         for (ns = screen_list; ns; ns = ns->next)
 	{
@@ -506,6 +508,7 @@ const char *	prompt;
 
 	/* XXX The (mis)use of last_input_screen is lamentable */
 	last_input_screen = ns;
+	output_screen = ns;
 	current_window = ns->current_window;
 	update = original_update;
 	do_echo = last_input_screen->il->echo;
@@ -962,6 +965,7 @@ const char *	prompt;
 	/* <<<<< END INDENT ONE TAB BACK FOR MY SANITY <<<<<< */
 	}
 
+	output_screen = oos;
         last_input_screen = os;
 	current_window = saved_current_window;
 }

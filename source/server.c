@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.269 2014/04/01 18:11:14 jnelson Exp $ */
+/* $EPIC: server.c,v 1.270 2014/04/16 20:29:59 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1285,7 +1285,6 @@ void	do_server (int fd)
 			continue;		/* Move along. */
 
 		from_server = i;
-		make_window_current_by_refnum(get_winref_by_servref(i));
 		l = message_from(NULL, LEVEL_OTHER);
 
 		/*

@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.240 2014/04/09 17:51:08 jnelson Exp $ */
+/* $EPIC: window.c,v 1.241 2014/04/16 20:29:59 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -59,6 +59,7 @@
 #include "functions.h"
 #include "reg.h"
 #include "timer.h"
+#include <math.h>
 
 static const char *onoff[] = { "OFF", "ON" };
 
@@ -70,6 +71,7 @@ static const char *onoff[] = { "OFF", "ON" };
 #define REDRAW_DISPLAY     1 << 0
 #define UPDATE_STATUS      1 << 1
 #define REDRAW_STATUS      1 << 2
+#define FORCE_STATUS	   1 << 3
 
 /*
  * The current window.  This replaces the old notion of "curr_scr_win" 
@@ -139,7 +141,7 @@ static	void	resize_window_display 		(Window *);
 static 	Window *window_next 			(Window *, char **);
 static 	Window *window_previous 		(Window *, char **);
 static	void 	set_screens_current_window 	(Screen *, Window *);
-static	void 	remove_window_from_screen 	(Window *window, int hide);
+static	void 	remove_window_from_screen 	(Window *window, int hide, int recalc);
 static 	Window *window_discon 			(Window *window, char **args);
 static 	void	window_scrollback_start 	(Window *window);
 static 	void	window_scrollback_end 		(Window *window);
@@ -315,7 +317,7 @@ Window	*new_window (Screen *screen)
 	}
 
 	/* Screen list stuff */
-	new_w->screen = screen;
+	/* new_w->screen = screen; */	/* add_to_window_list() does this */
 	new_w->next = new_w->prev = NULL;
 	new_w->deceased = 0;
 
@@ -475,7 +477,7 @@ void 	delete_window (Window *window)
 	if (invisible)
 		remove_from_invisible_list(window);
 	else if (fixed || window->screen->visible_windows > fixed_wins + 1)
-		remove_window_from_screen(window, 0);
+		remove_window_from_screen(window, 0, 1);
 	else if (invisible_list)
 	{
 		window->swappable = 1;
@@ -765,6 +767,16 @@ static void 	remove_from_invisible_list (Window *window)
 
 void 	add_to_invisible_list (Window *window)
 {
+	Window *w;
+
+	/*
+	 * XXX Sanity check -- probably unnecessary
+	 * If the window is already invisible, do nothing
+	 */
+	for (w = invisible_list; w; w = w->next)
+		if (w == window)
+			return;
+
 	/*
 	 * Because this blows away window->next, it is implicitly
 	 * assumed that you have already removed the window from
@@ -784,22 +796,54 @@ void 	add_to_invisible_list (Window *window)
 
 
 /*
- * add_to_window_list: This inserts the given window into the visible window
- * list (and thus adds it to the displayed windows on the screen).  The
- * window is added by splitting the current window.  If the current window is
- * too small, the next largest window is used.  The added window is returned
- * as the function value or null is returned if the window couldn't be added 
+ * add_to_window_list - Make a window visible on a screen.
+ *
+ * Argument:
+ *	screen	- The screen to which the window will be visible
+ *	window 	- A window to be made visible (must be hidden/new).
+ *
+ * Notes:
+ *	Adding a window to a screen involves two decisions
+ *	  1. Where to put it?
+ *	  2. How big to make it?
+ *
+ *	A new window is usually put above the current window, unless the 
+ *	current window is < 4 lines, or /set always_split_biggest is ON.
+ *
+ *	We usually make the new window half the size of the split window.
+ *	However, this is strictly nominal, because a window's "size" is 
+ *	actually three parts:
+ *	  1. Toplines
+ *	  2. The scrollable area
+ *	  3. The status bar(s).
+ *	the addition of the new window will make the total size of all
+ *	windows greater than the size of the screen.
+ *	The recalculate_windows() function, which is called whenever you
+ *	resize the screen, will figure out how to make everything fit.
  */
 Window *add_to_window_list (Screen *screen, Window *new_w)
 {
 	Window	*biggest = (Window *) 0,
-		*tmp;
+		*tmp,
+		*winner;
+	int	orig_size;
+	int	size, need;
 
 	if (screen == NULL)
 		panic(1, "add_to_window_list: Cannot add window [%d] to NULL screen.", new_w->refnum);
 
-	screen->visible_windows++;
-	new_w->screen = screen;
+	/*
+	 * XXX There should be sanity checks here:
+	 *   1. "new_w->screen" should be NULL
+	 *	1b. If it is not NULL, it should be in screen->window_list.
+	 *	1c. If it is NULL, it should be on hidden_list.
+	 */
+
+	/*
+	 * Hidden windows "notify" (%F) or "activity" (%E) when they
+	 * have output while hidden; but when they're made visible,
+	 * they're no longer eligible for notification.
+	 */
 	new_w->notified = 0;
 	new_w->current_activity = 0;
 
@@ -808,7 +852,10 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
 	 */
 	if (!screen->current_window)
 	{
+		screen->visible_windows++;
+		new_w->screen = screen;
 		screen->window_list_end = screen->window_list = new_w;
+
 		if (dumb_mode)
 		{
 			new_w->display_lines = 24;
@@ -816,51 +863,91 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
 			return new_w;
 		}
 		recalculate_windows(screen);
+		return new_w;
 	}
 
 	/*
 	 * This is not the first window on this screen.
 	 */
-	else
+
+	/*
+	 * DECISION 1 -- Which window to "split" ?
+	 */
+
+	/*
+	 * Determine the "BIGGEST WINDOW"
+	 */
+	size = -1;
+	for (tmp = screen->window_list; tmp; tmp = tmp->next)
 	{
-		/* split current window, or find a better window to split */
-		if ((screen->current_window->display_lines < 4) ||
-				get_int_var(ALWAYS_SPLIT_BIGGEST_VAR))
+		if (tmp->fixed_size)
+			continue;
+		if (tmp->display_lines > size)
 		{
-			int	size = 0;
-
-			for (tmp = screen->window_list; tmp; tmp = tmp->next)
-			{
-				if (tmp->fixed_size)
-					continue;
-				if (tmp->display_lines > size)
-				{
-					size = tmp->display_lines;
-					biggest = tmp;
-				}
-			}
-			if (!biggest /* || size < 4 */)
-			{
-				say("Not enough room for another window!");
-				screen->visible_windows--;
-				return NULL;
-			}
+			size = tmp->display_lines;
+			biggest = tmp;
 		}
-		else
-			biggest = screen->current_window;
-
-		if ((new_w->prev = biggest->prev) != NULL)
-			new_w->prev->next = new_w;
-		else
-			screen->window_list = new_w;
-
-		new_w->next = biggest;
-		biggest->prev = new_w;
-		biggest->display_lines /= 2;
-		/* XXX Manually resetting window's size?  Ugh */
-		new_w->display_lines = biggest->display_lines;
-		recalculate_windows(screen);
 	}
+
+	/*
+	 * Determine if the biggest window is big enough to hold
+	 * the new window.  If it is not, then we have to fail.
+	 */
+	need = new_w->toplines_showing + new_w->status.number;
+	if (biggest->display_lines < need)
+	{
+		say("Not enough room for another window!");
+		/* remove_window_from_screen(new_w, 1); */
+		return NULL;
+	}
+
+	/*
+	 * Use the biggest window -- unless the current window can hold
+	 * it and /set always_split_biggest is OFF.
+	 */
+	winner = biggest;
+	if (screen->current_window->display_lines > need)
+		if (get_int_var(ALWAYS_SPLIT_BIGGEST_VAR) == 0)
+			winner = screen->current_window;
+
+
+	/*
+	 * Link the new window into the list.
+	 */
+	if ((new_w->prev = winner->prev) != NULL)
+		new_w->prev->next = new_w;
+	else
+		screen->window_list = new_w;
+
+	new_w->next = winner;
+	winner->prev = new_w;
+
+	/*
+	 * Figure out how to share the space.
+	 * Start with the display_lines of the split window.
+	 * Then subtract the overhead lines of the new window.
+	 * Then whatever's left, split in half.
+	 */
+	need = biggest->display_lines;
+	need -= new_w->toplines_showing;
+	need -= new_w->status.number;
+
+	/* Need had better not be negative -- we checked for that above */
+	if (need < 0)
+		panic(1, "add_to_window_list: orig_size is %d, need is %d", 
+				biggest->display_lines, need);
+
+	/* Split the remainder among the two windows */
+	winner->display_lines = need / 2;
+	new_w->display_lines = need - (need / 2);
+
+	/* Now point it to the screen.... */
+	new_w->screen = screen;
+	screen->visible_windows++;
+
+	/* Now let recalculate_windows() handle any overages */
+	recalculate_windows(screen);
+
 	return (new_w);
 }
 
@@ -874,7 +961,7 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
  * /on switch_windows thrown there.  If 'hide' is 0, then the window is
  * just unlinked and we assume the caller will gc it.
  */
-static void 	remove_window_from_screen (Window *window, int hide)
+static void 	remove_window_from_screen (Window *window, int hide, int recalc)
 {
 	Screen *s;
 
@@ -914,7 +1001,8 @@ static void 	remove_window_from_screen (Window *window, int hide)
 	else
 		make_window_current(NULL);
 
-	recalculate_windows(s);
+	if (recalc)
+		recalculate_windows(s);
 }
 
 
@@ -1565,18 +1653,32 @@ static	int	restart = 0;
 				debuglog("update_all_windows(%d) (redraw_status), OK, status not redrawn -- lets try update later",
 					tmp->refnum);
 				tmp->update |= UPDATE_STATUS;
+				tmp->update |= FORCE_STATUS;
 			}
 			tmp->update &= ~REDRAW_STATUS;
 			do_input_too = 1;
 		}
 		else if (tmp->update & UPDATE_STATUS)
 		{
-		    debuglog("update_all_windows(%d), update_status",
-				tmp->refnum);
+			int	forced;
 
-			if (make_status(tmp, &tmp->status) > 0)
+		    if (tmp->update & FORCE_STATUS)
+		    {
+		        debuglog("update_all_windows(%d), update_status FORCED",
+				tmp->refnum);
+			forced = 1;
+			tmp->update &= ~FORCE_STATUS;
+		    }
+		    else
+		    {
+		        debuglog("update_all_windows(%d), update_status",
+				tmp->refnum);
+			forced = 0;
+		    }
+
+			if (make_status(tmp, &tmp->status) > 0 || forced)
 			{
-			   debuglog("update_all_windows(%d) (update_status), make_status returned > 0",
+			   debuglog("update_all_windows(%d) (update_status), make_status returned > 0 (or forced)",
 					tmp->refnum);
 
 			   if (redraw_status(tmp, &tmp->status) == 0)
@@ -1661,25 +1763,42 @@ void	rebalance_windows (Screen *screen)
 }
 
 /*
- * recalculate_windows: this is called when the terminal size changes (as
- * when an xterm window size is changed).  It recalculates the sized and
- * positions of all the windows.  The net change in space is distributed
- * proportionally across the windows as closely as possible.
+ * recalculate_windows - Ensure that all the windows on a screen take up
+ *			exactly the size of the screen
+ *
+ * Arguments:
+ *	screen	- A screen to validate
+ *
+ * Notes:
+ *	Whenever the terminal size changes (such as an xterm), or whenever
+ * 	you add or remove a window from a screen, you should call this 
+ *	function to ensure the windows on the screen take all the lines.
+ *
+ *	This function will do whatever is necessary to make that happen,
+ *	even if it means ejecting windows from the screen to make room.
+ *
+ *	As much as possible, this function tries to keep windows the same
+ *	relative size to each other when it is done.
  */
 void 	recalculate_windows (Screen *screen)
 {
 	int	old_li = 1;
+	int	required_li = 0;
 	int	excess_li = 0;
-	Window	*tmp;
+	int	assignable_li = 0;
+	Window	*tmp, *winner;;
 	int	window_count = 0;
-	int	window_resized = 0;
 	int	offset;
+	int	lin = 0;
+	double	remainder = 0.0;
+	int	force;
 
 	if (dumb_mode)
 		return;
 
 	/*
-	 * If its a new window, just set it and be done with it.
+	 * If its a new screen, just set it and be done with it.
+	 * XXX This seems heinously bogus.
 	 */
 	if (!screen->current_window)
 	{
@@ -1692,53 +1811,174 @@ void 	recalculate_windows (Screen *screen)
 		return;
 	}
 
-	/* 
-	 * Expanding the screen takes two passes.  In the first pass,
-	 * We figure out how many windows will be resized.  If none can
-	 * be rebalanced, we add the whole shebang to the last one.
+	/*
+	 * This is much more complicated than it needs to be, and I've
+	 * anguished over a good algorithm that will resize the windows
+	 * so that they "feel" right.  I feel strongly that windows 
+	 * should stay about the same size after a resize.
+	 *
+	 * But there are situations where things break down, and I am
+	 * not sure I have good solutions for all those.  So then things
+	 * look screwy and the user distrusts epic.
 	 */
+
+	/**********************************************************
+	 * TEST #1 -- Has the screen actually changed size?
+	 */
+
+	/*
+	 * First, let's figure out how big the screen was before.
+	 * This will allow us to calculate how many lines to give/steal.
+	 */
+	old_li = 0;
+	for (tmp = screen->window_list; tmp; tmp = tmp->next)
+		old_li += tmp->status.number + tmp->toplines_showing +
+				tmp->display_lines;
+
+	/* How many lines did the screen change by? */
+	excess_li = (screen->li - 1) - old_li;
+
+	/* 
+	 * If the size of the screen hasn't changed,
+	 * Re-enumerate the windows, and go on our way.
+	 */
+	if (excess_li == 0)
+	{
+		recalculate_window_positions(screen);
+		return;
+	}
+
+
+	/**********************************************************
+	 * TEST #2 -- Can we fit all the windows on the screen?
+	 */
+
+	/* 
+	 * Next, let's figure out how many lines MUST be shown.
+	 */
+	required_li = 0;
+	for (tmp = screen->window_list; tmp; tmp = tmp->next)
+		required_li += tmp->status.number + tmp->toplines_showing;
+				(tmp->fixed_size ? tmp->display_lines : 0);
+
+	/*
+	 * If the number of required lines exceeds what we have on hand,
+	 * then we've got problems.  We fix this by removing one window,
+	 * then recursively "fixing" the screen from there. 
+	 */
+	if (required_li > screen->li - 1)
+	{
+		int     skip_fixed;
+
+		/*
+		 * Find the smallest nonfixed window and hide it.
+		 */
+		winner = NULL;     /* Winner? ha~! */
+		for (skip_fixed = 1; skip_fixed >= 0; skip_fixed--)
+		{
+			for (tmp = screen->window_list; tmp; tmp = tmp->next)
+			{
+				if (skip_fixed && tmp->fixed_size)
+					continue;
+				if (!winner || 
+					(tmp->status.number + 
+					 tmp->toplines_showing + 
+					 tmp->display_lines > 
+						winner->status.number +
+						winner->toplines_showing +
+						winner->display_lines))
+					winner = tmp;
+			}
+
+			if (winner)
+				break;
+		}
+
+		remove_window_from_screen(winner, 1, 0);
+		recalculate_windows(screen);
+		return;
+	}
+
+
+	/***********************************************************
+	 * TEST #3 -- Has the screen grown?
+	 */
+	/* Count the non-fixed windows */
+	window_count = 0;
 	for (tmp = screen->window_list; tmp; tmp = tmp->next)
 	{
-		old_li += tmp->display_lines + tmp->status.number
-				+ tmp->toplines_showing;
-		if (tmp->fixed_size && (window_count || tmp->next))
+		if (tmp->fixed_size)
 			continue;
-		window_resized += tmp->display_lines;
 		window_count++;
 	}
 
-	excess_li = screen->li - old_li;
-
-	for (tmp = screen->window_list; tmp; tmp = tmp->next)
+	/*
+	 * If the screen is growing, dole out lines
+	 */
+	if (excess_li > 0)
 	{
-		if (tmp->fixed_size && tmp->next)
-			;
-		else
+		int	assigned_lines;
+
+		assigned_lines = 0;
+		while (assigned_lines < excess_li)
 		{
 			/*
-			 * The number of lines this window gets is:
-			 * The number of lines available for resizing times 
-			 * the percentage of the resizeable screen the window 
-			 * covers.
+			 * XXX TODO - Placeholder algorithm
+			 * For now, add one line to each nonfixed window,
+			 * one at a time, until we've given them all out.
 			 */
-			if (tmp->next && window_resized)
-				offset = (tmp->display_lines * excess_li) / 
-						window_resized;
-			else
-				offset = excess_li;
+			for (tmp = screen->window_list; tmp; tmp = tmp->next)
+			{
+				/* 
+				 * If this is a fixed window, and there is 
+				 * another window, then skip it.
+				 */
+				if (tmp->fixed_size && window_count)
+					continue;
 
-			tmp->display_lines += offset;
-			if (tmp->display_lines < 0)
-				tmp->display_lines = 1;
-			excess_li -= offset;
-			resize_window_display(tmp);
-			recalculate_window_cursor_and_display_ip(tmp);
+				tmp->display_lines++;
+				assigned_lines++;
+
+				if (assigned_lines >= excess_li)
+					break;
+			}
 		}
-
-		/* XXX This is just temporary */
-		window_check_columns(tmp);
 	}
 
+	else	/* excess_li < 0 */
+	{
+		int	deducted_lines;
+
+		deducted_lines = 0;
+		while (deducted_lines > excess_li)
+		{
+			/*
+			 * XXX TODO - Placeholder algorithm
+			 * For now, steal one line to each nonfixed window,
+			 * one at a time, until we've given them all out.
+			 */
+			for (tmp = screen->window_list; tmp; tmp = tmp->next)
+			{
+				/* 
+				 * If this is a fixed window, and there is 
+				 * another window, then skip it.
+				 */
+				if (tmp->fixed_size && window_count)
+					continue;
+
+				if (tmp->display_lines == 0)
+					continue;
+
+				tmp->display_lines--;
+				deducted_lines--;
+
+				if (deducted_lines <= excess_li)
+					break;
+			}
+		}
+	}
+
+	/* Re-enumerate the windows and go on with life. */
 	recalculate_window_positions(screen);
 }
 
@@ -1884,7 +2124,7 @@ void 	hide_window (Window *window)
 		return;
 	}
 	if (window->screen)
-		remove_window_from_screen(window, 1);
+		remove_window_from_screen(window, 1, 1);
 }
 
 /*
@@ -1978,10 +2218,12 @@ static void 	show_window (Window *window)
 
 	if (!window->screen)
 	{
+		Screen *s;
+
 		remove_from_invisible_list(window);
-		if (!(window->screen = current_window->screen))
-			window->screen = last_input_screen; /* What the hey */
-		if (!add_to_window_list(window->screen, window))
+		if (!(s = current_window->screen))
+			s = last_input_screen; /* What the hey */
+		if (!add_to_window_list(s, window))
 		{
 			/* Ooops. this is an error. ;-) */
 			add_to_invisible_list(window);
@@ -5250,8 +5492,16 @@ static Window *window_show (Window *window, char **args)
 
 static Window *window_show_all (Window *window, char **args)
 {
+	int	governor = 0;
+
 	while (invisible_list)
+	{
 		show_window(invisible_list);
+		/* If for some reason we get stuck in a loop, bail. */
+		if (governor++ > 100)
+			return window;
+	}
+
 	return window;
 }
 
@@ -5857,6 +6107,21 @@ static int	add_to_display (Window *window, const unsigned char *str, intmax_t re
 	}
 
 	/*
+	 * XXX I don't like this very much, but this is a placeholder
+	 * for a superior solution someday.
+	 *
+	 * The problem is how to handle output in zero-height windows.
+	 * I think maybe we should pretend they're 1 line high.
+	 * But for our purposes here, output to a zero-height window
+	 * does not push forward the top of display.  This would affect
+	 * the user later if they make the window bigger.
+	 *
+	 * The return value 0 tells the caller "don't do any output"
+	 */
+	if (window->display_lines == 0)
+		return 0;		/* XXX Do soemthing better, someday */
+
+	/*
 	 * Handle overflow in the scrollable view -- If the scrollable view
 	 * has overflowed, logically scroll down the scrollable view by 
 	 * /SET SCROLL_LINES lines.
@@ -5869,7 +6134,6 @@ static int	add_to_display (Window *window, const unsigned char *str, intmax_t re
 			scroll = 1;
 		if (scroll > window->display_lines)
 			scroll = window->display_lines;
-			/* XXX but what if display_liens is 0? */
 
 		for (i = 0; i < scroll; i++)
 		{

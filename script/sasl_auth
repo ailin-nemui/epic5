@@ -14,6 +14,8 @@ package sasl_auth;
 ## Version: 1.1 (March, 2014)
 ##  - Perl is not required anymore
 ##
+## Version: 1.2 (April, 2014)
+##  - Fixed bug with '\' in password (rb skered)
 
 ## This script implements SASL authentication, primarily used on
 ## Freenode network. Currently only PLAIN method is supported.
@@ -53,12 +55,19 @@ package sasl_auth;
 ## Put those into your ~/.ircrc (or such) file after loading
 ## sasl_auth.
 ##
+## Take special considiration if your credentials contain special chars
+## like '\' or '$', because, if, for example, you're using PF loader to
+## load your .ircrc (or whatever script you use with sasl_auth) - those
+## will be evaluated, and password "\test$var" may end up just as
+## "test".
+## 
 ## If you specify server under /sasl_auth command, but upon connect it
 ## won't ACK our request (essentialy meaning it doesn't support
 ## capabilities) or NAK it script will disconnect your from this server.
 ##
 ## Limitation and bugs:
-##  - only one and insecure method;
+##  - only one and insecure method (freenode disabled blowfish support,
+##    so, this may never be implemented);
 ##  - in case of a long base64 string for authentication it may
 ##    not fit to the maximum message length and authentication
 ##    will be failed, it can happen if you have very long
@@ -83,7 +92,11 @@ alias sasl_auth (server, method, user, password, void) {
 };
 
 alias sasl_auth.plain (nick, password, void) {
-	return $xform("-CTCP +B64" $nick\\0$nick\\0$password);
+#	echo nick  - $nick;
+#	echo pass  - $password;
+#	echo xform - $xform("-CTCP +B64" $^\nick\\0$^\nick\\0$^\password);
+#	echo xform - $xform("-b64 +ctcp" $xform("-CTCP +B64" $^\nick\\0$^\nick\\0$^\password));
+	return $xform("-CTCP +B64" $^\nick\\0$^\nick\\0$^\password);
 };
 
 alias sasl_auth.setstate (server, state, void) {

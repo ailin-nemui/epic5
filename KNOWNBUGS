@@ -428,6 +428,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Have configure use the auto-detected local directory.
 * Reformat some parts of server.c
 * Change the current window whenever we're processing server stuff.
+  -- This was withdrawn because it was very unpopular.
 * Don't allow /window lastlog to set the lastlog too low. 
 * Add support for ITALICS (^P) (\020), including ITALIC keybinding.
 * Add support for 256 colors.  I should document all changes but i don't wanna
@@ -556,4 +557,13 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * EPIC5-1.1.9 released here (Desquamation) (Commit: 1780)
 * Fix compile error in function_help_topics
 * EPIC5-1.1.10 released here (Desquamation) (Commit: 1781)
+* Updated sasl_auth (v1.2) from zlonix 
+* Fix input lines being blank on non-main screens (set output_screen)
+* Fix not being able to chain /INPUT's together (reset input line before callb)
+* DO NOT set the window when handling server (very unpopular)
+  (* Change the current window whenever we're processing server stuff.)
+* Rewrite add_window_to_screen/remove_window_from_rewrite
+* Rewrite recalculate_windows.
+* This fixes screen corruption when creating wins or shrinking your screen.
+* Fix a bug where UPDATE_STATUS could get ignored (introduce FORCE_STATUS)
 
