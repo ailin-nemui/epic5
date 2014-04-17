@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.243 2014/04/17 20:17:07 jnelson Exp $ */
+/* $EPIC: window.c,v 1.244 2014/04/17 21:50:26 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -831,6 +831,7 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
 		*winner;
 	int	orig_size;
 	int	size, need;
+	int     skip_fixed;
 
 	if (screen == NULL)
 		panic(1, "add_to_window_list: Cannot add window [%d] to NULL screen.", new_w->refnum);
@@ -880,16 +881,26 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
 	/*
 	 * Determine the "BIGGEST WINDOW"
 	 */
+
+	/*
+	 * Find the smallest nonfixed window and hide it.
+	 */
+	biggest = NULL; 
 	size = -1;
-	for (tmp = screen->window_list; tmp; tmp = tmp->next)
+	for (skip_fixed = 1; skip_fixed >= 0; skip_fixed--)
 	{
-		if (tmp->fixed_size)
-			continue;
-		if (tmp->display_lines > size)
+		for (tmp = screen->window_list; tmp; tmp = tmp->next)
 		{
-			size = tmp->display_lines;
-			biggest = tmp;
+			if (skip_fixed && tmp->fixed_size)
+				continue;
+			if (tmp->display_lines > size)
+			{
+				size = tmp->display_lines;
+				biggest = tmp;
+			}
 		}
+		if (biggest)
+			break;
 	}
 
 	/*
