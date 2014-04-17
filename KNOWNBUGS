@@ -6,16 +6,13 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 
 MEDIUM-TERM PROJECTS
 --------------------
-* What about the ability to create a status bar from an arbitrary format?
 * Need to have a script that implements per-channel FiSH support
-* Need to have a script that implements per-channel iconv() support.
 * There needs to be an /on switch_query for wuf/sjhoran
 * What about scrolling back to some point in time?
 * What about a facility to do auto-off-hold-mode ?
 * wuf says that fred!user@machine.domain.com.au should not be
 	*!*user@*.com.au but instead *!*user@*.domain.com.au
 * There should be a fake level for "channel stuff"
-* The four projects of the UTF8 effort are the primary focus for now.
 * Curse would like an outbound protocol queue to avoid flooding the server
 * Larne wants syntactic word extraction like $foo{3} or $foo{1,4}
 * Howl wants to be able to have per-window /input and /input_char
@@ -566,4 +563,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Rewrite recalculate_windows.
 * This fixes screen corruption when creating wins or shrinking your screen.
 * Fix a bug where UPDATE_STATUS could get ignored (introduce FORCE_STATUS)
-
+* Remove /set translation and all its stuff.
+* Don't unforce the status bar until it's actually been redrawn.
+* Set a window's screen before hiding it on /window new_hide (rb fusion)

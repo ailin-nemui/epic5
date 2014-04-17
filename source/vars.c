@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.116 2014/04/09 17:51:08 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.117 2014/04/17 13:23:43 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -54,7 +54,6 @@
 #include "stack.h"
 #include "dcc.h"
 #include "keys.h"
-#include "translat.h"
 #include "timer.h"
 #include "clock.h"
 #include "mail.h"
@@ -447,10 +446,6 @@ void 	init_variables_stage1 (void)
 	VAR(SUPPRESS_FROM_REMOTE_SERVER, BOOL, NULL);
 	VAR(SWITCH_CHANNELS_BETWEEN_WINDOWS, BOOL, NULL);
 	VAR(TERM_DOES_BRIGHT_BLINK, BOOL, NULL);
-#define DEFAULT_TRANSLATION NULL
-	VAR(TRANSLATION, STR,  set_translation);
-#define DEFAULT_TRANSLATION_PATH NULL
-	VAR(TRANSLATION_PATH, STR,  NULL);
 	VAR(USER_INFORMATION, STR, NULL);
 	VAR(WORD_BREAK, STR,  NULL);
 #define DEFAULT_WSERV_PATH WSERV_PATH

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.270 2014/04/16 20:29:59 jnelson Exp $ */
+/* $EPIC: server.c,v 1.271 2014/04/17 13:23:43 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -55,7 +55,6 @@
 #include "status.h"
 #include "vars.h"
 #include "newio.h"
-#include "translat.h"
 #include "reg.h"
 
 /************************ SERVERLIST STUFF ***************************/
@@ -1601,8 +1600,6 @@ return_from_ssl_detour:
 					if (*end == '\r')
 						*end-- = '\0';
 
-					if (translation)
-						translate_from_server(bufptr);
 					rfc1459_any_to_utf8(bufptr, sizeof(buffer), &extra);
 					if (extra)
 						bufptr = extra;

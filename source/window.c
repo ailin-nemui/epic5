@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.241 2014/04/16 20:29:59 jnelson Exp $ */
+/* $EPIC: window.c,v 1.242 2014/04/17 13:23:43 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -338,7 +338,10 @@ Window	*new_window (Screen *screen)
 	if (screen && add_to_window_list(screen, new_w))
 		set_screens_current_window(screen, new_w);
 	else
+	{
+		new_w->screen = NULL;
 		add_to_invisible_list(new_w);
+	}
 
 	/* Finally bootstrap the visible part of the window */
 	resize_window_display(new_w);
@@ -1667,7 +1670,6 @@ static	int	restart = 0;
 		        debuglog("update_all_windows(%d), update_status FORCED",
 				tmp->refnum);
 			forced = 1;
-			tmp->update &= ~FORCE_STATUS;
 		    }
 		    else
 		    {
@@ -1685,6 +1687,7 @@ static	int	restart = 0;
 			   {
 				debuglog("update_all_windows(%d) (update_status), ok, status redrawn.", tmp->refnum);
 				tmp->update &= ~UPDATE_STATUS;
+				tmp->update &= ~FORCE_STATUS;
 			   }
 			   else
 				debuglog("update_all_windows(%d) (update_status), redraw_status returned nonzero, still needs update.");
