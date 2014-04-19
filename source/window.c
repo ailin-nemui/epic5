@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.244 2014/04/17 21:50:26 jnelson Exp $ */
+/* $EPIC: window.c,v 1.245 2014/04/19 14:19:57 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -854,7 +854,7 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
 	/*
 	 * If this is the first window to go on the screen
 	 */
-	if (!screen->current_window)
+	if (!screen->window_list)
 	{
 		screen->visible_windows++;
 		new_w->screen = screen;
@@ -901,6 +901,12 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
 		}
 		if (biggest)
 			break;
+	}
+
+	if (!biggest)
+	{
+		say("I couldn't find a window to split -- sorry");
+		return NULL;
 	}
 
 	/*
@@ -1907,6 +1913,9 @@ void 	recalculate_windows (Screen *screen)
 			if (winner)
 				break;
 		}
+
+		if (!winner)
+			panic(1, "recalc_windows: Could not find window to hide");
 
 		remove_window_from_screen(winner, 1, 0);
 		recalculate_windows(screen);

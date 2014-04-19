@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.21 2014/04/11 15:12:26 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.22 2014/04/19 14:19:57 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -484,7 +484,7 @@ void	init_recodings (void)
 
 	if (help_me)
 	{
-		fprintf(stderr, "EPIC Version 5 - Commit Id (%d)\n", commit_id);
+		fprintf(stderr, "EPIC Version 5 - Commit Id (%lu)\n", commit_id);
 		fprintf(stderr, "Unfortunately, your iconv is missing important character encodings, and EPIC won't be able to operate properly without them.\n");
 		fprintf(stderr, "Please contact #epic on EFNet or jnelson@epicsol.org for more information.\n");
 		fprintf(stderr, "Also, check http://epicsol.org/encodings_and_locales\n");
@@ -501,7 +501,6 @@ void	init_recodings (void)
 
 	/* Rule 2 is "irc" */
 	recode_rules[2] = create_recoding_rule("irc", "ISO-8859-1", 1, ENCODING_FALLBACK);
-		reason = ENCODING_FALLBACK;
 }
 
 

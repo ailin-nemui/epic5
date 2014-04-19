@@ -568,4 +568,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Set a window's screen before hiding it on /window new_hide (rb fusion)
 * Fix rogue semicolon.
 * Fix a null deref in creating new window when all other windows are fixed
-
+* Fix some bugs that clang static analyzer found
+* Fix where /set -continued_line led to strange denormalize behavior (rb Tilt)

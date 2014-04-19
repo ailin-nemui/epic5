@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.254 2014/04/11 20:38:58 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.255 2014/04/19 14:19:57 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -5306,7 +5306,6 @@ char *	fix_string_width (const char *orig_str, int justify, int fillchar, size_t
 	char *	input;
 	int	input_cols;
 	char	fillstr[16];
-	int	fill_cols;
 	int	adjust_columns;
 	int	left_chop = 0, right_chop = 0;
 	int	left_add = 0, right_add = 0;
@@ -5322,11 +5321,9 @@ char *	fix_string_width (const char *orig_str, int justify, int fillchar, size_t
 	input_cols = output_with_count(input, 0, 0);
 
 	/* Normalize and count the fill char */
-	if ((fill_cols = codepoint_numcolumns(fillchar)) != 1)
-	{
+	if (codepoint_numcolumns(fillchar) != 1)
 		fillchar = ' ';		/* No time for this nonsense. */
-		fill_cols = 1;
-	}
+
 	ucs_to_utf8(fillchar, fillstr, sizeof(fillstr));
 
 	/* How many columns do we need to adjust? */

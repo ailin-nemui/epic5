@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.175 2014/04/16 20:29:59 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.176 2014/04/19 14:19:57 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2321,7 +2321,9 @@ const 	unsigned char	*ptr;
 	}
 	buffer[pos] = 0;
 
+#if 0
 	if (*buffer)
+#endif
 		malloc_strcpy_c((char **)&retval, buffer, &clue);
 
 	/*
