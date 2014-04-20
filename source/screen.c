@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.176 2014/04/19 14:19:57 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.177 2014/04/20 02:10:05 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -3149,6 +3149,7 @@ void	create_new_screen (void)
 #define ST_NOTHING      -1
 #define ST_SCREEN       0
 #define ST_XTERM        1
+#define ST_TMUX		2
 Window	*create_additional_screen (void)
 {
 #ifdef NO_JOB_CONTROL
@@ -3163,8 +3164,17 @@ Window	*create_additional_screen (void)
 	int		new_cmd;
 	pid_t		child;
 	unsigned short 	port;
-	socklen_t		new_sock_size;
+	socklen_t	new_sock_size;
 	char *		wserv_path;
+
+	char 		subcmd[128];
+	char *		opts;
+	const char *	xterm;
+	char *		args[64];
+	char **		args_ptr = args;
+	char 		geom[32];
+	int 		i;
+
 
 	if (!use_input)
 		return NULL;
@@ -3187,11 +3197,27 @@ Window	*create_additional_screen (void)
 		char *p = get_string_var(WSERV_TYPE_VAR);
 		if (p && !my_stricmp(p, "SCREEN"))
 			screen_type = ST_SCREEN;
+		else if (p && !my_stricmp(p, "TMUX"))
+			screen_type = ST_SCREEN;
 		else if (p && !my_stricmp(p, "XTERM"))
 			screen_type = ST_XTERM;
 		else
 			screen_type = ST_SCREEN;	/* Sucks to be you */
 	}
+	else if (getenv("TMUX") && getenv("DISPLAY"))
+	{
+		char *p = get_string_var(WSERV_TYPE_VAR);
+		if (p && !my_stricmp(p, "SCREEN"))
+			screen_type = ST_TMUX;
+		else if (p && !my_stricmp(p, "TMUX"))
+			screen_type = ST_TMUX;
+		else if (p && !my_stricmp(p, "XTERM"))
+			screen_type = ST_XTERM;
+		else
+			screen_type = ST_TMUX;	/* Sucks to be you */
+	}
+	else if (getenv("TMUX"))
+		screen_type = ST_TMUX;
 	else if (getenv("STY"))
 		screen_type = ST_SCREEN;
 	else if (getenv("DISPLAY") && getenv("TERM"))
@@ -3204,6 +3230,8 @@ Window	*create_additional_screen (void)
 
 	if (screen_type == ST_SCREEN)
 		say("Opening new screen...");
+	else if (screen_type == ST_TMUX)
+		say("Opening new tmux...");
 	else if (screen_type == ST_XTERM)
 		say("Opening new window...");
 	else
@@ -3223,6 +3251,62 @@ Window	*create_additional_screen (void)
 	}
 	port = ntohs(local_sockaddr.sin_port);
 
+	/* Create the command line arguments... */
+	if (screen_type == ST_SCREEN)
+	{
+	    opts = malloc_strdup(get_string_var(SCREEN_OPTIONS_VAR));
+	    *args_ptr++ = malloc_strdup("screen");
+	    while (opts && *opts)
+		*args_ptr++ = malloc_strdup(new_next_arg(opts, &opts));
+	    *args_ptr++ = malloc_strdup(wserv_path);
+	    *args_ptr++ = malloc_strdup("localhost");
+	    *args_ptr++ = malloc_strdup(ltoa((long)port));
+	    *args_ptr++ = NULL;
+	}
+	else if (screen_type == ST_XTERM)
+	{
+	    snprintf(geom, 31, "%dx%d", 
+		oldscreen->co + 1, 
+		oldscreen->li);
+
+	    opts = malloc_strdup(get_string_var(XTERM_OPTIONS_VAR));
+	    if (!(xterm = getenv("XTERM")))
+		if (!(xterm = get_string_var(XTERM_VAR)))
+		    xterm = "xterm";
+
+	    *args_ptr++ = malloc_strdup(xterm);
+	    *args_ptr++ = malloc_strdup("-geometry");
+	    *args_ptr++ = malloc_strdup(geom);
+	    while (opts && *opts)
+		*args_ptr++ = malloc_strdup(new_next_arg(opts, &opts));
+	    *args_ptr++ = malloc_strdup("-e");
+	    *args_ptr++ = malloc_strdup(wserv_path);
+	    *args_ptr++ = malloc_strdup("localhost");
+	    *args_ptr++ = malloc_strdup(ltoa((long)port));
+	    *args_ptr++ = NULL;
+	}
+	else if (screen_type == ST_TMUX)
+	{
+	    snprintf(subcmd, 127, "%s %s %hu", 
+			wserv_path, "localhost", port);
+
+	    *args_ptr++ = malloc_strdup("tmux");
+
+	    opts = malloc_strdup(get_string_var(TMUX_OPTIONS_VAR));
+	    while (opts && *opts)
+		*args_ptr++ = malloc_strdup(new_next_arg(opts, &opts));
+
+	    *args_ptr++ = malloc_strdup("new-window");
+	    *args_ptr++ = malloc_strdup(subcmd);
+	    *args_ptr++ = NULL;
+	}
+
+#if 0
+	for (i = 0; args[i]; i++)
+		yell("Arg %d: %s", i, args[i]);
+#endif
+
+	/* Now create a new screen.... */
 	oldscreen = current_window->screen;
 	create_new_screen();
 	new_s = last_input_screen;
@@ -3248,13 +3332,6 @@ Window	*create_additional_screen (void)
 
 		case 0:
 		{
-			char *opts;
-			const char *xterm;
-			char *args[64];
-			char **args_ptr = args;
-			char geom[32];
-			int i;
-
 			if (setuid(getuid()))
 				_exit(0);
 			if (setgid(getgid()))
@@ -3278,37 +3355,6 @@ Window	*create_additional_screen (void)
 			my_signal(SIGSEGV, SIG_DFL);
 			my_signal(SIGBUS,  SIG_DFL);
 			my_signal(SIGABRT, SIG_DFL);
-
-			if (screen_type == ST_SCREEN)
-			{
-			    opts = malloc_strdup(get_string_var(SCREEN_OPTIONS_VAR));
-			    *args_ptr++ = malloc_strdup("screen");
-			    while (opts && *opts)
-				*args_ptr++ = malloc_strdup(new_next_arg(opts, &opts));
-			}
-			else if (screen_type == ST_XTERM)
-			{
-			    snprintf(geom, 31, "%dx%d", 
-				oldscreen->co + 1, 
-				oldscreen->li);
-
-			    opts = malloc_strdup(get_string_var(XTERM_OPTIONS_VAR));
-			    if (!(xterm = getenv("XTERM")))
-				if (!(xterm = get_string_var(XTERM_VAR)))
-				    xterm = "xterm";
-
-			    *args_ptr++ = malloc_strdup(xterm);
-			    *args_ptr++ = malloc_strdup("-geometry");
-			    *args_ptr++ = malloc_strdup(geom);
-			    while (opts && *opts)
-				*args_ptr++ = malloc_strdup(new_next_arg(opts, &opts));
-			    *args_ptr++ = malloc_strdup("-e");
-			}
-
-			*args_ptr++ = malloc_strdup(wserv_path);
-			*args_ptr++ = malloc_strdup("localhost");
-			*args_ptr++ = malloc_strdup(ltoa((long)port));
-			*args_ptr++ = NULL;
 
 			execvp(args[0], args);
 			_exit(0);

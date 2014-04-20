@@ -570,3 +570,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix a null deref in creating new window when all other windows are fixed
 * Fix some bugs that clang static analyzer found
 * Fix where /set -continued_line led to strange denormalize behavior (rb Tilt)
+* Add tmux support for /window create, (zlonix)
+

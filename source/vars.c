@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.117 2014/04/17 13:23:43 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.118 2014/04/20 02:10:05 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -446,6 +446,7 @@ void 	init_variables_stage1 (void)
 	VAR(SUPPRESS_FROM_REMOTE_SERVER, BOOL, NULL);
 	VAR(SWITCH_CHANNELS_BETWEEN_WINDOWS, BOOL, NULL);
 	VAR(TERM_DOES_BRIGHT_BLINK, BOOL, NULL);
+	VAR(TMUX_OPTIONS, STR,  NULL);
 	VAR(USER_INFORMATION, STR, NULL);
 	VAR(WORD_BREAK, STR,  NULL);
 #define DEFAULT_WSERV_PATH WSERV_PATH
@@ -1085,8 +1086,10 @@ static void    set_wserv_type (void *stuff)
 		return;		/* It's ok */
 	if (!my_stricmp(s, "XTERM"))
 		return;		/* It's ok */
+	if (!my_stricmp(s, "TMUX"))
+		return;		/* It's ok */
 
-	say("SET WSERV_TYPE must be either SCREEN or XTERM");
+	say("SET WSERV_TYPE must be either SCREEN, XTERM or TMUX");
 	new_free(&v->string);
 }
 
