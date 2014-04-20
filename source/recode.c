@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.22 2014/04/19 14:19:57 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.23 2014/04/20 12:54:52 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -930,21 +930,20 @@ int     ucs_to_console (u_32int_t codepoint, unsigned char *deststr, size_t dest
 	size_t	utf8strsiz;
 	iconv_t	xlat = (iconv_t)-1;
 	int	n;
-	char *	x;
-	const char *	s;
-	size_t	slen, xlen;
+	char *	source;
+	char *	dest;
 
 	utf8strsiz = ucs_to_utf8(codepoint, utf8str, 16) + 1;
-	find_recoding("console", NULL, &xlat);
+	source = utf8str;
 
+	find_recoding("console", NULL, &xlat);
 	/* XXX What to do is 'xlat' is (iconv_t)-1? */
 	if (xlat == (iconv_t)-1)
 		return -1;	/* What to do? */
 
-	s = utf8str;
-	x = deststr;
+	dest = deststr;
 
-	if ((n = iconv(xlat, &s, &utf8strsiz, &x, &deststrsiz)) != 0)
+	if ((n = iconv(xlat, &source, &utf8strsiz, &dest, &deststrsiz)) != 0)
 	{
 		if (errno == EINVAL || errno == EILSEQ)
 		{

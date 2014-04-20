@@ -1,5 +1,13 @@
 EPIC5-1.1.9
 
+*** News 04/19/2014 -- Support for tmux for /WINDOW CREATE
+	If you run EPIC under tmux, you can now use /window create and it
+	will create new screens running under other tmux screens, just like
+	it does for gnu screen.  There is also /set tmux_options, but I did
+	not really test that.  What EPIC does is run this command:
+
+	  tmux new-window "<wserv_path> <tmux_options> localhost [port]"
+
 *** News 04/17/2014 -- /SET TRANSLATION now retired
 	The /SET TRANSLATION feature which has served us well for many
 	years is now superceded by /ENCODING, and has been retired.

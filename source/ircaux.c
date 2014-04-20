@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.255 2014/04/19 14:19:57 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.256 2014/04/20 12:54:52 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -6217,14 +6217,26 @@ static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *met
 		close_it = 1;
 	int	id;
 	char 	*dest_ptr;
-const	char 	*orig_ptr;
+	char 	*orig_ptr;
+	iconv_t encoding;
 
         if (!orig || !dest || dest_len <= 0)
                 return -1;
 
-	iconv_t encoding;
 	dest_ptr = (char *) dest;
-	orig_ptr = orig;	
+
+	/* 
+	 * Old libiconv(), esp as used by FreeBSD expects the 2nd argument
+	 * to iconv() to be (const char **), but POSIX iconv() requires
+	 * it to be (char **), and these cannot be reconciled through a 
+	 * cast [see the comp.lang.c faq for a good explanation], so I chose
+	 * to have non-standard iconv() result in the warning.
+	 *
+	 * The xform subsystem requires all inputs to be treated
+	 * as const, so as a special case, I cast away the cast for
+	 * iconv because i trust it to behave itself.
+	 */
+	orig_ptr = (char *)(intptr_t)orig;
 
 	if ((*(const char *)meta) == '+' || (*(const char*)meta) == '-')
 	{
@@ -6271,7 +6283,7 @@ const	char 	*orig_ptr;
 	}
 
 	/* Stuff seems to be working... */
-	while ((n = iconv (encoding, &orig_ptr, &orig_left, &dest_ptr, 
+	while ((n = iconv(encoding, &orig_ptr, &orig_left, &dest_ptr, 
 		&dest_left)) != 0)
 	{
 		/* I *THINK* this is a hack. */
@@ -6720,8 +6732,7 @@ int	recode_with_iconv (const char *from, const char *to, char **data, size_t *nu
 	work_data = *data;
 	dest_ptr = retstr;
 
-        while ((n = iconv(iref, (const char **)&work_data, numbytes, 
-				&dest_ptr, &dest_left)) != 0)
+        while ((n = iconv(iref, &work_data, numbytes, &dest_ptr, &dest_left)) != 0)
         {
                 /* I *THINK* this is a hack. */ 
                 if (errno == EINVAL || errno == EILSEQ)
@@ -6795,8 +6806,7 @@ int	recode_with_iconv_t (iconv_t iref, char **data, size_t *numbytes)
 	work_data = *data;
 	dest_ptr = retstr;
 
-        while ((n = iconv(iref, (const char **)&work_data, numbytes, 
-				&dest_ptr, &dest_left)) != 0)
+        while ((n = iconv(iref, &work_data, numbytes, &dest_ptr, &dest_left)) != 0)
         {
                 /* I *THINK* this is a hack. */ 
                 if (errno == EINVAL || errno == EILSEQ)

@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.177 2014/04/20 02:10:05 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.178 2014/04/20 12:54:52 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -3674,7 +3674,7 @@ const	unsigned char *	s;
 	char		dest_ptr[32];
 	size_t		dest_left;
 	int		codepoint;
-const 	char *		in;
+	char *		in;
 	size_t		inlen;
 	char *		out;
 	size_t		outlen;
@@ -3684,6 +3684,19 @@ const 	char *		enc;
 static	int		prev_char = -1;
 static	int		suspicious = 0;
 static	int		never_warn_again = 0;
+
+	/*
+	 * This is "impossible", but I'm just being safe.
+	 */
+	if (workbuf_idx > 30)
+	{
+		/* Whatever we have isn't useful. flush it. */
+		workbuf_idx = 0;
+		*workbuf = 0;
+		prev_char = -1;
+		suspicious = 0;
+		return;
+	}
 
 	workbuf[workbuf_idx++] = byte;
 	workbuf[workbuf_idx] = 0;
@@ -3729,7 +3742,7 @@ static	int		never_warn_again = 0;
 	prev_char = byte;
 
 	/* Convert whatever the user is typing into UTF8 */
-	if ((n = iconv(xlat, (const char **)&in, &inlen, &out, &outlen)) != 0)
+	if ((n = iconv(xlat, &in, &inlen, &out, &outlen)) != 0)
 	{
 		if (errno == EILSEQ)
 		{
