@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.109 2014/04/02 17:37:08 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.110 2014/04/21 20:06:16 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -326,6 +326,66 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 	pop_message_from(l);
 }
 
+/*
+ * p_privmsg - Handle PRIVMSG messages from irc server
+ *
+ * Arguments:
+ *	from	- The sender of the PRIVMSG (usually a nick; servers uncommon)
+ *	comm	- The actual protocol command ("PRIVMSG")
+ *	ArgList - Arguments to the PRIVMSG:
+ *	  ArgList[0] - The receiver of the message (nick or channel)
+ *	  ArgList[1] - Payload of the message
+ *
+ * Notes:
+ *   PRIVMSGs may be sent to
+ *	1. A nick (our nick)
+ *	2. A channel (that we're on)
+ *	3. A prefix + A channel (eg "@#channel" or "+#channel")
+ *	   We treat this as #2.
+ *	4. Something else (a wall, ie, "*.iastate.edu")
+ *
+ *   PRIVMSG are sorted into several piles:
+ *	"PUBLIC" level:
+ *	1. Someone on the channel sends a message to channel	-> PUBLIC
+ *	    + The channel is current channel in any window
+ *	2. Someone on the channel sends a message to channel	-> PUBLIC_OTHER
+ *	    + The channel is NOT a current channel on any window
+ *	3. Someone not on channel sends a message to channel	-> PUBLIC_MSG
+ * 
+ *	"MSG" level:
+ *	4. A message sent to our nickname			-> MSG
+ *
+ *	"WALL" level:
+ *	5. A message sent to any other target			-> MSG_GROUP
+ *
+ *
+ *   Processing
+ *   ==========
+ *   CTCPs are delivered via PRIVMSGs, causing a rewrite of ArgList[1].
+ *	+ Most CTCPs are just removed (CTCP requests)
+ *	+ Some do in-place substitution (Encryption - ie, CTCP CAST5)
+ *	+ CTCP handling happens first, before anything below
+ *	+ CTCP handling does its own ignore, flood control, and throttling.
+ *  
+ *   If the PRIVMSG contains nothing after CTCP handling, then stop.
+ *
+ *   First, IGNOREs are checked. (CTCPs do their own ignore handling)
+ * 
+ *   If the PRIVMSG is encrypted, it will first be offered via
+ *	/ON ENCRYPTED_PRIVMSG no matter who sent it or to whom 
+ *	it was sent.
+ *
+ *   Next, flood control is checked.  
+ *
+ *   All PRIVMSGs are offered via /ON GENERAL_PRIVMSG,
+ *	no matter who sent it or to whom it was sent.  
+ *
+ *   All PRIVMSGs are offered via their respective types (see above)
+ *
+ *   Otherwise, a default message is output.
+ *
+ *   Finally, /NOTIFY is checked.
+ */
 static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 {
 	const char	*real_target, *target, *message;

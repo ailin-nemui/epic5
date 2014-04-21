@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.71 2013/07/28 23:16:14 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.72 2014/04/21 20:06:16 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -402,8 +402,17 @@ ssize_t	dgets (int vfd, char *buf, size_t buflen, int buffer)
 
 /*************************************************************************/
 /*
- * do_wait: called when all of the fd's are clean, and we want to go to sleep
- * until an fd is dirty again (or a timer goes off)
+ * do_wait -- The main sleeping routine.  When all of the fd's are clean,
+ *	      go to sleep until an fd is dirty or a /TIMER goes off.
+ *
+ * Arguments:
+ *	timeout	- A value previously returned by TimerTimeout().
+ *		  'Timeout' is decremented by the time spent waiting.
+ *
+ * Return Value:
+ *	-1	Interrupted System Call (ie, EINTR caused by ^C)
+ *	 0	The timeout has expired (ie, call ExecuteTimers())
+ *	 1	An fd is dirty (ie, call do_filedesc())
  */
 int 	do_wait (Timeval *timeout)
 {

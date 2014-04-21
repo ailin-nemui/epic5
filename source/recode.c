@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.23 2014/04/20 12:54:52 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.24 2014/04/21 20:06:16 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -1168,7 +1168,8 @@ int	mklower_l (int codepoint)
 int	sanity_check_encoding (const char *encoding)
 {
 	iconv_t		ti;
-	unsigned char	c, *cstr;
+	unsigned char	c;
+	char		*cstr;
 	size_t		c_size;
 	char		utf8str[16], *x;
 	size_t		x_size;
@@ -1211,7 +1212,7 @@ int	sanity_check_encoding (const char *encoding)
 	for (i = 32; i < 255; i++)
 	{
 		c = (unsigned char)i;
-		cstr = &c;
+		cstr = (char *)&c;
 		c_size = 1;
 		x = utf8str;
 		x_size = sizeof(utf8str);

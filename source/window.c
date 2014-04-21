@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.245 2014/04/19 14:19:57 jnelson Exp $ */
+/* $EPIC: window.c,v 1.246 2014/04/21 20:06:16 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -859,6 +859,7 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
 		screen->visible_windows++;
 		new_w->screen = screen;
 		screen->window_list_end = screen->window_list = new_w;
+		new_w->my_columns = screen->co;	/* Whatever */
 
 		if (dumb_mode)
 		{
@@ -964,6 +965,7 @@ Window *add_to_window_list (Screen *screen, Window *new_w)
 	/* Now point it to the screen.... */
 	new_w->screen = screen;
 	screen->visible_windows++;
+	new_w->my_columns = screen->co;		/* Whatever */
 
 	/* Now let recalculate_windows() handle any overages */
 	recalculate_windows(screen);

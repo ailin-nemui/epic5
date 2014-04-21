@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.67 2014/04/09 17:51:07 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.68 2014/04/21 20:06:16 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -212,7 +212,8 @@ CTCP_HANDLER(do_crypto)
 	Crypt	*key = NULL;
 	const char	*crypt_who;
 	char 	*tofrom;
-	char	*ret = NULL, *ret2 = NULL;
+	char	*ret = NULL;
+	char 	*extra = NULL;
 
 	if (*from == '=')		/* DCC CHAT message */
 		crypt_who = from;
@@ -230,45 +231,68 @@ CTCP_HANDLER(do_crypto)
 
 	new_free(&tofrom);
 
-	if (!key || !ret) {
-		sed = 2;
-		malloc_strcpy(&ret2, "[ENCRYPTED MESSAGE]");
-	} else {
-		char *extra = NULL;
-
-		/* We might not need to recode since do_ctcp now does it */
-		/* We just need to decrypt */
-#if 0
-		/*
-		 * We must recode to UTF8
-		 */
-                inbound_recode(from, from_server, to, ret, &extra);
-		if (extra)
-		{
+	/*
+	 * Key would be NULL if someone sent us a rogue encrypted
+	 * message (ie, we don't have a password).  Ret should never
+	 * be NULL (but we can be defensive against the future).
+	 * In either case, something went seriously wrong.
+	 */
+	if (!key || !ret) 
+	{
+		if (ret)
 			new_free(&ret);
-			ret = extra;
-		}
-#endif
 
-		/* 
-		 * There might be a CTCP message in there,
-		 * so we see if we can find it.
-		 */
-		if (get_server_doing_privmsg(from_server))
-			ret2 = malloc_strdup(do_ctcp(from, to, ret));
-		else if (get_server_doing_notice(from_server))
-			ret2 = malloc_strdup(do_notice_ctcp(from, to, ret));
-		else
-		{
-			ret2 = ret;
-			ret = NULL;
-		}
+		sed = 2;
+		malloc_strcpy(&ret, "[ENCRYPTED MESSAGE]");
+		return ret;
+	} 
 
-		sed = 1;
+
+	/*
+	 * NOW WE HANDLE THE DECRYPTED MESSAGE....
+	 */
+
+	/*
+	 * CTCP messages can be recursive (ie, a decrypted msg
+	 * might yield another CTCP message), and so we must not
+	 * recode until we have removed any sub-ctcps!
+	 */
+	if (get_server_doing_privmsg(from_server))
+		extra = malloc_strdup(do_ctcp(from, to, ret));
+	else if (get_server_doing_notice(from_server))
+		extra = malloc_strdup(do_notice_ctcp(from, to, ret));
+	else
+	{
+		extra = ret;
+		ret = NULL;
 	}
 
 	new_free(&ret);
-	return ret2;
+	ret = extra;
+	extra = NULL;
+
+	/*
+	 * What we're left with is just the plain part of the CTCP.
+	 * In rfc1459_any_to_utf8(), CTCP messages are specifically
+	 * detected and ignored [because recoding binary data will
+	 * corrupt the data].  But that does not mean the message
+	 * doesn't need decoding -- it just needs to be done after
+	 * the message is decrypted.
+	 */
+	inbound_recode(from, from_server, to, ret, &extra);
+
+	/*
+	 * If a recoding actually occurred, free the source string
+	 * and then use the decoded string going forward.
+	 */
+	if (extra)
+	{
+		new_free(&ret);
+		ret = extra;
+	}
+
+	sed = 1;
+	return ret;
 }
 
 CTCP_HANDLER(do_utc)
@@ -789,6 +813,20 @@ static	time_t	last_ctcp_parsed = 0;
 			continue;
 		}
 
+		/*
+		 * rfc1459_any_to_utf8 specifically ignores CTCPs, because
+		 * recoding binary data (such as an encrypted message) would
+		 * corrupt the message.  
+		 *
+		 * So some CTCPs are "recodable" and some are not.
+		 *
+		 * The CTCP_NORECODE is set for any CTCPs which are NOT
+		 * to be recoded prior to handling.  These are the encryption
+		 * CTCPS.
+		 *
+		 * All other CTCPs have not been recoded by the time they
+		 * reach here, so we must do it here!
+		 */
 		if (!(ctcp_cmd[i].flag & CTCP_NORECODE))
 		{
 		   /*

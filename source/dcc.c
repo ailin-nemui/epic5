@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.171 2014/04/09 17:51:07 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.172 2014/04/21 20:06:16 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -3729,7 +3729,7 @@ static void	process_dcc_send_data (DCC_list *dcc)
 		 * Bug the user
 		 */
 		if (x_debug & DEBUG_DCC_XMIT)
-		    yell("Sending packet [%s [%s] (packet XXX) (%d bytes)]",
+		    yell("Sending packet [%s [%s] (packet XXX) (%ld bytes)]",
 			dcc->user, dcc->othername, bytesread);
 
 		/*
