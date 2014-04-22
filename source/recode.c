@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.24 2014/04/21 20:06:16 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.25 2014/04/22 14:05:30 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -888,7 +888,7 @@ const char *	inbound_recode (const char *from, int server, const char *to, const
 
 	/* The easiest thing is to accept it if it's valid UTF-8 */
 	msg = LOCAL_COPY(message);
-	if (!invalid_utf8str(msg))
+	if (!is_iso2022_jp(msg) && !invalid_utf8str(msg))
 		return message;
 	
 	/* If there is no place to put the retval, don't do anything */

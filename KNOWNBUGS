@@ -575,4 +575,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Revamp do_crypto() to recode messages after decryption.  Somehow missed this
 * Add comments to various functions that I think deserve it.
 * Windows added to screens must have their "my_cols" set!
+* Add support for detecting iso2022-jp for fusion (Japenese non-utf8 encoding)
 

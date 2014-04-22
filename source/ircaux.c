@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.256 2014/04/20 12:54:52 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.257 2014/04/22 14:05:30 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -7013,6 +7013,70 @@ int	invalid_utf8str (unsigned char *utf8str)
 	}
 
 	return errors;
+}
+
+/*
+ * is_iso2022_jp - Test whether a string is encoded in iso2022_jp.
+ *
+ * Arguments:
+ *	buffer - A string to be tested for iso2022-ness
+ *
+ * Return Value:
+ *	1 	At least one ISO2022-JP escape sequence was found
+ *	0	No ISO2022-JP escape sequences were found.
+ *
+ * Notes:
+ *	Ideally we could do this test by running it through iconv().
+ * 	I would like to support other ISO2022's as well, but I don't
+ *		have anyone to test them.
+ * 	I would like to support other non-ISO2022's, but again, I don't
+ *		have anyone to test them.
+ */
+int	is_iso2022_jp (const unsigned char *buffer)
+{
+	static	iconv_t	iso2022_jp = (iconv_t) -2;
+	const unsigned char *x;
+	int	found_one = 0;
+
+	/* ISO-2022-JP has no 8 bit chars. */
+	for (x = buffer; *x; x++)
+		if (*x & 0x80)
+			return 0;
+
+	/* ISO-2022-JP has to have a 2022 <escape> sequence somewhere */
+	for (x = buffer; *x; x++)
+	{
+	    if (*x == 0x1B)	/* Escape */
+	    {
+		if (x[1] == '$')
+		{
+			if (x[2] == '@')
+				found_one++;
+			else if (x[2] == 'B')
+				found_one++;
+			else if (x[2] == '(')
+			{
+				if (x[3] == 'D')
+					found_one++;
+			}
+		}
+		else if (x[1] == '(')
+		{
+			if (x[2] == 'B')
+				found_one++;
+			else if (x[2] == 'I')
+				found_one++;
+			else if (x[2] == 'J')
+				found_one++;
+		}
+	    }
+	}
+
+	/* I could run the string through iconv() to see if it converts.. */
+	if (found_one)
+		return 1;
+
+	return 0;
 }
 
 /*

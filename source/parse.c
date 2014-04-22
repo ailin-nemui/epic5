@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.110 2014/04/21 20:06:16 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.111 2014/04/22 14:05:30 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1630,8 +1630,23 @@ void	rfc1459_any_to_utf8 (char *buffer, size_t buffsiz, char **extra)
 	if (x_debug & DEBUG_RECODE)
 		yell(">> Received %s", buffer);
 
+	/*
+	 * For the benefit of Fusion, I want to support ISO-2022-JP.
+	 * This encoding is "valid" UTF-8, but is not UTF-8.  So we need
+	 * to check it first.
+	 *
+	 * Please see http://www.sljfaq.org/afaq/encodings.html
+	 * There are other Japanese encodings that collide with UTF-8,
+	 * but I don't have any users to test, so I'm focused on what
+	 * I can actually test.
+	 */
+	if (is_iso2022_jp(buffer))
+	{
+		if (x_debug & DEBUG_RECODE)
+			yell(">> This looks like a JIS message...");
+	}
 	/* If the data is already utf8, then do nothing. */
-	if ((bytes = invalid_utf8str(buffer)) == 0)
+	else if ((bytes = invalid_utf8str(buffer)) == 0)
 	{
 		return;
 	}
@@ -1673,7 +1688,7 @@ void	rfc1459_any_to_utf8 (char *buffer, size_t buffsiz, char **extra)
 	 * If the server part is not in utf8, then we need to convert it to
 	 * utf8 using the server's encoding to get nicks and channels in utf8.
 	 */
-	if (invalid_utf8str(server_part))
+	if (is_iso2022_jp(server_part) || invalid_utf8str(server_part))
 	{
 		if (x_debug & DEBUG_RECODE)
 			say(">> Need to recode server part for %d", from_server);
@@ -1696,7 +1711,9 @@ void	rfc1459_any_to_utf8 (char *buffer, size_t buffsiz, char **extra)
 	 * to figure out who sent this message, and recode it with their
 	 * encoding.  This deals with channels and nicks already in utf8.
 	 */
-	if (*payload_part && invalid_utf8str(payload_part)) do
+	if (*payload_part && 
+	     (is_iso2022_jp(payload_part) || invalid_utf8str(payload_part))) 
+	do
 	{
 		char *	server_part_copy;
 
