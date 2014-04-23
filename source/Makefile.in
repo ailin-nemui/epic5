@@ -17,7 +17,7 @@ OBJECTS = alias.o alist.o array.o clock.o commands.o compat.o crypt.o crypto.o \
 	lastlog.o levels.o list.o log.o logfiles.o mail.o names.o network.o \
 	newio.o notify.o numbers.o output.o parse.o @PERLDOTOH@ queue.o \
 	recode.o reg.o @RUBYDOTOH@ screen.o sdbm.o server.o sha2.o ssl.o \
-	status.o @TCLDOTOH@ term.o timer.o vars.o who.o window.o \
+	status.o @TCLDOTOH@ term.o timer.o vars.o wcwidth.o who.o window.o \
 	words.o @ALLOCA@
 
 INCLUDES = -I@srcdir@/../include -I../include
@@ -308,7 +308,7 @@ ircaux.o: ircaux.c ../include/irc.h ../include/defs.h ../include/config.h \
   ../include/ircaux.h ../include/vars.h ../include/ifcmd.h \
   ../include/words.h ../include/ctcp.h ../include/server.h \
   ../include/who.h ../include/sedcrypt.h ../include/elf.h \
-  ../include/irc.h wcwidth.c
+  ../include/irc.h 
 ircsig.o: ircsig.c ../include/irc.h ../include/defs.h ../include/config.h \
   ../include/irc_std.h ../include/debug.h \
   ../include/irc_std.h
@@ -554,6 +554,8 @@ vars.o: vars.c ../include/irc.h ../include/defs.h ../include/config.h \
   ../include/timer.h ../include/clock.h ../include/keys.h \
   ../include/mail.h ../include/reg.h ../include/commands.h \
   ../include/ifcmd.h
+wcwidth.o: wcwidth.c ../include/irc.h ../include/defs.h ../include/config.h \
+  ../include/irc_std.h ../include/debug.h ../include/output.h
 who.o: who.c ../include/irc.h ../include/defs.h ../include/config.h \
   ../include/irc_std.h ../include/debug.h \
   ../include/commands.h ../include/ircaux.h ../include/compat.h \

@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.47 2014/03/21 22:01:33 jnelson Exp $ */
+/* $EPIC: if.c,v 1.48 2014/04/23 17:36:50 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -303,6 +303,7 @@ BUILT_IN_COMMAND(whilecmd)
 		*body = NULL,
 		*newexp = NULL;
 	int 	whileval = !strcmp(command, "WHILE");
+	size_t	sigh;
 
 	if (!args)
 		return;
@@ -330,7 +331,8 @@ BUILT_IN_COMMAND(whilecmd)
 
 	will_catch_break_exceptions++;
 	will_catch_continue_exceptions++;
-	newexp = alloca(strlen(exp) + 2);
+	sigh = strlen(exp) + 1;		/* Just to make clang shut up */
+	newexp = alloca(sigh + 1);
 	while (1)
 	{
 		/* 
@@ -339,7 +341,7 @@ BUILT_IN_COMMAND(whilecmd)
 		 * parse_inline() will mangle our string
 		 * The use of strlen(exp)+1 is intentional.
 		 */
-		strlcpy(newexp, exp, strlen(exp) + 1);
+		strlcpy(newexp, exp, sigh);
 		ptr = parse_inline(newexp, subargs);
 		if (check_val(ptr) != whileval)
 			break;
@@ -749,13 +751,14 @@ static BUILT_IN_COMMAND(loopcmd)
  */
 BUILT_IN_COMMAND(forcmd)
 {
-	char        *working        = NULL;
-	char        *commence       = NULL;
-	char        *evaluation     = NULL;
-	char        *lameeval       = NULL;
-	char        *iteration      = NULL;
-	char        *blah           = NULL;
-	char        *commands       = NULL;
+	char *	working    = NULL;
+	char *	commence   = NULL;
+	char *	evaluation = NULL;
+	char *	lameeval   = NULL;
+	char *	iteration  = NULL;
+	char *	blah       = NULL;
+	char *	commands   = NULL;
+	size_t	sigh;
 
 	if (!subargs)
 		subargs = empty_string;
@@ -804,10 +807,16 @@ BUILT_IN_COMMAND(forcmd)
 
 	will_catch_break_exceptions++;
 	will_catch_continue_exceptions++;
-	lameeval = alloca(strlen(evaluation) + 2);
+	sigh = strlen(evaluation) + 1;
+	lameeval = alloca(sigh + 1);
 	while (1)
 	{
-		strlcpy(lameeval, evaluation, strlen(evaluation) + 1);
+		/* 
+		 * This is very intentional.
+		 * "lameeval" gets mangled every time through, so we need
+		 * to take a fresh copy from scratch each time.
+		 */
+		strlcpy(lameeval, evaluation, sigh);
 		blah = parse_inline(lameeval, subargs);
 		if (!check_val(blah))
 		{

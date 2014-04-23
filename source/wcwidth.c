@@ -64,6 +64,7 @@
  */
 
 #include "irc.h"
+#include "output.h"
 
 struct interval {
   int first;
@@ -218,19 +219,17 @@ int     next_code_point (const unsigned char **i)
         int     offset;
         unsigned char    a, b, c, d;
         const unsigned char *str;
-        int     result = -1;
-static	const unsigned char *sanity = NULL;
+        int     result;
 
-	if (*i == sanity)
-	{
-		yell("XXX####XXX NEXT_CODE_POINT LOOP XXX####XXX");
-		yell("The previous call to next_code_point failed and it was immediately called again with the same (broken) string.  This will result in an infinite loop.  I'm returning 0 hoping to stop this.");
-		return 0;
-	}
+	if (!i || !*i)
+		return 0;	/* What is this? */
 
-
+    /* Keep skipping bytes until we find one that works */
+    for (; (**i); (*i)++)
+    {
         str = *i;
         a = b = c = d = 0;
+	result = -1;
 
 	/* Forcibly refuse to walk past the nul */
 	if (!str[0])
@@ -279,11 +278,7 @@ static	const unsigned char *sanity = NULL;
 				(c & 0x3f);
                     (*i) += 3;
                   }
-		  else
-			/*yell("3 bytes - byte 3 was bad %X", (int)c)*/;
 		}
-		else
-			/*yell("3 bytes - byte 2 was bad %X", (int)b)*/;
         }
 
         /* The 4 high bits are set only?  -- 4 bytes*/
@@ -305,23 +300,15 @@ static	const unsigned char *sanity = NULL;
 		}
         }
 
-	else if ((a & 0x80) == 0x80)
-	{
-		/*yell("? bytes: byte 1 was bad: %X", (int)a);*/
-	}
-
 	/* If result is -1, something is wrong */
 	if (result == -1)
-	{
-		sanity = *i;
-/*
-		yell("next_code_point: result == -1 for [%s] [%d] [%d] [%d] [%d]", (*i), (int)a, (int)b, (int)c, (int)d);
-*/
-	}
-	else
-		sanity = NULL;
+		continue;
 
         return result;
+    }
+
+    /* If we hit the end of the string, return nul */
+    return 0;
 }
 
 /*
@@ -442,9 +429,7 @@ int     partial_code_point (const unsigned char *i)
 			return -1;
         }
 
-	else
-		return -1;
-
+	return -1;
 }
 
 

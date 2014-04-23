@@ -576,4 +576,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add comments to various functions that I think deserve it.
 * Windows added to screens must have their "my_cols" set!
 * Add support for detecting iso2022-jp for fusion (Japenese non-utf8 encoding)
-
+* Plaster over two lame clang warnings in if.c so i don't have to look at them.
+* Don't #include "wcwidth.c" from ircaux.c, compile on its own
+* Make next_code_point() self-synchronizing; callers doesn't have to handle err

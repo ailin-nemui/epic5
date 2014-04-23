@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.257 2014/04/22 14:05:30 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.258 2014/04/23 17:36:50 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -6886,8 +6886,6 @@ int	ucs_to_utf8 (u_32int_t key, unsigned char *utf8str, size_t utf8strsiz)
 		return 4;
 	}
 }
-
-#include "wcwidth.c"
 
 /*
  * strext2 - Remove (and return) the middle part of a buffer
