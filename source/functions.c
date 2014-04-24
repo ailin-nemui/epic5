@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.317 2014/04/12 15:14:15 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.318 2014/04/24 04:51:42 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -1019,7 +1019,7 @@ BUILT_IN_FUNCTION(function_left, word)
 
 	count = 0;
 	s = word;
-	while ((code_point = next_code_point((const unsigned char **)&s)))
+	while ((code_point = next_code_point((const unsigned char **)&s, 0)))
 	{
 		/* Invalid CPs count as 1, + we skip them. */
 		if (code_point == -1)
@@ -1062,7 +1062,7 @@ BUILT_IN_FUNCTION(function_right, word)
 	/* Skip the first 'ignores' CPs */
 	ignores = total - keepers;
 	s = word;
-	while ((code_point = next_code_point((const unsigned char **)&s)))
+	while ((code_point = next_code_point((const unsigned char **)&s, 0)))
 	{
 		/* Invalid CPs count as 1, + we skip them. */
 		if (code_point == -1)
@@ -1109,7 +1109,7 @@ BUILT_IN_FUNCTION(function_mid, word)
 	for (s = word, count = 0; count < start; count++)
 	{
 		/* Invalid CPs count as 1, and we skip them. */
-		code_point = next_code_point((const unsigned char **)&s);
+		code_point = next_code_point((const unsigned char **)&s, 0);
 		if (code_point == -1)
 			s++;
 	}
@@ -1124,7 +1124,7 @@ BUILT_IN_FUNCTION(function_mid, word)
 	/* Otherwise count off 'keepers' CPs */
 	count = 0;
 	s = retval;
-	while ((code_point = next_code_point((const unsigned char **)&s)))
+	while ((code_point = next_code_point((const unsigned char **)&s, 0)))
 	{
 		/* Invalid CPs count as 1, + we skip them. */
 		if (code_point == -1)
@@ -1446,11 +1446,11 @@ BUILT_IN_FUNCTION(function_strip, input)
 	r = result = (char *)new_malloc(strlen(input) + 1);
 
 	p = input;
-	while ((c = next_code_point(&p)))
+	while ((c = next_code_point(&p, 1)))
 	{
 		found = 0;
 		s = search;
-		while ((d = next_code_point(&s)))
+		while ((d = next_code_point(&s, 1)))
 		{
 			if (c == d)
 			{
@@ -2850,7 +2850,7 @@ BUILT_IN_FUNCTION(function_sar, input)
 			RETURN_EMPTY;
 		else
 		{
-			while ((delimiter = next_code_point((const unsigned char **)&input)) == -1)
+			while ((delimiter = next_code_point((const unsigned char **)&input, 0)) == -1)
 				input++;
 
 			break;
@@ -2965,7 +2965,7 @@ BUILT_IN_FUNCTION(function_fix_width, word)
 		RETURN_EMPTY;
 
 	GET_DWORD_ARG(fillchar_str, word);
-	fillchar = next_code_point((const unsigned char **)&fillchar_str);
+	fillchar = next_code_point((const unsigned char **)&fillchar_str, 1);
 
 	retval = fix_string_width(word, justifynum, fillchar, width);
 	RETURN_MSTR(retval);
@@ -3003,12 +3003,12 @@ const	unsigned char	*p, *s;
 
 	/* For each code point in the source string... */
 	p = word;
-	while ((c = next_code_point(&p)))
+	while ((c = next_code_point(&p, 1)))
 	{
 		/* Look for that same code point in the search string */
 		found = 0;
 		s = search;
-		while ((d = next_code_point(&s)))
+		while ((d = next_code_point(&s, 1)))
 		{
 			if ((c == d) + inverted == 1)
 			{
@@ -3224,7 +3224,7 @@ BUILT_IN_FUNCTION(function_unicode, word)
 		RETURN_EMPTY;
 
 	s = word;
-	while ((code_point = next_code_point(&s)))
+	while ((code_point = next_code_point(&s, 0)))
 	{
 		/* Skip invalid bytes/sequences */
 		if (code_point == -1)
@@ -3484,7 +3484,7 @@ BUILT_IN_FUNCTION(function_translate, input)
 	 * By convention, this is a slash ('/'), but it doesn't have to be.
 	 */
 	s = input;
-	while ((delim = next_code_point((const unsigned char **)&s)) == -1)
+	while ((delim = next_code_point((const unsigned char **)&s, 0)) == -1)
 		s++;
 
 	/*
@@ -3498,7 +3498,7 @@ BUILT_IN_FUNCTION(function_translate, input)
 	for (;;)
 	{
 		p = s;
-		while ((codepoint = next_code_point((const unsigned char **)&s)) == -1)
+		while ((codepoint = next_code_point((const unsigned char **)&s, 0)) == -1)
 			s++;
 		if (codepoint == 0)
 			RETURN_EMPTY;
@@ -3527,7 +3527,7 @@ BUILT_IN_FUNCTION(function_translate, input)
 	for (;;)
 	{
 		p = s;
-		while ((codepoint = next_code_point((const unsigned char **)&s)) == -1)
+		while ((codepoint = next_code_point((const unsigned char **)&s, 0)) == -1)
 			s++;
 		if (codepoint == 0)
 			RETURN_EMPTY;
@@ -3558,7 +3558,7 @@ BUILT_IN_FUNCTION(function_translate, input)
 	 */
 	for (;;)
 	{
-		while ((codepoint = next_code_point((const unsigned char **)&text)) == -1)
+		while ((codepoint = next_code_point((const unsigned char **)&text, 0)) == -1)
 			text++;
 
 		/* The only way out is when we get the final nul. */
@@ -3584,8 +3584,8 @@ BUILT_IN_FUNCTION(function_translate, input)
 		p = chars_in;
 		for (;;)
 		{
-			char_out = next_code_point((const unsigned char **)&s);
-			char_in = next_code_point((const unsigned char **)&p);
+			char_out = next_code_point((const unsigned char **)&s, 1);
+			char_in = next_code_point((const unsigned char **)&p, 1);
 
 			/* 
 			 * This CP was not in 'char_out' -- copy it.
@@ -3971,11 +3971,11 @@ BUILT_IN_FUNCTION(function_pass, input)
 	r = result = (char *)new_malloc(strlen(input) + 1);
 
 	p = input;
-	while ((c = next_code_point(&p)))
+	while ((c = next_code_point(&p, 1)))
 	{
 		found = 0;
 		s = search;
-		while ((d = next_code_point(&s)))
+		while ((d = next_code_point(&s, 1)))
 		{
 			if (c == d)
 			{
@@ -5038,7 +5038,7 @@ BUILT_IN_FUNCTION(function_msar, input)
 			RETURN_EMPTY;
 		else
 		{
-			while ((delimiter = next_code_point((const unsigned char **)&input)) == -1)
+			while ((delimiter = next_code_point((const unsigned char **)&input, 0)) == -1)
 				input++;
 			break;
 		}
@@ -5059,7 +5059,7 @@ BUILT_IN_FUNCTION(function_msar, input)
 	 * last segment to the first byte of the following CP.
 	 */
 	p = s = last_segment;
-	next_code_point((const unsigned char **)&s);
+	next_code_point((const unsigned char **)&s, 1);
 	*p = 0;
 	last_segment = s;
 
@@ -5657,7 +5657,7 @@ BUILT_IN_FUNCTION(function_pad, input)
 	GET_DWORD_ARG(pads, input);
 	len = quick_display_column_count(input);
 
-	if ((codepoint = next_code_point((const unsigned char **)&pads)) == -1)
+	if ((codepoint = next_code_point((const unsigned char **)&pads, 0)) == -1)
 		codepoint = ' ';	/* Sigh */
 
 	if ((awidth = labs(width)) < len)
@@ -5847,7 +5847,7 @@ BUILT_IN_FUNCTION(function_rest, input)
 		/* Skip 'start' code points at the start */
 		x = input;
 		while (start-- > 0)
-			next_code_point((const unsigned char **)&x);
+			next_code_point((const unsigned char **)&x, 1);
 		RETURN_STR(x);
 	}
 	else
@@ -6372,7 +6372,7 @@ BUILT_IN_FUNCTION(function_indextoword, input)
 
 	s = input;
 	for (i = 0; i < pos; i++)
-		next_code_point((const unsigned char **)&s);
+		next_code_point((const unsigned char **)&s, 1);
 
 	/*
 	 * This is a special case to handle multiple runs of words.
@@ -6434,7 +6434,7 @@ BUILT_IN_FUNCTION(function_insert, input)
 		if (!*s)
 			break;
 
-		while (next_code_point((const unsigned char **)&s) == -1)
+		while (next_code_point((const unsigned char **)&s, 0) == -1)
 			s++;
 		where--;
 	}

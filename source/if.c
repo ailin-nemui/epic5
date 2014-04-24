@@ -1,4 +1,4 @@
-/* $EPIC: if.c,v 1.48 2014/04/23 17:36:50 jnelson Exp $ */
+/* $EPIC: if.c,v 1.49 2014/04/24 04:51:42 jnelson Exp $ */
 /*
  * if.c: the IF, WHILE, FOREACH, DO, FE, FEC, and FOR commands for IRCII 
  *
@@ -551,7 +551,7 @@ BUILT_IN_COMMAND(fe)
 			else
 			{
 				int	codepoint;
-				codepoint = next_code_point((const unsigned char **)&templist);
+				codepoint = next_code_point((const unsigned char **)&templist, 0);
 				if (codepoint == -1)
 				{
 					templist++;

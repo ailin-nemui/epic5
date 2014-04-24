@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.84 2014/04/16 20:29:59 jnelson Exp $ */
+/* $EPIC: input.c,v 1.85 2014/04/24 04:51:42 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -317,7 +317,7 @@ static int 	safe_puts (const unsigned char *str, int numcols)
 	int	allow_c1_chars = -1;
 
 	s = str;
-	while ((code_point = next_code_point(&s)))
+	while ((code_point = next_code_point(&s, 1)))
 	{
 		/* C1 chars have to be checked */
 		if (code_point >= 0x80 && code_point <= 0x9F)
@@ -399,7 +399,7 @@ int	retokenize_input (int start)
 
 	while (s && *s)
 	{
-		codepoint = next_code_point(&s);
+		codepoint = next_code_point(&s, 1);
 		cols = codepoint_numcolumns(codepoint);
 		/* Invalid chars are probably highlights */
 		if (cols == -1)

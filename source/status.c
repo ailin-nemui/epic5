@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.85 2014/03/21 12:58:12 jnelson Exp $ */
+/* $EPIC: status.c,v 1.86 2014/04/24 04:51:42 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -636,18 +636,8 @@ int	make_status (Window *window, Status *status)
 		cp = lhp;
 		lhs_buffer[0] = rhs_buffer[0] = 0;
 
-		while ((code_point = next_code_point(&s)))
+		while ((code_point = next_code_point(&s, 1)))
 		{
-			/* 
-			 * If we find an invalid code point, skip it.
-			 * XXX Surely this is wrong -- revisit later.
-			 */
-			if (code_point == -1)
-			{
-				s++;
-				continue;
-			}
-
 			/*
 			 * The FIRST such %> tag is used.
 			 * Using multiple %>s is bogus.

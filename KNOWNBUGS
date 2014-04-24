@@ -579,3 +579,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Plaster over two lame clang warnings in if.c so i don't have to look at them.
 * Don't #include "wcwidth.c" from ircaux.c, compile on its own
 * Make next_code_point() self-synchronizing; callers doesn't have to handle err
+* Update for topicbar from zlonix (rename topicbar.purge -> datapurge)
+* Modify next_code_point() to allow re-syncing or error reporting.
+* This fixes a bug where invalid_utf8string was broken (rb zlonix)
+* Adjust the wrapping point for long lines without breaks (rb fudd)
+

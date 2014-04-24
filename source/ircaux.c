@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.258 2014/04/23 17:36:50 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.259 2014/04/24 04:51:42 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -379,7 +379,7 @@ char *	upper (char *str)
 	char	*x, *y;
 
 	s = str;
-	while (x = s, (c = next_code_point((const unsigned char **)&s)))
+	while (x = s, (c = next_code_point((const unsigned char **)&s, 1)))
 	{
 		d = mkupper_l(c);
 		if (c != d)
@@ -411,7 +411,7 @@ char *	lower (char *str)
 	char	*x, *y;
 
 	s = str;
-	while (x = s, (c = next_code_point((const unsigned char **)&s)))
+	while (x = s, (c = next_code_point((const unsigned char **)&s, 1)))
 	{
 		d = mklower_l(c);
 		if (c != d)
@@ -488,7 +488,7 @@ ssize_t	stristr (const char *start, const char *srch)
 		 * 'p' to the next code point, instead of just returning -1
 		 * to indicate "lack of sync".
 		 */
-		while ((d = next_code_point((const unsigned char **)&p)) == -1)
+		while ((d = next_code_point((const unsigned char **)&p, 0)) == -1)
 			p++;
 
 		/* Not found */
@@ -615,7 +615,7 @@ char *	next_in_div_list (char *str, char **after, int delim)
 	int	c;
 
 	s = str;
-	while (p = s, (c = next_code_point((const unsigned char **)&s)))
+	while (p = s, (c = next_code_point((const unsigned char **)&s, 0)))
 	{
 		if (c == -1)
 		{
@@ -764,8 +764,8 @@ int	utf8_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t 
 
 	while (n-- > 0)
 	{
-		c1 = next_code_point(&s1);
-		c2 = next_code_point(&s2);
+		c1 = next_code_point(&s1, 1);
+		c2 = next_code_point(&s2, 1);
 
 		if (c1 == -1 || c2 == -1)
 			return *s1 - *s2;	/* What to do here? */
@@ -1315,10 +1315,10 @@ const unsigned char *	cpindex (const unsigned char *string, const unsigned char 
 	}
 
 	p = string;
-	while ((c = next_code_point(&p)))
+	while ((c = next_code_point(&p, 1)))
 	{
 		s = search;
-		while ((d = next_code_point(&s)))
+		while ((d = next_code_point(&s, 1)))
 		{
 			if ((c == d) + inverted == 1)
 			{
@@ -1353,7 +1353,7 @@ const unsigned char *	rcpindex (const unsigned char *where, const unsigned char 
 	while ((c = previous_code_point(string, &p)))
 	{
 		s = search;
-		while ((d = next_code_point(&s)))
+		while ((d = next_code_point(&s, 1)))
 		{
 			if ((c == d) + inverted == 1)
 			{
@@ -2560,7 +2560,7 @@ char *	strformat (char *dest, size_t destlen, const unsigned char *src, ssize_t 
 		char	utf8str[16];
 		char	utf8strlen;
 
-		codepoint = next_code_point(&src);
+		codepoint = next_code_point(&src, 1);
 		cols = codepoint_numcolumns(codepoint);
 		if (cols == -1)
 			cols = 1;	/* XXX is this right? */
@@ -6976,7 +6976,7 @@ int	invalid_utf8str (unsigned char *utf8str)
 	int	count = 0;
 
 	s = utf8str;
-	while ((code_point = next_code_point((const unsigned char **)&s)))
+	while ((code_point = next_code_point((const unsigned char **)&s, 0)))
 	{
 		/* The next byte did not start a utf8 code point */
 		if (code_point < 0)

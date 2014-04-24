@@ -200,7 +200,7 @@ alias topicbar.list
 		@ item++;
 	}
 };
-alias topicbar.purge
+alias topicbar.datapurge
 {
 	@ :l = [$*];
 	if (@l == 0)

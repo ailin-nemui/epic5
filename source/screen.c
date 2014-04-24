@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.178 2014/04/20 12:54:52 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.179 2014/04/24 04:51:42 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -1367,7 +1367,7 @@ unsigned char *	new_normalize_string (const unsigned char *str, int logical, int
 	output = (unsigned char *)new_malloc(maxpos + 192);
 	pos = 0;
 
-	while ((codepoint = next_code_point(&str)) > 0)
+	while ((codepoint = next_code_point(&str, 1)) > 0)
 	{
 	    if (pos > maxpos - 8)
 	    {
@@ -1827,7 +1827,7 @@ const	unsigned char	*cont_ptr;
 	 */
 	for (ptr = str; *ptr && (pos < BIG_BUFFER_SIZE - 8); )
 	{
-		codepoint = next_code_point(&ptr);
+		codepoint = next_code_point(&ptr, 1);
 
 		switch (codepoint)
 		{
@@ -1883,7 +1883,7 @@ const	unsigned char	*cont_ptr;
 			int	spacechar = 0;
 
 			xptr = words;
-			while ((cp = next_code_point(&xptr)))
+			while ((cp = next_code_point(&xptr, 1)))
 			{
 				if (codepoint == cp)
 				{
@@ -1922,8 +1922,14 @@ const	unsigned char	*cont_ptr;
 			int	ncp;
 			int	old_pos = pos;
 
+			/* 
+			 * 'ptr' points at the character after the
+			 * one we are evaluating: so 'x2' is used to
+			 * avoid changing ptr.  Therefore 'ncp' is the
+			 * "next code point" after the space.
+			 */
 			x2 = ptr;
-			ncp = next_code_point(&x2);
+			ncp = next_code_point(&x2, 1);
 
 			if (indent == 0)
 			{
@@ -1995,7 +2001,12 @@ const	unsigned char	*cont_ptr;
 			 * wrapped (such as for counting output length.
 			 */
 			if (word_break == 0 || (flags & PREPARE_NOWRAP))
+#if 0
 				word_break = pos;
+#else
+				word_break = pos - 1;
+#endif
+
 
 			/*
 			 * XXXX Massive hackwork here.
@@ -2019,7 +2030,11 @@ const	unsigned char	*cont_ptr;
 			 * it all comes down to it.  Good thing its cheap. ;-)
 			 */
 			if (!cont && (firstwb == word_break) && do_indent) 
+#if 0
 				word_break = pos;
+#else
+				word_break = pos - 1;
+#endif
 
 			/*
 			 * If we are approaching the number of lines that
@@ -2264,7 +2279,7 @@ const 	unsigned char	*ptr;
 	 */
 	for (ptr = str; *ptr && (pos < BIG_BUFFER_SIZE - 8); )
 	{
-	    codepoint = next_code_point(&ptr);
+	    codepoint = next_code_point(&ptr, 1);
 
 	    switch (codepoint)
 	    {
@@ -2423,7 +2438,7 @@ int 	output_with_count (const unsigned char *str1, int clreol, int output)
 	for (str = str1; str && *str; )
 	{
 	    /* On any error, just stop. */
-	    if ((codepoint = next_code_point(&str)) == -1)
+	    if ((codepoint = next_code_point(&str, 1)) == -1)
 		break;
 
 	    switch (codepoint)
@@ -3760,7 +3775,7 @@ static	int		never_warn_again = 0;
 
 	/* Now inject the converted (utf8) bytes into the input stream. */
 	s = (const unsigned char *)dest_ptr;
-	codepoint = next_code_point(&s);
+	codepoint = next_code_point(&s, 1);
 	if (codepoint > -1)
 	{
 		/* Clear the buffer BEFORE dispatching the results */
@@ -3997,7 +4012,7 @@ void	chop_columns (unsigned char **str, size_t num)
 		 * In the worst case, eventually codepoint == 0 at EOS.
 		 */
 		x = s;
-		while ((codepoint = next_code_point((const unsigned char **)&x)) == -1)
+		while ((codepoint = next_code_point((const unsigned char **)&x, 0)) == -1)
 			x++;
 
 		/* 
@@ -4080,7 +4095,7 @@ void	chop_final_columns (unsigned char **str, size_t num)
 		 * In the worst case, eventually codepoint == 0 at EOS.
 		 */
 		x = s;
-		while ((codepoint = next_code_point((const unsigned char **)&x)) == -1)
+		while ((codepoint = next_code_point((const unsigned char **)&x, 0)) == -1)
 			x++;
 
 		/* 

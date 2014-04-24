@@ -214,7 +214,7 @@ int	codepoint_numcolumns (int ucs)
 }
 
 
-int     next_code_point (const unsigned char **i)
+int     next_code_point (const unsigned char **i, int resync)
 {
         int     offset;
         unsigned char    a, b, c, d;
@@ -302,9 +302,13 @@ int     next_code_point (const unsigned char **i)
 
 	/* If result is -1, something is wrong */
 	if (result == -1)
-		continue;
+	{
+		if (resync)
+			continue;
+	}
 
         return result;
+
     }
 
     /* If we hit the end of the string, return nul */
@@ -436,7 +440,7 @@ int     partial_code_point (const unsigned char *i)
 int	grab_codepoint (const unsigned char *x)
 {
 	const unsigned char *str = x;
-	return next_code_point(&str);
+	return next_code_point(&str, 1);
 }
 
 /*
@@ -465,7 +469,7 @@ int	quick_display_column_count (const unsigned char *str)
 	int	x;
 
 	s = str;
-	while ((code_point = next_code_point(&s)))
+	while ((code_point = next_code_point(&s, 1)))
 	{
 		if ((x = codepoint_numcolumns(code_point)) == -1)
 			x = 0;
@@ -483,7 +487,7 @@ int	input_column_count (const unsigned char *str)
 	int	x;
 
 	s = str;
-	while ((code_point = next_code_point(&s)))
+	while ((code_point = next_code_point(&s, 1)))
 	{
 		if ((x = codepoint_numcolumns(code_point)) == -1)
 			x = 1;
@@ -547,7 +551,7 @@ int     previous_code_point (const unsigned char *st, const unsigned char **i)
 		c--;
 
 	*i = c;
-	return next_code_point(&c);
+	return next_code_point(&c, 1);
 }
 
 
