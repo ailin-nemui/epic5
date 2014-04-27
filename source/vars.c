@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.119 2014/04/24 04:51:42 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.120 2014/04/27 17:01:53 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -300,7 +300,6 @@ void 	init_variables_stage1 (void)
 #define DEFAULT_DEFAULT_REALNAME NULL
 	VAR(DEFAULT_REALNAME, 		STR,  NULL);
 #define DEFAULT_DEFAULT_USERNAME NULL
-	VAR(DEFAULT_SCRIPT_ENCODING,	STR,  NULL);
 	VAR(DEFAULT_USERNAME, 		STR,  NULL);
 	VAR(DISPATCH_UNKNOWN_COMMANDS,	BOOL, NULL);
 	VAR(DISPLAY, 			BOOL, NULL);
@@ -315,7 +314,6 @@ void 	init_variables_stage1 (void)
 	VAR(FLOOD_USERS,		INT,  NULL);
 	VAR(FLOOD_WARNING,		BOOL, NULL);
 	VAR(HIDE_PRIVATE_CHANNELS,	BOOL, update_all_status_wrapper);
-	VAR(HIGH_BIT_ESCAPE,		INT,  set_meta_8bit);
 	VAR(HOLD_SLIDER,		INT,  NULL);
 	VAR(INDENT,			BOOL, set_indent);
         VAR(INPUT_INDICATOR_LEFT,	STR, NULL);

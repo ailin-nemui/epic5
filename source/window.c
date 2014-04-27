@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.246 2014/04/21 20:06:16 jnelson Exp $ */
+/* $EPIC: window.c,v 1.247 2014/04/27 17:01:53 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -1832,6 +1832,14 @@ void 	recalculate_windows (Screen *screen)
 		screen->window_list->my_columns = screen->co;
 		return;
 	}
+
+	/*
+	 * This has to be done first -- if the number of columns of
+	 * the screen has changed, the window needs to be told; this
+	 * will provoke a full redraw (later).
+	 */
+	for (tmp = screen->window_list; tmp; tmp = tmp->next)
+		window_check_columns(tmp);
 
 	/*
 	 * This is much more complicated than it needs to be, and I've

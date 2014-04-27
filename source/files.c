@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.44 2012/07/06 04:52:26 jnelson Exp $ */
+/* $EPIC: files.c,v 1.45 2014/04/27 17:01:53 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -329,23 +329,23 @@ char *	file_read (int fd)
 	else
 	{
 		char	*ret = NULL;
+		size_t	retlen = 0;
+		size_t	retbufsiz = 0;
 		char	*end = NULL;
-		size_t	len = 0;
-		size_t	newlen = 0;
 
                 if (ptr->elf->fp)
                     clearerr(ptr->elf->fp);
 
 		for (;;)
 		{
-		    newlen += 4096;
-		    RESIZE(ret, char, newlen);
-		    ret[len] = 0;	/* Keep this -- C requires it! */
-		    if (!epic_fgets(ret + len, newlen - len, ptr->elf))
+		    retbufsiz += 4096;
+		    RESIZE(ret, char, retbufsiz);
+		    ret[retlen] = 0;	/* Keep this -- C requires it! */
+		    if (!epic_fgets(ret + retlen, retbufsiz - retlen, ptr->elf))
 			break;
-		    if ((end = strchr(ret + len, '\n')))
+		    if ((end = strchr(ret + retlen, '\n')))
 			break;
-		    len = newlen - 1;
+		    retlen = retbufsiz - 1;
 		}
 
 		/* Do we need to truncate the result? */
@@ -353,6 +353,15 @@ char *	file_read (int fd)
                     *end = 0;	/* Either the newline */
 		else if ( (ptr->elf->fp) && (ferror(ptr->elf->fp)) )
                     *ret = 0;	/* Or the whole thing on error */
+
+		/* XXX TODO -- this is just temporary */
+		if (invalid_utf8str(ret))
+		{
+			const char *encoding;
+
+			encoding = find_recoding("scripts", NULL, NULL);
+			recode_with_iconv(encoding, NULL, &ret, &retlen);
+		}
 
 		return ret;
 	}

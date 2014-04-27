@@ -2,7 +2,9 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* $open() should allow recoding
+* /EXEC should allow recoding
+
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -583,4 +585,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Modify next_code_point() to allow re-syncing or error reporting.
 * This fixes a bug where invalid_utf8string was broken (rb zlonix)
 * Adjust the wrapping point for long lines without breaks (rb fudd)
-
+* Remove /set default_script_encoding (superceded by /encoding scripts)
+* Remove /set high_bit_escape (superceded by /encoding console)
+* When i rewrote recalculate_windows() forgot to call window_check_columns()!
+* $read() will using /encoding scripts to convert non-utf8 strings. (temp!)
