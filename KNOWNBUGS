@@ -4,6 +4,16 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * $open() should allow recoding
 * /EXEC should allow recoding
+* <tjh2> I can crash the latest epic quite reliably doing this: @logctl(SET
+  +$logref REWRITE ($strftime(%b %d %X) $0 $1-)); 
+<inittab> i'm seeing something a bit weird with continued lines mostly in urls
++compare http://imgur.com/ktAfesQ to http://imgur.com/QekJQnn 
+<Dr_Gonzo> http://hugmachine.net/s/2o1 :: imgur: the simple image sharer -
++Imgur 
+<inittab> the first one is from a non maximized putty window, it's missing the
++b in "boat" on the second line continuation 
+<inittab> second screenshot is from maximized, with one line continuation and
++you can see the b is actually there 
 
 
 MEDIUM-TERM PROJECTS
@@ -589,3 +599,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove /set high_bit_escape (superceded by /encoding console)
 * When i rewrote recalculate_windows() forgot to call window_check_columns()!
 * $read() will using /encoding scripts to convert non-utf8 strings. (temp!)
+* Fix next_code_point() to skip bytes, not increment them (fusion)
+* Don't permit /set no_control_log to overrule mangling
+* Improve the warning for /set dcc_use_gateway_addr for ipv6 only conns

@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.259 2014/04/24 04:51:42 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.260 2014/06/14 01:48:27 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -6737,7 +6737,7 @@ int	recode_with_iconv (const char *from, const char *to, char **data, size_t *nu
                 /* I *THINK* this is a hack. */ 
                 if (errno == EINVAL || errno == EILSEQ)
                 {
-                        (*work_data)++;
+                        work_data++;
                         (*numbytes)--;
                         continue;
                 }
@@ -6811,7 +6811,7 @@ int	recode_with_iconv_t (iconv_t iref, char **data, size_t *numbytes)
                 /* I *THINK* this is a hack. */ 
                 if (errno == EINVAL || errno == EILSEQ)
                 {
-                        (*work_data)++;
+                        work_data++;
                         (*numbytes)--;
                         continue;
                 }

@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.26 2009/12/28 20:05:54 jnelson Exp $ */
+/* $EPIC: log.c,v 1.27 2014/06/14 01:48:27 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -195,9 +195,10 @@ void 	add_to_log (int logref, FILE *fp, long winref, const unsigned char *line, 
 	current_log_refnum = logref;
 
 	/* Do this first */
+	/* Either do mangling or /set no_control_log, but never both! */
 	if (mangler == 0)
 		mangler = logfile_line_mangler;
-	if (get_int_var(NO_CONTROL_LOG_VAR))
+	else if (get_int_var(NO_CONTROL_LOG_VAR))
 		mangler |= STRIP_UNPRINTABLE;
 	if (mangler)
 		local_line = new_normalize_string(line, 1, mangler);

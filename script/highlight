@@ -19,7 +19,7 @@ alias highlight.it (stuff) {
 
 alias highlight {
 	if (!@) {
-		xecho -b Highlight List:
+		xecho -b Highlight List:;
 		fe ($highlights.list) x {
 			xecho -b     $x;
 		};

@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.271 2014/04/17 13:23:43 jnelson Exp $ */
+/* $EPIC: server.c,v 1.272 2014/06/14 01:48:27 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2798,9 +2798,11 @@ static void	set_server_userhost (int refnum, const char *uh)
 	FAMILY(s->uh_addr) = AF_INET;
 	if (inet_strton(host + 1, zero, (SA *)&s->uh_addr, AI_ADDRCONFIG))
 		yell("Ack.  The server says your userhost is [%s] and "
-		     "I can't figure out the IP address of that host! "
-		     "You won't be able to use /SET DCC_USE_GATEWAY_ADDR ON "
-		     "with this server connection!", host + 1);
+		     "I can't figure out the IPv4 address of that host! "
+		     "This usually breaks DCC.  If you use "
+		     "/SET DCC_USE_GATEWAY_ADDR ON because you're behind "
+		     "a NAT firewall, DCC won't work with this server "
+		     "connection!", host + 1);
 }
 
 /*
