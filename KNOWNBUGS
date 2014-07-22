@@ -606,3 +606,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't permit /set no_control_log to overrule mangling
 * Improve the warning for /set dcc_use_gateway_addr for ipv6 only conns
 * Don't use/require /hostname to be set for /server connections, (rb stygian)
+* Fix connecting to server w/o vhost (caused by previous commit)

@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.88 2014/07/22 03:57:33 jnelson Exp $ */
+/* $EPIC: network.c,v 1.89 2014/07/22 22:03:51 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -307,9 +307,9 @@ int	inet_vhostsockaddr (int family, int port, const char *wanthost, SS *storage,
 	 * return *len == 0 for port != -1, then /dcc breaks.
 	 */
 	if ((family == AF_UNIX) || 
-            (family == AF_INET && port == -1 && wanthost == NULL && LocalIPv4HostName == NULL) 
+            (family == AF_INET && port == -1 && empty(wanthost) && LocalIPv4HostName == NULL) 
 #ifdef INET6
-	 || (family == AF_INET6 && port == -1 && wanthost == NULL && LocalIPv6HostName == NULL)
+	 || (family == AF_INET6 && port == -1 && empty(wanthost) && LocalIPv6HostName == NULL)
 #endif
 									   )
 	{
