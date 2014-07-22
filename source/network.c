@@ -1,4 +1,4 @@
-/* $EPIC: network.c,v 1.87 2013/10/30 02:56:53 jnelson Exp $ */
+/* $EPIC: network.c,v 1.88 2014/07/22 03:57:33 jnelson Exp $ */
 /*
  * network.c -- handles stuff dealing with connecting and name resolving
  *
@@ -300,16 +300,16 @@ int	inet_vhostsockaddr (int family, int port, const char *wanthost, SS *storage,
 	const char *lhn;
 
 	/*
-	 * If port == -1, then this is a client connection, so we punt
-	 * if there is no virtual host name.  But if port is NOT zero, then
-	 * the caller expects us to return a sockaddr they can bind() to, 
+	 * If port == -1, AND "wanthost" is NULL, then this is a client connection, 
+	 * so we punt if there is no virtual host name.  But if port is NOT zero, 
+	 * then the caller expects us to return a sockaddr they can bind() to, 
 	 * so we need to use LocalHostName, even if it's NULL.  If you 
 	 * return *len == 0 for port != -1, then /dcc breaks.
 	 */
 	if ((family == AF_UNIX) || 
-            (family == AF_INET && port == -1 && LocalIPv4HostName == NULL) 
+            (family == AF_INET && port == -1 && wanthost == NULL && LocalIPv4HostName == NULL) 
 #ifdef INET6
-	 || (family == AF_INET6 && port == -1 && LocalIPv6HostName == NULL)
+	 || (family == AF_INET6 && port == -1 && wanthost == NULL && LocalIPv6HostName == NULL)
 #endif
 									   )
 	{

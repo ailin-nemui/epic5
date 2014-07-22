@@ -2,6 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
+* IRCNet UUID nicknames start with ~ (ie, ~101456) [rb Harzilein]
 * $open() should allow recoding
 * /EXEC should allow recoding
 * <tjh2> I can crash the latest epic quite reliably doing this: @logctl(SET
@@ -14,7 +15,9 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 +b in "boat" on the second line continuation 
 <inittab> second screenshot is from maximized, with one line continuation and
 +you can see the b is actually there 
-
+* ZLonix needs a function that returns a list of windows on this screen
+  in screen order, so he can manage status bar doubling.
+* Verify that /window create and /window delete work (rb zlonix)
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -602,3 +605,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix next_code_point() to skip bytes, not increment them (fusion)
 * Don't permit /set no_control_log to overrule mangling
 * Improve the warning for /set dcc_use_gateway_addr for ipv6 only conns
+* Don't use/require /hostname to be set for /server connections, (rb stygian)
