@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.179 2014/04/24 04:51:42 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.180 2014/07/24 21:58:20 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -3191,6 +3191,9 @@ Window	*create_additional_screen (void)
 	int 		i;
 
 
+	/* Don't "move" this down! It belongs here. */
+	oldscreen = current_window->screen;
+
 	if (!use_input)
 		return NULL;
 
@@ -3321,8 +3324,7 @@ Window	*create_additional_screen (void)
 		yell("Arg %d: %s", i, args[i]);
 #endif
 
-	/* Now create a new screen.... */
-	oldscreen = current_window->screen;
+	/* Now create a new screen */
 	create_new_screen();
 	new_s = last_input_screen;
 

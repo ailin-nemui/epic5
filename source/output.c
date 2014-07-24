@@ -1,4 +1,4 @@
-/* $EPIC: output.c,v 1.25 2012/11/24 01:42:51 jnelson Exp $ */
+/* $EPIC: output.c,v 1.26 2014/07/24 21:58:20 jnelson Exp $ */
 /*
  * output.c: handles a variety of tasks dealing with the output from the irc
  * program 
@@ -93,6 +93,9 @@ void	redraw_all_screens (void)
 	old_os = output_screen;
 	for (s = screen_list; s; s = s->next)
 	{
+		if (!s->alive)
+			continue;
+
 		output_screen = s;
 		unflash();
 		term_clear_screen();
