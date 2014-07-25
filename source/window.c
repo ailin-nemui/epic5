@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.247 2014/04/27 17:01:53 jnelson Exp $ */
+/* $EPIC: window.c,v 1.248 2014/07/25 04:54:07 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -739,6 +739,48 @@ int 	traverse_all_windows_by_priority (Window **ptr)
 
 	/* No Winner?  Then we're done. */
 	return 0;
+}
+
+/*
+ * traverse_all_windows_on_screen: 
+ * This function shall return all windows on 'screen' in the order that
+ * they are on the screen, top to bottom.
+ *
+ * To initialize, *ptr should be NULL.  The function will return 1 each time
+ * *ptr is set to the next valid window.  When the function returns 0, then
+ * you have iterated all windows.
+ */
+static int 	traverse_all_windows_on_screen (Window **ptr, Screen *s)
+{
+	/*
+	 * If this is the first time through...
+	 * 's' == NULL means traverse all invisible windows.
+	 */
+	if (!*ptr)
+	{
+		if (!s)
+			*ptr = invisible_list;
+		else
+			*ptr = s->window_list;
+	}
+
+	/*
+	 * As long as there is another window on this screen, keep going.
+	 */
+	else if ((*ptr)->next)
+		*ptr = (*ptr)->next;
+
+	/*
+	 * Otherwise there are no other windows, and we're not on a screen
+	 * (eg, we're hidden), so we're all done here.
+	 */
+	else
+		return 0;
+
+	/*
+	 * If we get here, we're in business!
+	 */
+	return 1;
 }
 
 
@@ -7031,6 +7073,18 @@ char 	*windowctl 	(char *input)
 	} else if (!my_strnicmp(listc, "REFNUMS_BY_PRIORITY", len)) {
 		w = NULL;
 		while (traverse_all_windows_by_priority(&w))
+		    malloc_strcat_wordlist(&ret, space, ltoa(w->refnum));
+		RETURN_MSTR(ret);
+	} else if (!my_strnicmp(listc, "REFNUMS_ON_SCREEN", len)) {
+		Screen *s;
+
+		GET_INT_ARG(refnum, input);
+		if (!(w = get_window_by_refnum(refnum)))
+			RETURN_EMPTY;
+
+		s = w->screen;
+		w = NULL;
+		while (traverse_all_windows_on_screen(&w, s))
 		    malloc_strcat_wordlist(&ret, space, ltoa(w->refnum));
 		RETURN_MSTR(ret);
 	} else if (!my_strnicmp(listc, "NEW", len)) {

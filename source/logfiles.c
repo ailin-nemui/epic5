@@ -1,4 +1,4 @@
-/* $EPIC: logfiles.c,v 1.40 2013/07/30 22:37:01 jnelson Exp $ */
+/* $EPIC: logfiles.c,v 1.41 2014/07/25 04:54:07 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
@@ -843,7 +843,7 @@ char *logctl	(char *input)
 			RETURN_EMPTY;
 
                 GET_FUNC_ARG(listc, input);
-                if (!my_strnicmp(listc, "REFNUM", 1)) {
+                if (!my_strnicmp(listc, "REFNUM", 3)) {
 			RETURN_INT(log->refnum);
                 } else if (!my_strnicmp(listc, "NAME", 3)) {
 			RETURN_STR(log->name);

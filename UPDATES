@@ -1,4 +1,21 @@
-EPIC5-1.1.9
+EPIC5-1.1.11
+
+*** News 07/24/2014 -- New feature $windowctl(REFNUMS_ON_SCREEN <winref>)
+	The $windowctl(REFNUMS_ON_SCREEN <winref>) will return all of the
+	refnums on the screen that contains window <winref>.  They are
+	returned in SCREEN ORDER, ie, from top to bottom.  
+
+	This was because someone wanted to make the bottom window ONLY 
+	double status bar, so he needed to know which one was on bottom 
+	and which ones weren't.
+
+	If <winref> is a hidden window, then it will return all of the 
+	invisible windows, but in no guaranteed order.
+
+	If <winref> is 0, then it will return the screen for the current
+	window, of course.
+
+	You MUST specify a window refnum of some sort, even if it's just 0.
 
 *** News 04/19/2014 -- Support for tmux for /WINDOW CREATE
 	If you run EPIC under tmux, you can now use /window create and it
@@ -11,6 +28,9 @@ EPIC5-1.1.9
 *** News 04/17/2014 -- /SET TRANSLATION now retired
 	The /SET TRANSLATION feature which has served us well for many
 	years is now superceded by /ENCODING, and has been retired.
+
+EPIC5-1.1.10
+EPIC5-1.1.9
 
 *** News 04/16/2014 -- $fix_width() now fully works, and UTF-8 aware.
 	The $fix_width() function takes the following arguments:

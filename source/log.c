@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.27 2014/06/14 01:48:27 jnelson Exp $ */
+/* $EPIC: log.c,v 1.28 2014/07/25 04:54:07 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -187,10 +187,23 @@ void 	add_to_log (int logref, FILE *fp, long winref, const unsigned char *line, 
 {
 	char	*local_line = NULL;
 	int	old_logref;
+static	int	recursive = 0;
 
+	/*
+	 * I added "recursive" because this function should not
+	 * generate any output.  But it might generate output if
+	 * the string expand was bogus below.  I chose to "fix" this
+	 * by refusing to log anything recursively.  The downside
+	 * is any errors won't get logged, which may or may not be
+	 * a problem, I haven't decided yet.
+	 */
+	if (recursive > 0)
+		return;
+	
 	if (!fp || inhibit_logging)
 		return;
 
+	recursive++;
 	old_logref = current_log_refnum;
 	current_log_refnum = logref;
 
@@ -226,5 +239,6 @@ void 	add_to_log (int logref, FILE *fp, long winref, const unsigned char *line, 
 
 	new_free(&local_line);
 	current_log_refnum = old_logref;
+	recursive--;
 }
 
