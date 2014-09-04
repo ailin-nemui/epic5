@@ -4,9 +4,9 @@ dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.101 2014/04/09 17:51:06 jnelson Exp $
+dnl @(#)$Id: configure.in,v 1.102 2014/09/04 09:24:15 jnelson Exp $
 
-AC_REVISION([$Revision: 1.101 $])dnl
+AC_REVISION([$Revision: 1.102 $])dnl
 AC_INIT([source/irc.c])
 AC_CONFIG_HEADER([include/defs.h])
 
@@ -861,7 +861,7 @@ dnl
 
 AC_MSG_CHECKING(whether to support SOCKS)
 AC_ARG_WITH(socks,
-[  --with-socks[=PATH]     Compile with SOCKS firewall traversal support.],
+[  --with-socks[=PATH]     Compile with SOCKS (libsocks without socks.h) firewall traversal support.],
 [ case "$withval" in
   no)
 	AC_MSG_RESULT(no)
@@ -887,7 +887,7 @@ AC_ARG_WITH(socks,
 
 AC_MSG_CHECKING(whether to support SOCKS5)
 AC_ARG_WITH(socks5,
-[  --with-socks5[=PATH]    Compile with SOCKS5 firewall traversal support.],
+[  --with-socks5[=PATH]    Compile with SOCKS5 (libsocks with socks.h) firewall traversal support.],
 [ case "$withval" in
   no)
 	AC_MSG_RESULT(no)
@@ -899,7 +899,7 @@ AC_ARG_WITH(socks5,
 	fi
 
 	AC_MSG_RESULT(yes)
-	LIBS="$LIBS -lsocks5"
+	LIBS="$LIBS -lsocks"
 	AC_DEFINE(SOCKS)
 	AC_DEFINE(USE_SOCKS5)
 	;;

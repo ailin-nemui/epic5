@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.100 # Guess values for system-dependent variables and create Makefiles.
+# From configure.in Revision: 1.101 # Guess values for system-dependent variables and create Makefiles.
 # Generated automatically using autoconf version 2.13 
 # Copyright (C) 1992, 93, 94, 95, 96 Free Software Foundation, Inc.
 #
@@ -24,9 +24,9 @@ ac_help="$ac_help
 ac_help="$ac_help
   --with-ipv6             Include IPv6 support"
 ac_help="$ac_help
-  --with-socks[=PATH]     Compile with SOCKS firewall traversal support."
+  --with-socks[=PATH]     Compile with SOCKS (libsocks without socks.h) firewall traversal support."
 ac_help="$ac_help
-  --with-socks5[=PATH]    Compile with SOCKS5 firewall traversal support."
+  --with-socks5[=PATH]    Compile with SOCKS5 (libsocks with socks.h) firewall traversal support."
 ac_help="$ac_help
   --with-iconv[=PATH]       Include iconv support (DIR is eg /usr/local)."
 ac_help="$ac_help
@@ -5819,7 +5819,7 @@ if test "${with_socks5+set}" = set; then
 	fi
 
 	echo "$ac_t""yes" 1>&6
-	LIBS="$LIBS -lsocks5"
+	LIBS="$LIBS -lsocks"
 	cat >> confdefs.h <<\EOF
 #define SOCKS 1
 EOF
