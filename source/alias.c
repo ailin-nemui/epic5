@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.89 2012/11/27 22:50:57 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.90 2014/09/06 16:51:42 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -2167,6 +2167,7 @@ static PMATCH_SYMBOL(any_symbol, name)
 char **	get_subarray_elements (const char *orig_root, int *howmany, int type)
 {
 	SymbolSet *as;		/* XXXX */
+	Symbol *s;
 	int pos, cnt, max;
 	int cmp = 0;
 	char **matches = NULL;
@@ -2187,15 +2188,24 @@ char **	get_subarray_elements (const char *orig_root, int *howmany, int type)
 
 	for (cnt = 0; cnt < max; cnt++, pos++)
 	{
-		end = strcspn(ARRAY_ITEM(as, pos)->name + cmp, ".");
-		if (last && !my_strnicmp(ARRAY_ITEM(as, pos)->name, last, cmp + end))
+		s = (Symbol *)ARRAY_ITEM(as, pos);
+
+		end = strcspn(s->name + cmp, ".");
+		if (last && !my_strnicmp(s->name, last, cmp + end))
 			continue;
+
+		/* Must have an entry for the correct type */
+		if (type == COMMAND_ALIAS && s->user_command == NULL)
+			continue;
+		if (type == VAR_ALIAS && s->user_variable == NULL)
+			continue;
+
 		if (*howmany >= matches_size)
 		{
 			matches_size = *howmany + 5;
 			RESIZE(matches, char *, matches_size + 1);
 		}
-		matches[*howmany] = malloc_strndup(ARRAY_ITEM(as, pos)->name, cmp + end);
+		matches[*howmany] = malloc_strndup(s->name, cmp + end);
 		last = matches[*howmany];
 		*howmany += 1;
 	}

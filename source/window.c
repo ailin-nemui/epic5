@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.248 2014/07/25 04:54:07 jnelson Exp $ */
+/* $EPIC: window.c,v 1.249 2014/09/06 16:51:42 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -1553,6 +1553,10 @@ void	resize_window_display (Window *window)
 	if (window->display_buffer_max < window->display_lines * 2)
 		window->display_buffer_max = window->display_lines * 2;
 	recalculate_window_cursor_and_display_ip(window);
+
+	/* XXX - This is a temporary hack, but it works. */
+	if (window->scrolling_distance_from_display_ip >= window->display_lines)
+		unclear_window(window);
 
 	/*
 	 * Mark the window for redraw and store the new window size.

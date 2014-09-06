@@ -2,8 +2,6 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Get_array_subelements (ie, /foreach) does NOT honor "type" arg and it should
-* IRCNet UUID nicknames start with ~ (ie, ~101456) [rb Harzilein]
 * $open() should allow recoding
 * /EXEC should allow recoding
 * set_server_userhost() gives a message warning of /set dcc_use_gateway
@@ -605,3 +603,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
   /@logctl(SET 2 REWRITE "\\($strftime(%b %d %X)) $$0 $$1-")
 * Add $windowctl(REFNUMS_ON_SCREEN <winref>) to get all wins in screen order
 * Fix configure check for socks5 (binki at gentoo dot org) -- Thanks!
+* If after resize, scrolling view is "too high", do an /unclear (rb desaster)
+* Get_subarray_elements (ie, /foreach) does NOT honor "type" arg and it should
+* This fixes /foreach -cmds i {....}.  Odd that nobody noticed this...
+* Allow ~'s in nicknames because ircnet permits it.   (rb Harzelien)

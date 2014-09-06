@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.111 2014/04/22 14:05:30 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.112 2014/09/06 16:51:42 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1511,7 +1511,7 @@ int 	num_protocol_cmds = -1;
 
 #define islegal(c) ((((c) >= 'A') && ((c) <= '}')) || \
                     (((c) >= '0') && ((c) <= '9')) || \
-		     ((c) == '*') || \
+		     ((c) == '*') || ((c) == '~') || \
                      ((c) & 0x80))
 
 /*
