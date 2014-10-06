@@ -16,6 +16,9 @@ package sasl_auth;
 ##
 ## Version: 1.2 (April, 2014)
 ##  - Fixed bug with '\' in password (rb skered)
+##
+## Version: 1.3 (September, 2014)
+##  - Fixed bug with reconnection (rb skered)
 
 ## This script implements SASL authentication, primarily used on
 ## Freenode network. Currently only PLAIN method is supported.
@@ -108,14 +111,16 @@ alias sasl_auth.setstate (server, state, void) {
 };
 
 on #-server_established 100 '\\\\[$$sasl_auth.servers\\\\] %' {
-	@ :state = sasl_auth.status.$0;
+	@ :server = servername();
+	@ :state = sasl_auth.status.$server;
 	
 	if (state == []) {
-		sasl_auth.setstate $0 req_sent;
+		sasl_auth.setstate $server req_sent;
 
 		quote CAP REQ :sasl;
 	} else {
-		xecho -b sasl_auth: server_established: server $0 is in a wrong state [$state] (should be <empty>);
+		xecho -b sasl_auth: server_established: server $server is in a wrong state [$state] (should be <empty>);
+		sasl_auth.setstate $server null;
 	};
 };
 
@@ -130,6 +135,7 @@ on ^odd_server_stuff '\\\\[$$sasl_auth.servers\\\\] CAP % ACK :*sasl*' {
 		quote AUTHENTICATE $toupper($word($idx $sasl_auth.methods));
 	} else {
 		xecho -b sasl_auth: odd_server_stuff: CAP ACK: server $server \(real: $0\) is in a wrong state [$state] (should be "req_sent");
+		sasl_auth.setstate $server null;
 	};
 
 };
@@ -140,7 +146,7 @@ alias sasl_auth.sendauth (auth, void) {
 
 on ^odd_server_stuff '\* AUTHENTICATE \+' {
 	@ :server = servername();
-	@ :state = sasl_auth.status.$servername();
+	@ :state = sasl_auth.status.$server;
 
 	if (state == [meth_sent]) {
 		sasl_auth.setstate $server auth_sent;
@@ -154,7 +160,7 @@ on ^odd_server_stuff '\* AUTHENTICATE \+' {
 			input -noecho "SASL password: " {
 				## local variables of the hook are not accessible here
 				@ :pass = *0;
-				@ :idx = rmatch($servername() $sasl_auth.servers)-1;
+				@ :idx = rmatch($server $sasl_auth.servers)-1;
 				@ :nick = word($idx $sasl_auth.users);
 				@ :auth = sasl_auth.plain($nick $pass);
 				sasl_auth.sendauth $auth;
@@ -165,30 +171,33 @@ on ^odd_server_stuff '\* AUTHENTICATE \+' {
 		};
 	} else {
 		xecho -b sasl_auth: odd_server_stuff: AUTHENTICATE: server $server \(real: $0\) is in a wrong state [$state] (should be "meth_sent");
+		sasl_auth.setstate $server null;
 	};
 };
 
 on -901 '\\\\[$$sasl_auth.servers\\\\] *' {
 	@ :server = servername();
-	@ :state = sasl_auth.status.$servername();
+	@ :state = sasl_auth.status.$server;
 
 	if (state == [auth_sent]) {
 		sasl_auth.setstate $server null;
 		disconnect;
 	} else {
 		xecho -b sasl_auth: 901: server $server \(real: $0\) is in a wrong state [$state] (should be "auth_sent");
+		sasl_auth.setstate $server null;
 	};
 };
 
 on -903 '\\\\[$$sasl_auth.servers\\\\] *' {
 	@ :server = servername();
-	@ :state = sasl_auth.status.$servername();
+	@ :state = sasl_auth.status.$server;
 
 	if (state == [auth_sent]) {
 		sasl_auth.setstate $server null;
 		quote CAP END;
 	} else {
 		xecho -b sasl_auth: 903: server $server \(real: $0\) is in a wrong state [$state] (should be "auth_sent");
+		sasl_auth.setstate $server null;
 	};
 };
 

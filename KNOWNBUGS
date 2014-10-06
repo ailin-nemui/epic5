@@ -607,3 +607,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Get_subarray_elements (ie, /foreach) does NOT honor "type" arg and it should
 * This fixes /foreach -cmds i {....}.  Odd that nobody noticed this...
 * Allow ~'s in nicknames because ircnet permits it.   (rb Harzelien)
+* New sasl_auth script from zlonix
