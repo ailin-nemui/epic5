@@ -3,7 +3,6 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * $open() should allow recoding
-* /EXEC should allow recoding
 * set_server_userhost() gives a message warning of /set dcc_use_gateway
 	but should really only whine if you have it turned on
 
@@ -608,3 +607,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This fixes /foreach -cmds i {....}.  Odd that nobody noticed this...
 * Allow ~'s in nicknames because ircnet permits it.   (rb Harzelien)
 * New sasl_auth script from zlonix
+* Add recoding support (ie, UTF8 support) to send/recv msgs from /exec procs.

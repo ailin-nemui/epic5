@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.46 2012/11/23 16:04:49 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.47 2014/10/18 19:36:51 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -120,7 +120,8 @@ static 	void 	kill_all_processes 	(int signo);
 static 	int 	valid_process_index 	(int proccess);
 static 	int 	is_logical_unique 	(char *logical);
 static	int 	logical_to_index 	(const char *logical);
-static	void 	do_exec (int fd);
+static	int	index_to_logical 	(int, char *, size_t);
+static	void 	do_exec 		(int fd);
 
 /*
  * A nice array of the possible signals.  Used by the coredump trapping
@@ -785,6 +786,9 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 	const char *callback = NULL;
 	int	hook = -1;
 	int	l;
+	char	logical_name[1024];
+	const char	*utf8_text;
+	char *extra = NULL;
 
 	/* No buffering! */
 	switch ((len = dgets(*fd, exec_buffer, IO_BUFFER_SIZE, 0))) 
@@ -856,25 +860,29 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 			   exec_buffer[len - 1] == '\r'))
 	     exec_buffer[--len] = 0;
 
+	index_to_logical(proc->index, logical_name, sizeof(logical_name));
+	utf8_text = inbound_recode(logical_name, proc->server, empty_string, exec_buffer, &extra);
+
 	if (proc->redirect) 
 	     redirect_text(proc->server, proc->who, 
-				exec_buffer, proc->redirect, 1);
+				utf8_text, proc->redirect, 1);
 
 	if (callback)
-	    call_lambda_command("EXEC", callback, exec_buffer);
+	    call_lambda_command("EXEC", callback, utf8_text);
 	else if (proc->logical)
 	{
-	     if ((do_hook(hook, "%s %s", proc->logical, exec_buffer)))
+	     if ((do_hook(hook, "%s %s", proc->logical, utf8_text)))
 		if (!proc->redirect)
-		    put_it("%s", exec_buffer);
+		    put_it("%s", utf8_text);
 	}
 	else
 	{
-	    if ((do_hook(hook, "%d %s", proc->index, exec_buffer)))
+	    if ((do_hook(hook, "%d %s", proc->index, utf8_text)))
 		if (!proc->redirect)
-		    put_it("%s", exec_buffer);
+		    put_it("%s", utf8_text);
 	}
 
+	new_free(&extra);
 	pop_message_from(l);
 	from_server = ofs;
 }
@@ -1000,9 +1008,12 @@ void 		clean_up_processes (void)
  */
 int 		text_to_process (int proc_index, const char *text, int show)
 {
-	Process	*	proc;
-	char	*	my_buffer;
+	Process	*proc;
+	char *	my_buffer;
 	size_t	size;
+	char	logical_name[1024];
+	const char *recoded_text;
+	char *	extra = NULL;
 
 	if (valid_process_index(proc_index) == 0)
 		return 1;
@@ -1019,9 +1030,13 @@ int 		text_to_process (int proc_index, const char *text, int show)
 	size = strlen(text) + 2;
 	my_buffer = alloca(size);
 	snprintf(my_buffer, size, "%s\n", text);
-	write(proc->p_stdin, my_buffer, strlen(my_buffer));
-	set_prompt_by_refnum(proc->refnum, empty_string);
 
+	index_to_logical(proc_index, logical_name, sizeof(logical_name));
+	recoded_text = outbound_recode(logical_name, proc->server, my_buffer, &extra);
+	write(proc->p_stdin, recoded_text, strlen(recoded_text));
+	new_free(&extra);
+
+	set_prompt_by_refnum(proc->refnum, empty_string);
 	return (0);
 }
 
@@ -1412,6 +1427,23 @@ static	int 	logical_to_index (const char *logical)
 	}
 
 	return -1;
+}
+
+static	int	index_to_logical (int process, char *buf, size_t bufsiz)
+{
+	if ((process < 0) || (process >= process_list_size) ||
+			!process_list[process])
+	{
+		snprintf(buf, bufsiz, "(Process %d does not exist)", process);
+		return -1;
+	}
+
+	if (process_list[process]->logical)
+		snprintf(buf, bufsiz, "%s", process_list[process]->logical);
+	else 
+		snprintf(buf, bufsiz, "%d", process);
+
+	return 0;
 }
 
 /*
