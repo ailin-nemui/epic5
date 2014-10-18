@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.172 2014/04/21 20:06:16 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.173 2014/10/18 20:00:23 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1352,9 +1352,9 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	if (family != FAMILY(my_sockaddr))
 	{
 	    if (get_int_var(DCC_USE_GATEWAY_ADDR_VAR))
-		yell("When using /SET DCC_USE_GATEWAY_ADDR, I can only support "
-		     "DCC in the same address family (IPv4 or IPv6) as you are "
-		     "using to connect to the server.");
+		yell("When using /SET DCC_USE_GATEWAY_ADDR ON, I can only "
+		     "support DCC in the same address family (IPv4 or IPv6) "
+		     "as you are using to connect to the server.");
 	    else if (family == AF_INET)
 		yell("I do not know what your IPv4 address is.  You can tell "
 		     "me your IPv4 hostname with /HOSTNAME and retry the /DCC");
@@ -1381,12 +1381,17 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	{
 		yell("Could not send a CTCP handshake becuase the address "
 		     "family is not supported.");
+		dcc->flags |= DCC_DELETE;
 		return;
 	}
 
 	if (inet_ntostr((SA *)&my_sockaddr, p_host, 128, p_port, 24, 
-					GNI_INTEGER | NI_NUMERICHOST)) {
-		yell("Couldn't get host/port for address!");
+					GNI_INTEGER | NI_NUMERICHOST)) 
+	{
+		yell("dcc_send_booster_ctcp: I couldn't figure out your hostname (or the port you tried to use was invalid).  I have to delete this DCC");
+		if (get_int_var(DCC_USE_GATEWAY_ADDR_VAR))
+			yell("dcc_send_booster_ctcp: You have /SET DCC_USE_GATEWAY_ADDR ON, which uses the hostname the irc server shows to the network.  If you're using a fake hostname, that would cause this problem.  Use /SET DCC_USE_GATEWAY_ADDR OFF if you have a fake hostname on irc (but that still won't work behind a NAT router");
+		dcc->flags |= DCC_DELETE;
 		return;
 	}
 

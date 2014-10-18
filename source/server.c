@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.272 2014/06/14 01:48:27 jnelson Exp $ */
+/* $EPIC: server.c,v 1.273 2014/10/18 20:00:23 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -2797,12 +2797,27 @@ static void	set_server_userhost (int refnum, const char *uh)
 	/* Ack!  Oh well, it's for DCC. */
 	FAMILY(s->uh_addr) = AF_INET;
 	if (inet_strton(host + 1, zero, (SA *)&s->uh_addr, AI_ADDRCONFIG))
+#if 0
+		/* 
+		 * Once upon a time this warning was relevant to people
+		 * who put their machines in the DMZ of their router and
+		 * who needed the irc server to tell them what their
+		 * hostname was for DCC purposes.  But the message is 
+		 * annoying and the people who need to be told this won't
+		 * work is vanishingly small.
+		 *
+		 * An error message will only be output when a fake hostname
+		 * causes a /DCC to actually fail.
+		 */
 		yell("Ack.  The server says your userhost is [%s] and "
 		     "I can't figure out the IPv4 address of that host! "
 		     "This usually breaks DCC.  If you use "
 		     "/SET DCC_USE_GATEWAY_ADDR ON because you're behind "
 		     "a NAT firewall, DCC won't work with this server "
 		     "connection!", host + 1);
+#else
+		;
+#endif
 }
 
 /*
