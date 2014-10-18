@@ -4,7 +4,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * $open() should allow recoding
 * /DCC should allow recoding
-* nilurie was able to crash by typing invalid stuff into input line.
+* Fraction was able to crash by typing invalid stuff into input line.
 
 MEDIUM-TERM PROJECTS
 --------------------
