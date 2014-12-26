@@ -199,7 +199,7 @@ EPIC5-1.1.8
 	it will be assumed to be ISO-8859-1.  Unless that message was 
 	sent to #epic -- then it is assumed to be CP437.  Unless that 
 	message was sent by zlonix, then it is KOI8-R.  In this way, you
-	can set defaults for channels and overrule it by invidual person.
+	can set defaults for channels and overrule it by individual person.
 
 	SYNTAX:
 		If you do	/ENCODING <stuff>
@@ -208,8 +208,9 @@ EPIC5-1.1.8
 	If <stuff> is a number, then <stuff> is treated as a server refnum.
 	If <stuff> contains a slash, then anything before the slash is the
 		server part, and anything after the slash is the channel
-		or nickname part.  *You can omit before or after the slash
-		to make it unambiguous*
+		or nickname part.  *You can use a trailing slash to make
+		it unambiguous you mean a server, or a leading slash to
+		make it unambiguous you mean a channel/nickname.*
 	If <stuff> contains a dot, then <stuff> is treated as a server.
 	Otherwise, anything else is treated as a nickname.
 

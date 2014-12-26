@@ -1,4 +1,4 @@
-/* $EPIC: log.c,v 1.28 2014/07/25 04:54:07 jnelson Exp $ */
+/* $EPIC: log.c,v 1.29 2014/12/26 15:26:45 jnelson Exp $ */
 /*
  * log.c: handles the irc session logging functions 
  *
@@ -47,6 +47,10 @@
 	int	logfile_line_mangler;
 	int	current_log_refnum = -1;
 
+/*
+ * XXX This should return an int, and act as a front end
+ * 	to open_file_for_write().
+ */
 static FILE *	open_log (const char *logfile, FILE **fp)
 {
 	char *		tempname;
@@ -234,7 +238,7 @@ static	int	recursive = 0;
 		local_line = prepend_exp;
 	}
 
-	fprintf(fp, "%s\n", local_line);
+	fprintf(fp, "%s\n", local_line); /* XXX UTF8 XXX */
 	fflush(fp);
 
 	new_free(&local_line);

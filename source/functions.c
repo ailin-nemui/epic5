@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.318 2014/04/24 04:51:42 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.319 2014/12/26 15:26:45 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -3328,22 +3328,42 @@ BUILT_IN_FUNCTION(function_close, words)
 
 BUILT_IN_FUNCTION(function_write, words)
 {
-	char *fdc;
+	char *	fdc;
+	char 	target[1024];
+	int	retval;
+
 	GET_FUNC_ARG(fdc, words);
-	if (*fdc == 'w' || *fdc == 'W')
-		RETURN_INT(file_write(1, my_atol(fdc + 1), words));
-	else
-		RETURN_INT(file_write(0, my_atol(fdc), words));
+	if (is_number(fdc) || 
+		( (*fdc == 'w' || *fdc == 'W' || 
+		   *fdc == 'l' || *fdc == 'L' ) &&
+			is_number(fdc + 1)))
+	{
+		snprintf(target, sizeof target, "@%s", fdc);
+		retval = target_file_write(target, words);
+		RETURN_INT(retval);
+	}
+	RETURN_EMPTY;
 }
 
 BUILT_IN_FUNCTION(function_writeb, words)
 {
-	char *fdc;
+	int	retval = 0;
+	char *	fdc;
+
 	GET_FUNC_ARG(fdc, words);
-	if (*fdc == 'w' || *fdc == 'W')
-		RETURN_INT(file_writeb(1, my_atol(fdc + 1), words));
+
+	/* We don't use target_file_write() for biary data. */
+
+	if (is_number(fdc))
+		retval = file_writeb(0, my_atol(fdc), words);
+	else if ((*fdc == 'w' || *fdc == 'W') && is_number(fdc + 1))
+		retval = file_writeb(1, my_atol(fdc + 1), words);
+	else if ((*fdc == 'l' || *fdc == 'L') && is_number(fdc + 1))
+		retval = file_writeb(2, my_atol(fdc + 1), words);
 	else
-		RETURN_INT(file_writeb(0, my_atol(fdc), words));
+		RETURN_EMPTY;
+
+	RETURN_INT(retval);
 }
 
 BUILT_IN_FUNCTION(function_read, words)
@@ -4954,6 +4974,9 @@ BUILT_IN_FUNCTION(function_count, input)
  * Usage: $randread(filename)
  * Returns: A psuedo-random line in the specified file
  * Based on work contributed by srfrog
+ *
+ * XXX This function is not encoding aware.
+ * I'm not even sure if that's possible.
  */
 BUILT_IN_FUNCTION(function_randread, input)
 {

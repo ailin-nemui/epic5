@@ -1,0 +1,72 @@
+if (word(2 $loadinfo()) != [pf]) {
+	load -pf $word(1 $loadinfo());
+	return;
+};
+
+if (J !~ [EPIC5*]) {
+	xecho -b ERROR: tmux_away: load: EPIC5 is required;
+	return;
+};
+
+package tmux_away;
+
+## Tmux Away script for EPIC5.
+## Written by zlonix@efnet, public domain.
+##
+## Version: 1.0 (October, 2014)
+##  - Initial roll-out
+
+## This script provide functionality of automatic away on detachment
+## from tmux session in which you run your EPIC5 client. Addset script
+## is required. Script won't set you back when you re-attach to the
+## tmux, you must do this manually.
+##
+## Following sets are provided:
+##
+##   /set tmux_away - turn on or off script functionality
+##   /set tmux_away_interval - how often check for the status of tmux
+##   /set tmux_away_reason - away reason when tmux becomes detached
+
+load addset;
+
+addset tmux_away_interval int;
+set tmux_away_interval 60;
+
+addset tmux_away_reason str;
+set tmux_away_reason not here;
+
+addset tmux_away bool {
+	if (*0 == [on]) {
+		on ^exec_exit 'tmux_getsession % %' { };
+		on ^exec_exit 'tmux_listclients % %' { };
+
+		alias tmux_away (void) {
+			if (A || !getenv(TMUX)) {
+				return;
+			};
+
+			@ ::tmux_away.clients = 0;
+
+			^exec -line {
+				if (@*0) {
+					eval ^exec -line {
+						@ ::tmux_away.clients++;
+					} -end {
+						if (!::tmux_away.clients) {
+							//away -all $tmux_away_reason;
+						};
+					} -name tmux_listclients tmux list-clients -t $0;
+				};
+			} -name tmux_getsession tmux display-message -p '#S';
+		};
+		timer -rep -1 -ref tmux_away $tmux_away_interval tmux_away;
+	} else {
+		timer -delete tmux_away;
+		alias -tmux_away;
+		on ^exec_exit -'tmux_getsession % %';
+		on ^exec_exit -'tmux_listclients % %';
+		foreach tmux_away ff {
+			^assign -tmux_away.${ff};
+		};
+	};
+};

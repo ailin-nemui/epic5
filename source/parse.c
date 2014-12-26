@@ -1,4 +1,4 @@
-/* $EPIC: parse.c,v 1.112 2014/09/06 16:51:42 jnelson Exp $ */
+/* $EPIC: parse.c,v 1.113 2014/12/26 15:26:45 jnelson Exp $ */
 /*
  * parse.c: handles messages from the server.   Believe it or not.  I
  * certainly wouldn't if I were you. 
@@ -1509,10 +1509,10 @@ protocol_command rfc1459[] = {
 #define NUMBER_OF_COMMANDS (sizeof(rfc1459) / sizeof(protocol_command)) - 2;
 int 	num_protocol_cmds = -1;
 
-#define islegal(c) ((((c) >= 'A') && ((c) <= '}')) || \
+#define islegal(c) ((((c) >= 'A') && ((c) <= '~')) || \
                     (((c) >= '0') && ((c) <= '9')) || \
-		     ((c) == '*') || ((c) == '~') || \
-                     ((c) & 0x80))
+		     ((c) == '*') || \
+		     ((c) & 0x80))
 
 /*
  * parse_server: parses messages from the server, doing what should be done

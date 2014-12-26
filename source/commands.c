@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.232 2014/04/24 04:51:42 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.233 2014/12/26 15:26:45 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -3248,15 +3248,15 @@ struct target_type target[4] =
 	     * we haven't supported that for 5 years.
 	     */
 	    else if (*current_nick == '@' && is_number(current_nick + 1))
-		target_file_write(current_nick + 1, text);
+		target_file_write(current_nick, text);
 	    else if (*current_nick == '@' 
 			&& (current_nick[1] == 'W' || current_nick[1] == 'w')
-			&& is_number(current_nick + 1))
-		target_file_write(current_nick + 1, text);
+			&& is_number(current_nick + 2))
+		target_file_write(current_nick, text);
 	    else if (*current_nick == '@' 
 			&& (current_nick[1] == 'L' || current_nick[1] == 'l')
-			&& is_number(current_nick + 1))
-		target_file_write(current_nick + 1, text);
+			&& is_number(current_nick + 2))
+		target_file_write(current_nick, text);
 	    else if (*current_nick == '@' 
 			&& (current_nick[1] == 'E' || current_nick[1] == 'e'))
 	    {

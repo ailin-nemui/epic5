@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.45 2014/04/27 17:01:53 jnelson Exp $ */
+/* $EPIC: files.c,v 1.46 2014/12/26 15:26:45 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -38,7 +38,8 @@
 #include "output.h"
 #include "elf.h"
 
-/* Here's the plan.
+/* 
+ * Here's the plan...
  *  You want to open a file.. you can READ it or you can WRITE it.
  *    unix files can be read/written, but its not the way you expect.
  *    so we will only alllow one or the other.  If you try to write to
@@ -70,7 +71,7 @@ typedef struct FILE___ File;
 
 static File *	FtopEntry = (File *) 0;
 
-static File *	new_file (struct epic_loadfile *elf/*FILE *the_file*/)
+static File *	new_file (struct epic_loadfile *elf)
 {
         static long int id = 0;
         File *tmp = FtopEntry;
@@ -226,29 +227,6 @@ static File 			retval = {0 , &elf, NULL};
 }
 
 /*
- * target_file_write: "Send" a "message" to a file or logfile
- * Examples:
- *	/msg @<fileref> This is logged to an $open() file.
- *	/msg @W<winref> This is logged to a window's logfile
- *	/msg @L<logref> This is logged to a general logfile
- * This function is nothing but a bald wrapper to file_write which does
- * all of the heavy lifting.
- */
-int 	target_file_write (const char *fd, const char *stuff)
-{
-	/* XXX Really we should call add_to_log() here */
-	/* XXX file_write() should not know or care about logfiles */
-	if (toupper(*fd) == 'W' && is_number(fd + 1))
-		return file_write(1, my_atol(fd + 1), stuff);
-	else if (toupper(*fd) == 'L' && is_number(fd + 1))
-		return file_write(2, my_atol(fd + 1), stuff);
-	else if (is_number(fd))
-		return file_write(0, my_atol(fd), stuff);
-	else
-		return -1;
-}
-
-/*
  * file_write: Write something to a file or logfile
  *
  * logtype: 0 if 'fd' is an $open() refnum.
@@ -259,7 +237,7 @@ int 	target_file_write (const char *fd, const char *stuff)
  *
  * XXX - I think writes to logfiles should be sent back to the logging funcs
  */
-int	file_write (int logtype, int fd, const char *stuff)
+static int	file_write (int logtype, int fd, const char *stuff)
 {
 	File 	*ptr;
 	int	retval;
@@ -275,11 +253,68 @@ int	file_write (int logtype, int fd, const char *stuff)
 		return -1;
 
 	/* XXX This should call add_to_log  if it's a logfile */
-	retval = fprintf(ptr->elf->fp, "%s\n", stuff);
+	retval = fprintf(ptr->elf->fp, "%s\n", stuff); /* XXX utf8 XXX */
 	if ((fflush(ptr->elf->fp)) == EOF)
 		return -1;
 	return retval;
 }
+
+/*
+ * target_file_write: "Send" a "message" to a file or logfile
+ *
+ * Arguments:
+ * 	fd - A logical target to a logfile: 
+ *	    Syntax: @ + [<domain>] + <number>
+ *	    Specifically:
+ *		@W<winref>	Write to the /WINDOW LOG for <winref>
+ *		@L<logref>	Write to a /LOG file
+ *		@<openref>	Write to an $open() file
+ *	stuff - A UTF8 string to be sent to the log
+ *
+ * Return value:
+ *	-1	The "fd" argument was invalid becuase;
+ *		1. It was not in the form @W<number>, @L<number>
+ *		   or @<number>.
+ *	or, the return value of file_write() above:
+ *		-1 	The "fd" argument was not a valid logfile
+ *			(ie, the window has no log, the /log refnum
+ *			does not exist or is off)
+ *		-1 	The message was not written() becuase 
+ *			fflush() returned EOF
+ *		or, the return value of fprintf().
+ *  
+ * This function is nothing but a bald wrapper to file_write which does
+ * all of the heavy lifting.
+ */
+int 	target_file_write (const char *fd, const char *stuff)
+{
+	if (*fd != '@')
+		return -1;
+
+	fd++;
+	if (*fd == 'W' || *fd == 'w' || *fd == 'L' || *fd == 'l')
+		*fd++;
+
+	if (!is_number(fd))
+		return -1;
+
+	/* 
+	 * We specifically do not rewrite the UTF8 string.
+	 * All writes to files are done in UTF8 only.
+	 */
+
+	/* XXX Really we should call add_to_log() here */
+	/* XXX file_write() should not know or care about logfiles */
+	if (toupper(*fd) == 'W' && is_number(fd + 1))
+		return file_write(1, my_atol(fd + 1), stuff);
+	else if (toupper(*fd) == 'L' && is_number(fd + 1))
+		return file_write(2, my_atol(fd + 1), stuff);
+	else if (is_number(fd))
+		return file_write(0, my_atol(fd), stuff);
+	else
+		return -1;
+}
+
 
 /*
  * file_writeb: Write binary data (not a line of text) to a file or logfile

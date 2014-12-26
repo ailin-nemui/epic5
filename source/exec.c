@@ -1,4 +1,4 @@
-/* $EPIC: exec.c,v 1.47 2014/10/18 19:36:51 jnelson Exp $ */
+/* $EPIC: exec.c,v 1.48 2014/12/26 15:26:45 jnelson Exp $ */
 /*
  * exec.c: handles exec'd process for IRCII 
  *
@@ -120,7 +120,7 @@ static 	void 	kill_all_processes 	(int signo);
 static 	int 	valid_process_index 	(int proccess);
 static 	int 	is_logical_unique 	(char *logical);
 static	int 	logical_to_index 	(const char *logical);
-static	int	index_to_logical 	(int, char *, size_t);
+static	int	index_to_target 	(int, char *, size_t);
 static	void 	do_exec 		(int fd);
 
 /*
@@ -860,7 +860,7 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 			   exec_buffer[len - 1] == '\r'))
 	     exec_buffer[--len] = 0;
 
-	index_to_logical(proc->index, logical_name, sizeof(logical_name));
+	index_to_target(proc->index, logical_name, sizeof(logical_name));
 	utf8_text = inbound_recode(logical_name, proc->server, empty_string, exec_buffer, &extra);
 
 	if (proc->redirect) 
@@ -1031,7 +1031,7 @@ int 		text_to_process (int proc_index, const char *text, int show)
 	my_buffer = alloca(size);
 	snprintf(my_buffer, size, "%s\n", text);
 
-	index_to_logical(proc_index, logical_name, sizeof(logical_name));
+	index_to_target(proc_index, logical_name, sizeof(logical_name));
 	recoded_text = outbound_recode(logical_name, proc->server, my_buffer, &extra);
 	write(proc->p_stdin, recoded_text, strlen(recoded_text));
 	new_free(&extra);
@@ -1429,7 +1429,7 @@ static	int 	logical_to_index (const char *logical)
 	return -1;
 }
 
-static	int	index_to_logical (int process, char *buf, size_t bufsiz)
+static	int	index_to_target (int process, char *buf, size_t bufsiz)
 {
 	if ((process < 0) || (process >= process_list_size) ||
 			!process_list[process])
@@ -1438,10 +1438,11 @@ static	int	index_to_logical (int process, char *buf, size_t bufsiz)
 		return -1;
 	}
 
+	/* /EXEC targets are always preceded by a percent sign */
 	if (process_list[process]->logical)
-		snprintf(buf, bufsiz, "%s", process_list[process]->logical);
+		snprintf(buf, bufsiz, "%%%s", process_list[process]->logical);
 	else 
-		snprintf(buf, bufsiz, "%d", process);
+		snprintf(buf, bufsiz, "%%%d", process);
 
 	return 0;
 }

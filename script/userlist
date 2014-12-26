@@ -1,0 +1,347 @@
+if (word(2 $loadinfo()) != [pf]) {
+	load -pf $word(1 $loadinfo());
+	return;
+};
+
+if (J !~ [EPIC5*]) {
+	xecho -b ERROR: userlist: load: EPIC5 is required;
+	return;
+};
+
+package userlist;
+
+## Userlist script for EPIC5.
+## Written by zlonix@efnet, public domain.
+##
+## Version: 1.0 (October, 2014)
+##  - Initial roll-out
+
+## This script provides basic userlist functionality found in most
+## modern bots.  It allows automatic mode setting (op, voice, kickban)
+## and on-demand operation, based on remote user CTCP requests (op,
+## voice, invite, unban). Authentication is based only on hostmasks,
+## password support is not presented. The script requires addset and ban
+## scripts from base EPIC5 distribution.
+##
+## Userlist (op, voice, etc) globally turned on or off by boolean /set
+## userlist command.  Offensive actions (kickban for now) controlled by
+## /set shitlist.
+##
+## Following aliases provides list management:
+##
+##   /adduser <user> <host> [[host] [host] ...] - add user and
+##   corresponding hosts, script also checks that given host can be
+##   assigned only to one user
+##
+##   /addflag <user> <chan> <flag> [[flag] [flag] ...] - add flags to
+##   specified <user> on the <chan>, based on this flags script will
+##   take automatic or on-demand actions, possible flags are:
+##      autoop - auto op user on join (in random 5 sec interval;
+##               implies access to 'op' flag)
+##      autovoice - auto voice user on join (in random 5 sec interval
+##                  implies access to 'voice' flag
+##      op - op user after /ctcp <yournick> OP <chan>
+##      voice - voice user after /ctcp <yournick> VOICE <chan>
+##      unban - unban user after /ctcp <yournick> UNBAN <chan> (only
+##              current user host is unbanned)
+##      invite - invite user after /ctcp <yournick> INVITE <chan>
+##      kickban - auto kickban user on join (ban mask is hardcoded to
+##                *@domain.tld - this is type '2' from mask() help page,
+##                works only if /set shitlist is on)
+##      friend - combination of op, voice, unban and invite flags
+##
+##   /showuser [user] - show information about the [user] or about all
+##   users if no arguments are given
+##
+##   /saveuser <file> - save current userlist to a file, file is deleted
+##   first if it's exist, you must load this file (not with PF loader)
+##   in your ~/.ircrc to preserve your userlist between client runs
+##
+##   /delhost <user> <host> [[host] [host] ...] - delete hosts from user
+##
+##   /delflag <user> <chan> <flag> [[flag] [flag] ...] - delete flags
+##   from user on the <chan>
+##   
+##   /deluser <user> [[user] [user] ...] - delete users from userlist,
+##   all corresponding information is deleted (hosts, flags)
+##
+##   /dumpuser - clears userlist (primary usage - in userlist config
+##   file)
+##
+## Examples:
+##
+##   /adduser testnick test@nick.com foo@example.com
+##   /addflag testnick #epic autoop unban
+##   /addflag testnick #epic2 voice
+##
+##   /adduser badnick *@badhost.com
+##   /addflag badnick #epic kickban
+##
+## Bugs: user name maynot contain things which can't be used in variable
+##       name, for example, |, although it doesn't matter much, because
+##       all authentication is done by hostmask, not by nick
+
+load addset;
+load ban;
+
+alias adduser (user, host, ...) {
+	if (@user && @host) {
+		fe ($host $*) hh {
+			@ :badhost = 0;
+
+			foreach userlist uu {
+				if (findw($hh $userlist[$uu]) > -1) {
+					if (uu == user) {
+						xecho -c -b adduser: host $hh already presented for $user;
+					} else {
+						xecho -c -b adduser: conflict - $hh already added for user $tolower($uu);
+					};
+					@ :badhost = 1;
+					break;
+				};
+			};
+			if (!badhost) {
+				push ::userlist[$user] $hh;
+				xecho -s -c -b Added host [$hh] for user $user;
+			};
+		};
+	} else {
+		xecho -c -b Usage: /adduser <user> <host> [[host] [host] ...];
+	};
+};
+
+alias addflag (user, chan, flag, ...) {
+	if (@user && @chan && @flag) {
+		if (!userlist[$user]) {
+			xecho -c -b addflag: unknown user $user;
+			return;
+		};
+		if (!ischannel($chan)) {
+			xecho -c -b addflag: $chan is not a channel;
+			return;
+		};
+		fe ($flag $*) ff {
+			if (findw($ff autoop autovoice op voice invite unban kickban friend) == -1) {
+				xecho -c -b addflag: unknown flag $ff;
+				continue;
+			};
+			if (findw($ff $userlist[$user][$encode($chan)]) == -1) {
+				push ::userlist[$user][$encode($chan)] $ff;
+				push :tmp $ff;
+			} else {
+				xecho -c -b addflag: flag $ff already added for $user on $chan;
+			};
+		};
+		if (@tmp) {
+			xecho -s -c -b Added flags [$tmp] for user $user on channel $chan;
+		};
+	} else {
+		xecho -c -b Usage: /addflag <user> <chan> <flag> [[flag] [flag] ...];
+	};
+};
+
+alias delflag (user, chan, flag, ...) {
+	if (@user && @chan && @flag) {
+		if (!userlist[$user]) {
+			xecho -c -b delflag: unknown user $user;
+			return;
+		};
+		if (!ischannel($chan)) {
+			xecho -c -b delflag: $chan is not a channel;
+			return;
+		};
+		fe ($flag $*) ff {
+			if (findw($ff autoop autovoice op voice invite unban protect kickban) == -1) {
+				xecho -c -b addflag: unknown flag $ff;
+				continue;
+			};
+			if (findw($ff $userlist[$user][$encode($chan)]) > -1) {
+				@ ::userlist[$user][$encode($chan)] = remw($ff $::userlist[$user][$encode($chan)]);
+				push :tmp $ff;
+			} else {
+				xecho -c -b delflag: flag $ff doesn't  exist for user $user on $chan;
+			};
+		};
+		if (@tmp) {
+			xecho -c -b Removed flags [$tmp] for user $user on channel $chan;
+		};
+	} else {
+		xecho -c -b Usage: /delfalg <user> <chan> <flag> [[flag] [flag] ...];
+	};
+};
+
+alias deluser (user, ...) {
+	if (@user) {
+		fe ($user $*) uu {
+			if (userlist[$uu]) {
+				foreach userlist[$uu] cc {
+					^assign -userlist[$uu][$cc];
+				};
+				^assign -userlist[$user];
+			} else {
+				xecho -c -b deluser: user $uu doesn't exist;
+			};
+		};
+	} else {
+		xecho -c -b Usage: /deluser <user> [[user] [user] ...];
+	};
+};
+
+alias delhost (user, host, ...) {
+	if (@user && @host) {
+		if (!userlist[$user]) {
+			xecho -c -b delhost: user $user doesn't exist;
+			return;
+		};
+		fe ($host $*) hh {
+			if (findw($hh $userlist[$user]) > -1) {
+				@ ::userlist[$user] = remw($hh $::userlist[$user]);
+				push :tmp $hh;
+			} else {
+				xecho -c -b delhost: host $hh doesn't belong to user $user;
+			};
+		};
+		if (@tmp) {
+			xecho -c -b Removed hosts [$tmp] for user $user;
+		};
+	} else {
+		xecho -c -b Usage: /delhost <user> <host> [[host] [host] ...];
+	};
+};
+
+alias showuser (user) {
+	if (@user) {
+		showuser.echo $user;
+	} else {
+		foreach userlist ii {
+			showuser.echo $ii;
+		};
+	};
+};
+
+alias showuser.echo (user) {
+	if (@user) {
+		xecho -b User: $tolower($user);
+		xecho -b   Hostmasks: $userlist[$user];
+		foreach userlist.${user} ii {
+			xecho -b   Channel: $tolower($decode($ii)) - $sort($userlist[$user][$ii]);
+		};
+	};
+};
+
+alias saveuser (file) {
+	if (@file) {
+		if (fexist($file) == 1 && unlink($file) > 0) {
+			xecho -c -b saveuser: can't unlink existing $file before writing - abort;
+			return;
+		};
+		@ :fd = open($file W);
+		if (isfilevalid($fd) == 1) {
+			@ write($fd ^dumpuser);
+			foreach userlist uu {
+				@ :data = [^adduser $tolower($uu) $userlist[$uu]];
+				@ write($fd $data);
+			};
+			foreach userlist uu {
+				foreach userlist.${uu} cc {
+					@ :data = [^addflag $tolower($uu) $decode($cc) $userlist[$uu][$cc]];
+					@ write($fd $data);
+				};
+			};
+			@ close($fd);
+			xecho -c -b Userlist saved to $file;
+		} else {
+			xecho -c -b saveuser: isfilevalid() not equal 1;
+		};
+	} else {
+		xecho -c -b Usage: /saveuser <file>;
+	};
+};
+
+alias userflags (host, chan, void) {
+	foreach userlist uu {
+		if ((:idx = rmatch($host $userlist[$uu])) > 0) {
+			@ :idx--;
+
+			push :users $uu;
+			push :hosts $word($idx $userlist[$uu]);
+		};
+	};
+	if ((:idx = rmatch($host $hosts)) > 0) {
+		@ :idx--;
+
+		return $userlist[$word($idx $users)][$encode($chan)];
+	} else {
+		return;
+	};
+};
+
+alias isfriend (nick, chan, void) {
+	return ${findw(friend $userflags($userhost($nick) $chan)) > -1};
+};
+
+alias friends (chan, void) {
+	fe ($strip(?.%+@ $channel($chan))) uu {
+		if (isfriend($uu $chan)) {
+			push :tmp $uu;
+		};
+	};
+
+	return $tmp;
+};
+
+alias dumpuser (void) {
+	foreach userlist uu {
+		deluser $uu;
+	};
+	^assign -userlist;
+};
+
+on #-join 100 * {
+	switch ($userflags($userhost() $1)) {
+		(*kickban*) {
+			if (shitlist == [on]) {
+				mode $1 -o+b $0 $mask(2 $userhost());
+				kick $1 $0 user has been banned;
+			};
+		};
+		(*autoop*) {
+			if (userlist == [on]) {
+				timer $rand(5) mode $1 +o $0;
+			};
+		};
+		(*autovoice*) {
+			if (userlist == [on]) {
+				timer $rand(5) mode $1 +v $0;
+			};
+		};
+	};
+};
+
+on #-ctcp 100 '% $$servernick() \\\\[op voice invite unban\\\\] %' {
+	if (userlist != [on]) {
+		return;
+	};
+
+	@ :uf = userflags($userhost() $3);
+
+	if ((findw($2 $uf) > -1 || findw(friend $uf) > -1) && ischanop($servernick() $3)) {
+		switch ($2) {
+			(*op) {
+				mode $3 +o $0;
+			};
+			(*voice) {
+				mode $3 +v $0;
+			};
+			(invite) {
+				invite $0 $3;
+			};
+			(unban) {
+				unban $3 $0;
+				notice $0 You've been unbanned on channel $3;
+			};
+		};
+	};
+};
+addset userlist bool;
+addset shitlist bool;

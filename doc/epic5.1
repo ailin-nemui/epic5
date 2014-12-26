@@ -40,48 +40,47 @@ Support for non-irc2 networks (such as OPN or MS Comic Chat) is hit-and-miss.
 .Sh OPTIONS
 .Bl -tag -width flag
 .It Fl a
-Append the server description list to the default server list.
-The default behavior is for the server description list to replace the default server list.
+Append the 
+.Op Ar server description list
+to the end of the hardcoded default server list, rather than replacing it.
 .It Fl b
 Operate in so called
 .Dq bot mode.  
-This implies the 
+This also turns on the
 .Op Ar \-d
 option.  
 .Nm EPIC5
 will 
 .Xr fork 2
 immediately and the parent process will exit, returning you to your shell.
-Some system administrators do not look kindly to their users running bots, and they have disabled this option.  
-Even if your administrator has not disabled it, you should not assume this gives you automatic permission to run a bot.  
-If you do run a bot without permission, your administrator may get very angry with you, and possibly revoke your account.  
-In addition, most IRC operators on public irc networks have very little tolerance for people who run bots.
-So just a word of caution, make sure that your system administrator and your irc administrator have given you permission before you run a bot.
+This was more useful before GNU
+.Nm screen
+and 
+.Nm tmux,
+when logging out killed your processes.  It's a better idea to just run
+your bot as a foreground client in another window.  Some IRC networks limit
+the number of connections from an IP address to discourage bots.
 .It Fl c Ar chan
-Join the specified channel the first time you successfully connect to a server.
+Join 
+.Ar chan
+the first time you successfully connect to a server.
 .It Fl d
 Operate in 
 .Dq dumb mode.
-The client will not put up a full screen display, and will read from standard input and write to standard output.  
-This is useful if the output normally looks awful (because you are using an incorrect
-.Ev TERM 
-setting, or your terminal description is spectacularly broken), or you just don't want to use the pretty interface.  
-This option will be turned on automatically if your current 
-.Ev TERM
-setting is not capable of a full screen display.
+This is an alternate interface that is not full-screen.  Input is read 
+from stdin, and output is written to stdout.  This interface is useful 
+for screen readers and bots.
 .It Fl h
 Display a moderately concise help message and exit immediately.
 .It Fl H Ar hostname
-Use the IP address of the specified hostname as your default local IP address.
-This can be used if you have multiple IP addresses on the same machine and you want to use an address other than the default address.  
-You might need to use this option when
-.Xr gethostname 3
-does not return a hostname (in some poorly configured NIS environments).
-The use of multiple IP addresses on a single machine is commonly referred to as "virtual hosting", and each IP address is a "virtual host".   
-Please understand that an irc client may not tell the irc server what your hostname should be:  the server alone determines that.  
-Servers typically use the canonical hostname for an IP address as your hostname.
-Because of this, this option will not permit you to use a CNAME (secondary hostname for an IP address), because the server will use the canonical hostname instead.
-This option overrides the 
+Use the IP address for
+.Ar hostname
+as your 
+.Dq local
+IP address.  This is for people with vhosts.
+Please note, the client doesn't tell the irc server what hostname to 
+appear as, the server decides that.  Usually it is the official hostname
+of your IP address.  This option overrides the 
 .Ev IRCHOST 
 environment variable.
 .It Fl l Ar filename,[filename]

@@ -1,4 +1,4 @@
-/* $EPIC: alias.c,v 1.90 2014/09/06 16:51:42 jnelson Exp $ */
+/* $EPIC: alias.c,v 1.91 2014/12/26 15:26:45 jnelson Exp $ */
 /*
  * alias.c -- Handles the whole kit and caboodle for aliases.
  *
@@ -2554,7 +2554,8 @@ static char *	get_variable_with_args (const char *str, const char *args)
 		copy = 1, ret = alias->user_variable;
 	else if (local == 1)
 		;
-	else if ((alias = lookup_symbol(name)) != NULL)
+
+	if (ret == NULL && ((alias = lookup_symbol(name)) != NULL))
 	{
 		if (alias->user_variable)
 			copy = 1, ret = alias->user_variable;
@@ -2564,14 +2565,19 @@ static char *	get_variable_with_args (const char *str, const char *args)
 			copy = 0, ret = make_string_var_bydata(alias->builtin_variable->type, alias->builtin_variable->data);
 	}
 /*
-	else if ((ret = make_string_var(str)))
+	if (ret == NULL && (ret = make_string_var(str)))
 		copy = 0;
 */
-	else
+
+	if (ret == NULL)
 		copy = 1, ret = getenv(str);
 
-	if (x_debug & DEBUG_UNKNOWN && ret == NULL)
-		yell("Variable lookup to non-existant assign [%s]", name);
+	if (ret == NULL)
+	{
+		copy = 0, ret = malloc_strdup(empty_string);
+		if (x_debug & DEBUG_UNKNOWN)
+		    yell("Variable lookup to non-existant assign [%s]", name);
+	}
 
 	new_free(&freep);
 	return (copy ? malloc_strdup(ret) : ret);

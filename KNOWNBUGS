@@ -2,7 +2,6 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* $open() should allow recoding
 * /DCC should allow recoding
 * Fraction was able to crash by typing invalid stuff into input line.
 
@@ -609,3 +608,13 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * New sasl_auth script from zlonix
 * Add recoding support (ie, UTF8 support) to send/recv msgs from /exec procs.
 * Don't whine that your irc hostname is invalid until /dcc fails because of it.
+* Fix null deref when looking up a variable that exists but not as a variable
+* Fix recoding /exec's by having the "target" be "%<name>", like /msg works.
+* Don't let /ignore hop msgs cover up /ignore #epic joins
+* Allow ` in nicknames for ircnet. (caf)
+* Two scripts from zlonix, scripts/user_list scripts/tmux_away
+* Fix build on systems without <xlocale.h>, newlocale() [FreeBSD-8]
+* Rewrite target_file_write() to support the expected syntax
+* Rewrite $write() and $writeb() to use new target_file_write() properly.
+* Remove frivolous fprintf()s to stdout.
+

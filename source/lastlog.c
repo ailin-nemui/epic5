@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.97 2014/03/28 13:31:36 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.98 2014/12/26 15:26:45 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -725,6 +725,10 @@ BUILT_IN_COMMAND(lastlog)
 
 	if (outfile)
 	{
+		/* 
+		 * XXX /LASTLOG -FILE is not encoding aware.
+		 * I'm not even sure if it could be.
+		 */
 		if ((outfp = fopen(outfile, "a")) == NULL)
 		{
 			say("Couldn't open output file");

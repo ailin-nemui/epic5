@@ -1,4 +1,4 @@
-/* $EPIC: term.c,v 1.30 2014/03/05 14:40:56 jnelson Exp $ */
+/* $EPIC: term.c,v 1.31 2014/12/26 15:26:45 jnelson Exp $ */
 /*
  * term.c -- termios and (termcap || terminfo) handlers
  *
@@ -822,7 +822,7 @@ int 	term_init (void)
 		return -1;
 	}
 	else
-		fprintf(stdout, "Using terminal type [%s]\n", term);
+		printf("Using terminal type [%s]\n", term);
 
 #ifdef HAVE_TERMINFO
 	setupterm(NULL, 1, &i);

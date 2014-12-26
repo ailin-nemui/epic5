@@ -13,7 +13,6 @@
 	int	open_file_for_write 	(const char *, const char *);
 	int *	open_exec_for_in_out_err(const char *, char * const *);
 	int	target_file_write	(const char *, const char *);
-	int	file_write 		(int, int, const char *);
 	int	file_writeb 		(int, int, char *);
 	char *	file_read 		(int);
 	char *	file_readb 		(int, int);

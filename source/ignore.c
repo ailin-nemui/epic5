@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.37 2013/03/27 23:12:06 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.38 2014/12/26 15:26:45 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -1306,7 +1306,27 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 	 * If the nickuserhost match did not say anything about the level
 	 * that we are interested in, then try a channel ignore next.
 	 */
-	else if (c_match)
+	/*
+	 * Commenting out the 'else' is an experimental change requested
+	 * by some folks who think that channel ignores should apply when
+	 * there is a nickuserhost ignore, but it does not cover the 
+	 * level we're checking for here.  As an example:
+	 *	ignore hop msgs
+	 *	ignore #epic joins
+	 * When "else" is uncommented (old behavior), you would see
+	 * joins from hop because /ignore hop suppresses /ignore #epic.
+	 * When "else" is commented out (new behavior), you will not
+	 * see joins from hop since /ignore hop doesn't cover joins.
+	 * To get the old behavior, you would have to explicitly put
+	 * an exception-ignore, a la /ignore hop msgs,!joins
+	 *
+	 * XXX This breaks backwards compatability, but it seems
+	 * like a beneficial change with the breakage only happening
+	 * in pathological situations.  Before complaining, please
+	 * demonstrate how something that was working in a sensible
+	 * way is now not behaving sensibly.
+	 */
+	/* else */ if (c_match)
 	{
 		tmp = c_match;
 		if (mask_isset(&tmp->dont, level))

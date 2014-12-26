@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.173 2014/10/18 20:00:23 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.174 2014/12/26 15:26:45 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1553,6 +1553,8 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 	{
 		strlcat(tmp, text, sizeof tmp);
 		strlcat(tmp, "\n", sizeof tmp);
+
+		/* XXX Do recode_outbound here */
 		writeval = write(dcc->socket, tmp, strlen(tmp));
 	}
 
@@ -3246,6 +3248,8 @@ static	void	process_dcc_chat_data (DCC_list *Client)
 	/* If the message is empty, ignore it... */
 	if (!process_dcc_chat_ctcps(Client, tmp) || !*tmp)
 		return;
+
+	/* XXX - Do recode_inbound here */
 
 	/* Otherwise throw the message to the user. */
 	target = dcc_target(Client->user);

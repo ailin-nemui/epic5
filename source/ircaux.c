@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.260 2014/06/14 01:48:27 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.261 2014/12/26 15:26:45 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2093,6 +2093,8 @@ error_cleanup:
 /*
  * slurp_file opens up a file and puts the contents into 'buffer'.
  * The size of 'buffer' is returned.
+ *
+ * This does no recoding!  You have to recode the result!
  */ 
 int	slurp_file (char **buffer, char *filename)
 {

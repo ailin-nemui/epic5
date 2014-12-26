@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.25 2014/04/22 14:05:30 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.26 2014/12/26 15:26:45 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -41,7 +41,9 @@
 #include <langinfo.h>
 #include <locale.h>
 #include <wctype.h>
+#ifdef HAVE_XLOCALE_H
 #include <xlocale.h>
+#endif
 
 /*
  * Here's the plan...
@@ -1125,18 +1127,27 @@ BUILT_IN_COMMAND(encoding)
 					 recode_rules[x]->encoding);
 }
 
+#ifdef HAVE_NEWLOCALE
 static	locale_t	utf8_locale = 0;
+#endif
 
 void	create_utf8_locale (void)
 {
+#ifdef HAVE_NEWLOCALE
 	utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
+#else
+	yell("*** Your system does not support newlocale(3), so case insensitive string comparison probably won't work for non-english languages.  Sorry.");
+#endif
 }
 
 int	mkupper_l (int codepoint)
 {
+#ifdef HAVE_NEWLOCALE
 	if (utf8_locale)
 		return towupper_l(codepoint, utf8_locale);
-	else if (codepoint >= 0x80)
+	else 
+#endif
+	     if (codepoint >= 0x80)
 		return codepoint;
 	else
 		return toupper(codepoint);
@@ -1145,9 +1156,12 @@ int	mkupper_l (int codepoint)
 
 int	mklower_l (int codepoint)
 {
+#ifdef HAVE_NEWLOCALE
 	if (utf8_locale)
 		return towlower_l(codepoint, utf8_locale);
-	else if (codepoint >= 0x80)
+	else 
+#endif
+	      if (codepoint >= 0x80)
 		return codepoint;
 	else
 		return tolower(codepoint);

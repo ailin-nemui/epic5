@@ -1,5 +1,5 @@
 /*
- * @(#)$Id: acconfig.h,v 1.45 2013/07/28 23:16:11 jnelson Exp $
+ * @(#)$Id: acconfig.h,v 1.46 2014/12/26 15:26:41 jnelson Exp $
  */
 
 /*
@@ -433,4 +433,10 @@
 
 /* Define this if you have <sys/termios.h> */
 #undef HAVE_SYS_TERMIOS_H
+
+/* Define this if you have <xlocale.h> */
+#undef HAVE_XLOCALE_H
+
+/* Define this if you have newlocale() */
+#undef HAVE_NEWLOCALE
 
