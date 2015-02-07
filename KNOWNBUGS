@@ -4,6 +4,12 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * /DCC should allow recoding
 * Fraction was able to crash by typing invalid stuff into input line.
+* /Timer -snapto <X> runs every time time() % X == 0
+* Need new function $chankey(servref #channel), since $key() hardcodes f_s.
+* Need /SET CA_ROOT_NSS_FILE to pass to SSL_CTX_load_verify_locations
+  (Right now it's hardcoded to where it is on my freebsd system)
+* There should be a feature to convert SSL_get_verify_result() to string.
+* Need to marshall up the SSL Cert to pass to /on ssl_server_cert
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -617,4 +623,11 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Rewrite target_file_write() to support the expected syntax
 * Rewrite $write() and $writeb() to use new target_file_write() properly.
 * Remove frivolous fprintf()s to stdout.
+* These features were suggested by Roca He, who is doing a research project
+  on inproper OpenSSL API usage by open source software.
+* Output the SSL protocol upon connect (SSL_get_version())
+* Call SSL_CTX_load_verify_locations() to load root CAs.  Need to /set-ify this
+* Call SSL_get_verify_result() to validate certs whenever possible.
+* Extend /on ssl_server_cert with $5=SSL_get_verify_result() 
+* Extend /on ssl_server_cert with $6=SSL_get_version()
 

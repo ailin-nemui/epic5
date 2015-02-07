@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.30 2009/09/14 04:49:58 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.31 2015/02/07 17:27:43 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -82,7 +82,8 @@ static SSL_CTX	*SSL_CTX_init (int server)
 			SSLv23_client_method());
 	SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_BOTH);
 	SSL_CTX_set_timeout(ctx, 300);
-
+	SSL_CTX_load_verify_locations(ctx, "/usr/local/share/certs/ca-root-nss.crt", NULL);
+	
 	return ctx;
 }
 
@@ -426,6 +427,7 @@ int	ssl_connected (int vfd)
 	X509 *          server_cert;
 	EVP_PKEY *      server_pkey;
 	ssl_info *	x;
+	int		verified, verr;
 
 	if (!(x = find_ssl(vfd)))
 	{
@@ -438,6 +440,8 @@ int	ssl_connected (int vfd)
 	/* It completed!  Yay! */
 	if (x_debug & DEBUG_SSL)
 		say("SSL negotiation using %s", SSL_get_cipher(x->ssl_fd));
+
+	say("SSL protocol using %s", SSL_get_version(x->ssl_fd));
 
 	/* The man page says this never fails in reality. */
 	if (!(server_cert = SSL_get_peer_certificate(x->ssl_fd)))
@@ -452,6 +456,18 @@ int	ssl_connected (int vfd)
 
 	say("SSL negotiation for channel [%d] complete", x->channel);
 
+	verr = SSL_get_verify_result(x->ssl_fd);
+	if (verr == X509_V_OK)
+	{
+		say("SSL Certificate is verifiable (wow!)");
+		verified = 1;
+	}
+	else
+	{
+		say("SSL Certificate is not verifiable (big surprise): Reason %d", verr);
+		verified = 0;
+	}
+
 	cert_subject = X509_NAME_oneline(X509_get_subject_name(server_cert),
 							0, 0);
 	if (!(u_cert_subject = transform_string_dyn("+URL", cert_subject, 
@@ -465,14 +481,16 @@ int	ssl_connected (int vfd)
 	
 	server_pkey = X509_get_pubkey(server_cert);
 
-	if (do_hook(SSL_SERVER_CERT_LIST, "%d %s %s %d", 
+	if (do_hook(SSL_SERVER_CERT_LIST, "%d %s %s %d %d %s", 
 			vfd, u_cert_subject, u_cert_issuer, 
-			EVP_PKEY_bits(server_pkey))) 
+			EVP_PKEY_bits(server_pkey), verr, 
+			SSL_get_version(x->ssl_fd))) 
 	{
 		say("SSL certificate subject: %s", cert_subject) ;
 		say("SSL certificate issuer: %s", cert_issuer);
 		say("SSL certificate public key length: %d bits", 
 					EVP_PKEY_bits(server_pkey));
+		say("SSL Certificate was verified: %d (reason: %d)", verified, verr);
 	}
 
 	new_free(&u_cert_issuer);
@@ -507,6 +525,45 @@ int	client_ssl_enabled (void)
 	return 1;
 }
 
+#if 0
+const char *	verify_result_to_str (int err)
+{
+	switch (err) {
+		case X509_V_OK: 
+			return "No verification error occurred.";
+		case X509_V_UNABLE_TO_GET_ISSUER_CERT:
+			return "Unable to get the Certificate of the CA";
+		case X509_V_ERR_UNABLE_TO_GET_CRL:
+			return "Unused (CRL of a cert not found)";
+		case X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE:
+			return "Unable to decrypt the Certificate's signature";
+		case X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE:
+			return "Unused (Unable to decrypt the CRL of the cert)";
+		case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
+			return "Unable to determine the public key for the CA from the certificate.";
+		case X509_V_ERR_CERT_SIGNATURE_FAILURE:
+			return "The signature of the certificate is invalid";
+		case X509_V_ERR_CRL_SIGNATURE_FAILURE:
+			return "Unused (The CRL signature is invalid)";
+		case X509_V_ERR_CERT_NOT_YET_VALID:
+			return "The certificate was issued for a time in the future.";
+		case X509_V_ERR_CERT_HAS_EXPIRED:
+			return "The certificate has expired";
+		case X509_V_ERR_CRL_NOT_YET_VALID:
+			return "X509_V_ERR_CRL_NOT_YET_VALID";
+		case X509_V_ERR_CRL_HAS_EXPIRED:
+			return "X509_V_ERR_CRL_HAS_EXPIRED";
+		case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
+			return "The Certificate's start time is bogus";
+		case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
+			return "The Certificate's end time is bogus";
+		case X509_V_ERR_ERROR_IN_CRL_NOT_BEFORE_FIELD:
+			return "CRL: The Certificate's start time is bogus";
+		case X509_V_ERR_ERROR_IN_CRL_NOT_AFTER_FIELD:
+			return "CRL: The Certificate's end time is bogus";
+	}
+
+#endif
 
 # ifdef USE_PTHREAD
 #include <pthread.h>
