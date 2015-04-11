@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.85 2014/04/24 04:51:42 jnelson Exp $ */
+/* $EPIC: input.c,v 1.86 2015/04/11 04:16:34 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -385,7 +385,7 @@ static	int	recursive = 0;
  *
  * XXX For now, we ignore 'start' and always redo the whole thing.
  */
-int	retokenize_input (int start)
+static int	retokenize_input (int start)
 {
 	const unsigned char *str;
 	const unsigned char *s, *old_s;
@@ -846,8 +846,6 @@ const char *	prompt;
 		 * Move the cursor to the start of the input line
 		 */
 		term_move_cursor(0, INPUT_LINE);
-
-		int	old_do_echo;
 
 		/* Forcibly output the prompt */
 		old_do_echo = term_echo(1);

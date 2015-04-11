@@ -1,4 +1,4 @@
-/* $EPIC: files.c,v 1.46 2014/12/26 15:26:45 jnelson Exp $ */
+/* $EPIC: files.c,v 1.47 2015/04/11 04:16:34 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
@@ -293,7 +293,7 @@ int 	target_file_write (const char *fd, const char *stuff)
 
 	fd++;
 	if (*fd == 'W' || *fd == 'w' || *fd == 'L' || *fd == 'l')
-		*fd++;
+		fd++;
 
 	if (!is_number(fd))
 		return -1;

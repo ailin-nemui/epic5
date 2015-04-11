@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.249 2014/09/06 16:51:42 jnelson Exp $ */
+/* $EPIC: window.c,v 1.250 2015/04/11 04:16:35 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -713,7 +713,7 @@ int 	traverse_all_windows (Window **ptr)
  * *ptr is set to the next valid window.  When the function returns 0, then
  * you have iterated all windows.
  */
-int 	traverse_all_windows_by_priority (Window **ptr)
+static int 	traverse_all_windows_by_priority (Window **ptr)
 {
 	Window 		*w, *winner = NULL;
 	unsigned	ceiling;
@@ -7473,6 +7473,7 @@ void	window_change_server (Window * win, int server)
 }
 
 
+#if 0
 void    help_topics_window (FILE *f)
 {                                                                               
         int     x;
@@ -7480,4 +7481,4 @@ void    help_topics_window (FILE *f)
         for (x = 0; options[x].func; x++)
                 fprintf(f, "window %s\n", options[x].command);
 }
-
+#endif

@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.70 2014/04/09 17:51:08 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.71 2015/04/11 04:16:34 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -638,7 +638,7 @@ void *	handle_keypress (void *lastp, Timeval pressed, u_32int_t keyx, int quote_
 		add_timer(0, empty_string, 
 				get_int_var(KEY_INTERVAL_VAR) / 1000.0, 1,
 				do_input_timeouts, NULL, NULL, GENERAL_TIMER, 
-				-1, 0);
+				-1, 0, 0);
 
 	/*
 	 * If this node is NOT ambiguous, but it is not a terminal node
@@ -2067,6 +2067,7 @@ static void	bindctl_getmap (Key *map, const char *str, int len, char **ret)
 	}
 }
 
+#if 0
 void    help_topics_bind (FILE *f)                                         
 {
 	Binding *b;
@@ -2077,4 +2078,5 @@ void    help_topics_bind (FILE *f)
 			fprintf(f, "bind %s\n", b->name);
 	}
 }                                                                               
+#endif
 

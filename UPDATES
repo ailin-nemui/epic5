@@ -1,5 +1,83 @@
 EPIC5-1.1.11
 
+*** News 04/10/2015 -- New /TIMER argument, /TIMER -SNAP
+	A "snappable" timer fires off at the "top of the interval".
+	That means it runs every time ($time() % <interval> == 0)
+	If you snap to 60, it will run at the top of every minute,
+	just like mail checking, clock updating, etc.  If you snap 
+	to 3600, it will run at the top of every hour.
+
+	Example:
+		/timer -snap -repeat -1 -refnum hourly 3600 {
+			echo I run at the top of every hour
+		}
+
+*** News 04/10/2015 -- New script, /LOAD find_ssl_root_certs
+	This script is loaded by /load global, and you should load it 
+	too, if you're not using /load global; or you should implement
+	a similar functionality to get /SET SSL_ROOT_CERT_FILE pointing
+	to the right place for you.  Otherwise, your SSL certificates
+	won't authenticate, and $4 in /on ssl_server_cert will always 
+	be 0, even if the cert is actually legitimate.  Or maybe all
+	of what I just said doesn't matter to you.
+
+*** News 04/10/2015 -- New /SET, /SET SSL_ROOT_CERT_FILE
+	In order for SSL to verify certificates, it needs to have a copy
+	of the root certificate authorities.  This is usually a file
+	named "ca.bundle" or "ca-root-nss.crt".  You need to /set this
+	variable to wherever your openssl compatable root ca authority
+	certificates are.  It would help if I understood what I'm talking
+	about more.  Anyways, the script /load find_ssl_root_certs
+	tries to help you with this.
+
+*** News 04/10/2015 -- Enhancements to /ON SSL_SERVER_CERT
+	Apparently I've never documented /on SSL_SERVER_CERT.
+	
+	The /ON SSL_SERVER_CERT hook is thrown every time a successful
+	connection to an SSL server is made.  For now, the only SSL 
+	connections are to IRC servers, but some day I hope to support
+	DCC as well.  For now, this refers only to server connections.
+
+	  $0 - File Descriptor (need a way to convert to server refnum)
+	  $1 - The "subject" of the certificate  -- the server name
+	  $2 - The "issuer" of the certificate
+	  $3 - How many bits are used by the certificate's public key
+	  $4 - Did the certificate validate (1) or not (0)?
+		This depends on /SET SSL_ROOT_CERT_FILE (above)
+	  $5 - What SSL type are we using? (TLSv1 or SSLv3)
+	  $6 - What is the digest of the SSL Certificate?
+
+	The idea is you could use $1 to cache the metadata about a 
+	server, and use $2, $3, $4, $5, and $6 to see if anything
+	changes from one connection to the next.
+
+	Probably more additions will come later.  I'm especially interested
+	in passing in the complete plain text certificate +url'd up.
+
+*** News 04/10/2015 -- More robust certificate verification for SSL
+	Based on a paper written by Roca He, who is doing a research
+	project on improper use of OpenSSL API by open source software,
+	the OpenSSL code in epic was reviewed and enhanced.  One point
+	of interest was certificate verification -- epic wasn't doing
+	any of that.  But now it is.  This requires OpenSSL to know
+	where your root/trusted certificate authorities are, and there
+	are more notes above about how to handle that.  The results of
+	this verification are reflected in /on ssl_server_cert above.
+
+*** News 04/10/2015 -- You can now /encode to /EXEC processes 
+	The /EXEC system is now UTF-8 aware, and you can use the 
+	/encoding command to recode between %procs targets now. yay!
+
+	Example:
+		/encoding %nonutf8prog iso-8859-15
+		/exec -name nonutf8prog myprog
+		<output from 'myprog' treated as iso-8859-15, 
+		 converted to utf8 for epic's use>
+
+*** News 04/10/2015 -- New scripts: /load sasl_auth, userlist, tmux_away
+	Zlonix wrote these scripts.  I need to write blurbs about each.
+	Until that time, read the scripts, they're well documented!
+
 *** News 07/24/2014 -- New feature $windowctl(REFNUMS_ON_SCREEN <winref>)
 	The $windowctl(REFNUMS_ON_SCREEN <winref>) will return all of the
 	refnums on the screen that contains window <winref>.  They are

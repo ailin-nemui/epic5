@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.319 2014/12/26 15:26:45 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.320 2015/04/11 04:16:34 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -272,7 +272,9 @@ static	char
 	*function_glob		(char *),
 	*function_globi		(char *),
 	*function_hash_32bit	(char *),
+#if 0
 	*function_help_topics	(char *),
+#endif
 	*function_hookctl	(char *),
 	*function_iconvctl	(char *),
 	*function_idle		(char *),
@@ -556,7 +558,9 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "GLOB",		function_glob		},
 	{ "GLOBI",		function_globi		},
 	{ "HASH_32BIT",		function_hash_32bit	},
+#if 0
 	{ "HELP_TOPICS",	function_help_topics	},
+#endif
 	{ "HOOKCTL",		function_hookctl	},
 	{ "ICONVCTL",		function_iconvctl	},
 	{ "IDLE",		function_idle		},
@@ -7728,6 +7732,7 @@ BUILT_IN_FUNCTION(function_channelsyncing, word)
 	RETURN_INT(retval);
 }
 
+#if 0
 void	help_topics_commands(FILE *);
 void	help_topics_functions(FILE *);
 void	help_topics_scripts(FILE *);
@@ -7792,4 +7797,5 @@ BUILT_IN_FUNCTION(function_help_topics, word)
 	say("Done.  Check help_topics.txt");
 	RETURN_EMPTY;
 }
+#endif
 

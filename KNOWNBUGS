@@ -4,12 +4,10 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * /DCC should allow recoding
 * Fraction was able to crash by typing invalid stuff into input line.
-* /Timer -snapto <X> runs every time time() % X == 0
 * Need new function $chankey(servref #channel), since $key() hardcodes f_s.
-* Need /SET CA_ROOT_NSS_FILE to pass to SSL_CTX_load_verify_locations
-  (Right now it's hardcoded to where it is on my freebsd system)
 * There should be a feature to convert SSL_get_verify_result() to string.
 * Need to marshall up the SSL Cert to pass to /on ssl_server_cert
+* Do we need a /set ca_root_nss_dir to pass to SSL_CTX_load_verify_locations()?
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -628,6 +626,22 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Output the SSL protocol upon connect (SSL_get_version())
 * Call SSL_CTX_load_verify_locations() to load root CAs.  Need to /set-ify this
 * Call SSL_get_verify_result() to validate certs whenever possible.
-* Extend /on ssl_server_cert with $5=SSL_get_verify_result() 
-* Extend /on ssl_server_cert with $6=SSL_get_version()
-
+* Extend /on ssl_server_cert with $4=SSL_get_verify_result() 
+* Extend /on ssl_server_cert with $5=SSL_get_version()
+* Refactor ssl_connected() with comments and clarity. 
+* Fetch a SSL server's certificate (including subject, issuer, pkey, and digest)
+* Extend /on ssl_server_cert with $6=SSL digest (+URLified))
+* Someday, we'll save the ssl_certificate and cert_hash in the server struct
+* Someday, we want ssl.h to save all the metadata, for non-servers.
+* Add new argument "snap" to add_timer(), for determining initial timeout.
+* Updated tmux_away, userlist script (zlonix)
+* Fix bug in target_file_write() not properly handling @W/@L/@ref
+* Refactor the timer subsystem with comments and clarity
+* Add /TIMER -SNAP which allows you to run timers "at the top of the interval"
+* Make /timer option processing similar to other commands
+* Add comments to make the timer API more clear and robust.
+* Revamp add_time() to add snapping, and handle updating better
+* Add /SET SSL_ROOT_CERT_FILE to pass to SSL_CTX_load_verify_locations
+* Add new script 'find_ssl_root_certs' which sets SSL_ROOT_CERT_FILE for you.
+* Have 'find_ssl_root_certs' loaded by 'global'
+* Fix very many warnings recommended by clang.

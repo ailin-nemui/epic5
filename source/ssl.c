@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.31 2015/02/07 17:27:43 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.32 2015/04/11 04:16:35 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -50,8 +50,8 @@
 
 #include "output.h"
 #include "hook.h"
-#include "ssl.h"
 #include "newio.h"
+#include "vars.h"
 
 static	int	firsttime = 1;
 static void	ssl_setup_locking (void);
@@ -82,7 +82,10 @@ static SSL_CTX	*SSL_CTX_init (int server)
 			SSLv23_client_method());
 	SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_BOTH);
 	SSL_CTX_set_timeout(ctx, 300);
+/*
 	SSL_CTX_load_verify_locations(ctx, "/usr/local/share/certs/ca-root-nss.crt", NULL);
+*/
+	SSL_CTX_load_verify_locations(ctx, get_string_var(SSL_ROOT_CERT_FILE_VAR), NULL);
 	
 	return ctx;
 }
@@ -418,6 +421,36 @@ int	ssl_connect (int vfd, int quiet)
 	return 1;
 }
 
+/*
+ * ssl_connected - retrieve the vital statstics about an established SSL
+ *			connection
+ * Arguments:
+ *	vfd	 - The Virtual File Descriptor for the SSL connection
+ *		   (as returned by new_open())
+ *	info	 - A struct that holds all the important information about
+ *		   the connection (that doesn't depend on what is using
+ *		   the connection)
+ *
+ * A brief review of history:
+ *	1. First, you /server irc.hostname.com
+ *	2. That launches a nonblocking socket connect()ion, 
+ *	3. WHen that completes, if server "type" is "irc-ssl", a nonblocking
+ *	   SSL_connect() is launched.
+ *	4. When that completes, we get called.
+ *
+ * What this does: 
+ *	a. Sets the socket back to blocking 
+ *	b. Fetches the SSL's peer certificate
+ *	c. Verifies the peer's certificate with SSL_get_verify_result
+ *	d. Dumps the peer's certificate into a PEM (base64) format
+ *	e. Digests and format peer's certificate using X509_digest()
+ *	f. Get the certificate's "subject" (ie, hostname)
+ *	g. Get the certificate's "issuer"
+ *	h. Get the certificate's public key
+ *	i. Stash all of the above info into a struct passed back (TBD)
+ *	j. Hook /on ssl_server_cert with the above information
+ *	k. Cleans up
+ */
 int	ssl_connected (int vfd)
 {
 	char *		u_cert_issuer;
@@ -428,34 +461,62 @@ int	ssl_connected (int vfd)
 	EVP_PKEY *      server_pkey;
 	ssl_info *	x;
 	int		verified, verr;
+	char *		p = NULL;
+	unsigned char 	h[256], *hx;
+	unsigned	hlen;
+	unsigned char	htext[1024];
+	unsigned	i;
+	BIO *		mem;
+	long		bytes;
 
+	/*
+	 * First off -- do I think this is even an SSL enabled connection?
+	 */
 	if (!(x = find_ssl(vfd)))
 	{
 		errno = EINVAL;
 		return -1;
 	}
 
+	/*
+	 * We had set nonblocking when we started the SSL negotiation
+	 * becuase that plays nicer with OpenSSL.  But we want our connections
+	 * to be blocking when we start reading from them.
+	 */
 	set_blocking(x->channel);
 
 	/* It completed!  Yay! */
-	if (x_debug & DEBUG_SSL)
-		say("SSL negotiation using %s", SSL_get_cipher(x->ssl_fd));
-
+	say("SSL negotiation using %s", SSL_get_cipher(x->ssl_fd));
 	say("SSL protocol using %s", SSL_get_version(x->ssl_fd));
 
-	/* The man page says this never fails in reality. */
+	/*
+	 * If we are unable to get the certificate, then something
+	 * failed and we should just bail right here. 
+	 */
 	if (!(server_cert = SSL_get_peer_certificate(x->ssl_fd)))
 	{
 		syserr(SRV(vfd), "SSL negotiation failed -- reporting as error");
 		SSL_CTX_free(x->ctx);
 		x->ctx = NULL;
 		x->ssl_fd = NULL;
-		write(x->channel, empty_string, 1);    /* XXX Is this correct? */
+		write(x->channel, empty_string, 1);  /* XXX Is this correct? */
 		return -1;
 	}
 
+	/*
+	 * At this point, we have the certificate...
+	 */
 	say("SSL negotiation for channel [%d] complete", x->channel);
 
+
+	/*
+	 * Do the whole Certificate Verification thing.  Most SSL 
+	 * certs on irc probably won't verify becuase they're self-signed.
+	 *
+	 * A few are real; but we can't verify them unless epic knows
+	 * where your mozilla CA file is.
+	 * (See SSL_get_verify_results() for more info on that)
+	 */
 	verr = SSL_get_verify_result(x->ssl_fd);
 	if (verr == X509_V_OK)
 	{
@@ -464,35 +525,107 @@ int	ssl_connected (int vfd)
 	}
 	else
 	{
+		/* 
+		 * XXX There should be a user-exposed function
+		 * that converts verr into a user string.
+		 */
 		say("SSL Certificate is not verifiable (big surprise): Reason %d", verr);
 		verified = 0;
 	}
 
+	/*
+	 * Sorry about the horrible local variables; I wrote this in
+	 * a big hurry.  This gets the PEM (base64) version of the 
+	 * server's certificate.  We have to use an OpenSSL BIO, because
+	 * OpenSSL.
+	 */
+	mem = BIO_new(BIO_s_mem());
+	PEM_write_bio_X509(mem, server_cert);
+	bytes = BIO_get_mem_data(mem, &p);
+	p[bytes] = 0;
+	say("SSL Certificate is: %s", p);
+	BIO_free(mem);		/* This invalidates 'p' */
+
+	/*
+	 * Again, sorry about the horrible local variables.
+	 * This does a standard SHA1 type digest on the certificate.
+	 * well, sort of standard.  The digest is binary data
+	 * (which goes into 'h'), but it's up to us to make it human
+	 * readable.  Everyone said I should use <byte>:<byte> like
+	 * firefox does, so ... ok.
+	 */
+	memset(h, 0, sizeof(h));
+	hlen = sizeof(h);
+	X509_digest(server_cert, EVP_sha1(), h, &hlen);
+
+	/* 
+	 * Perhaps this is icky, but basically it converts 'h' into
+	 * a string of type AB:CD:EF:01:02....
+	 */
+	for (i = 0; i < hlen; i++)
+	{
+		if (i > 0)
+			htext[i * 3 - 1] = ':';
+
+		snprintf(htext + (i * 3), 
+			sizeof(htext) - (i * 3), "%02x", h[i]);
+	}
+	say("SSL Certificate Digest: %s", htext);
+
+	/*
+	 * Now we get the "subject" of the certificate (ie, the server's
+	 * name), and we URL-ify that up.
+	 */
 	cert_subject = X509_NAME_oneline(X509_get_subject_name(server_cert),
 							0, 0);
 	if (!(u_cert_subject = transform_string_dyn("+URL", cert_subject, 
 							0, NULL)))
 		u_cert_subject = malloc_strdup(cert_subject);
 
+	/*
+	 * We get the issuer of the certificate, and URL-ify that up.
+	 */
 	cert_issuer = X509_NAME_oneline(X509_get_issuer_name(server_cert),0,0);
 	if (!(u_cert_issuer = transform_string_dyn("+URL", cert_issuer, 
 							0, NULL)))
 		u_cert_issuer = malloc_strdup(cert_issuer);
 	
+	/*
+	 * And we get the server's public key -- (I probably should do
+	 * something to convert it to human readable)
+	 */
 	server_pkey = X509_get_pubkey(server_cert);
 
-	if (do_hook(SSL_SERVER_CERT_LIST, "%d %s %s %d %d %s", 
+
+	/*
+	 * THis is what we tell the user:
+	 *	$0 - The connection fd (should be a way to convert this
+	 *		to a server refnum)
+	 *	$1 - The "subject" (ie, server name)
+	 *	$2 - The "Issuer" 
+	 *	$3 - How many bits does the public key use?
+	 *	$4 - Did the cert validate (1) or not (0)?
+	 *	$5 - What ssl are we using? (SSLv3 or TLSv1)
+	 *	$6 - What is the digest of the certificate?
+	 *
+	 * It's expected from here that a script could stash this in
+	 * a file somewhere and use it to detect if the certificate
+	 * changed between connections.   Or something clever.
+	 */
+	if (do_hook(SSL_SERVER_CERT_LIST, "%d %s %s %d %d %s %s", 
 			vfd, u_cert_subject, u_cert_issuer, 
 			EVP_PKEY_bits(server_pkey), verr, 
-			SSL_get_version(x->ssl_fd))) 
+			SSL_get_version(x->ssl_fd), htext)) 
 	{
 		say("SSL certificate subject: %s", cert_subject) ;
 		say("SSL certificate issuer: %s", cert_issuer);
 		say("SSL certificate public key length: %d bits", 
 					EVP_PKEY_bits(server_pkey));
 		say("SSL Certificate was verified: %d (reason: %d)", verified, verr);
+		say("SSL Certificate SHA1 Hash: %s", htext);
 	}
 
+	/* Clean up after ourselves */
 	new_free(&u_cert_issuer);
 	new_free(&u_cert_subject);
 	free(cert_issuer);

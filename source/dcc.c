@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.174 2014/12/26 15:26:45 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.175 2015/04/11 04:16:34 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -1194,7 +1194,7 @@ static	int	dcc_connect (DCC_list *dcc)
 */
 		add_timer(0, empty_string, seconds, 1,
 			  do_expire_dcc_connects, NULL, NULL,
-			  GENERAL_TIMER, -1, 0);
+			  GENERAL_TIMER, -1, 0, 0);
 	}
 	from_server = old_server;
 	get_time(&dcc->lasttime);
@@ -4512,6 +4512,7 @@ char *	dccctl (char *input)
 	RETURN_MSTR(retval);
 }
 
+#if 0
 void    help_topics_dcc (FILE *f)
 {
         int     x;
@@ -4519,4 +4520,5 @@ void    help_topics_dcc (FILE *f)
         for (x = 0; dcc_commands[x].name; x++)
                 fprintf(f, "dcc %s\n", dcc_commands[x].name);
 }
+#endif
 

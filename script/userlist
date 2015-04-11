@@ -15,6 +15,11 @@ package userlist;
 ##
 ## Version: 1.0 (October, 2014)
 ##  - Initial roll-out
+##
+## Version: 1.1 (December, 2014)
+##  - Check if joined person hasn't been opped already before we op
+##    him (helps to not mode-flood chans on netjoins when servers op
+##    people automatically)
 
 ## This script provides basic userlist functionality found in most
 ## modern bots.  It allows automatic mode setting (op, voice, kickban)
@@ -297,6 +302,18 @@ alias dumpuser (void) {
 	^assign -userlist;
 };
 
+alias userlist.doop (chan, nick, void) {
+	if (!ischanop($nick $chan) && ischanop($servernick() $chan)) {
+		mode $chan +o $nick;
+	};
+};
+
+alias userlist.dovoice (chan, nick, void) {
+	if (!ischanvoice($nick $chan) && ischanop($servernick() $chan)) {
+		mode $chan +v $nick;
+	};
+};
+
 on #-join 100 * {
 	switch ($userflags($userhost() $1)) {
 		(*kickban*) {
@@ -307,12 +324,12 @@ on #-join 100 * {
 		};
 		(*autoop*) {
 			if (userlist == [on]) {
-				timer $rand(5) mode $1 +o $0;
+				timer 5 userlist.doop $1 $0;
 			};
 		};
 		(*autovoice*) {
 			if (userlist == [on]) {
-				timer $rand(5) mode $1 +v $0;
+				timer 5 userlist.dovoice $1 $0;
 			};
 		};
 	};
@@ -328,10 +345,10 @@ on #-ctcp 100 '% $$servernick() \\\\[op voice invite unban\\\\] %' {
 	if ((findw($2 $uf) > -1 || findw(friend $uf) > -1) && ischanop($servernick() $3)) {
 		switch ($2) {
 			(*op) {
-				mode $3 +o $0;
+				timer 5 userlist.doop $3 $0;
 			};
 			(*voice) {
-				mode $3 +v $0;
+				timer 5 userlist.dovoice $3 $0;
 			};
 			(invite) {
 				invite $0 $3;

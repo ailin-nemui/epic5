@@ -64,6 +64,7 @@
  */
 
 #include "irc.h"
+#include "ircaux.h"
 #include "output.h"
 
 struct interval {

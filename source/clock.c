@@ -229,7 +229,7 @@ int	cpu_saver_timer (void *schedule_only)
 	else
 		add_timer(1, cpu_saver_timeref, interval - been_idlin, 
 				1, cpu_saver_timer, NULL, NULL, 
-				GENERAL_TIMER, -1, 0);
+				GENERAL_TIMER, -1, 0, 0);
 	return 0;
 }
 
@@ -322,7 +322,7 @@ static int	system_timer (void *entry)
 	}
 
 	add_timer(1, item->name, timeout, 1, system_timer, entry, NULL, 
-				GENERAL_TIMER, -1, 0);
+				GENERAL_TIMER, -1, 0, 0);
 
 	item->callback();
 	item->last_event = now;

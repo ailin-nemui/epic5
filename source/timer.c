@@ -1,4 +1,4 @@
-/* $EPIC: timer.c,v 1.57 2012/11/18 01:37:51 jnelson Exp $ */
+/* $EPIC: timer.c,v 1.58 2015/04/11 04:16:35 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
@@ -53,29 +53,85 @@
 
 	int 	timer_exists (const char *ref);
 	int 	remove_timer (const char *ref);
-static void 	remove_all_timers (void);
+static	void 	remove_all_timers (void);
 static	void	remove_timers_by_domref (int domain, int domref);
 static	void	list_timers (const char *command);
 
 /*
- * timercmd: the bit that handles the TIMER command.  If there are no
- * arguements, then just list the currently pending timers, if we are
- * give a -DELETE flag, attempt to delete the timer from the list.  Else
- * consider it to be a timer to add, and add it.
+ * timercmd - The /TIMER command
+ *
+ * Usage:
+ *  Listing Timers:
+ *	/TIMER			
+ *		Show all pending user-created TIMERs
+ * 
+ *  Deleting Timers:
+ *	/TIMER -DELETE <refnum>
+ *		Delete timer with name <refnum>
+ *	/TIMER -DELETE ALL
+ *		Delete all timers
+ *	/TIMER -DELETE_FOR_WINDOW <winref>
+ *		Delete all WINDOW timers that are bound to <winref>.
+ *		<Winref> must be a number.  Use $winnum() to get that.
+ *
+ *  Updating Timers:
+ *	/TIMER -UPDATE -REFNUM <timeref> [other arguments below]
+ *		(a) To update a Timer, you must use the -REFNUM argument
+ *		    to specify the timer to update.  
+ *		(b) Updating a <timeref> that does not exist is not an error
+ *		    if you specify a timeout; it will be created for you.
+ *		
+ *  Creating a Timer:
+ *	/TIMER [options below] <seconds> <commands>
+ *		Run <commands> after <seconds> seconds.
+ *		(a) If you run a /TIMER whenever the client is handling
+ *		    server data, the /TIMER will attach to the current server
+ *		    and whatever its current window is at that time. ("Server")
+ *		(b) If you run a /TIMER whenever the client is handling
+ *		    user input, the /TIMER will attach to the current window
+ *		    and whatever its current server is at that time. ("Window")
+ *		(c) Otherwise, the /TIMER will run in whatever the current
+ *		    context is at the time it goes off. ("General")
+ *
+ *	/TIMER -REFNUM
+ *		The TIMER should have a specific name (default: auto-generated)
+ *	/TIMER -REPEAT
+ *		The TIMER should run this many times (default: 1 time)
+ *		The magic value -1 means "run forever"
+ *	/TIMER -SNAP
+ *		The TIMER should run "at the top of" the interval.
+ *		EG, /TIMER -REPEAT -1 -SNAP 60 {echo It's a new minute!} 
+ *		will run at the top of every minute.  The first execution
+ *		will happen "early" to make it work out.
+ *
+ *	/TIMER -WINDOW
+ *		The TIMER should be a WINDOW Timer (default: auto-detected)
+ *	/TIMER -SERVER
+ *		The TIMER should be a SERVER Timer (default: auto-detected)
+ *	/TIMER -GENERAL
+ *		The TIMER should be a GENERAL Timer (default: auto-detected)
+ *	/TIMER -CANCELABLE
+ *		If the TIMER cannot restore its concept (because it is a 
+ *		WINDOW Timer and the window has gone away; or because it is
+ *		a SERVER Timer and the server has been deleted), the Timer
+ *		will not execute when it goes off. (default: Window Timers
+ *		and Server Timers become General Timers if they can't restore
+ *		their context)
  */
 BUILT_IN_COMMAND(timercmd)
 {
-	char	*waittime,
-		*flag;
-	const char	*want = empty_string;
-	char	*ptr;
-	double	interval;
-	long	events = -2;
-	int	update = 0;
-	size_t	len;
+	char *		waittime;
+	char *		flag;
+	const char *	want = empty_string;
+	char *		ptr;
+	double		interval;
+	long		events = -2;
+	int		update = 0;
+	size_t		len;
 	TimerDomain	domain;
-	int	domref;
-	int	cancelable = 0;
+	int		domref;
+	int		cancelable = 0;
+	int		snap = 0;
 
 	if (parsing_server_index != NOSERV)
 	{
@@ -104,7 +160,7 @@ BUILT_IN_COMMAND(timercmd)
 		 * doesn't work, see if it is "delete all".
 		 * Delete_timer returns -1 on error.
 		 */
-		else if (timer_exists(ptr))
+		else if (timer_exists(ptr) == 1)
 			remove_timer(ptr);
 
 		/*
@@ -119,7 +175,7 @@ BUILT_IN_COMMAND(timercmd)
 		else if (*ptr)
 			say("The timer \"%s\" doesn't exist!", ptr);
 		else
-			panic(1, "how did timercmd get here?");
+			say("/TIMER -DELETE got confused and chose not to do anything.");	/* This used to be a panic */
 
 		return;
 	    }
@@ -136,7 +192,7 @@ BUILT_IN_COMMAND(timercmd)
 		remove_timers_by_domref(WINDOW_TIMER, domref);
 		return;
 	    }
-	    else if (!my_strnicmp(flag+1, "REFNUM", 3))	/* REFNUM */
+	    else if (!my_strnicmp(flag+1, "REFNUM", len))	/* REFNUM */
 	    {
 		want = next_arg(args, &args);
 		if (!want || !*want)
@@ -147,7 +203,7 @@ BUILT_IN_COMMAND(timercmd)
 
 		continue;
 	    }
-	    else if (!my_strnicmp(flag+1, "REPEAT", 3))	/* REPEAT */
+	    else if (!my_strnicmp(flag+1, "REPEAT", len))	/* REPEAT */
 	    {
 		char *na = next_arg(args, &args);
 		if (!na || !*na)
@@ -162,15 +218,15 @@ BUILT_IN_COMMAND(timercmd)
 
 		continue;
 	    }
-	    else if (!my_strnicmp(flag + 1, "UPDATE", 1))	/* UPDATE */
+	    else if (!my_strnicmp(flag + 1, "UPDATE", len))	/* UPDATE */
 		update = 1;
 
-	    else if (!my_strnicmp(flag + 1, "LIST", 1))	/* LIST */
+	    else if (!my_strnicmp(flag + 1, "LIST", len))	/* LIST */
 	    {
 		list_timers(command);
 		return;
 	    }
-	    else if (!my_strnicmp(flag + 1, "WINDOW", 1))	/* WINDOW */
+	    else if (!my_strnicmp(flag + 1, "WINDOW", len))	/* WINDOW */
 	    {
 		char 	*na;
 		Window *win = NULL;
@@ -192,7 +248,7 @@ BUILT_IN_COMMAND(timercmd)
 		else
 			domref = win->refnum;
 	    }
-	    else if (!my_strnicmp(flag + 1, "SERVER", 1))	/* SERVER */
+	    else if (!my_strnicmp(flag + 1, "SERVER", len))	/* SERVER */
 	    {
 		char 	*na;
 
@@ -214,12 +270,16 @@ BUILT_IN_COMMAND(timercmd)
 		    }
 		}
 	    }
-	    else if (!my_strnicmp(flag + 1, "GENERAL", 1))	/* GENERAL */
+	    else if (!my_strnicmp(flag + 1, "SNAP", len))	/* SNAP */
+	    {
+		snap = 1;
+	    }
+	    else if (!my_strnicmp(flag + 1, "GENERAL", len))	/* GENERAL */
 	    {
 		domain = GENERAL_TIMER;
 		domref = -1;
 	    }
-	    else if (!my_strnicmp(flag + 1, "CANCELABLE", 1))	/* CANCELABLE */
+	    else if (!my_strnicmp(flag + 1, "CANCELABLE", len))	/* CANCELABLE */
 	    {
 		cancelable = 1;
 	    }
@@ -235,10 +295,20 @@ BUILT_IN_COMMAND(timercmd)
 	waittime = next_arg(args, &args);
 	if (update || waittime)
 	{
-		if (update && !timer_exists(want))
+		int	i;
+
+		if (update && ((i = timer_exists(want)) <= 0))
 		{
-			if (waittime)
+			/* If the timer doesn't exist, ignore -update */
+			if (i == 0 && waittime)
 				update = 0;
+
+			/* 
+			 * Otherwise, either you didn't use -refnum, or
+			 * you tried to update a timer that doesn't exist,
+			 * but didn't provide a timeout, so we can't 
+			 * create a timer for you.
+			 */
 			else
 			{
 				say("%s: To use -UPDATE you must specify a "
@@ -260,7 +330,7 @@ BUILT_IN_COMMAND(timercmd)
 */
 
 		add_timer(update, want, interval, events, NULL, args, subargs, 
-				domain, domref, cancelable);
+				domain, domref, cancelable, snap);
 	}
 	else
 		list_timers(command);
@@ -293,10 +363,25 @@ typedef struct  timerlist_stru
 
 static 	Timer *		PendingTimers;
 
+static Timer *	new_timer (void);
+static Timer *	clone_timer (Timer *otimer);
+static void	delete_timer (Timer *otimer);
+static int	schedule_timer (Timer *ntimer);
+static int	unlink_timer (Timer *timer);
+static Timer *	get_timer (const char *ref);
+
 /*
- * create_timer: 
+ * new_timer - Create a blank Timer that can be filled in.
+ *
+ * Arguments:
+ *	none
+ *
+ * Return Value:
+ *	A new (Timer *) that can be filled in and passed to schedule_timer().
+ * 	After a Timer is executed or cancelled, it should be passed to 
+ *	  delete_timer().
  */
-static Timer * new_timer (void)
+static Timer *	new_timer (void)
 {
 	Timer *	ntimer;
 
@@ -321,9 +406,36 @@ static Timer * new_timer (void)
 }
 
 /*
- * clone_timer: Create a copy of an existing timer, suitable for rescheduling
+ * clone_timer -  Create a new Timer that is an exact copy of an existing
+ *		  Timer, suitable for re-scheduling.
+ * 
+ * Argument:
+ *	otimer - A Timer that should be cloned
+ *
+ * Return Value:
+ *	A new (Timer *) that is identical to 'otimer', that you can pass
+ *	   to schedule_timer()
+ *
+ * Notes:
+ *	Cloning a timer is necessary to allow you to Delete (/timer -delete)
+ *	a Repeating Timer (/timer -repeat).  If you deleted a repeating timer,
+ *	that would cause problems in ExecuteTimers().  So what we do is treat
+ *	every Timer as a single-fire:
+ *	  1. Schedule a Timer
+ *	  2. Timer Goes Off
+ *	  3. Timer is removed from Schedule List
+ *	  4. If Timer is a Repeating Timer, it is Cloned, and the Clone is
+ *	     scheduled for its next execution
+ *	  5. The Timer is executed
+ * 	In this way, when you do /timer -delete within a repeating timer,
+ *	it deletes the Clone, without clobbering the active timer.
+ *
+ *	In the same way, updating a Timer doesn't actually change the timer,
+ *	but changes a clone of that Timer, causing the new (cloned) Timer to
+ *	be created and the old Timer to be deleted.  That makes it easier
+ *	to ensure the updated timer gets to the right spot on the Timer list.
  */
-static Timer *clone_timer (Timer *otimer)
+static Timer *	clone_timer (Timer *otimer)
 {
 	Timer *ntimer = new_timer();
 
@@ -346,10 +458,35 @@ static Timer *clone_timer (Timer *otimer)
 }
 
 /*
- * delete_timer:
+ * delete_timer: clean up after a Timer that is no longer needed.
+ *		 You must _not_ submit a Timer that is still on the schedule.
+ *
+ * Arguments:
+ *	ntimer - An unneeded Timer that is not on the Timer list.
+ *		 Deleting a still-scheduled Timer is an error.
  */
-static void delete_timer (Timer *otimer)
+static void	delete_timer (Timer *otimer)
 {
+	Timer *tmp;
+
+	/* 
+	 * First we make sure 'otimer' is not still scheduled
+	 * before we go free()ing it.
+	 * (This is a violation of the API, but we're forgiving)
+	 * (The other option is to make this return failure, but 
+	 *  since this is a void function, we'll just DTRT)
+	 */
+	for (tmp = PendingTimers; tmp; tmp = tmp->next)
+	{
+		if (tmp == otimer)
+		{
+			yell("delete_timer: Warning: Deleting a timer that "
+				"is still scheduled.  Unscheduling it.");
+			unlink_timer(otimer);
+			break;
+		}
+	}
+
 	if (!otimer->callback)
 	{
 		new_free((char **)&otimer->command);
@@ -359,19 +496,49 @@ static void delete_timer (Timer *otimer)
 	new_free((char **)&otimer);
 }
 
+/*
+ * schedule_timer: Submit a completed Timer to be executed later.
+ *		   You must not change the Timer after it is submitted.
+ *
+ * Arguments:
+ *	ntimer - A completely filled-in timer that needs to be executed.
+ *	  	(a) ntimer->time must point to when the timer is to go off.
+ *		(b) ntimer->prev and ->next will be overwritten.
+ *		(c) You must not change 'ntimer' after this returns.
+ *		(d) ntimer must not already be scheduled.
+ *
+ * Return Value:
+ *	0 - The timer has been scheduled (always succeeds)
+ */
 static int	schedule_timer (Timer *ntimer)
 {
 	Timer *tmp, *prev;
 
 	ntimer->fires = 0;
 
-	/* we've created it, now put it in order */
+	/*
+	 * If 'ntimer' is already scheduled, we will desschedule it,
+	 * so that it may be re-inserted in the correct place.
+	 */
+	for (tmp = PendingTimers; tmp; tmp = tmp->next)
+	{
+		if (tmp == ntimer)
+		{
+			yell("schedule_timer: Warning: Scheduling a timer "
+				"that is already scheduled.  Fixing that.");
+			unlink_timer(ntimer);
+			break;
+		}
+	}
+
+	/* Figure out the correct place */
 	for (tmp = PendingTimers; tmp; tmp = tmp->next)
 	{
 		if (time_diff(tmp->time, ntimer->time) < 0)
 			break;
 	}
 
+	/* 'ntimer' is earlier than all the timers in PendingTimers */
 	if (tmp == PendingTimers)
 	{
 		ntimer->prev = NULL;
@@ -380,6 +547,7 @@ static int	schedule_timer (Timer *ntimer)
 			PendingTimers->prev = ntimer;
 		PendingTimers = ntimer;
 	}
+	/* 'ntimer' is earlier than 'tmp' but later than 'tmp->prev' */
 	else if (tmp)
 	{
 		prev = tmp->prev;
@@ -388,7 +556,8 @@ static int	schedule_timer (Timer *ntimer)
 		tmp->prev = ntimer;
 		prev->next = ntimer;
 	}
-	else		/* XXX! */
+	/* 'ntimer' is later than every timer in PendingTimers */
+	else
 	{
 		for (tmp = PendingTimers; tmp->next; tmp = tmp->next)
 			;
@@ -399,27 +568,76 @@ static int	schedule_timer (Timer *ntimer)
 	return 0;
 }
 
+/*
+ * unlink_timer - Remove a Timer from the TimerList ("unschedule it")
+ * 
+ * Arguments:
+ *	timer	- A Timer on the TimerList.
+ *		  (a) It is an error to unlink a timer not on the timer list.
+ *		      Doing so may result in a crash.
+ *
+ * Return Value:
+ *	-1	- The timer was not scheduled (no change to 'timer')
+ *	 0	- The timer is de-scheduled 
+ */
 static int	unlink_timer (Timer *timer)
 {
-	Timer *prev, *next;
+	Timer *tmp, *prev, *next;
 
-	prev = timer->prev;
-	next = timer->next;
+	/*
+	 * We only modify 'timer' if it is actually scheduled.
+	 * unlinking an unscheduled timer is a safe no-op.
+	 */
+	for (tmp = PendingTimers; tmp; tmp = tmp->next)
+	{
+		if (tmp == timer)
+		{
+			prev = timer->prev;
+			next = timer->next;
 
-	if (prev)
-		prev->next = next;
-	else
-		PendingTimers = next;
+			if (prev)
+				prev->next = next;
+			else
+				PendingTimers = next;
 
-	if (next)
-		next->prev = prev;
+			if (next)
+				next->prev = prev;
 
-	return 0;
+			return 0;
+		}
+	}
+
+	/* I didn't find that timer on the schedule list */
+	return -1;
 }
 
+/*
+ * get_timer - Return a schedule Timer using its refname.
+ *
+ * Arguments:
+ *	ref	- A Timer refname (timer->ref, from /TIMER -REF)
+ *		 (a) ref must not be NULL or an empty string.
+ *
+ * Return Value:
+ *	NULL	 - No scheduled timer exists by that name
+ *	non-NULL - A Scheduled Timer by the given name.
+ *		(a) You must _NOT_ change a Scheduled Timer unless
+ *		    you unlink_timer() it first.
+ *		(b) The best practice for changing a Scheduled Timer:
+ *		    1) x = get_timer();
+ *		    2) y = clone_timer(x);
+ *		    3) unlink_timer(x);
+ *		    4) <make changes to y>
+ *		    5) schedule_timer(y);
+ *		    6) delete_timer(x);
+ */
 static	Timer *get_timer (const char *ref)
 {
 	Timer *tmp;
+
+	/* 'ref' must be a non-empty string */
+	if (!ref || !*ref)
+		return NULL;
 
 	for (tmp = PendingTimers; tmp; tmp = tmp->next)
 	{
@@ -430,10 +648,21 @@ static	Timer *get_timer (const char *ref)
 	return NULL;
 }
 
+/*
+ * timer_exists - Verify if a refnum is in use by a scheduled Timer.
+ *
+ * Arguments:
+ *	ref	- A Timer Refname
+ *
+ * Return Value:
+ *	-1	- 'ref' is an invalid refnum
+ *	 0	- 'ref' is available for use (no scheduled timer exists)
+ *	 1	- 'ref' is not available for use (already is in use)
+ */
 int 	timer_exists (const char *ref)
 {
 	if (!ref || !*ref)
-		return 0;
+		return -1;
 
 	if (get_timer(ref))
 		return 1;
@@ -442,7 +671,7 @@ int 	timer_exists (const char *ref)
 }
 
 /*
- * dump_timers: show all timers in case of emergency
+ * dump_timers - show all timers in case of emergency
  */
 void    dump_timers (void)
 {
@@ -524,19 +753,42 @@ static	int	create_timer_ref (const char *refnum_wanted, char **refnum_gets)
 	Timer	*tmp;
 	int 	refnum = 0;
 	char	*refnum_want;
+	int	i, pts;
 
 	refnum_want = LOCAL_COPY(refnum_wanted);
 
 	/* If the user doesnt care */
 	if (*refnum_want == 0)
 	{
-		/* Find the lowest refnum available */
-		for (tmp = PendingTimers; tmp; tmp = tmp->next)
+		/* So ... we count the number of times that exist. */
+		for (pts = 0, tmp = PendingTimers; tmp; tmp = tmp->next)
+			pts++;
+
+		/* 
+		 * Now, for all the numbers (0 .. [timer count + 1]), 
+		 * at least one of those numbers *has* to be available,
+		 */ 
+		for (i = 0; i <= pts + 1; i++)
 		{
-			if (refnum < my_atol(tmp->ref))
-				refnum = my_atol(tmp->ref);
+			/* Are any timers named 'i'? */
+			for (tmp = PendingTimers; tmp; tmp = tmp->next)
+			{
+				if (!is_number(tmp->ref))
+					continue;
+				if (i == my_atol(tmp->ref))
+					break;
+			}
+
+			/* 
+			 * If 'tmp' is null, then we didn't find a refnum 'i'.
+			 * So 'i' is our winner!
+			 */
+			if (tmp == NULL)
+			{
+				malloc_sprintf(refnum_gets, "%d", i);
+				break;
+			}
 		}
-		malloc_sprintf(refnum_gets, "%d", refnum + 1);
 	}
 	else
 	{
@@ -610,82 +862,96 @@ static	void	remove_timers_by_domref (int domain, int domref)
  *
  * The arguments:
  *  update:      This should be 1 if we're updating the specified refnum
- *  refnum_want: The refnum requested.  This should only be sepcified
- *		 by the user, functions wanting callbacks should specify
- *		 the empty string, which means "dont care".
- * The rest of the arguments are dependant upon the value of "callback"
- *	-- if "callback" is NULL then:
- *  callback:	 NULL
- *  what:	 some ircII commands to run when the timer goes off
- *  subargs:	 what to use to expand $0's, etc in the 'what' variable.
+ *  refnum_want: The refnum requested.  
+ *		 (1) User-supplied for /TIMER timers
+ *		 (2) the empty string for system timers ("dont care")
+ *  interval:	 How long until the timer should fire; 
+ *		 (1) for repeating timers (events != 1), the timer will 
+ *		     fire with this interval.
+ *		 (2) for "snap" timers, the first fire will be the next
+ *		     time time() % interval == 0.
+ *  events:	 The number of times this event should fire.  
+ *		 (1) The value -1 means "repeat forever"
+ *		 (2) Timers automatically delete after they fire the
+ *		     requested number of times.
  *
- *	-- if "callback" is non-NULL then:
- *  callback:	 function to call when timer goes off
- *  what:	 argument to pass to "callback" function.  Should be some
- *		 non-auto storage, perhaps a struct or a malloced char *
- *		 array.  The caller is responsible for disposing of this
- *		 area when it is called, since the timer mechanism does not
- *		 know anything of the nature of the argument.
- * subargs:	 should be NULL, its ignored anyhow.
+ * Scenario 1: You want to run ircII commands (/TIMER timers)
+ * | callback:	 NULL
+ * | commands:	 some ircII commands to run when the timer goes off
+ * | subargs:	 what to use to expand $0's, etc in the 'what' variable.
+ *
+ * Scenario 2: You want to call an internal function (system timers)
+ * | callback:	 function to call when timer goes off
+ * | commands:	 argument to pass to "callback" function.  Should be some
+ * |		 non-auto storage, perhaps a struct or a malloced char *
+ * |		 array.  The caller is responsible for disposing of this
+ * |		 area when it is called, since the timer mechanism does not
+ * |		 know anything of the nature of the argument.
+ * | subargs:	 should be NULL, its ignored anyhow.
+ *
+ *  domain:	What the TIMER should bind to:
+ *		(a) SERVER_TIMER  - 'domref' refers to a server refnum.
+ *			Each time this timer runs, set from_server to 'domref'
+ *			and set the current window to whatever 'domref's 
+ *			current window is at that time.
+ *		(b) WINDOW_TIME - 'domref' refers to a window refnum.
+ *			Each time this timer runs, set current_window to
+ *			'domref' and set the current server to whatever 
+ *			'domref's server is at that time.
+ *		(c) GENERAL_TIMER - 'domref' is ignored.  
+ *			Do not save or restore from_server or current_window: 
+ *			run in whatever the context is when it goes off.
+ *  domref:	Either a server refnum, window refnum, or -1 (see 'domain')
+ *  cancelable:	A "Cancelable" timer will not fire if its context cannot be
+ *		restored (ie, the server it is bound to is disconnected or
+ *		deleted; or the window it is bound to is deleted).  A normal
+ *		(non-cancelable) timer will turn into a GENERAL_TIMER if its
+ *		context cannot be restored.
+ *  snap:	A "snap" timer runs every time (time() % interval == 0).
+ *		This is useful for things that (eg) run at the top of every 
+ *		minute (60), hour (3600), or day (86400)
  */
-char *add_timer (int update, const char *refnum_want, double interval, long events, int (callback) (void *), void *commands, const char *subargs, TimerDomain domain, int domref, int cancelable)
+char *add_timer (int update, const char *refnum_want, double interval, long events, int (callback) (void *), void *commands, const char *subargs, TimerDomain domain, int domref, int cancelable, int snap)
 {
 	Timer	*ntimer, *otimer = NULL;
 	char *	refnum_got = NULL;
 	Timeval right_now;
 	char *	retval;
 
-	/* XXX Eh, maybe it's a hack to check this here. */
-	if (interval < 0.01 && events == -1)
+	right_now = get_time(NULL);
+
+	/*
+	 * We do this first, because if 'interval' is invalid, we don't
+	 * want to do the expensive clone/create/delete operation.
+ 	 * It is ineligant to check for this error here.
+	 */
+	if (update == 1 && interval == -1)	/* Not changing the interval */
+		(void) 0;	/* XXX sigh */
+	else if (interval < 0.01 && events == -1)
 	{
 		say("You can't infinitely repeat a timer that runs more "
 			"than 100 times a second.");
 		return NULL;
 	}
 
-	right_now = get_time(NULL);
-
+	/* 
+	 * If we say we're updating; but the timer does not exist, 
+	 * then we're not updating. ;-)
+	 */
 	if (update)
 	{
 	    if (!(otimer = get_timer(refnum_want)))
 		update = 0;		/* Ok so we're not updating! */
 	}
 
+	/*
+	 * Arrange for an appropriate Timer to be in 'ntimer'.
+	 */
 	if (update)
 	{
 		unlink_timer(otimer);
 		ntimer = clone_timer(otimer);
 		delete_timer(otimer);
-
-		if (interval != -1)
-		{
-			ntimer->interval = double_to_timeval(interval);
-			ntimer->time = time_add(right_now, ntimer->interval);
-		}
-		if (events != -2)
-			ntimer->events = events;
-
-		if (callback)
-		{
-			/* Delete the previous timer, if necessary */
-			if (ntimer->command)
-				new_free(&ntimer->command);
-			if (ntimer->subargs)
-				new_free(&ntimer->subargs);
-			ntimer->callback = callback;
-			/* Unfortunately, command is "sometimes const". */
-			ntimer->callback_data = commands;
-			ntimer->subargs = NULL;
-		}
-		else
-		{
-			ntimer->callback = NULL;
-			malloc_strcpy(&ntimer->command, (const char *)commands);
-			malloc_strcpy(&ntimer->subargs, subargs);
-		}
-
-		if (domref != -1)
-			ntimer->domref = domref;
 	}
 	else
 	{
@@ -697,24 +963,66 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
 
 		ntimer = new_timer();
 		ntimer->ref = refnum_got;
-		ntimer->interval = double_to_timeval(interval);
-		ntimer->time = time_add(right_now, ntimer->interval);
-		ntimer->events = events;
-		ntimer->callback = callback;
-		/* Unfortunately, command is "sometimes const". */
-		if (callback)
-			ntimer->callback_data = commands;
-		else
-		{
-			malloc_strcpy(&ntimer->command, (const char *)commands);
-			malloc_strcpy(&ntimer->subargs, subargs);
-		}
-		ntimer->domain = domain;
-		ntimer->domref = domref;
-		ntimer->cancelable = cancelable;
-		ntimer->fires = 0;
 	}
 
+	/* Update the interval */
+	if (update == 1 && interval == -1)
+		(void) 0;	/* XXX sigh - not updating interval */
+	else
+	{
+		ntimer->interval = double_to_timeval(interval);
+		if (snap)
+		{
+			double x = time_to_next_interval(interval);
+			ntimer->time = time_add(right_now, double_to_timeval(x));
+		}
+		else
+			ntimer->time = time_add(right_now, ntimer->interval);
+	}
+
+	/* Update the repeat events */
+	if (update == 1 && events == -2)
+		(void) 0;	/* XXX sigh - not updating events */
+	else
+		ntimer->events = events;
+
+
+	/* Update the callback */
+	if (callback)
+	{
+		/* Delete the previous timer, if necessary */
+		if (ntimer->command)
+			new_free(&ntimer->command);
+		if (ntimer->subargs)
+			new_free(&ntimer->subargs);
+		ntimer->callback = callback;
+
+		/* Unfortunately, command is "sometimes const". */
+		ntimer->callback_data = commands;
+		ntimer->subargs = NULL;
+	}
+	else
+	{
+		ntimer->callback = NULL;
+		malloc_strcpy(&ntimer->command, (const char *)commands);
+		malloc_strcpy(&ntimer->subargs, subargs);
+	}
+
+	/* Update the domain refnum */
+	ntimer->domain = domain;
+	if (update == 1 && domref == -1)
+		(void) 0;	/* XXX sigh - not updating domref */
+	else
+		ntimer->domref = domref;
+
+	/* Update the cancelable */
+	if (update == 1 && cancelable == -1)
+		(void) 0;	/* XXX sigh - not updating cancelable */
+	else
+		ntimer->cancelable = cancelable;
+
+
+	/* Schedule up the new/updated timer! */
 	schedule_timer(ntimer);
 	retval = ntimer->ref;
 	return retval;		/* Eliminates a specious warning from gcc */
@@ -773,6 +1081,7 @@ void 	ExecuteTimers (void)
 			next = clone_timer(current);
 			if (next->events != -1)
 				next->events--;
+
 			next->time = time_add(next->time, next->interval);
 			schedule_timer(next);
 		}

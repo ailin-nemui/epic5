@@ -1,4 +1,4 @@
-/* $EPIC: status.c,v 1.86 2014/04/24 04:51:42 jnelson Exp $ */
+/* $EPIC: status.c,v 1.87 2015/04/11 04:16:35 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
@@ -872,7 +872,7 @@ static	void	initialize_status (Status *s)
 	}
 }
 
-Status *	new_status (void)
+static Status *	new_status (void)
 {
 	Status *s;
 	s = new_malloc(sizeof(Status));
@@ -886,7 +886,7 @@ static void	init_status	(void)
 	main_status_init = 1;
 }
 
-void	destroy_status (Status **s)
+static void	destroy_status (Status **s)
 {
 	int	i, k;
 

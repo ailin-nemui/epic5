@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.261 2014/12/26 15:26:45 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.262 2015/04/11 04:16:34 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -389,7 +389,7 @@ char *	upper (char *str)
 
 			ucs_to_utf8(c, c_utf8str, sizeof(c_utf8str));
 			ucs_to_utf8(d, d_utf8str, sizeof(d_utf8str));
-			if (strlen(d_utf8str) != (s - x))
+			if ((ssize_t)strlen(d_utf8str) != (s - x))
 			{
 				yell("The string [%s] contains a character [%s] whose upper case version [%s] is not the same length.  I didn't convert it for your safety.", str, c_utf8str, d_utf8str);
 				continue;
@@ -421,7 +421,7 @@ char *	lower (char *str)
 
 			ucs_to_utf8(c, c_utf8str, sizeof(c_utf8str));
 			ucs_to_utf8(d, d_utf8str, sizeof(d_utf8str));
-			if (strlen(d_utf8str) != (s - x))
+			if ((ssize_t)strlen(d_utf8str) != (s - x))
 			{
 				yell("The string [%s] contains a character [%s] whose upper case version [%s] is not the same length.  I didn't convert it for your safety.", str, c_utf8str, d_utf8str);
 				continue;
@@ -753,7 +753,7 @@ int     my_table_strnicmp (const unsigned char *str1, const unsigned char *str2,
                  stricmp_tables[table][(unsigned short)*str2]) : 0);
 } 
 
-int	utf8_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n)
+static int	utf8_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n)
 {
 	const unsigned char 	*s1, *s2;
 	int	c1, c2;
@@ -839,7 +839,7 @@ char *	chop	(char *stuff, size_t nchar)
 	if (nchar > 0 && sl > 0 &&  nchar <= sl)
 	{
 		char *s;
-		int	i;
+		size_t	i;
 
 		s = stuff + strlen(stuff);
 		for (i = 0; i < nchar; i++)
@@ -6915,12 +6915,12 @@ int	ucs_to_utf8 (u_32int_t key, unsigned char *utf8str, size_t utf8strsiz)
  *	Buffer:		zero three four
  *	(*cut):		one two 
  */
-int	strext2 (unsigned char **cut, unsigned char *buffer, int part2, int part3)
+int	strext2 (unsigned char **cut, unsigned char *buffer, size_t part2, size_t part3)
 {
 	unsigned char *part2str, *part3str, *p, *s;
 	size_t	buflen;
 	size_t	cutlen;
-	size_t	newlen;
+	ssize_t	newlen;
 
 	if (part3 <= part2)
 		return 0;		/* Nothing to extract */
@@ -6932,7 +6932,7 @@ int	strext2 (unsigned char **cut, unsigned char *buffer, int part2, int part3)
 		part3 = buflen;		/* Stop at end of string */
 
 	/* Copy the cut part */
-	newlen = part3 - part2 + 1;
+	newlen = (ssize_t)(part3 - part2 + 1);
 	if (newlen <= 0)
 		return 0;		/* Uh, what? */
 

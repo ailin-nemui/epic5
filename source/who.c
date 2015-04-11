@@ -1,4 +1,4 @@
-/* $EPIC: who.c,v 1.75 2014/03/20 20:40:32 jnelson Exp $ */
+/* $EPIC: who.c,v 1.76 2015/04/11 04:16:35 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
@@ -67,7 +67,7 @@ static void	WHO_DEBUG (const char *format, ...)
 	if (who_log == NULL && (x_debug & DEBUG_WHO_QUEUE))
 	{
 		add_timer(1, who_timeref, 5, -1, who_queue_debug, 
-				NULL, NULL, GENERAL_TIMER, -1, 0);
+				NULL, NULL, GENERAL_TIMER, -1, 0, 0);
 		do_log(1, "who.log", &who_log);
 	}
 

@@ -1,4 +1,4 @@
-/* $EPIC: lastlog.c,v 1.98 2014/12/26 15:26:45 jnelson Exp $ */
+/* $EPIC: lastlog.c,v 1.99 2015/04/11 04:16:34 jnelson Exp $ */
 /*
  * lastlog.c: handles the lastlog features of irc. 
  *
@@ -231,7 +231,7 @@ intmax_t	add_to_lastlog (Window *window, const char *line)
 		new_l->expires = time(NULL) + output_expires_after;
 		add_timer(0, empty_string, output_expires_after, 1, 
 			  do_expire_lastlog_entries, NULL, NULL, 
-			  GENERAL_TIMER, -1, 0);
+			  GENERAL_TIMER, -1, 0, 0);
 	}
 	else
 		new_l->expires = 0;

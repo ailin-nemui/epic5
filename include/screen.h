@@ -144,7 +144,7 @@ const	unsigned char *all_off			(void);
 	unsigned char *new_normalize_string	(const unsigned char *, int, int);
 	unsigned char *denormalize_string	(const unsigned char *);
 	unsigned char **prepare_display	(int, const unsigned char *, int, int *, int);
-	int	output_with_count	(const unsigned char *, int, int);
+	size_t	output_with_count	(const unsigned char *, int, int);
 	void    add_to_window_scrollback (Window *, const unsigned char *, intmax_t);
 
 	unsigned char *prepare_display2	(const unsigned char *, int, int, char, int);

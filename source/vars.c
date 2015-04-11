@@ -1,4 +1,4 @@
-/* $EPIC: vars.c,v 1.120 2014/04/27 17:01:53 jnelson Exp $ */
+/* $EPIC: vars.c,v 1.121 2015/04/11 04:16:35 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
@@ -370,6 +370,7 @@ void 	init_variables_stage1 (void)
 	VAR(SHOW_CHANNEL_NAMES, BOOL, NULL);
 	VAR(SHOW_NUMERICS, BOOL, NULL);
 	VAR(SHOW_STATUS_ALL, BOOL, update_all_status_wrapper);
+	VAR(SSL_ROOT_CERT_FILE, STR, NULL);
 	VAR(STATUS_AWAY, STR,  build_status);
 	VAR(STATUS_CHANNEL, STR,  build_status);
 	VAR(STATUS_CHANOP, STR,  build_status);
@@ -1210,6 +1211,7 @@ void	do_stack_set (int type, char *args)
 }
 #endif
 
+#if 0
 void    help_topics_set (FILE *f)
 {                                                                               
         int     i;
@@ -1217,5 +1219,5 @@ void    help_topics_set (FILE *f)
 	for (i = 0; i < var_bucket->numitems; i++)
                 fprintf(f, "set %s\n", var_bucket->list[i].name);
 }
-
+#endif
 

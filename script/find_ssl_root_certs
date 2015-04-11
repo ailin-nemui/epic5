@@ -1,0 +1,36 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
+#
+# Here's the plan...
+#
+# Rather than have configure auto-detect where your root CA file is,
+# and have that path hardcoded into the binary, we're going to do 
+# that search at startup.  Then, if you want to do it some other way,
+# you can!  How about that...
+#
+# If anyone has a better way to do this, please let me know!
+#
+alias setup_ssl_root_cert_file
+{
+	^local ssl_cert_locations.;
+	@ ssl_cert_locations[0] = [~/.sslca.bundle];
+	@ ssl_cert_locations[1] = [/etc/ssl/ca.bundle];
+	@ ssl_cert_locations[2] = [/usr/local/etc/ssl/ca.bundle];
+	@ ssl_cert_locations[3] = [/opt/etc/ssl/ca.bundle];
+	@ ssl_cert_locations[4] = [/usr/share/certs/ca-root-nss.crt];
+	@ ssl_cert_locations[5] = [/usr/local/share/certs/ca-root-nss.crt];
+	@ ssl_cert_locations[6] = [/opt/share/certs/ca.bundle];
+	
+	foreach ssl_cert_locations i 
+	{
+		echo Checking $ssl_cert_locations[$i];
+		if (fexist($ssl_cert_locations[$i]) == 1)
+		{
+			set SSL_ROOT_CERT_FILE $ssl_cert_locations[$i];
+			return;
+		};
+	};
+	xecho -b I couldn't find a root certificate file.  You'll have to /SET SSL_ROOT_CERT_FILE manually.;
+};
+
+#hop'2k15

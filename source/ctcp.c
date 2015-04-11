@@ -1,4 +1,4 @@
-/* $EPIC: ctcp.c,v 1.68 2014/04/21 20:06:16 jnelson Exp $ */
+/* $EPIC: ctcp.c,v 1.69 2015/04/11 04:16:34 jnelson Exp $ */
 /*
  * ctcp.c:handles the client-to-client protocol(ctcp). 
  *
@@ -1160,6 +1160,7 @@ static int split_CTCP (char *raw_message, char *ctcp_dest, char *after_ctcp)
 	return 0;		/* All done! */
 }
 
+#if 0
 void    help_topics_ctcp (FILE *f)
 {
         int     x;                                                              
@@ -1167,4 +1168,4 @@ void    help_topics_ctcp (FILE *f)
         for (x = 0; ctcp_cmd[x].name; x++)                            
                 fprintf(f, "ctcp %s\n", ctcp_cmd[x].name);
 }
-
+#endif

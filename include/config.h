@@ -44,6 +44,13 @@
 #define DEFAULT_SERVER "localhost irc.efnet.net irc.undernet.org irc.dal.net"
 
 /*
+ * This is the location of your SSL certificate file.
+ * XXX - This needs to be auto-detected by configure, somehow...
+ * XXX - This is the FreeBSD location. how bogus.
+ */
+#define DEFAULT_SSL_ROOT_CERT_FILE "/usr/local/share/certs/ca-root-nss.crt"
+
+/*
  * This is an experimental feature to thwart infinite recursion.  It is not
  * very sophisticated so it's not turned on by default.  In the future I 
  * will probably do something less lame.

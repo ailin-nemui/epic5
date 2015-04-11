@@ -59,7 +59,7 @@ addset tmux_away bool {
 				};
 			} -name tmux_getsession tmux display-message -p '#S';
 		};
-		timer -rep -1 -ref tmux_away $tmux_away_interval tmux_away;
+		timer -general -rep -1 -ref tmux_away $tmux_away_interval tmux_away;
 	} else {
 		timer -delete tmux_away;
 		alias -tmux_away;

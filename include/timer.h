@@ -19,7 +19,7 @@ typedef enum {
 	void	ExecuteTimers 	(void);
 	char *	add_timer	(int, Char *, double, long, 
 				 int (*) (void *), void *, Char *, 
-				 TimerDomain, int, int);
+				 TimerDomain, int, int, int);
 	int	timer_exists	(Char *);
 	int     remove_timer	(Char *);
 	Timeval	TimerTimeout 	(void);

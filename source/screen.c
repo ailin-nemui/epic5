@@ -1,4 +1,4 @@
-/* $EPIC: screen.c,v 1.180 2014/07/24 21:58:20 jnelson Exp $ */
+/* $EPIC: screen.c,v 1.181 2015/04/11 04:16:34 jnelson Exp $ */
 /*
  * screen.c
  *
@@ -2419,10 +2419,10 @@ static int 	rite (Window *window, const unsigned char *str)
  * If 'output' is 1 and 'all_off' is 1, do a term_all_off() when the output
  * is done.  If 'all_off' is 0, then don't do an all_off, because
  */
-int 	output_with_count (const unsigned char *str1, int clreol, int output)
+size_t 	output_with_count (const unsigned char *str1, int clreol, int output)
 {
-	int 		beep = 0, 
-			out = 0;
+	int 		beep = 0;
+	size_t		out = 0;
 	Attribute	a;
 	const unsigned char *	str;
 	int		codepoint;
@@ -2482,7 +2482,7 @@ int 	output_with_count (const unsigned char *str1, int clreol, int output)
 
 			/* How many columns does this codepoint take? */
 			cols = codepoint_numcolumns(codepoint);
-			if (cols == -1)
+			if (cols < 0)
 				cols = 0;
 			out += cols;
 
@@ -4077,7 +4077,8 @@ void	chop_final_columns (unsigned char **str, size_t num)
 {
 	char 	*s, *x;
 	int	i, d, c;
-	int	cols, numcols, codepoint;
+	int	cols, codepoint;
+	size_t	numcols;
 
 	if (!str || !*str)
 		return;

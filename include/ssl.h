@@ -11,6 +11,21 @@
 #ifndef __ssl_h__
 #define __ssl_h__
 
+#if 0
+typedef struct ssl_info {
+	int	vfd;
+	int	verify_result;
+	char *	pem;
+	char *	digest;
+	char *	subject;
+	char *	u_cert_subject;
+	char *	issuer;
+	char *	u_cert_issuer;
+	void *	pubkey;
+	char *	ssl_version;
+} ssl_info;
+#endif
+
 	int	startup_ssl (int nfd, int channel);
 	int	shutdown_ssl (int nfd);
 	int	ssl_connect (int nfd, int quiet);

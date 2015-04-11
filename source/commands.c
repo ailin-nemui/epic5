@@ -1,4 +1,4 @@
-/* $EPIC: commands.c,v 1.233 2014/12/26 15:26:45 jnelson Exp $ */
+/* $EPIC: commands.c,v 1.234 2015/04/11 04:16:34 jnelson Exp $ */
 /*
  * commands.c -- Stuff needed to execute commands in ircII.
  *		 Includes the bulk of the built in commands for ircII.
@@ -742,7 +742,7 @@ BUILT_IN_COMMAND(e_pause)
 	 */
 	add_timer(0, empty_string, seconds, 1, 
 			(int (*)(void *))commentcmd, 
-			NULL, NULL, GENERAL_TIMER, -1, 0);
+			NULL, NULL, GENERAL_TIMER, -1, 0, 0);
 	while (time_diff(get_time(NULL), start) > 0)
 		io("e_pause");
 }

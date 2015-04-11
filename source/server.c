@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.273 2014/10/18 20:00:23 jnelson Exp $ */
+/* $EPIC: server.c,v 1.274 2015/04/11 04:16:34 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -684,6 +684,9 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	s->sent_nick = NULL;
 	s->sent_body = NULL;
 
+	s->ssl_certificate = NULL;
+	s->ssl_certificate_hash = NULL;
+
 	s->stricmp_table = 1;		/* By default, use rfc1459 */
 	s->funny_match = NULL;
 
@@ -800,6 +803,8 @@ static 	void 	remove_from_server_list (int i)
 	new_free(&s->recv_nick);
 	new_free(&s->sent_nick);
 	new_free(&s->sent_body);
+	new_free(&s->ssl_certificate);
+	new_free(&s->ssl_certificate_hash);
 	new_free(&s->funny_match);
 	destroy_notify_list(i);
 	destroy_005(i);
@@ -2168,6 +2173,8 @@ void	close_server (int refnum, const char *message)
 	new_free(&s->nickname);
 	new_free(&s->s_nickname);
 	new_free(&s->realname);
+	new_free(&s->ssl_certificate);
+	new_free(&s->ssl_certificate_hash);
 
 	if (s->des == -1)
 		return;		/* Nothing to do here */
@@ -3090,6 +3097,8 @@ SACCESSOR(nick, public_nick, NULL)
 SACCESSOR(nick, recv_nick, NULL)
 SACCESSOR(nick, sent_nick, NULL)
 SACCESSOR(text, sent_body, NULL)
+SACCESSOR(text, ssl_certificate, NULL)
+SACCESSOR(text, ssl_certificate_hash, NULL)
 SACCESSOR(nick, redirect, NULL)
 SACCESSOR(message, quit_message, get_string_var(QUIT_MESSAGE_VAR))
 SACCESSOR(cookie, cookie, NULL)
@@ -3845,6 +3854,10 @@ char 	*serverctl 	(char *input)
 			RETURN_STR(get_server_realname(refnum));
 		} else if (!my_strnicmp(listc, "DEFAULT_REALNAME", len)) {
 			RETURN_STR(get_server_default_realname(refnum));
+		} else if (!my_strnicmp(listc, "SSL_CERTIFICATE", len)) {
+			RETURN_STR(get_server_ssl_certificate(refnum));
+		} else if (!my_strnicmp(listc, "SSL_CERTIFICATE_HASH", len)) {
+			RETURN_STR(get_server_ssl_certificate_hash(refnum));
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {
 		GET_INT_ARG(refnum, input);

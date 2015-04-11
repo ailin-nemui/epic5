@@ -134,6 +134,9 @@ const	AI	*next_addr;		/* The next one to try upon failure */
         char *          recv_nick;
         char *          sent_nick;
         char *          sent_body;
+
+	char *		ssl_certificate;
+	char *		ssl_certificate_hash;
 }	Server;
 extern	Server	**server_list;
 
@@ -377,6 +380,10 @@ const char *	get_server_unique_id    	(int);
 const char *	get_server_realname		(int);
 	void	set_server_default_realname	(int, const char *);
 const char *	get_server_default_realname	(int);
+        void    set_server_ssl_certificate      (int, const char *);
+const char *	get_server_ssl_certificate      (int);
+        void    set_server_ssl_certificate_hash (int, const char *);
+const char *	get_server_ssl_certificate_hash (int);
 
 	void	set_server_funny_min         	(int, int);
 	int	get_server_funny_min         	(int);

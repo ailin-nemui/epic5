@@ -1,0 +1,362 @@
+if (word(2 $loadinfo()) != [pf]) {
+	load -pf $word(1 $loadinfo());
+	return;
+};
+
+if (J !~ [EPIC5*]) {
+	xecho -b ERROR: layout: load: EPIC5 is required;
+	return;
+};
+
+package layout;
+
+
+## Layout script for EPIC5
+## Written by zlonix@efnet, public domain.
+##
+## Version: 1.0 (March, 2015)
+##  - Initial roll-out
+
+## This script introduce concept of profiles, relating to window, channel and
+## server associations. You can scan current layout, save it and restore it.
+## It's particularly useful when client starts up and you want quickly connect
+## to your servers and join your favourite channels.
+##
+## For usage issue /layout command without arguments after loading this script
+## or simply read it below.
+
+alias layout.help (void) {
+	xecho -b Help on layout system:;
+	xecho -b;
+	xecho -b /layout scan [profile] - scan current layout into [profile];
+	xecho -b /layout restore [profile] - restore [profile], all windows are killed,;
+	xecho -b         chans are left and servers are disconnected beforehand;
+	xecho -b /layout save [file] - save all current profiles into [file], by default;
+	xecho -b         ~/.layout_irc is used;
+	xecho -b;
+	xecho -b By default profile named "default" is used if you don't supply the name;
+	xecho -b You can edit layout file by hand if you're careful;
+	xecho -b;
+	xecho -b Basic usage: create windows, join servers and channels, issue;
+	xecho -b /layout scan efnet and /layout save. Now you can start fresh client,;
+	xecho -b load ~/.layout_irc (don't use PF loader) and execute /layout restore efnet;
+	xecho -b everything should come back into place.;
+	xecho -b With this approach you can have several layouts, start several clients and;
+	xecho -b issue only /layout restore <profile> to reconnect to proper networks;
+};
+
+alias layout (verb, args) {
+	switch ($verb) {
+	(restore) {
+		layout.restore $args;
+	};
+	(scan) {
+		layout.scan $args;
+	};
+	(save) {
+		layout.save $args;
+	};
+	(*) {
+		layout.help;
+	};
+	};
+};
+
+alias layout.clean (void) {
+	fe ($windowctl(REFNUMS)) ii {
+		^window $ii kill;
+	};
+	^window noserv;
+};
+
+alias layout.restore (profile default "default") {
+	layout.clean;
+
+	fe ($layoutctl(GET $profile SCREENS)) ss {
+		layout.restore.screen $profile $ss;
+	};
+};
+
+alias layout.restore.screen (profile, screen) {
+	^window number $word(0 $layoutctl(GET $profile $screen WINDOWS));
+
+	## restore "physical" level
+	fe ($layoutctl(GET $profile $screen WINDOWS)) ww {
+		if (ww == winnum()) {
+			continue;
+		};
+
+		^window new_hide number $ww $layoutctl(GET $profile $screen $ww OPTIONS);
+	};
+
+	## restore server level
+	fe ($layoutctl(GET $profile $screen WINDOWS)) ww {
+		if ((:serv = layoutctl(GET $profile $screen $ww SERVER_DESC)) == [noserv]) {
+			^window $ww noserv;
+		} else {
+			^window $ww server $serv;
+
+			^on #-004 ${100+ww} '% $before(: $serv) *' layout.restore.targets $profile $screen $ww;
+		};
+	};
+};
+
+alias layout.restore.targets (profile, screen, window) {
+	fe ($layoutctl(GET $profile $screen $window CHANNELS)) tt {
+		## look for layoutctl CHANNELS switch to understand this sneaky sar()
+		window $window rejoin $sar(/,/ /$tt);
+	};
+
+	fe ($layoutctl(GET $profile $screen $window NICKLIST)) tt {
+		window $window add $tt;
+	};
+
+	## remove current hook in which we're running
+	@ hookctl(REMOVE -1);
+};
+
+alias layoutctl (verb, ...) {
+	switch ($verb) {
+	(GET) {
+		switch ($0) {
+		(PROFILES) {
+			return $layout;
+		};
+		(*) {
+			switch ($1) {
+			(SCREENS) {
+				return $layout[$0];
+			};
+			(*) {
+				switch ($2) {
+				(ARRANGEMENT) {
+					return $layout[$0][$1][arrangement];
+				};
+				(WINDOWS) {
+					return $layout[$0][$1];
+				};
+				(*) {
+					switch ($3) {
+					(SERVER_DESC) {
+						return $getitem(layout.$0.$1.$2 0);
+					};
+					(OPTIONS) {
+						return $getitem(layout.$0.$1.$2 1);
+					};
+					(TARGETS) (NICKLIST) (CHANNELS) {
+						fe ($jot(0 ${numitems(layout.$0.$1.$2.targets)-1})) ii {
+							@ :tmp = getitem(layout.$0.$1.$2.targets $ii);
+							if (ischannel($tmp)) {
+								## we put , in <chan>,<key> pair so we could separate it
+								## in fe loop for decoding otherwise fe will treat chan
+								## and key as separate things
+								push :chans $sar(/ /,/$tmp);
+							} else {
+								push :nicks $tmp;
+							};
+						};
+						if (*3 == [NICKLIST]) {
+							return $nicks;
+						} else if (*3 == [CHANNELS]) {
+							return $chans;
+						} else {
+							return $nicks $chans;
+						};
+					};
+					};
+				};
+				};
+			};
+			};
+		};
+		};
+	};
+	};
+};
+
+alias layout.addprofile (profile) {
+	if (findw($profile $layout) == -1)
+		push layout $profile;
+};
+
+alias layout.delprofile (profile) {
+	fe (${layout.$profile}) ss {
+#		echo delprofile => $profile $ss;
+		layout.delscreen $profile $ss;
+	};
+
+	@ layout = remw($profile $layout);
+};
+
+alias layout.addscreen (profile, id, wins) {
+#	echo addscreen => $profile $id $wins;
+#	echo addscreen => check1: $layout[$profile];
+	push layout.$profile $id;
+#	echo addscreen => check2: $layout[$profile];
+	^assign layout.${profile}.${id} $wins;
+};
+
+alias layout.delscreen (profile, id) {
+#	echo delscreen ==> start: $layout[$profile];
+#	echo delscreen ==> $profile $id;
+	fe (${layout[$profile][$id]}) ww {
+#		echo delscreen ====> ww: $ww;
+		layout.delwindow $profile $id $ww;
+	};
+	layout.delarrangement $profile $id;
+
+#	echo delscreen ==> check1: $layout[$profile];
+	@ layout[$profile] = remw($id $layout[$profile]);
+#	echo delscreen ==> check2: $layout[$profile];
+
+	if (!layout[$profile]) {
+		^assign -layout.$profile;
+	};
+};
+
+alias layout.addwindow (profile, id, window) {
+	push layout.${profile}.${id} $window;
+};
+
+alias layout.delwindow (profile, id, window) {
+#	echo delwindow ===> $profile $id $window;
+	@ delarray(layout.${profile}.${id}.${window});
+	@ delarray(layout.${profile}.${id}.${window}.targets);
+	^assign layout.${profile}.${id} $remw($window $::layout.${profile}.${id});
+};
+
+alias layout.addarrangement (profile, id, args) {
+	^assign layout.${profile}.${id}.arrangement $args;
+};
+
+alias layout.delarrangement (profile, id) {
+	^assign -layout.${profile}.${id}.arrangement;
+};
+
+alias layout.addwinopt (profile, id, window, opt) {
+	@ setitem(layout.${profile}.${id}.${window} 1 $opt);
+};
+
+alias layout.addserver (profile, id, window, server) {
+	@ setitem(layout.${profile}.${id}.${window} 0 $server);
+};
+
+alias layout.addtarget (profile, id, win, target) {
+	@ setitem(layout.${profile}.${id}.${win}.targets $numitems(layout.${profile}.${id}.${win}.targets) $target)
+};
+
+alias layout.purge (void) {
+	fe ($layout) pp {
+		layout.delprofile $pp;
+	};
+};
+
+alias layout.scan (profile default "default") {
+	layout.delprofile $profile;
+
+	layout.addprofile $profile;
+	## XXX: we support only one screen for now
+	@ :screen = 0;
+	layout.addscreen $profile $screen $windowctl(REFNUMS);
+	layout.addarrangement $profile $screen $windowctl(REFNUMS_ON_SCREEN $screen);
+
+	fe ($numsort($windowctl(REFNUMS))) ww {
+
+		@ :winopts = [];
+
+		@ :server = serverctl(GET $windowctl(GET $ww SERVER) FULLDESC);
+		if (!server) {
+			@ :server = [NOSERV];
+		};
+		layout.addserver $profile $screen $ww $server;
+
+		if (:name = windowctl(GET $ww NAME)) {
+			push :winopts NAME $name;
+		};
+		push :winopts NOTIFY_LEVEL $sar(g/ /,/$tolower($windowctl(GET $ww NOTIFY_LEVEL)));
+		push :winopts LASTLOG_LEVEL $sar(g/ /,/$tolower($windowctl(GET $ww LASTLOG_LEVEL)));
+		push :winopts DOUBLE ${windowctl(GET $ww DOUBLE) ? [on] : [off]};
+
+		layout.addwinopt $profile $screen $ww $winopts;
+
+		fe ($windowctl(GET $ww NICKLIST)) nn {
+			layout.addtarget $profile $screen $ww $nn;
+		};
+		fe ($windowctl(GET $ww CHANNELS)) cc {
+			layout.addtarget $profile $screen $ww $cc $key($cc);
+		};
+	};	
+};
+
+alias layout.save (file default "~/.layout_irc") {
+	@ unlink($file);
+	@ :fd = open($file W);
+
+	if (isfilevalid($fd) == 1) {
+		@ :data = [@ layout = \[$layout\]];
+		@ write($fd $data);
+
+		fe ($layout) pp {
+			@ :data = [@ layout.$pp = \[${layout.$pp}\]];
+			@ write($fd $data);
+			
+			fe (${layout.$pp}) ss {
+				@ :data = [@ layout.${pp}.${ss} = \[${layout[$pp][$ss]}\]];
+				@ write($fd $data);
+
+				@ :data = [@ layout.${pp}.${ss}.arrangement = \[${layout[$pp][$ss][arrangement]}\]];
+				@ write($fd $data);
+
+				fe ($numsort(${layout[$pp][$ss]})) ww {
+					@ :data = [@ setitem\(layout.${pp}.${ss}.${ww} 0 $getitem(layout.${pp}.${ss}.${ww} 0)\)];
+					@ write($fd $data);
+				};
+
+				fe ($numsort(${layout[$pp][$ss]})) ww {
+					@ :data = [@ setitem\(layout.${pp}.${ss}.${ww} 1 $getitem(layout.${pp}.${ss}.${ww} 1)\)];
+					@ write($fd $data);
+				};
+
+				fe ($numsort(${layout[$pp][$ss]})) ww {
+					fe ($jot(0 ${numitems(layout.${pp}.${ss}.${ww}.targets)-1})) tt {
+						if (:item = getitem(layout.${pp}.${ss}.${ww}.targets $tt)) {
+							@ :data = [@ setitem\(layout.${pp}.${ss}.${ww}.targets $tt $item\)];
+							@ write($fd $data);
+						};
+					};
+				};
+			};
+		};
+
+		@ close($fd);
+	} else {
+		xecho -b ERROR: layout.save: $file: fd cannot be used;
+	};
+};
+
+alias layout.load (file default "~/.layout_irc") {
+	if (fexist($file)) {
+		load $file;
+	} else {
+		xecho -b ERROR: layout.load: $file: file doesn't exist;
+	};
+};
+
+alias layout.dump (void) {
+	echo ==> LAYOUTS: $layout;
+	fe ($layout) pp {
+		echo layout.$pp: $layout[$pp];
+		echo layout.${pp}.0: $layout[$pp][0];
+		echo layout.${pp}.0.arrangement: $layout[$pp][0][arrangement];
+	};
+
+	fe ($getarrays(layout.*)) aa {
+		echo $aa ==> $listarray($aa !);
+	};
+};
+
+#layout.purge;
+#layout.load;
+#layout.dump;
+#layout.save;
+#alias lr layout.restore default 0;

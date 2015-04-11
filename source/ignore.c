@@ -1,4 +1,4 @@
-/* $EPIC: ignore.c,v 1.38 2014/12/26 15:26:45 jnelson Exp $ */
+/* $EPIC: ignore.c,v 1.39 2015/04/11 04:16:34 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
@@ -519,7 +519,7 @@ static int	change_ignore_mask_by_desc (const char *type, Mask *do_mask, Mask *do
 
 				add_timer(0, empty_string, seconds, 1, 
 					  do_expire_ignores, NULL, NULL, 
-					  GENERAL_TIMER, -1, 0);
+					  GENERAL_TIMER, -1, 0, 0);
 			    }
 			}
 
@@ -1155,7 +1155,7 @@ char *	ignorectl (char *input)
 			seconds = time_diff(right_now, to);
 			add_timer(0, empty_string, seconds, 1,
 				do_expire_ignores, NULL, NULL, 
-				GENERAL_TIMER, -1, 0);
+				GENERAL_TIMER, -1, 0, 0);
 
 			RETURN_INT(i->refnum);
 		} else if (!my_strnicmp(listc, "REASON", len)) {
