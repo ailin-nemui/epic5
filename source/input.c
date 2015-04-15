@@ -1,4 +1,4 @@
-/* $EPIC: input.c,v 1.86 2015/04/11 04:16:34 jnelson Exp $ */
+/* $EPIC: input.c,v 1.87 2015/04/15 04:06:19 jnelson Exp $ */
 /*
  * input.c: does the actual input line stuff... keeps the appropriate stuff
  * on the input line, handles insert/delete of characters/words... the whole
@@ -250,9 +250,9 @@ BUILT_IN_KEYBINDING(debug_input_line)
 	*buffer = 0;
 	for (i = 0; i < INPUT_BUFFER_SIZE; i++)
 	{
-		sprintf(byte, "%X", INPUT_BUFFER[i]);
-		strcat(buffer, " ");
-		strcat(buffer, byte);
+		snprintf(byte, sizeof(byte), "%X", INPUT_BUFFER[i]);
+		strlcat(buffer, " ", sizeof(buffer));
+		strlcat(buffer, byte, sizeof(buffer));
 		if (INPUT_BUFFER[i] == 0)
 			break;
 	}

@@ -1,5 +1,75 @@
 EPIC5-1.1.11
 
+*** News 04/14/2015 -- New function, $chankey(servref #channel)
+	The $chankey() function returns the channel for a specified channel.
+	I created this because $key() doesn't allow you to specify
+	'servref' but rather uses from_server, which means you have to
+	wrap it in an /xeval -s to use a non-default server. ick.
+
+	Arguments:
+	 $0	- A server refnum
+	 $1	- A channel name 
+
+	Return Value:
+	 empty string - Either 1.) 'servref' not provided, or 
+			       2.) '#channel' not provided, or
+			       3.) You're not on '#channel' on servref, or
+			       4.) #channel doesn't have a key
+	 anything else - The mode +k key for #channel on servref.
+
+*** News 04/14/2015 -- SSL info available via $serverctl(GET refnum SSL*)
+	You can now get information about live SSL connections:
+
+	$serverctl(GET refnum SSL_CIPHER)
+		The encryption being used, something like "DHE-RSA-AES256-SHA"
+
+	$serverctl(GET refnum SSL_VERIFY_RESULT)
+		0 if the certificate was verified successfully.
+		Any other value if it did not.  
+		These values match up to the verify(1) man page.
+		Most notable, error code 20 means that OpenSSL could not
+		find your local CA file (see /SET SSL_ROOT_CERT_FILE below)
+
+	$serverctl(GET refnum SSL_PEM)
+		This is the PEM (base64) format of the server's certificate.
+		You could save this to see if it's changed. ;-)
+
+	$serverctl(GET refnum SSL_CERT_HASH)
+		This is the SHA1 digest of the server's certificate.
+		It is converted into a byte string like AB:CD:EF:01:02:...
+
+	$serverctl(GET refnum SSL_PKEY_BITS)
+		This is the number of bits that the server's certificate
+		said that the server's public key uses.
+
+	$serverctl(GET refnum SSL_SUBJECT)
+		This is the hostname of the subject of the certificate.
+		In theory, this is supposed to be the server's hostname.
+		This could be a wildcard string.
+
+	$serverctl(GET refnum SSL_SUBJECT_URL)
+		This is the SSL_SUBJECT, but passed through URL encoding.
+		It's useful because the SSL_SUBJECT will have spaces, and
+		this results in just one word.  
+
+	$serverctl(GET refnum SSL_ISSUER)
+		This is the Certificate Authority (CA) that issued the 
+		server's certificate.
+
+	$serverctl(GET refnum SSL_ISSUER_URL)
+		This is the SSL_ISSUER, but passed through URL encoding.
+		It's useful because the SSL_ISSUER will have spaces, and
+		this results in just one word.
+
+	$serverctl(GET refnum SSL_VERSION)
+		This is the version of SSL you're using.  
+		It should either be TLSv1 (good) or SSLv3 (bad).
+
+	With all of the above information, I hope someone scripts a nice
+	SSL executive script that caches the certificate information, 
+	tells you whether the connection should be trusted, decides whether
+	the ssl version is ok, the public key bits are ok, all that stuff.
+
 *** News 04/10/2015 -- New /TIMER argument, /TIMER -SNAP
 	A "snappable" timer fires off at the "top of the interval".
 	That means it runs every time ($time() % <interval> == 0)
@@ -42,8 +112,10 @@ EPIC5-1.1.11
 	  $1 - The "subject" of the certificate  -- the server name
 	  $2 - The "issuer" of the certificate
 	  $3 - How many bits are used by the certificate's public key
-	  $4 - Did the certificate validate (1) or not (0)?
-		This depends on /SET SSL_ROOT_CERT_FILE (above)
+	  $4 - Did the certificate validate?
+		0 = pass, anything else = fail.
+		(For now, this the result of X509_get_verify_result())
+		(This depends on /SET SSL_ROOT_CERT_FILE (above))
 	  $5 - What SSL type are we using? (TLSv1 or SSLv3)
 	  $6 - What is the digest of the SSL Certificate?
 

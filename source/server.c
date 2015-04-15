@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.274 2015/04/11 04:16:34 jnelson Exp $ */
+/* $EPIC: server.c,v 1.275 2015/04/15 04:06:19 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -1498,7 +1498,7 @@ something_broke:
 			{
 				/* XXX 'des' might not be both the vfd and channel! */
 				/* (ie, on systems where vfd != channel) */
-				int	ssl_err = startup_ssl(des, des);
+				int	ssl_err = ssl_startup(des, des);
 
 				/* SSL connection failed */
 				if (ssl_err == -1)
@@ -1837,7 +1837,7 @@ void	send_to_aserver_raw (int refnum, size_t len, const char *buffer)
 	if ((des = s->des) != -1 && buffer)
 	{
 	    if (get_server_ssl_enabled(refnum) == TRUE)
-		err = write_ssl(des, buffer, len);
+		err = ssl_write(des, buffer, len);
 	    else
 		err = write(des, buffer, len);
 
@@ -2410,7 +2410,7 @@ int	get_server_isssl (int refnum)
 	return (s->ssl_enabled == TRUE ? 1 : 0);
 }
 
-const char	*get_server_cipher (int refnum)
+const char	*get_server_ssl_cipher (int refnum)
 {
 	Server *s;
 
@@ -3854,10 +3854,34 @@ char 	*serverctl 	(char *input)
 			RETURN_STR(get_server_realname(refnum));
 		} else if (!my_strnicmp(listc, "DEFAULT_REALNAME", len)) {
 			RETURN_STR(get_server_default_realname(refnum));
-		} else if (!my_strnicmp(listc, "SSL_CERTIFICATE", len)) {
-			RETURN_STR(get_server_ssl_certificate(refnum));
-		} else if (!my_strnicmp(listc, "SSL_CERTIFICATE_HASH", len)) {
-			RETURN_STR(get_server_ssl_certificate_hash(refnum));
+		} else if (!my_strnicmp(listc, "SSL_", 4)) {
+			Server *s;
+			int	des;
+
+			if (!(s = get_server(refnum)) || s->ssl_enabled == FALSE)
+				RETURN_EMPTY;
+
+			if (!my_strnicmp(listc, "SSL_CIPHER", len)) {
+				RETURN_STR(get_ssl_cipher(s->des));
+			} else if (!my_strnicmp(listc, "SSL_VERIFY_RESULT", len)) {
+				RETURN_INT(get_ssl_verify_result(s->des));
+			} else if (!my_strnicmp(listc, "SSL_PEM", len)) {
+				RETURN_STR(get_ssl_pem(s->des));
+			} else if (!my_strnicmp(listc, "SSL_CERT_HASH", len)) {
+				RETURN_STR(get_ssl_cert_hash(s->des));
+			} else if (!my_strnicmp(listc, "SSL_PKEY_BITS", len)) {
+				RETURN_INT(get_ssl_pkey_bits(s->des));
+			} else if (!my_strnicmp(listc, "SSL_SUBJECT", len)) {
+				RETURN_STR(get_ssl_subject(s->des));
+			} else if (!my_strnicmp(listc, "SSL_SUBJECT_URL", len)) {
+				RETURN_STR(get_ssl_u_cert_subject(s->des));
+			} else if (!my_strnicmp(listc, "SSL_ISSUER", len)) {
+				RETURN_STR(get_ssl_issuer(s->des));
+			} else if (!my_strnicmp(listc, "SSL_ISSUER_URL", len)) {
+				RETURN_STR(get_ssl_u_cert_issuer(s->des));
+			} else if (!my_strnicmp(listc, "SSL_VERSION", len)) {
+				RETURN_STR(get_ssl_ssl_version(s->des));
+			}
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {
 		GET_INT_ARG(refnum, input);

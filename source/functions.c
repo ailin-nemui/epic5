@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.320 2015/04/11 04:16:34 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.321 2015/04/15 04:06:19 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -208,6 +208,7 @@ static	char
 	*function_ceil		(char *),
 	*function_center 	(char *),
 	*function_cexist	(char *),
+	*function_chankey	(char *),
 	*function_channel	(char *),
 	*function_channellimit	(char *),
 	*function_channelmode	(char *),
@@ -473,6 +474,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "CEIL",		function_ceil	 	},
 	{ "CENTER",		function_center 	},
 	{ "CEXIST",		function_cexist		},
+	{ "CHANKEY",		function_chankey	},
 	{ "CHANLIMIT",		function_channellimit	},
 	{ "CHANMODE",		function_channelmode	},
 	{ "CHANNEL",		function_channel	},
@@ -6669,7 +6671,7 @@ BUILT_IN_FUNCTION(function_cipher, input)
 	if (sval < 0 || sval >= server_list_size())
 		RETURN_EMPTY;
 
-	ret = get_server_cipher(sval);
+	ret = get_server_ssl_cipher(sval);
 	RETURN_STR(ret);
 }
 
@@ -7798,4 +7800,32 @@ BUILT_IN_FUNCTION(function_help_topics, word)
 	RETURN_EMPTY;
 }
 #endif
+
+/*
+ * $chankey(servref #channel) - return the +k key for a channel.
+ *
+ * Arguments:
+ *  $0 - servrer - A server refnum
+ *  $1 - #channel - A channel
+ *
+ * Return Value:
+ *	empty_string	- Either 
+ *			  1. 'refnum' not provided, or 
+ *			  2. '#channel' not provided, or
+ *			  3. You're not on '#channel' on 'refnum', or
+ *			  4. #channel doesn't have a key (mode +k)
+ *	anything else	- The mode +k key for #channel on server 'refnum'
+ */
+BUILT_IN_FUNCTION(function_chankey, input)
+{
+	int		refnum = -1;
+	const char *	channel;
+	const char *	key;
+
+	GET_INT_ARG(refnum, input);
+	GET_FUNC_ARG(channel, input);
+
+	key = get_channel_key(channel, refnum);
+	RETURN_STR(key);
+}
 

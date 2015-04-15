@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.32 2015/04/11 04:16:35 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.33 2015/04/15 04:06:19 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -90,39 +90,29 @@ static SSL_CTX	*SSL_CTX_init (int server)
 	return ctx;
 }
 
-/*
- * SSL_FD_init -- Create an SSL session on a given OS file descriptor using
- *		  an SSL ConTeXt template.
- * ARGS:
- *	ctx -- An SSL ConTeXt previously returned by SSL_CTX_init().
- *	channel -- A (real) file descriptor (not a vfd!) to do SSL upon.
- * RETURN VALUE:
- *	A pointer to SSL representing an SSL session on 'channel' of the
- *	form given by 'ctx'.
- *	NULL if SSL_new() fails.
- *	Errors in SSL_connect() are ignored.
- */
-static SSL *SSL_FD_init (SSL_CTX *ctx, int channel)
-{
-	SSL	*ssl;
-	if (!(ssl = SSL_new(ctx)))
-	{
-		return NULL;
-		panic(1, "SSL_FD_init() critical error in SSL_new()");
-	}
-	SSL_set_fd(ssl, channel);
-	return(ssl);
-}
-
 /* * * * * * */
+typedef struct ssl_metadata {
+	int	vfd;
+	int	verify_result;
+	char *	pem;
+	char *	cert_hash;
+	int	pkey_bits;
+	char *	subject;
+	char *	u_cert_subject;
+	char *	issuer;
+	char *	u_cert_issuer;
+	char *	ssl_version;
+} ssl_metadata;
+
 typedef struct	ssl_info_T {
 	struct ssl_info_T *next;
 	int	active;
+	int	vfd;		/* The Virtual File Descriptor (new_open()) */
+	int	channel;	/* The physical connection for the vfd */
 
-	int	vfd;
-	int	channel;
-	SSL_CTX	*ctx;
-	SSL *	ssl_fd;
+	SSL_CTX	*ctx;		/* All our SSLs have their own ConTeXt */
+	SSL *	ssl_fd;		/* Each of our SSLs have their own (SSL *) */
+	ssl_metadata	md;	/* Plain text info about SSL connection */
 } ssl_info;
 
 ssl_info *ssl_list = NULL;
@@ -177,12 +167,23 @@ static ssl_info *	new_ssl_info (int vfd)
 	x->channel = -1;
 	x->ctx = NULL;
 	x->ssl_fd = NULL;
-	return x;
 
+	x->md.vfd = vfd;
+	x->md.verify_result = 0;
+	x->md.pem = NULL;
+	x->md.cert_hash = NULL;
+	x->md.pkey_bits = 0;
+	x->md.subject = NULL;
+	x->md.u_cert_subject = NULL;
+	x->md.issuer = NULL;
+	x->md.u_cert_issuer = NULL;
+	x->md.ssl_version = NULL;
+
+	return x;
 }
 
 /*
- * remove_ssl_info -- Unregister vfd as an ssl-using connection.
+ * unlink_ssl_info -- Unregister vfd as an ssl-using connection.
  *
  * ARGS:
  *	vfd -- A virtual file descriptor, previously returned by new_open().
@@ -218,7 +219,7 @@ static ssl_info *	unlink_ssl_info (int vfd)
 
 
 /*
- * startup_ssl -- Create an ssl connection on a vfd using a certain channel.
+ * ssl_startup -- Create an ssl connection on a vfd using a certain channel.
  * ARGS:
  *	vfd -- A virtual file descriptor, previously returned by new_open().
  *	channel -- The channel that is mapped to the vfd (passed to new_open())
@@ -227,13 +228,15 @@ static ssl_info *	unlink_ssl_info (int vfd)
  *	 0	SSL negotiation is pending
  *	 1	SSL negotiation is complete
  */
-int	startup_ssl (int vfd, int channel)
+int	ssl_startup (int vfd, int channel)
 {
 	ssl_info *	x;
+	SSL *		ssl;
 
 	if (!(x = new_ssl_info(vfd)))
 	{
-		syserr(SRV(vfd), "Could not make new ssl info (vfd [%d]/channel [%d])",
+		syserr(SRV(vfd), "Could not make new ssl info "
+				 "(vfd [%d]/channel [%d])",
 				vfd, channel);
 		errno = EINVAL;
 		return -1;
@@ -242,24 +245,25 @@ int	startup_ssl (int vfd, int channel)
 	say("SSL negotiation for channel [%d] in progress...", channel);
 	x->channel = channel;
 	x->ctx = SSL_CTX_init(0);
-
-	if ((x->ssl_fd = SSL_FD_init(x->ctx, channel)) == NULL)
+	if (!(x->ssl_fd = SSL_new(x->ctx)))
 	{
 		/* Get rid of the 'x' we just created */
-		shutdown_ssl(vfd);
-		syserr(SRV(vfd), "Could not make new SSL (vfd [%d]/channel [%d])",
+		ssl_shutdown(vfd);
+		syserr(SRV(vfd), "Could not make new SSL "
+				 "(vfd [%d]/channel [%d])",
 				vfd, channel);
 		errno = EINVAL;
 		return -1;
 	}
 
+	SSL_set_fd(x->ssl_fd, channel);
 	set_non_blocking(channel);
 	ssl_connect(vfd, 0);
 	return 0;
 }
 
 /*
- * shutdown_ssl -- Destroy an ssl connection on a vfd.
+ * ssl_shutdown -- Destroy an ssl connection on a vfd.
  * ARGS:
  *	vfd -- A virtual file descriptor, previously passed to startup_ssl().
  * RETURN VALUE:
@@ -267,7 +271,7 @@ int	startup_ssl (int vfd, int channel)
  *	 0	The SSL session on the vfd has been shut down.
  * Any errors occuring during the shutdown are ignored.
  */
-int	shutdown_ssl (int vfd)
+int	ssl_shutdown (int vfd)
 {
 	ssl_info *	x;
 
@@ -290,12 +294,23 @@ int	shutdown_ssl (int vfd)
 		SSL_free(x->ssl_fd);
 		x->ssl_fd = NULL;
 	}
+
+	x->md.vfd = -1;
+	x->md.verify_result = 0;
+	new_free(&x->md.pem);
+	new_free(&x->md.cert_hash);
+	x->md.pkey_bits = 0;
+	new_free(&x->md.subject);
+	new_free(&x->md.u_cert_subject);
+	new_free(&x->md.issuer);
+	new_free(&x->md.u_cert_issuer);
+	new_free(&x->md.ssl_version);
 	return 0;
 }
 
 /* * * * * * */
 /*
- * write_ssl -- Write some binary data over an ssl connection on vfd.
+ * ssl_write -- Write some binary data over an ssl connection on vfd.
  *		The data is unbuffered with BIO_flush() before returning.
  * ARGS:
  *	vfd -- A virtual file descriptor, previously passed to startup_ssl().
@@ -305,7 +320,7 @@ int	shutdown_ssl (int vfd)
  *	-1 / EINVAL -- The vfd is not set up for ssl.
  *	Anything else -- The return value of SSL_write().
  */
-int	write_ssl (int vfd, const void *data, size_t len)
+int	ssl_write (int vfd, const void *data, size_t len)
 {
 	ssl_info *x;
 	int	err;
@@ -408,7 +423,8 @@ int	ssl_connect (int vfd, int quiet)
 		else
 		{
 			/* Post the error */
-			syserr(SRV(vfd), "ssl_connect: posting error %d", ssl_err);
+			syserr(SRV(vfd), "ssl_connect: posting error %d", 
+						ssl_err);
 			dgets_buffer(x->channel, &ssl_err, sizeof(ssl_err));
 			return 1;
 		}
@@ -434,40 +450,38 @@ int	ssl_connect (int vfd, int quiet)
  * A brief review of history:
  *	1. First, you /server irc.hostname.com
  *	2. That launches a nonblocking socket connect()ion, 
- *	3. WHen that completes, if server "type" is "irc-ssl", a nonblocking
+ *	3. When that completes, if server "type" is "irc-ssl", a nonblocking
  *	   SSL_connect() is launched.
  *	4. When that completes, we get called.
  *
  * What this does: 
- *	a. Sets the socket back to blocking 
- *	b. Fetches the SSL's peer certificate
- *	c. Verifies the peer's certificate with SSL_get_verify_result
- *	d. Dumps the peer's certificate into a PEM (base64) format
- *	e. Digests and format peer's certificate using X509_digest()
- *	f. Get the certificate's "subject" (ie, hostname)
- *	g. Get the certificate's "issuer"
- *	h. Get the certificate's public key
- *	i. Stash all of the above info into a struct passed back (TBD)
- *	j. Hook /on ssl_server_cert with the above information
- *	k. Cleans up
+ *	1. Sets the socket back to blocking, and informs the user.
+ *	2. Fetches the SSL's peer certificate
+ *	3. Verifies the peer's certificate with SSL_get_verify_result
+ *		and fills in x->md.verify_result
+ *	4. Fills in the following values in 'x->md':
+ *	   a. x->md.pem		(peer certificate in PEM (base64) format)
+ *	   b. x->md.cert_hash	(X509_digest() of #1)
+ *	   c. x->md.pkey_bits	(how many bits are in the public key)
+ *	   d. x->md.subject	(who the certificate names; ie, the irc server)
+ *	   e. x->md.u_cert_subject (urlified version of #4)
+ *	   f. x->md.issuer	(who issued the certificate; ie, the CA)
+ *	   g. x->md.u_cert_issuer  (urlified version of #6)
+ *	   h. x->md.ssl_version	(what SSL we're using, ie, "TLSv1")
+ *	5. Hook /on ssl_server_cert with the above information
+ *	6. Cleans up
  */
 int	ssl_connected (int vfd)
 {
-	char *		u_cert_issuer;
-	char *		u_cert_subject;
-	char *          cert_issuer;
-	char *          cert_subject;
-	X509 *          server_cert;
-	EVP_PKEY *      server_pkey;
-	ssl_info *	x;
-	int		verified, verr;
-	char *		p = NULL;
-	unsigned char 	h[256], *hx;
-	unsigned	hlen;
-	unsigned char	htext[1024];
-	unsigned	i;
-	BIO *		mem;
-	long		bytes;
+	X509 *          server_cert;	/* X509 in SSL internal fmt */
+	ssl_info *	x;		/* EPIC info about the conn */
+	BIO *		mem;		/* A place to write SSL strings */
+	long		bytes;		/* How big 'mem' is */
+	char *		p = NULL;	/* A place for C strings from 'mem' */
+	unsigned char 	h[256];		/* A place for X509_digest() to write */
+	unsigned	hlen;		/* How big digest in 'h' is */
+	unsigned char	htext[1024];	/* A human readable version of 'h' */
+	unsigned	i;		/* How many bytes in 'h' we converted */
 
 	/*
 	 * First off -- do I think this is even an SSL enabled connection?
@@ -479,37 +493,36 @@ int	ssl_connected (int vfd)
 	}
 
 	/*
+	 * STEP 1: 
 	 * We had set nonblocking when we started the SSL negotiation
 	 * becuase that plays nicer with OpenSSL.  But we want our connections
 	 * to be blocking when we start reading from them.
 	 */
 	set_blocking(x->channel);
-
-	/* It completed!  Yay! */
 	say("SSL negotiation using %s", SSL_get_cipher(x->ssl_fd));
 	say("SSL protocol using %s", SSL_get_version(x->ssl_fd));
 
 	/*
+	 * STEP 2: 
+	 * Fetch the server's certificate.
 	 * If we are unable to get the certificate, then something
 	 * failed and we should just bail right here. 
 	 */
 	if (!(server_cert = SSL_get_peer_certificate(x->ssl_fd)))
 	{
-		syserr(SRV(vfd), "SSL negotiation failed -- reporting as error");
+		syserr(SRV(vfd), "SSL negotiation failed - reporting as error");
 		SSL_CTX_free(x->ctx);
 		x->ctx = NULL;
 		x->ssl_fd = NULL;
 		write(x->channel, empty_string, 1);  /* XXX Is this correct? */
 		return -1;
 	}
-
-	/*
-	 * At this point, we have the certificate...
-	 */
 	say("SSL negotiation for channel [%d] complete", x->channel);
 
 
+	/* * */
 	/*
+	 * STEP 3:
 	 * Do the whole Certificate Verification thing.  Most SSL 
 	 * certs on irc probably won't verify becuase they're self-signed.
 	 *
@@ -517,51 +530,44 @@ int	ssl_connected (int vfd)
 	 * where your mozilla CA file is.
 	 * (See SSL_get_verify_results() for more info on that)
 	 */
-	verr = SSL_get_verify_result(x->ssl_fd);
-	if (verr == X509_V_OK)
-	{
+	x->md.verify_result = SSL_get_verify_result(x->ssl_fd);
+	if (x->md.verify_result == X509_V_OK)
 		say("SSL Certificate is verifiable (wow!)");
-		verified = 1;
-	}
 	else
 	{
-		/* 
-		 * XXX There should be a user-exposed function
-		 * that converts verr into a user string.
-		 */
-		say("SSL Certificate is not verifiable (big surprise): Reason %d", verr);
-		verified = 0;
+		const char *msg;
+
+		msg = X509_verify_cert_error_string(x->md.verify_result);
+		say("SSL Certificate is not verifiable (big surprise): "
+				"Reason %d (%s)", x->md.verify_result, msg);
 	}
 
+	/* * */
 	/*
-	 * Sorry about the horrible local variables; I wrote this in
-	 * a big hurry.  This gets the PEM (base64) version of the 
-	 * server's certificate.  We have to use an OpenSSL BIO, because
-	 * OpenSSL.
+	 * STEP 4:
+	 * (Advance apology -- in order to get strings out of OpenSSL,
+	 *  you have to dance with the devils of its BIO objects.)
+ 	 */
+
+	/* 
+	 * STEP 4a:	The server's certificate PEM
 	 */
 	mem = BIO_new(BIO_s_mem());
 	PEM_write_bio_X509(mem, server_cert);
 	bytes = BIO_get_mem_data(mem, &p);
 	p[bytes] = 0;
-	say("SSL Certificate is: %s", p);
+	malloc_strcpy(&x->md.pem, p);
 	BIO_free(mem);		/* This invalidates 'p' */
+	say("SSL Certificate is: %s", x->md.pem);
 
 	/*
-	 * Again, sorry about the horrible local variables.
-	 * This does a standard SHA1 type digest on the certificate.
-	 * well, sort of standard.  The digest is binary data
-	 * (which goes into 'h'), but it's up to us to make it human
-	 * readable.  Everyone said I should use <byte>:<byte> like
-	 * firefox does, so ... ok.
+	 * STEP 4b: 	The server's certificate hash
 	 */
 	memset(h, 0, sizeof(h));
 	hlen = sizeof(h);
 	X509_digest(server_cert, EVP_sha1(), h, &hlen);
 
-	/* 
-	 * Perhaps this is icky, but basically it converts 'h' into
-	 * a string of type AB:CD:EF:01:02....
-	 */
+	/* This converts 'h' into a string like AB:CD:EF:01:02.. */
 	for (i = 0; i < hlen; i++)
 	{
 		if (i > 0)
@@ -570,41 +576,65 @@ int	ssl_connected (int vfd)
 		snprintf(htext + (i * 3), 
 			sizeof(htext) - (i * 3), "%02x", h[i]);
 	}
-	say("SSL Certificate Digest: %s", htext);
+	x->md.cert_hash = malloc_strdup(htext);
+	say("SSL Certificate Digest: %s", x->md.cert_hash);
 
 	/*
-	 * Now we get the "subject" of the certificate (ie, the server's
-	 * name), and we URL-ify that up.
+	 * STEP 4d: 	The server's certificate's "subject" [hostname]
+	 * STEP 4e:	The server's certificate's "subject" (urlified)
 	 */
-	cert_subject = X509_NAME_oneline(X509_get_subject_name(server_cert),
-							0, 0);
-	if (!(u_cert_subject = transform_string_dyn("+URL", cert_subject, 
-							0, NULL)))
-		u_cert_subject = malloc_strdup(cert_subject);
+	mem = BIO_new(BIO_s_mem());
+	X509_NAME_print_ex(mem, X509_get_subject_name(server_cert), 
+				2, XN_FLAG_RFC2253 & ~ASN1_STRFLGS_ESC_MSB);
+	bytes = BIO_get_mem_data(mem, &p);
+	p[bytes] = 0;
+	x->md.subject = malloc_strdup(p);
+	BIO_free(mem);				/* This invalidates 'p' */
+
+	if (!(x->md.u_cert_subject = transform_string_dyn("+URL", 
+							  x->md.subject,
+							  0, NULL)))
+		x->md.u_cert_subject = malloc_strdup(x->md.subject);
 
 	/*
-	 * We get the issuer of the certificate, and URL-ify that up.
+	 * STEP 4f:	The server's certificate's "issuer" [CA]
+	 * STEP 4g:	The server's certificate's "issuer" (urlified)
 	 */
-	cert_issuer = X509_NAME_oneline(X509_get_issuer_name(server_cert),0,0);
-	if (!(u_cert_issuer = transform_string_dyn("+URL", cert_issuer, 
-							0, NULL)))
-		u_cert_issuer = malloc_strdup(cert_issuer);
-	
+	mem = BIO_new(BIO_s_mem());
+	X509_NAME_print_ex(mem, X509_get_issuer_name(server_cert), 
+				2, XN_FLAG_RFC2253 & ~ASN1_STRFLGS_ESC_MSB);
+	bytes = BIO_get_mem_data(mem, &p);
+	p[bytes] = 0;
+	x->md.issuer = malloc_strdup(p);
+	BIO_free(mem);				/* This invalidates 'p' */
+
+	if (!(x->md.u_cert_issuer = transform_string_dyn("+URL", 
+							  x->md.issuer,
+							  0, NULL)))
+		x->md.u_cert_issuer = malloc_strdup(x->md.issuer);
+
 	/*
-	 * And we get the server's public key -- (I probably should do
-	 * something to convert it to human readable)
+	 * STEP 4c:	The server's certificate's public key's bit-size
 	 */
-	server_pkey = X509_get_pubkey(server_cert);
-
+	x->md.pkey_bits = EVP_PKEY_bits(X509_get_pubkey(server_cert));
 
 	/*
-	 * THis is what we tell the user:
+	 * STEP 4h:	The connection's SSL protocol (ie, TLSv1 or SSLv3)
+	 */
+	x->md.ssl_version = malloc_strdup(SSL_get_version(x->ssl_fd));	
+
+
+	/* ==== */
+	/*
+	 * STEP 5: Tell the user about the connection
+	 *
+	 * This is what we tell the user:
 	 *	$0 - The connection fd (should be a way to convert this
 	 *		to a server refnum)
 	 *	$1 - The "subject" (ie, server name)
 	 *	$2 - The "Issuer" 
 	 *	$3 - How many bits does the public key use?
-	 *	$4 - Did the cert validate (1) or not (0)?
+	 *	$4 - The verification result (0 = pass; not 0 = fail)
 	 *	$5 - What ssl are we using? (SSLv3 or TLSv1)
 	 *	$6 - What is the digest of the certificate?
 	 *
@@ -613,37 +643,28 @@ int	ssl_connected (int vfd)
 	 * changed between connections.   Or something clever.
 	 */
 	if (do_hook(SSL_SERVER_CERT_LIST, "%d %s %s %d %d %s %s", 
-			vfd, u_cert_subject, u_cert_issuer, 
-			EVP_PKEY_bits(server_pkey), verr, 
-			SSL_get_version(x->ssl_fd), htext)) 
+			x->md.vfd, 
+			x->md.u_cert_subject, x->md.u_cert_issuer, 
+			x->md.pkey_bits, x->md.verify_result, 
+			x->md.ssl_version, x->md.cert_hash))
 	{
-		say("SSL certificate subject: %s", cert_subject) ;
-		say("SSL certificate issuer: %s", cert_issuer);
+		say("SSL certificate subject: %s", x->md.subject);
+		say("SSL certificate issuer: %s",  x->md.issuer);
 		say("SSL certificate public key length: %d bits", 
-					EVP_PKEY_bits(server_pkey));
-		say("SSL Certificate was verified: %d (reason: %d)", verified, verr);
-		say("SSL Certificate SHA1 Hash: %s", htext);
+						   x->md.pkey_bits);
+		say("SSL Certificate was verified: %d (reason: %d)", 
+					x->md.verify_result == X509_V_OK ? 1:0,
+					x->md.verify_result);
+		say("SSL Certificate SHA1 Hash: %s", 
+						   x->md.cert_hash);
 	}
 
-	/* Clean up after ourselves */
-	new_free(&u_cert_issuer);
-	new_free(&u_cert_subject);
-	free(cert_issuer);
-	free(cert_subject);
+	/*
+	 * STEP 6: Clean up after ourselves
+	 */
 	return 1;
 }
 
-const char *	get_ssl_cipher (int vfd)
-{
-	ssl_info *x;
-
-	if (!(x = find_ssl(vfd)))
-		return empty_string;
-	if (!x->ssl_fd)
-		return empty_string;
-
-	return SSL_get_cipher(x->ssl_fd);
-}
 
 int	is_ssl_enabled (int vfd)
 {
@@ -658,45 +679,80 @@ int	client_ssl_enabled (void)
 	return 1;
 }
 
-#if 0
-const char *	verify_result_to_str (int err)
-{
-	switch (err) {
-		case X509_V_OK: 
-			return "No verification error occurred.";
-		case X509_V_UNABLE_TO_GET_ISSUER_CERT:
-			return "Unable to get the Certificate of the CA";
-		case X509_V_ERR_UNABLE_TO_GET_CRL:
-			return "Unused (CRL of a cert not found)";
-		case X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE:
-			return "Unable to decrypt the Certificate's signature";
-		case X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE:
-			return "Unused (Unable to decrypt the CRL of the cert)";
-		case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
-			return "Unable to determine the public key for the CA from the certificate.";
-		case X509_V_ERR_CERT_SIGNATURE_FAILURE:
-			return "The signature of the certificate is invalid";
-		case X509_V_ERR_CRL_SIGNATURE_FAILURE:
-			return "Unused (The CRL signature is invalid)";
-		case X509_V_ERR_CERT_NOT_YET_VALID:
-			return "The certificate was issued for a time in the future.";
-		case X509_V_ERR_CERT_HAS_EXPIRED:
-			return "The certificate has expired";
-		case X509_V_ERR_CRL_NOT_YET_VALID:
-			return "X509_V_ERR_CRL_NOT_YET_VALID";
-		case X509_V_ERR_CRL_HAS_EXPIRED:
-			return "X509_V_ERR_CRL_HAS_EXPIRED";
-		case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
-			return "The Certificate's start time is bogus";
-		case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
-			return "The Certificate's end time is bogus";
-		case X509_V_ERR_ERROR_IN_CRL_NOT_BEFORE_FIELD:
-			return "CRL: The Certificate's start time is bogus";
-		case X509_V_ERR_ERROR_IN_CRL_NOT_AFTER_FIELD:
-			return "CRL: The Certificate's end time is bogus";
-	}
 
-#endif
+
+
+#define LOOKUP_SSL(vfd, missingval)	\
+	ssl_info *x;			\
+					\
+	if (!(x = find_ssl(vfd)))	\
+		return missingval ;	\
+	if (!x->ssl_fd)			\
+		return missingval ;	\
+
+
+/* XXX - Legacy -- Roll into new API */
+const char *	get_ssl_cipher (int vfd)
+{
+	LOOKUP_SSL(vfd, empty_string)
+
+	return SSL_get_cipher(x->ssl_fd);
+}
+
+int	get_ssl_verify_result (int vfd)
+{
+	LOOKUP_SSL(vfd, 0)
+	return x->md.verify_result;
+}
+
+const char *	get_ssl_pem (int vfd)
+{
+	LOOKUP_SSL(vfd, empty_string)
+	return x->md.pem;
+}
+
+const char *	get_ssl_cert_hash (int vfd)
+{
+	LOOKUP_SSL(vfd, empty_string)
+	return x->md.cert_hash;
+}
+
+int	get_ssl_pkey_bits (int vfd)
+{
+	LOOKUP_SSL(vfd, 0)
+	return x->md.pkey_bits;
+}
+
+const char *	get_ssl_subject (int vfd)
+{
+	LOOKUP_SSL(vfd, empty_string)
+	return x->md.subject;
+}
+
+const char *	get_ssl_u_cert_subject (int vfd)
+{
+	LOOKUP_SSL(vfd, empty_string)
+	return x->md.u_cert_subject;
+}
+
+const char *	get_ssl_issuer (int vfd)
+{
+	LOOKUP_SSL(vfd, empty_string)
+	return x->md.issuer;
+}
+
+const char *	get_ssl_u_cert_issuer (int vfd)
+{
+	LOOKUP_SSL(vfd, empty_string)
+	return x->md.u_cert_issuer;
+}
+
+const char *	get_ssl_ssl_version (int vfd)
+{
+	LOOKUP_SSL(vfd, empty_string)
+	return x->md.ssl_version;
+}
+
 
 # ifdef USE_PTHREAD
 #include <pthread.h>
@@ -735,18 +791,18 @@ static void	ssl_setup_locking (void)
 # endif
 #else
 
-int	startup_ssl (int vfd, int channel)
+int	ssl_startup (int vfd, int channel)
 {
 	return -1;
 }
 
-int	shutdown_ssl (int vfd)
+int	ssl_shutdown (int vfd)
 {
-	panic(1, "shutdown_ssl(%d) called on non-ssl client", vfd);
+	panic(1, "ssl_shutdown(%d) called on non-ssl client", vfd);
 	return -1;
 }
 
-int	write_ssl (int vfd, const void *data, size_t len)
+int	ssl_write (int vfd, const void *data, size_t len)
 {
 	panic(1, "write_fd(%d, \"%s\", %ld) called on non-ssl client",
 		vfd, (const char *)data, (long)len);
@@ -774,6 +830,17 @@ int	client_ssl_enabled (void)
 {
 	return 0;
 }
+
+int		get_ssl_verify_result (int vfd) { return 0; }
+const char *	get_ssl_pem (int vfd) { return empty_string; }
+const char *	get_ssl_cert_hash (int vfd) { return empty_string; }
+int		get_ssl_pkey_bits (int vfd) { return 0; }
+const char *	get_ssl_subject (int vfd) { return empty_string; }
+const char *	get_ssl_u_cert_subject (int vfd) { return empty_string; }
+const char *	get_ssl_issuer (int vfd) { return empty_string; }
+const char *	get_ssl_u_cert_issuer (int vfd) { return empty_string; }
+const char *	get_ssl_ssl_version (int vfd) { return empty_string; }
+
 
 #endif
 

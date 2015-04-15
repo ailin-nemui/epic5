@@ -10,16 +10,47 @@ if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 #
 # If anyone has a better way to do this, please let me know!
 #
+#	I found this at http://bradconte.com/using-load_verify_locations
+#
+#	Debian, Ubuntu, Arch, SuSE
+#	NetBSD (security/mozilla-rootcerts)
+#		/etc/ssl/certs/
+#	Debian, Ubuntu, Arch: (update-ca-certificates)
+#		/etc/ssl/certs/ca-certificates.crt
+#	Red Hat 5+, Fedora, Centos
+#		/etc/pki/tls/certs/ca-bundle.crt
+#	Red Hat 4
+#		/usr/share/ssl/certs/ca-bundle.crt
+#	FreeBSD (security/ca-root-nss)
+#		/usr/local/share/certs/ca-root-nss.crt
+#	FreeBSD (pre-2008 security/ca-root)
+#		/usr/local/share/certs/ca-root.crt
+#	OpenBSD
+#		/etc/ssl/cert.pem
+#	Mac OS X
+#		/System/Library/OpenSSL/certs/cert.pem
+#
 alias setup_ssl_root_cert_file
 {
 	^local ssl_cert_locations.;
-	@ ssl_cert_locations[0] = [~/.sslca.bundle];
-	@ ssl_cert_locations[1] = [/etc/ssl/ca.bundle];
-	@ ssl_cert_locations[2] = [/usr/local/etc/ssl/ca.bundle];
-	@ ssl_cert_locations[3] = [/opt/etc/ssl/ca.bundle];
-	@ ssl_cert_locations[4] = [/usr/share/certs/ca-root-nss.crt];
-	@ ssl_cert_locations[5] = [/usr/local/share/certs/ca-root-nss.crt];
-	@ ssl_cert_locations[6] = [/opt/share/certs/ca.bundle];
+	^local x 0;
+
+	@ ssl_cert_locations[${x++}] = [~/.sslca.bundle];
+	@ ssl_cert_locations[${x++}] = [/etc/ssl/certs/ca-certificates.crt]
+	@ ssl_cert_locations[${x++}] = [/etc/pki/tls/certs/ca-bundle.crt];
+	@ ssl_cert_locations[${x++}] = [/usr/share/ssl/certs/ca-bundle.crt];
+	@ ssl_cert_locations[${x++}] = [/usr/local/share/certs/ca-root-nss.crt];
+	@ ssl_cert_locations[${x++}] = [/usr/local/share/certs/ca-root.crt];
+	@ ssl_cert_locations[${x++}] = [/etc/ssl/cert.pem];
+	@ ssl_cert_locations[${x++}] = [/System/Library/OpenSSL/certs/cert.pem];
+
+	@ ssl_cert_locations[${x++}] = [/etc/ssl/ca.bundle];
+	@ ssl_cert_locations[${x++}] = [/usr/local/etc/ssl/ca.bundle];
+	@ ssl_cert_locations[${x++}] = [/opt/etc/ssl/ca.bundle];
+	@ ssl_cert_locations[${x++}] = [/opt/share/certs/ca.bundle];
+	@ ssl_cert_locations[${x++}] = [/usr/share/certs/ca-root-nss.crt];
+
+	@ ssl_cert_locations[${x++}] = [/etc/ssl/certs/];
 	
 	foreach ssl_cert_locations i 
 	{
@@ -32,5 +63,7 @@ alias setup_ssl_root_cert_file
 	};
 	xecho -b I couldn't find a root certificate file.  You'll have to /SET SSL_ROOT_CERT_FILE manually.;
 };
+
+setup_ssl_root_cert_file
 
 #hop'2k15

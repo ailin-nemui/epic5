@@ -270,7 +270,7 @@ const	char *	get_server_type			(int);
 	void	set_server_version_string	(int, const char *);
 const 	char *	get_server_version_string	(int);
 	int	get_server_isssl		(int);
-const	char *	get_server_cipher		(int);
+const	char *	get_server_ssl_cipher		(int);
  
 	void	register_server			(int, const char *);
 	void	password_sendline		(char *, const char *);

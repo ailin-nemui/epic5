@@ -2,12 +2,9 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* /DCC should allow recoding
 * Fraction was able to crash by typing invalid stuff into input line.
-* Need new function $chankey(servref #channel), since $key() hardcodes f_s.
-* There should be a feature to convert SSL_get_verify_result() to string.
-* Need to marshall up the SSL Cert to pass to /on ssl_server_cert
 * Do we need a /set ca_root_nss_dir to pass to SSL_CTX_load_verify_locations()?
+* Harz would like a way to do /bind -default for just a single binding.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -645,3 +642,16 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add new script 'find_ssl_root_certs' which sets SSL_ROOT_CERT_FILE for you.
 * Have 'find_ssl_root_certs' loaded by 'global'
 * Fix very many warnings recommended by clang.
+* Use X509_verify_cert_error_string() to get SSL verification explanation
+* Revamp /load find_ssl_root_certs after discussions with folks.
+* Signficantly revamp ssl.c, to make clearer, and save metadata of connection
+* This is so in future, $serverctl() may provide SSL info to user/script.
+* Create $serverctl(GET refnum SSL_<*>) operations for SSL info (see UPDATES)
+*	CIPHER	VERIFY_RESULT	PEM	CERT_HASH	PKEY_BITS
+*	SUBJECT	SUBJECT_URL	ISSUER	ISSUER_URL	VERSION
+* New function $chankey() -- similar to $key(), but can specify servref.
+* Support inbound recoding of dcc chat messages.
+* (Outbound recoding of dcc chat messages was already supported)
+* This means that dcc chat (including ctcp-over-dcc) is now utf-8 aware.
+* This concludes the UTF-8 project.  EPIC5 is now fully UTF-8 aware.
+

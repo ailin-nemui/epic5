@@ -1,4 +1,4 @@
-/* $EPIC: dcc.c,v 1.175 2015/04/11 04:16:34 jnelson Exp $ */
+/* $EPIC: dcc.c,v 1.176 2015/04/15 04:06:19 jnelson Exp $ */
 /*
  * dcc.c: Things dealing client to client connections. 
  *
@@ -75,14 +75,14 @@
 #define DCC_CONNECTING	((unsigned) 0x0800)
 #define DCC_STATES	((unsigned) 0xfff0)
 
-static char *dcc_target(const char *name) {
+static char *dcc_target (const char *name) 
+{
 	size_t	len;
-	char	*ret;
+	char *	ret;
 
 	len = strlen(name);
 	ret = new_malloc(len + 2);
-	ret[0] = '=';
-	memcpy(ret + 1, name, len + 1);
+	snprintf(ret, len + 2, "=%s", name);
 
 	return ret;
 }
@@ -689,150 +689,6 @@ static	DCC_list *dcc_searchlist (
 	return NULL;
 }
 
-#if 0
-/*
- * dcc_bucket searches through the dcc_list and collects the clients
- * with the the flag described in type set.  This function should never
- * return a delete'd entry.
- */
-static	int	dcc_bucket (
-	Bucket *	b,		/* The bucket to put entries into */
-	unsigned	type,		/* What kind of connection we want */
-	const char *	user, 		/* Nick of the remote peer */
-	const char *	description,	/* 
-					 * DCC Type specific information,
-					 * Usually a full pathname for 
-					 * SEND/GET, "listen" or "connect"
-					 * for RAW, or NULL for others.
-					 */
-	const char *	othername, 	/* Alias filename for SEND/GET */
-	int 		active)		/* Only get active/non-active? */
-{
-	DCC_list 	*client;
-	const char 	*last = NULL;
-	char		*decoded_description;
-	int		count = 0;
-
-	decoded_description = description ? dcc_urldecode(description) : NULL;
-
-	if (x_debug & DEBUG_DCC_SEARCH)
-		yell("entering dcc_b.  desc (%s) decdesc (%s) user (%s) "
-		     "type(%d) other (%s) active (%d)", 
-			description, decoded_description, user, type,
-			othername, active);
-
-	/*
-	 * Walk all of the DCC connections that we know about.
-	 */
-	lock_dcc(NULL);
-
-	for (client = ClientList; client ; client = client->next)
-	{
-		/* Never return deleted entries */
-		if (client->flags & DCC_DELETE)
-			continue;
-
-		/*
-		 * Tell the user if they care
-		 */
-		if (x_debug & DEBUG_DCC_SEARCH)
-		{
-			yell("checking against  name (%s) user (%s) type (%d) "
-					"flag (%d) other (%s) active (%x)", 
-				client->description, 
-				client->user, 
-				client->flags & DCC_TYPES,
-				client->flags, 
-				client->othername, 
-				client->flags & DCC_ACTIVE);
-		}
-
-		/*
-		 * Ok. first of all, it has to be the right type.
-		 * XXX - Doing (unsigned) -1 is a hack.
-		 */
-		if (type != (unsigned)-1 && 
-				((client->flags & DCC_TYPES) != type))
-			continue;
-
-		/*
-		 * Its OK if the user matches the client's user
-		 */
-		if (user && my_stricmp(user, client->user))
-			continue;
-
-
-		/*
-		 * If "name" is NULL, then that acts as a wildcard.
-		 * If "description" is NULL, then that also acts as a wildcard.
-		 * If "name" is not the same as "description", then it could
-		 * 	be that "description" is a filename.  Check to see if
-		 *	"name" is the last component in "description" and
-		 *	accept that.
-		 * Otherwise, "othername" must exist and be the same.
-		 * In all other cases, reject this entry.
-		 */
-		
-		if (description && client->description && 
-			my_stricmp(description, client->description) &&
-			my_stricmp(decoded_description, client->description))
-		{
-			/*
-			 * OK.  well, 'name' isnt 'description', try looking
-			 * for a last segment.  If there isnt one, choke.
-			 */
-			if ((last = strrchr(client->description, '/')) == NULL)
-				continue;
-
-			/*
-			 * If 'name' isnt 'last' then we'll have to look at
-			 * 'othername' to see if that matches.
-			 */
-			if (my_stricmp(description, last + 1) && my_stricmp(decoded_description, last + 1))
-			{
-				if (!othername || !client->othername)
-					continue;
-
-				if (my_stricmp(othername, client->othername))
-					continue;
-			}
-		}
-
-		/*
-		 * Active == 0  -> Only PENDING unopened connections, please
-		 * No deleted entries, either.
-		 */
-		if (active == 0)
-		{
-			if (client->flags & DCC_ACTIVE)
-				continue;
-		}
-		/*
-		 * Active == 1 -> Only ACTIVE and OPEN connections, please
-		 */
-		else if (active == 1)
-		{
-			if ((client->flags & DCC_ACTIVE) == 0)
-				continue;
-		}
-		/*
-		 * Active == -1 -> Only NON DELETED entries, please.
-		 */
-		else if (active == -1)
-			(void) 0;
-
-		if (x_debug & DEBUG_DCC_SEARCH)
-			yell("We have a winner!");
-
-		add_to_bucket(b, empty_string, client);
-		count++;
-	}
-
-	new_free(&decoded_description);
-	unlock_dcc(NULL);
-	return count;
-}
-#endif
 
 /*
  * dcc_get_bucket searches through the dcc_list and collects the clients
@@ -1494,6 +1350,9 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 	int		list = 0;
 	int		old_from_server = from_server;
 	int		writeval;
+	char 		*target = NULL;
+	const char 	*utf8_text = NULL;
+	char 		*extra = NULL;
 
 	tmp[0] = 0;
 
@@ -1554,7 +1413,6 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 		strlcat(tmp, text, sizeof tmp);
 		strlcat(tmp, "\n", sizeof tmp);
 
-		/* XXX Do recode_outbound here */
 		writeval = write(dcc->socket, tmp, strlen(tmp));
 	}
 
@@ -1609,6 +1467,7 @@ void	dcc_chat_transmit (char *user, char *text, const char *orig, const char *ty
 			put_it("Descriptor %d is not an open DCC RAW", fd);
 			break;
 		}
+
 		target = dcc_target(dcc->user);
 		l = message_from(target, LEVEL_DCC);
 		dcc_message_transmit(DCC_RAW, dcc->user, dcc->description, 
@@ -3161,6 +3020,7 @@ static	char *	process_dcc_chat_ctcps (DCC_list *Client, char *tmp)
 	char 	equal_nickname[80];
 	int	ctcp_request = 0, ctcp_reply = 0;
 	int	l;
+	char 	*target = NULL, *extra = NULL;
 
 #define CTCP_MESSAGE "CTCP_MESSAGE "
 #define CTCP_REPLY "CTCP_REPLY "
@@ -3186,17 +3046,31 @@ static	char *	process_dcc_chat_ctcps (DCC_list *Client, char *tmp)
 			FromUserHost = Client->userhost;
 		else
 			FromUserHost = unknown_userhost;
-		snprintf(equal_nickname, sizeof equal_nickname, 
-				"=%s", Client->user);
 
-		l = message_from(equal_nickname, LEVEL_CTCP);
+		/*
+		 * So 'inbound_recode' will decode 'tmp' in place,
+		 * UNLESS 'tmp' isn't big enough to hold the new text.
+		 * In that case, 'extra' is malloc()ed and it will
+		 * hold the new text.  
+		 * So if 'extra' is null, 'tmp' already holds it.
+		 * If 'extra' is not null, 'tmp' needs to point to it.
+		 */
+		target = dcc_target(Client->user);
+		inbound_recode(target, -1, empty_string, tmp, &extra);
+		if (extra)
+			tmp = extra;
+
+		l = message_from(target, LEVEL_CTCP);
 		if (ctcp_request == 1)
-			tmp = do_ctcp(equal_nickname, nickname, tmp);
+			tmp = do_ctcp(target, nickname, tmp);
 		else
-			tmp = do_notice_ctcp(equal_nickname, nickname, tmp);
+			tmp = do_notice_ctcp(target, nickname, tmp);
 		pop_message_from(l);
 
 		FromUserHost = OFUH;
+
+		new_free(&target);
+		new_free(&extra);
 	}
 
 	if (!tmp || !*tmp)
@@ -3208,10 +3082,12 @@ static	char *	process_dcc_chat_ctcps (DCC_list *Client, char *tmp)
 static	void	process_dcc_chat_data (DCC_list *Client)
 {
 	char	tmp[IO_BUFFER_SIZE + 1];
-	char 	*target;
 	ssize_t	bytesread;
 	int	l;
-	const	char	*OFUH = FromUserHost;
+const	char *	OFUH = FromUserHost;
+	char  *	target;
+const	char *	utf8_text = NULL;
+	char *	extra = NULL;
 
 	/* Get a new line via dgets. */
 	bytesread = dgets(Client->socket, tmp, IO_BUFFER_SIZE, 1);
@@ -3249,30 +3125,34 @@ static	void	process_dcc_chat_data (DCC_list *Client)
 	if (!process_dcc_chat_ctcps(Client, tmp) || !*tmp)
 		return;
 
-	/* XXX - Do recode_inbound here */
-
 	/* Otherwise throw the message to the user. */
 	target = dcc_target(Client->user);
+	utf8_text = inbound_recode(target, -1, empty_string, tmp, &extra);
+
 	l = message_from(target, LEVEL_DCC);
 	lock_dcc(Client);
 	if (Client->userhost && *Client->userhost)
 		FromUserHost = Client->userhost;
 	else
 		FromUserHost = unknown_userhost;
-	if (do_hook(DCC_CHAT_LIST, "%s %s", Client->user, tmp))
+
+	if (do_hook(DCC_CHAT_LIST, "%s %s", Client->user, utf8_text))
 	{
+		char timestr[256];
+
+		*timestr = 0;
 		if (get_server_away(NOSERV))
-		{
-			strlcat(tmp, "<", sizeof tmp);
-			strlcat(tmp, my_ctime(time(NULL)), sizeof tmp);
-			strlcat(tmp, ">", sizeof tmp);
-		}
-		put_it("=%s= %s", Client->user, tmp);
+			snprintf(timestr, sizeof(timestr), " <%s>", my_ctime(time(NULL)));
+
+		put_it("=%s= %s%s", Client->user, utf8_text, timestr);
 	}
+
 	FromUserHost = OFUH;
 	unlock_dcc(Client);
 	pop_message_from(l);
+
 	new_free(&target);
+	new_free(&extra);
 }
 
 /*

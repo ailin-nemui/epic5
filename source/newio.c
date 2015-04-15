@@ -1,4 +1,4 @@
-/* $EPIC: newio.c,v 1.72 2014/04/21 20:06:16 jnelson Exp $ */
+/* $EPIC: newio.c,v 1.73 2015/04/15 04:06:19 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
@@ -656,7 +656,7 @@ int	new_close (int vfd)
 	if (vfd >= 0 && vfd <= global_max_vfd && (ioe = io_rec[vfd]))
 	{
 		if (ioe->io_callback == ssl_read)	/* XXX */
-			shutdown_ssl(ioe->channel);
+			ssl_shutdown(ioe->channel);
 		knoread(vfd);
 		knowrite(vfd);
 
