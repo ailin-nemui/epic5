@@ -32,32 +32,29 @@ if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 #
 alias setup_ssl_root_cert_file
 {
-	^local ssl_cert_locations.;
-	^local x 0;
+	@ ssl_cert_locations[0] = [~/.sslca.bundle];
+	@ ssl_cert_locations[1] = [/etc/ssl/certs/ca-certificates.crt];
+	@ ssl_cert_locations[2] = [/etc/pki/tls/certs/ca-bundle.crt];
+	@ ssl_cert_locations[3] = [/usr/share/ssl/certs/ca-bundle.crt];
+	@ ssl_cert_locations[4] = [/usr/local/share/certs/ca-root-nss.crt];
+	@ ssl_cert_locations[5] = [/usr/local/share/certs/ca-root.crt];
+	@ ssl_cert_locations[6] = [/etc/ssl/cert.pem];
+	@ ssl_cert_locations[7] = [/System/Library/OpenSSL/certs/cert.pem];
 
-	@ ssl_cert_locations[${x++}] = [~/.sslca.bundle];
-	@ ssl_cert_locations[${x++}] = [/etc/ssl/certs/ca-certificates.crt]
-	@ ssl_cert_locations[${x++}] = [/etc/pki/tls/certs/ca-bundle.crt];
-	@ ssl_cert_locations[${x++}] = [/usr/share/ssl/certs/ca-bundle.crt];
-	@ ssl_cert_locations[${x++}] = [/usr/local/share/certs/ca-root-nss.crt];
-	@ ssl_cert_locations[${x++}] = [/usr/local/share/certs/ca-root.crt];
-	@ ssl_cert_locations[${x++}] = [/etc/ssl/cert.pem];
-	@ ssl_cert_locations[${x++}] = [/System/Library/OpenSSL/certs/cert.pem];
+	@ ssl_cert_locations[8] = [/etc/ssl/ca.bundle];
+	@ ssl_cert_locations[9] = [/usr/local/etc/ssl/ca.bundle];
+	@ ssl_cert_locations[10] = [/opt/etc/ssl/ca.bundle];
+	@ ssl_cert_locations[11] = [/opt/share/certs/ca.bundle];
+	@ ssl_cert_locations[12] = [/usr/share/certs/ca-root-nss.crt];
 
-	@ ssl_cert_locations[${x++}] = [/etc/ssl/ca.bundle];
-	@ ssl_cert_locations[${x++}] = [/usr/local/etc/ssl/ca.bundle];
-	@ ssl_cert_locations[${x++}] = [/opt/etc/ssl/ca.bundle];
-	@ ssl_cert_locations[${x++}] = [/opt/share/certs/ca.bundle];
-	@ ssl_cert_locations[${x++}] = [/usr/share/certs/ca-root-nss.crt];
-
-	@ ssl_cert_locations[${x++}] = [/etc/ssl/certs/];
+	@ ssl_cert_locations[13] = [/etc/ssl/certs/];
 	
 	foreach ssl_cert_locations i 
 	{
 		echo Checking $ssl_cert_locations[$i];
 		if (fexist($ssl_cert_locations[$i]) == 1)
 		{
-			set SSL_ROOT_CERT_FILE $ssl_cert_locations[$i];
+			set SSL_ROOT_CERTS_LOCATION $ssl_cert_locations[$i];
 			return;
 		};
 	};

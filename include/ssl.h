@@ -26,6 +26,8 @@ typedef struct ssl_metadata {
 } ssl_metadata;
 #endif
 
+	void	set_ssl_root_certs_location (void *);
+
 	int	ssl_startup (int nfd, int channel);
 	int	ssl_shutdown (int nfd);
 	int	ssl_write (int nfd, const void *, size_t);

@@ -1,4 +1,4 @@
-/* $EPIC: recode.c,v 1.27 2015/04/15 04:06:19 jnelson Exp $ */
+/* $EPIC: recode.c,v 1.28 2015/05/16 22:36:47 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 
@@ -50,11 +50,12 @@
  *
  * * * * * PREFACE 
  *
- * There are three primary inbound sources of information:
+ * There are five primary inbound sources of information:
  *	1. Stuff you type
  *	2. Scripts you /load
  *	3. Stuff you get from IRC
- * (there are other sources, like DCC CHAT, but those aren't handled yet)
+ *	4. Stuff you get from /EXEC
+ *	5. Stuff you get from /DCC CHAT
  *
  * In an ideal world, everything would be in UTF-8, but we have to handle
  * data that is not in UTF-8 and we don't know what the encoding is. 
@@ -466,7 +467,7 @@ void	init_recodings (void)
 		recode_rules[x] = NULL;
 
 	/* XXX TODO - Sanity check the encodings first */
-	while (sanity_check_encoding(console_encoding))
+	if (sanity_check_encoding(console_encoding))
 	{
 		fprintf(stderr, "Help!  Your system doesn't have the %s encoding\n", console_encoding);
 		help_me++;

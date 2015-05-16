@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.33 2015/04/15 04:06:19 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.34 2015/05/16 22:36:47 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -38,6 +38,7 @@
 #include "irc.h"
 #include "ircaux.h"
 #include "ssl.h"
+#include "vars.h"
 
 #ifdef HAVE_SSL
 
@@ -55,6 +56,153 @@
 
 static	int	firsttime = 1;
 static void	ssl_setup_locking (void);
+
+static	char *	x509_default_cert_location_file = NULL;
+static	char *	x509_default_cert_location_dir = NULL;
+
+/*
+ * set_key_interval - Called when you do /SET SSL_ROOT_CERTS_LOCATION
+ *	It determines the values to use with SSL_CTX_load_verify_locations().
+ *
+ * Arguments: 
+ *	stuff	- The new value of /SET SSL_ROOT_CERTS_LOCATION
+ *
+ * Return Value:
+ *	...
+ *
+ * Notes:
+ *	Two values are maintained in this function:
+ *	1. x509_default_cert_location_dir
+ *	2. x509_default_cert_file
+ *
+ *	Now, if /set ssl_root_certs_location is set to a directory, then it
+ *	will overrule #1 above.  If it is set to a file, it will overrule
+ *	#2 above.  If it is unset, both values will be reset to their 
+ *	default values (as OpenSSL reckons it). 
+ * 	
+ *	None of this is guaranteed to work.  Providing a certificate chain
+ *	is a function of your OS/distribution, and some systems (FreeBSD)
+ *	don't supply any certificate chains out of the box.  The location is
+ *	*wildly* OS/distribution specific.
+ */
+void	set_ssl_root_certs_location (void *stuff)
+{
+	struct stat 	st;
+	VARIABLE *	v;
+	const char *	p;
+
+	yell("SSL >>> HERE WE GO -- SETTING SSL ROOT CERTS LOCATION");
+	/* 'p' will point to /SET SSL_ROOT_CERTS_LOCATION */
+	v = (VARIABLE *)stuff;
+	p = v->string;
+
+	yell("SSL >>> The new value is: %s", p);
+
+	/* If you /SET -SSL_ROOT_CERTS_LOCATION, it forces resets to default */
+	if (!p)
+	{
+		yell("SSL >>> Unsetting previous values for x509_default_cert_location_dir");
+		new_free(&x509_default_cert_location_dir);
+		new_free(&x509_default_cert_location_file);
+	}
+
+	/* 
+	 * If you set it to a directory, we overrule the directory default.
+	 * If you set it to a file, we overrule the file default.
+	 * If it's neither (or it doesn't exist, we change nothing.
+	 */
+	if (stat(p, &st) == 0)
+	{
+		if (S_ISDIR(st.st_mode))
+		{
+			yell("SSL >>> The new value of the /set is a directory, so setting the directory");
+			malloc_strcpy(&x509_default_cert_location_dir, p);
+		}
+		else if (S_ISREG(st.st_mode))
+		{
+			yell("SSL >>> The new value of the /set is a file, so setting the file");
+			malloc_strcpy(&x509_default_cert_location_file, p);
+		}
+		else
+		{
+			yell("SSL >>> The new value of the /set is neither file nor directory, so doing nothing.");
+		}
+	}
+
+	/*
+	 * Now, if we get to this point, and we don't have a default 
+	 * directory to use, then we use the OpenSSL default.
+	 */
+	if (!x509_default_cert_location_dir)
+	{
+		const char *	dir = NULL;
+
+		yell("SSL >>> There is no default location for the directory, looking for one.");
+
+		/* This is where OpenSSL says our cert chain should live */
+		if (!(dir = getenv(X509_get_default_cert_dir_env())))
+			dir = X509_get_default_cert_dir();
+
+		yell("SSL >>> OpenSSL suggests %s", dir);
+
+		/* If that location is a directory, use it. */
+		if (dir)
+		{
+		    if (stat(dir, &st) == 0)
+		    {
+			if (S_ISDIR(st.st_mode))
+			{
+				yell("SSL >>> We have a winner for the directory.");
+				malloc_strcpy(&x509_default_cert_location_dir, dir);
+			}
+			else
+				yell("SSL >>> It wasn't a directory.");
+
+		    }
+		    else
+			yell("SSL >>> I couldn't stat that...");
+		}
+		else
+			yell("SSL >>> OpenSSL didn't suggest anything..");
+	}
+	else
+		yell("SSL >>> I already have a directory location: %s", x509_default_cert_location_dir);
+
+
+	if (!x509_default_cert_location_file)
+	{
+		const char *	file = NULL;
+
+		yell("SSL >>> There is no default location for the file, looking for one.");
+
+		/* This is where OpenSSL says our cert chain should live */
+		if (!(file = getenv(X509_get_default_cert_file_env())))
+			file = X509_get_default_cert_file();
+
+		yell("SSL >> OpenSSL suggests %s", file);
+
+		/* If that location is a file, use it. */
+		if (file)
+		{
+		    if (stat(file, &st) == 0)
+		    {
+			if (S_ISREG(st.st_mode))
+			{
+				yell("SSL >>> We have a winner for the file.");
+				malloc_strcpy(&x509_default_cert_location_file, file);
+			}
+			else
+				yell("SSL >>> It wasn't a file.");
+		    }
+		    else
+			yell("SSL >>> I couldn't stat that.");
+		}
+		else
+			yell("SSL >>> OpenSSL didn't suggest anything..");
+	}
+	else
+		yell("SSL >>> I already have a file location: %s", x509_default_cert_location_file);
+}
 
 /*
  * SSL_CTX_init -- Create and set up a new SSL ConTeXt object.
@@ -85,7 +233,11 @@ static SSL_CTX	*SSL_CTX_init (int server)
 /*
 	SSL_CTX_load_verify_locations(ctx, "/usr/local/share/certs/ca-root-nss.crt", NULL);
 */
-	SSL_CTX_load_verify_locations(ctx, get_string_var(SSL_ROOT_CERT_FILE_VAR), NULL);
+	say("Verifying SSL certificates using (dir: %s), (file: %s)",
+		x509_default_cert_location_dir ? x509_default_cert_location_dir : "<none>", 
+		x509_default_cert_location_file ? x509_default_cert_location_file : "<none>");
+	SSL_CTX_load_verify_locations(ctx, x509_default_cert_location_file,
+					   x509_default_cert_location_dir);
 	
 	return ctx;
 }
@@ -188,8 +340,10 @@ static ssl_info *	new_ssl_info (int vfd)
  * ARGS:
  *	vfd -- A virtual file descriptor, previously returned by new_open().
  * RETURN VALUE:
- *	If the vfd has been previously set up to use SSL, 0.
- *	If the vfd has never been previously set up to use SSL, -1.
+ *	If the vfd has been previously set up to use SSL, the ssl_info for it.
+ *	If the vfd has never been previously set up to use SSL, NULL.
+ *	You _MUST_ tear down the SSL connection and free the metadata of the retval.
+ *	Use ssl_shutdown() to close an ssl connection instead of calling here.
  */
 static ssl_info *	unlink_ssl_info (int vfd)
 {

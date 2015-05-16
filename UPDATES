@@ -27,8 +27,8 @@ EPIC5-1.1.11
 		0 if the certificate was verified successfully.
 		Any other value if it did not.  
 		These values match up to the verify(1) man page.
-		Most notable, error code 20 means that OpenSSL could not
-		find your local CA file (see /SET SSL_ROOT_CERT_FILE below)
+		Most notable, error code 20 means that OpenSSL could not find
+		your local CA file (see /SET SSL_ROOT_CERTS_LOCATION below)
 
 	$serverctl(GET refnum SSL_PEM)
 		This is the PEM (base64) format of the server's certificate.
@@ -85,13 +85,13 @@ EPIC5-1.1.11
 *** News 04/10/2015 -- New script, /LOAD find_ssl_root_certs
 	This script is loaded by /load global, and you should load it 
 	too, if you're not using /load global; or you should implement
-	a similar functionality to get /SET SSL_ROOT_CERT_FILE pointing
+	a similar functionality to get /SET SSL_ROOT_CERTS_LOCATION pointing
 	to the right place for you.  Otherwise, your SSL certificates
 	won't authenticate, and $4 in /on ssl_server_cert will always 
 	be 0, even if the cert is actually legitimate.  Or maybe all
 	of what I just said doesn't matter to you.
 
-*** News 04/10/2015 -- New /SET, /SET SSL_ROOT_CERT_FILE
+*** News 04/10/2015 -- New /SET, /SET SSL_ROOT_CERTS_LOCATION
 	In order for SSL to verify certificates, it needs to have a copy
 	of the root certificate authorities.  This is usually a file
 	named "ca.bundle" or "ca-root-nss.crt".  You need to /set this
@@ -115,7 +115,7 @@ EPIC5-1.1.11
 	  $4 - Did the certificate validate?
 		0 = pass, anything else = fail.
 		(For now, this the result of X509_get_verify_result())
-		(This depends on /SET SSL_ROOT_CERT_FILE (above))
+		(This depends on /SET SSL_ROOT_CERTS_LOCATION (above))
 	  $5 - What SSL type are we using? (TLSv1 or SSLv3)
 	  $6 - What is the digest of the SSL Certificate?
 

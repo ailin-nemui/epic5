@@ -3,8 +3,9 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Fraction was able to crash by typing invalid stuff into input line.
-* Do we need a /set ca_root_nss_dir to pass to SSL_CTX_load_verify_locations()?
 * Harz would like a way to do /bind -default for just a single binding.
+* /Foreach does not work with local variables.
+* Removing encrypts using /encrypt sucks.  Rewrite this.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -638,8 +639,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make /timer option processing similar to other commands
 * Add comments to make the timer API more clear and robust.
 * Revamp add_time() to add snapping, and handle updating better
-* Add /SET SSL_ROOT_CERT_FILE to pass to SSL_CTX_load_verify_locations
-* Add new script 'find_ssl_root_certs' which sets SSL_ROOT_CERT_FILE for you.
+* Add /SET SSL_ROOT_CERT_LOCATION to pass to SSL_CTX_load_verify_locations
+* Add script 'find_ssl_root_certs' which sets SSL_ROOT_CERT_LOCATION for you.
 * Have 'find_ssl_root_certs' loaded by 'global'
 * Fix very many warnings recommended by clang.
 * Use X509_verify_cert_error_string() to get SSL verification explanation
@@ -654,4 +655,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * (Outbound recoding of dcc chat messages was already supported)
 * This means that dcc chat (including ctcp-over-dcc) is now utf-8 aware.
 * This concludes the UTF-8 project.  EPIC5 is now fully UTF-8 aware.
-
+* Change /set ssl_root_cert_file to /set ssl_root_cert_location
+* Change default ^X binding back to SWITCH_CHANNELS
+* Add a callback to /set ssl_root_cert_location to help with auto-detecting
+* Don't /load find_ssl_root_certs by default, since it's auto-detected
+* Updated 'layout' script from zlonix.
+* This means /set -ssl_root_cert_location uses openssl default suggestions

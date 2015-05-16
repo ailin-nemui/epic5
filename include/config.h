@@ -48,7 +48,10 @@
  * XXX - This needs to be auto-detected by configure, somehow...
  * XXX - This is the FreeBSD location. how bogus.
  */
-#define DEFAULT_SSL_ROOT_CERT_FILE "/usr/local/share/certs/ca-root-nss.crt"
+/*
+#define DEFAULT_SSL_ROOT_CERTS_LOCATION "/usr/local/share/certs/ca-root-nss.crt"
+*/
+#define DEFAULT_SSL_ROOT_CERTS_LOCATION NULL
 
 /*
  * This is an experimental feature to thwart infinite recursion.  It is not

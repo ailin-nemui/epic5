@@ -283,7 +283,11 @@ alias layout.scan (profile default "default") {
 			layout.addtarget $profile $screen $ww $nn;
 		};
 		fe ($windowctl(GET $ww CHANNELS)) cc {
-			layout.addtarget $profile $screen $ww $cc $key($cc);
+			@ :key = chankey($windowctl(get $ww server) $cc);
+			if (!key) {
+				@ :key = [*];
+			};
+			layout.addtarget $profile $screen $ww $cc $key;
 		};
 	};	
 };

@@ -1,4 +1,4 @@
-/* $EPIC: keys.c,v 1.71 2015/04/11 04:16:34 jnelson Exp $ */
+/* $EPIC: keys.c,v 1.72 2015/05/16 22:36:47 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
@@ -1237,7 +1237,7 @@ static Key *	find_sequence (Key *top, const char *seq, int slen)
  *
  *  This function is run at startup and whenever you do /bind -defaults
  */
-void	init_keys (void) 
+void	init_keys (void)
 {
 	int c;
 	char s[2];
@@ -1277,7 +1277,7 @@ void	init_keys (void)
 	BIND("^U", "ERASE_LINE");
 	BIND("^V", "REVERSE");
 	BIND("^W", "NEXT_WINDOW");
-        BIND("^X", "DEBUG_INPUT_LINE");
+        BIND("^X", "SWITCH_CHANNELS");
 	BIND("^Y", "YANK_FROM_CUTBUFFER");
 	BIND("^Z", "STOP_IRC");
 	/* ^[ (was META1_CHARACTER) */
