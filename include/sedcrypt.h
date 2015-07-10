@@ -29,10 +29,11 @@ typedef struct	CryptStru
 	struct	CryptStru *next;
 	char *	nick;
 	char *	serv;
-	char *	key;
-	int	keylen;
+	char *	passwd;
+	int	passwdlen;
 	int	sed_type;
 	char *	prog;
+	int	refnum;
 }	Crypt;
 
 	BUILT_IN_COMMAND(encrypt_cmd);

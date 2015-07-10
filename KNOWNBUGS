@@ -4,8 +4,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Fraction was able to crash by typing invalid stuff into input line.
 * Harz would like a way to do /bind -default for just a single binding.
-* /Foreach does not work with local variables.
-* Removing encrypts using /encrypt sucks.  Rewrite this.
+* I did /redirect @W4 alias  and flooded off.  Why?
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -26,6 +25,8 @@ MEDIUM-TERM PROJECTS
 * Kitambi would like to be able to rewrite lines after they've been displayed.
 * Should any commands be #ifdef'd out at compile time, as opposed to just
   being replaced with error-generating shims?
+* /Foreach should work with local variables.  It can't right now because
+  of the challenge of indicating which elements are from local variables.
 
 [I moved the old list to the file "WISHLIST" to keep this file short]
 
@@ -661,3 +662,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't /load find_ssl_root_certs by default, since it's auto-detected
 * Updated 'layout' script from zlonix.
 * This means /set -ssl_root_cert_location uses openssl default suggestions
+* For crypt.c and crypto.c, "key"->"password" for passwords
+* For crypt.c and crypto.c, "key"->"crypt" for crypt struct objects
+* Remove #ifdef HAVE_SSL's in crypt.c, because ssl is required now.
+* Change crypt's primary key to be target only, not target+crypt type
+* Add /encrypt -remove to remove an entry more simply 
+* Make errors for string transformations and ctcp encodings more verbose

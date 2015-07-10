@@ -1,5 +1,34 @@
 EPIC5-1.1.11
 
+*** News 07/09/2015 -- New flag to /ENCRYPT: /ENCRYPT -REMOVE
+	It was confusing to remove /encrypt's before -- you had to specify
+	all the arguments but not the password:
+		/ENCRYPT hop -blowfish
+	And if you had a PROG crypto, you couldn't remove it at all!
+		/ENCRYPT hop password program...
+	(How do you not specify the password in this case?)
+
+	Anyways, there is now /ENCRYPT -REMOVE which lets you unambiguously
+	remove an encrypt for a target
+		/ENCRYPT -REMOVE hop
+
+*** News 07/09/2015 -- Only one /ENCRYPT per target now.
+	Traditionally, ircII has only had one cipher type for /ENCRYPT.
+	EPIC added more cipher types along the way, and it was possible
+	to set up multiple /ENCRYPT sessions for the same person.
+	However, as I reflect upon this, this isn't a reasonable thing to
+	do, because if you do
+		/ENCRYPT hop -blowfish password1
+		/ENCRYPT hop -aessha password2
+	And then you /msg hop, which one should it use?
+
+	So I've changed it so when you change the encryption type (such as
+	in the 2nd line above), it will REPLACE the first one -- you will 
+	only be able to have one cipher session per target.
+
+	If this is a problem -- if I broke something for you, please let me
+	know so we can address your needs.  
+
 *** News 04/14/2015 -- New function, $chankey(servref #channel)
 	The $chankey() function returns the channel for a specified channel.
 	I created this because $key() doesn't allow you to specify

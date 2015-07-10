@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.262 2015/04/11 04:16:34 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.263 2015/07/10 03:16:19 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -5989,7 +5989,15 @@ static ssize_t	ctcp_encoder (const char *orig, size_t orig_len, const void *meta
 	size_t	orig_i, dest_i;
 
         if (!orig || !dest || dest_len <= 0)
+	{
+		if (!orig)
+			yell("ctcp_encoder: orig is NULL");
+		if (!dest)
+			yell("ctcp_encoder: dest is NULL");
+		if (!dest_len <= 0)
+			yell("ctcp_encoder: dest_len <= 0");
                 return -1;
+	}
 
 	if (orig_len == 0)
 		orig_len = strlen(orig);
@@ -6472,8 +6480,8 @@ char *	transform_string_dyn (const char *type, const char *orig_str, size_t orig
 
 	if (retval <= 0)	/* It failed */
 	{
-		yell("Transform [%s] failed to transform string [%s]", 
-			type, orig_str);
+		yell("Transform [%s] failed to transform string [%s] (%d bytes) (returned %d)", 
+			type, orig_str, orig_str_len, retval);
 		new_free(&dest_str);
 		if (my_dest_str_len)
 			*my_dest_str_len = 0;
