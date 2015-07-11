@@ -2,9 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Fraction was able to crash by typing invalid stuff into input line.
-* Harz would like a way to do /bind -default for just a single binding.
-* I did /redirect @W4 alias  and flooded off.  Why?
+<none>
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -27,6 +25,7 @@ MEDIUM-TERM PROJECTS
   being replaced with error-generating shims?
 * /Foreach should work with local variables.  It can't right now because
   of the challenge of indicating which elements are from local variables.
+* Harz would like a way to do /bind -default for just a single binding.
 
 [I moved the old list to the file "WISHLIST" to keep this file short]
 

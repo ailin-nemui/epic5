@@ -1,5 +1,12 @@
 EPIC5-1.1.11
 
+*** News 07/09/2015 -- Don't do /redirect @W<refnum> <command>
+	You can /msg @W4 <stuff> for example to do an /xecho -w 4 <stuff>.
+	But you can't use this with /REDIRECT because the redirection 
+	itself causes another redirect, and it just gets stuck in an 
+	infinite loop.  The client can't protect you from doing this
+	without a rewrite, so, don't do this. ;-)
+
 *** News 07/09/2015 -- New flag to /ENCRYPT: /ENCRYPT -REMOVE
 	It was confusing to remove /encrypt's before -- you had to specify
 	all the arguments but not the password:
