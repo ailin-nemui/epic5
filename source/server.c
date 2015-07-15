@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.275 2015/04/15 04:06:19 jnelson Exp $ */
+/* $EPIC: server.c,v 1.276 2015/07/15 04:38:53 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -578,6 +578,10 @@ static	void	update_refnum_serverinfo (int refnum, ServerInfo *new_si)
 		return;
 
 	update_serverinfo(s->info, new_si);
+
+	/* If the user asked for a specific nick, use it as the default */
+	if (!empty(new_si->nick))
+		malloc_strcpy(&s->d_nickname, new_si->nick);
 }
 
 static	int	update_server_from_raw_desc (int refnum, char *str)

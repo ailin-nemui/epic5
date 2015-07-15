@@ -667,3 +667,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change crypt's primary key to be target only, not target+crypt type
 * Add /encrypt -remove to remove an entry more simply 
 * Make errors for string transformations and ctcp encodings more verbose
+* EPIC5-1.1.11 released here (Lucubrations) (Commit: 1810)
+* Use a pending-nickname if we have one as the default nickname on reconnect (caf)
