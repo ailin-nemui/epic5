@@ -1,4 +1,4 @@
-/* $EPIC: server.c,v 1.276 2015/07/15 04:38:53 jnelson Exp $ */
+/* $EPIC: server.c,v 1.277 2015/07/21 03:36:17 jnelson Exp $ */
 /*
  * server.c:  Things dealing with that wacky program we call ircd.
  *
@@ -3953,6 +3953,11 @@ char 	*serverctl 	(char *input)
 			set_server_server_type(refnum, input);
 			RETURN_INT(1);
 		} else if (!my_strnicmp(listc, "UMODE", len)) {
+			if (is_server_open(refnum) == 0) {
+				clear_user_modes(refnum);
+				update_user_mode(refnum, input);
+				RETURN_INT(1);
+			}
 			RETURN_EMPTY;		/* Read only for now */
 		} else if (!my_strnicmp(listc, "UNIQUE_ID", len)) {
 			set_server_unique_id(refnum, input);

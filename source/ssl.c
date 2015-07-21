@@ -1,4 +1,4 @@
-/* $EPIC: ssl.c,v 1.34 2015/05/16 22:36:47 jnelson Exp $ */
+/* $EPIC: ssl.c,v 1.35 2015/07/21 03:36:17 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
@@ -96,7 +96,7 @@ void	set_ssl_root_certs_location (void *stuff)
 	v = (VARIABLE *)stuff;
 	p = v->string;
 
-	yell("SSL >>> The new value is: %s", p);
+	yell("SSL >>> The new value is: %s", p ? p : "(unset)");
 
 	/* If you /SET -SSL_ROOT_CERTS_LOCATION, it forces resets to default */
 	if (!p)
@@ -111,7 +111,7 @@ void	set_ssl_root_certs_location (void *stuff)
 	 * If you set it to a file, we overrule the file default.
 	 * If it's neither (or it doesn't exist, we change nothing.
 	 */
-	if (stat(p, &st) == 0)
+	else if (stat(p, &st) == 0)
 	{
 		if (S_ISDIR(st.st_mode))
 		{

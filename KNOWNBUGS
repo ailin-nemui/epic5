@@ -668,4 +668,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /encrypt -remove to remove an entry more simply 
 * Make errors for string transformations and ctcp encodings more verbose
 * EPIC5-1.1.11 released here (Lucubrations) (Commit: 1810)
-* Use a pending-nickname if we have one as the default nickname on reconnect (caf)
+* Use pending-nickname if we have one as the default nickname on reconnect (caf)
+* Add @serverctl(SET refnum UMODE ...) to overrule reconnect umodes
+* Handle /SET -SSL_ROOT_CERTS_LOCATION in set_root_certs_location (caf)

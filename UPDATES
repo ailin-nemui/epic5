@@ -1,5 +1,15 @@
 EPIC5-1.1.11
 
+*** News 07/20/2015 -- New operation: @serverctl(SET refnum UMODE ...)
+	You've never been able to SET your UMODE, becuase that never
+	made much sense.  But it was pointed out that the UMODE is used
+	when you reconnect to establish your initial usermode, and they
+	wanted to be able to control that.
+
+	So now, when the server is disconnected, you can change its umode,
+	which will be used when you next connect.  Try something like this:
+		on server_lost * {defer @serverctl(SET $0 UMODE i)}
+
 *** News 07/09/2015 -- Don't do /redirect @W<refnum> <command>
 	You can /msg @W4 <stuff> for example to do an /xecho -w 4 <stuff>.
 	But you can't use this with /REDIRECT because the redirection 
