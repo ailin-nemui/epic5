@@ -30,7 +30,7 @@ package userlist;
 ##
 ## Userlist (op, voice, etc) globally turned on or off by boolean /set
 ## userlist command.  Offensive actions (kickban for now) controlled by
-## /set shitlist.
+## /set excludelist.
 ##
 ## Following aliases provides list management:
 ##
@@ -52,7 +52,7 @@ package userlist;
 ##      invite - invite user after /ctcp <yournick> INVITE <chan>
 ##      kickban - auto kickban user on join (ban mask is hardcoded to
 ##                *@domain.tld - this is type '2' from mask() help page,
-##                works only if /set shitlist is on)
+##                works only if /set excludelist is on)
 ##      friend - combination of op, voice, unban and invite flags
 ##
 ##   /showuser [user] - show information about the [user] or about all
@@ -317,7 +317,7 @@ alias userlist.dovoice (chan, nick, void) {
 on #-join 100 * {
 	switch ($userflags($userhost() $1)) {
 		(*kickban*) {
-			if (shitlist == [on]) {
+			if (excludelist == [on]) {
 				mode $1 -o+b $0 $mask(2 $userhost());
 				kick $1 $0 user has been banned;
 			};
@@ -361,4 +361,4 @@ on #-ctcp 100 '% $$servernick() \\\\[op voice invite unban\\\\] %' {
 	};
 };
 addset userlist bool;
-addset shitlist bool;
+addset excludelist bool;

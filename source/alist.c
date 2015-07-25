@@ -1,4 +1,4 @@
-/* $EPIC: alist.c,v 1.14 2007/04/12 03:24:14 jnelson Exp $ */
+/* $EPIC: alist.c,v 1.15 2015/07/25 17:24:13 jnelson Exp $ */
 /*
  * alist.c -- resizeable arrays.
  *
@@ -32,9 +32,10 @@
  * This file presumes a good deal of chicanery.  Specifically, it assumes
  * that your compiler will allocate disparate structures congruently as 
  * long as the members match as to their type and location.  This is
- * critically important for how this code works, and all hell will break
- * loose if your compiler doesnt do this.  Every compiler i know of does
- * it, which is why im assuming it, even though im not allowed to assume it.
+ * critically important for how this code works, and this will fail 
+ * ungracefully if your compiler doesn't do this. Every compiler I've ever
+ * had access to does it, which is why I assume it, even though I'm not 
+ * technically allowed to assume it
  *
  * This file is hideous.  Ill kill each and every one of you who made
  * me do this. ;-)
