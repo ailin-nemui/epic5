@@ -97,26 +97,31 @@ SDBM *sdbm_open (const char *file, int flags, int mode)
 	SDBM *db;
 	char *dirname;
 	char *pagname;
-	int n;
+	int dirlen, paglen;
 
 	if (file == NULL || !*file)
 		return errno = EINVAL, (SDBM *) NULL;
 /*
  * need space for two seperate filenames
  */
-	n = strlen(file) * 2 + strlen(DIRFEXT) + strlen(PAGFEXT) + 2;
+	dirlen = strlen(file) + strlen(DIRFEXT) + 1;
+	paglen = strlen(file) + strlen(PAGFEXT) + 1;
 
-	if ((dirname = new_malloc(n)) == NULL)
-		return errno = ENOMEM, (SDBM *) NULL;
 /*
  * build the file names
+ * XXX This was previously trying entirely too hard to be clever.
  */
-	dirname = strcat(strcpy(dirname, file), DIRFEXT);
-	pagname = strcpy(dirname + strlen(dirname) + 1, file);
-	pagname = strcat(pagname, PAGFEXT);
+	if ((dirname = new_malloc(dirlen)) == NULL)
+		return errno = ENOMEM, (SDBM *) NULL;
+	snprintf(dirname, dirlen, "%s%s", file, DIRFEXT);
+
+	if ((pagname = new_malloc(paglen)) == NULL)
+		return errno = ENOMEM, (SDBM *) NULL;
+	snprintf(pagname, paglen, "%s%s", file, PAGFEXT);
 
 	db = sdbm__prep(dirname, pagname, flags, mode);
 	new_free(&dirname);
+	new_free(&pagname);
 	return db;
 }
 

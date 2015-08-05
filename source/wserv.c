@@ -1,4 +1,4 @@
-/* $EPIC: wserv.c,v 1.18 2013/07/28 23:16:14 jnelson Exp $ */
+/* $EPIC: wserv.c,v 1.19 2015/08/05 04:00:52 jnelson Exp $ */
 /*
  * wserv.c -- A little program to act as a pipe between the ircII process
  * 	      and an xterm window or GNU screen.
@@ -105,7 +105,11 @@ int	main (int argc, char **argv)
 	 * functions and some systems do not have snprintf!  This use of
 	 * sprintf is demonstrably safe.
 	 */
+#ifdef HAVE_SNPRINTF
+	snprintf(stuff, sizeof(stuff), "version=%d\n", CURRENT_WSERV_VERSION);
+#else
 	sprintf(stuff, "version=%d\n", CURRENT_WSERV_VERSION);
+#endif
 	write(cmd, stuff, strlen(stuff));
 
 	/*
@@ -119,9 +123,19 @@ int	main (int argc, char **argv)
 	 * attempts to use writev() have shown that linux does not have
 	 * an atomic writev() function (boo, hiss).  The parent client
 	 * does not take kindly to this data coming in multiple packets.
+	 *
+	 * Again, we use sprintf() here because we can't be guaranteed
+	 * that snprintf() is available in this program.  So I do the 
+	 * length check first, and fail if it would overrun.
 	 */
 	tmp = ttyname(0);
+	if (strlen(tmp) > 90)
+		my_exit(90);
+#ifdef HAVE_SNPRINTF
+	snprintf(stuff, sizeof(stuff), "tty=%s\n", tmp);
+#else
 	sprintf(stuff, "tty=%s\n", tmp);
+#endif
 	write(cmd, stuff, strlen(stuff));
 
 	term_init();		/* Set up the xterm */
@@ -284,7 +298,11 @@ static void 	term_resize (void)
 	{
 		old_li = window.ws_row;
 		old_co = window.ws_col;
+#ifdef HAVE_SNPRINTF
+		snprintf(buffer, sizeof(buffer), "geom=%d %d\n", old_li, old_co);
+#else
 		sprintf(buffer, "geom=%d %d\n", old_li, old_co);
+#endif
 		write(cmd, buffer, strlen(buffer));
 	}
 }

@@ -1,4 +1,4 @@
-/* $EPIC: irc.c,v 1.1482 2015/07/25 17:24:13 jnelson Exp $ */
+/* $EPIC: irc.c,v 1.1483 2015/08/05 04:00:52 jnelson Exp $ */
 /*
  * ircII: a new irc client.  I like it.  I hope you will too!
  *
@@ -52,7 +52,7 @@ const char internal_version[] = "20150711";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1813;
+const unsigned long	commit_id = 1814;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -481,8 +481,8 @@ static	void	parse_args (int argc, char **argv)
 	char *ptr = (char *) 0;
 	char *tmp_hostname = NULL;
 	char *the_path = NULL;
-	char *translation_path = NULL;
-	
+	int size;
+
 	int altargc = 0;
 	char **altargv;
 
@@ -614,50 +614,49 @@ static	void	parse_args (int argc, char **argv)
 
 	/* The -S-option  / shebang tokeniser */
 	if (argc > 1 && ((argv[1][0] == '-' && argv[1][1] == 'S')
-		|| strchr(argv[1], ' ') != NULL 
-		|| strchr(argv[1], '\t') != NULL)
-	)
+			|| strchr(argv[1], ' ') != NULL 
+			|| strchr(argv[1], '\t') != NULL))
 	{
-		int argn, argpos, bufpos, c = 0, n;
+		int 	argn, 
+			i,
+			j,
+			c = 0, 
+			n;
+		size_t	len;
+
 		altargv = new_malloc(sizeof(char *));
-		altargv[0] = new_malloc(strlen(argv[0]) +1);
-		strcpy(altargv[0], argv[0]);
+		altargv[0] = malloc_strdup(argv[0]);
 		altargc = 1;
 		
 		for (argn = 1; argn < argc; argn++)
 		{
-		    int arglen;
-		    char *buffer;
+		    const char *s;
+		    char *	dest;
+		    size_t	destlen;
+		    char *	d;
 
-		    arglen =  strlen(argv[argn]);
-		    buffer = alloca(arglen + 1);
-		    argpos = -1;
-		    do
+		    s = argv[argn];
+		    destlen = strlen(s) + 1;
+		    d = dest = alloca(destlen + 1);
+
+		    while (*s && (d - dest < destlen))
 		    {
-		 	for (n = 0; n <= arglen; ) buffer[n++] = '\0';
-			bufpos = 0;
-			for (argpos++; argpos <= arglen; argpos++)
+			if (*s == '\0' || *s == ' ' || *s == '\t')
 			{
-				c = argv[argn][argpos];
-				if (c == '\0' || c == ' ' || c == '\t')
-					break;
-				buffer[bufpos++] = c;
-			}
-			if (bufpos == 0)
-			{
-				if (c == '\0')
-					break;
-				continue;
-			}
-			RESIZE(altargv, char *, altargc +1);
-			altargv[altargc] = new_malloc(bufpos +1);
-			strcpy(altargv[altargc++], buffer);
-			if (c != '\0')
-				continue;
-			break;   	
-		    } while(1);
+			    if (d - dest > 0)
+			    {
+				*d = 0;
+				RESIZE(altargv, char *, altargc + 1);
+				altargv[altargc++] = malloc_strdup(dest);
+				d = dest;
+			    }
+		        }
+			else
+				*d++ = *s++;
+		    }
 		}
-		RESIZE(altargv, char *, altargc +1);
+
+		RESIZE(altargv, char *, altargc + 1);
 		altargv[altargc] = NULL;
 		argc = altargc;
 		argv = altargv;

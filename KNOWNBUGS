@@ -671,3 +671,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Use pending-nickname if we have one as the default nickname on reconnect (caf)
 * Add @serverctl(SET refnum UMODE ...) to overrule reconnect umodes
 * Handle /SET -SSL_ROOT_CERTS_LOCATION in set_root_certs_location (caf)
+* Eliminate some avoidable uses of strcpy/strcat/sprintf for the pedantic.
+* Move the uncompleted wishlist items to the web-based wishlist
+* Signficantly rewrite the shebang (-S) command line option to remove strcpy()s
+* Increase the padding for SHA256 xforms to avoid a buffer overflow (caf)

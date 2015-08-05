@@ -1,4 +1,4 @@
-/* $EPIC: functions.c,v 1.322 2015/07/10 03:16:18 jnelson Exp $ */
+/* $EPIC: functions.c,v 1.323 2015/08/05 04:00:52 jnelson Exp $ */
 /*
  * functions.c -- Built-in functions for ircII
  *
@@ -5439,6 +5439,7 @@ BUILT_IN_FUNCTION(function_mask, args)
 	char **my_dot = NULL, **colon = NULL;
  	char *buff, *my_nickname, *my_username, *my_hostname, *dmask, *dbuff, *p, *fa;
 	unsigned i, coloncount, dotcount, nondigit, method, userlen;
+	int	size;
 
 	fa = new_next_arg(args, &args);
 
@@ -5468,9 +5469,10 @@ BUILT_IN_FUNCTION(function_mask, args)
 	}
 
 	buff = (char *) new_malloc(BIG_BUFFER_SIZE + 1);
-	dbuff = (char *) new_malloc(strlen(my_hostname) + 2);
+	size = strlen(my_hostname) + 2;
+	dbuff = (char *) new_malloc(size);
 	p = dmask = dbuff + 1;
-	strcpy(p, my_hostname);
+	strlcpy(p, my_hostname, size);
 
 	for (i = coloncount = dotcount = nondigit = 0; p[i]; i++) {
 		if (p[i] == '.') {

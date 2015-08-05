@@ -1,4 +1,4 @@
-/* $EPIC: window.c,v 1.250 2015/04/11 04:16:35 jnelson Exp $ */
+/* $EPIC: window.c,v 1.251 2015/08/05 04:00:52 jnelson Exp $ */
 /*
  * window.c: Handles the organzation of the logical viewports (``windows'')
  * for irc.  This includes keeping track of what windows are open, where they
@@ -6736,7 +6736,7 @@ BUILT_IN_KEYBINDING(unstop_all_windows)
 
 	while (traverse_all_windows(&tmp))
 	{
-		strcpy(my_off, "OFF");
+		strlcpy(my_off, "OFF", sizeof(my_off));
 		ptr = my_off;
 		window_hold_mode(tmp, (char **)&ptr);
 	}

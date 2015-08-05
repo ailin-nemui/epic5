@@ -1,4 +1,4 @@
-/* $EPIC: ircaux.c,v 1.263 2015/07/10 03:16:19 jnelson Exp $ */
+/* $EPIC: ircaux.c,v 1.264 2015/08/05 04:00:52 jnelson Exp $ */
 /*
  * ircaux.c: some extra routines... not specific to irc... that I needed 
  *
@@ -2540,7 +2540,7 @@ char *	strformat (char *dest, size_t destlen, const unsigned char *src, ssize_t 
 	ucs_to_utf8(pad, padutf8, sizeof(padutf8));
 	if ((padlen = quick_display_column_count(padutf8)) == 0)
 	{
-		strcpy(padutf8, " ");
+		strlcpy(padutf8, " ", sizeof(padutf8));
 		padlen = 1;
 	}
 	padreps = paduse / padlen;
@@ -6152,9 +6152,11 @@ int my_iconv_open (iconv_t *forward, iconv_t *reverse, const char *stuff2)
 {
 	size_t pos, len;
 	char *stuff, *fromcode, *tocode, *option, *tmp;
-	
+	int	size;
+
 	stuff = LOCAL_COPY(stuff2);
-	tmp = alloca(strlen(stuff));
+	size = strlen(stuff) + 1;
+	tmp = alloca(size);
 	len = strlen(stuff);
 	for (pos = 0; pos < len && stuff[pos] != '/'; pos++);
 	if (stuff[pos] != '/')
@@ -6180,13 +6182,13 @@ int my_iconv_open (iconv_t *forward, iconv_t *reverse, const char *stuff2)
 	/* forward: tocode (+option), fromcode*/
 	if (forward)
 	{
-		tmp = strcpy(tmp, tocode);
+		strlcpy(tmp, tocode, size);
 		if (option)
 		{
 			len = strlen(tocode);
 			tmp[len] = '/';
 			tmp[len + 1] = '\0';
-			strcpy(tmp + len + 1, option);
+			strlcpy(tmp + len + 1, option, size - len - 1);
 		}
 		if ((*forward = iconv_open(tmp, fromcode)) == (iconv_t) (-1))
 		{
@@ -6200,13 +6202,13 @@ int my_iconv_open (iconv_t *forward, iconv_t *reverse, const char *stuff2)
 	/* reverse: fromcode (+option), tocode*/
 	if (reverse)
 	{
-		tmp = strcpy(tmp, fromcode);
+		strlcpy(tmp, fromcode, size);
 		if (option)
 		{
 			len = strlen(fromcode);
 			tmp[len] = '/';
 			tmp[len +1] = '\0';
-			strcpy(tmp + len + 1, option);
+			strlcpy(tmp + len + 1, option, size - len - 1);
 		}
 		if ((*reverse = iconv_open(tmp, tocode)) == (iconv_t) (-1))
 		{
@@ -6334,7 +6336,7 @@ struct Transformer default_transformers[] = {
 {	0,	"CTCP",		0, 2, 8,  ctcp_encoder,	  ctcp_decoder	 },
 {	0,	"NONE",		0, 1, 8,  null_encoder,	  null_encoder	 },
 {	0,	"DEF",		0, 1, 16, crypt_encoder,  crypt_decoder	 },
-{	0,	"SHA256",	0, 0, 16, sha256_encoder, sha256_encoder },
+{	0,	"SHA256",	0, 0, 65, sha256_encoder, sha256_encoder },
 #ifdef HAVE_SSL
 {	0,	"BF",		1, 1, 8,  blowfish_encoder, blowfish_decoder },
 {	0,	"CAST",		1, 1, 8,  cast5_encoder,    cast5_decoder    },

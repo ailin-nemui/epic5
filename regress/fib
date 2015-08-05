@@ -35,6 +35,9 @@ alias fibbb {
 	} : { return $0 }
 }
 
+alias fibbbb { @function_return=*>1?fibb(${*-1})+fibb(${*-2}):*?1:0 }
+
+
 alias fib2 {
 	@ start = utime()
 	eval echo $fib(20)
@@ -78,6 +81,12 @@ alias fib6 {
 alias fib7 {
 	@ start = utime()
 	eval echo $fibb(6)
+	echo Total time = $utime_sub($utime() $start)
+}
+
+alias fib8 {
+	@ start = utime()
+	eval echo $fibbbb(22)
 	echo Total time = $utime_sub($utime() $start)
 }
 
