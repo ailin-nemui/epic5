@@ -676,3 +676,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Signficantly rewrite the shebang (-S) command line option to remove strcpy()s
 * Increase the padding for SHA256 xforms to avoid a buffer overflow (caf)
 *** This is a test ***
+*** This is a test, #2 ***
