@@ -1,0 +1,11 @@
+*.o
+Makefile
+config.cache
+config.log
+config.status
+include/defs.h
+source/Makefile
+source/epic5
+source/info.c.sh
+source/wserv4
+
