@@ -675,4 +675,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Move the uncompleted wishlist items to the web-based wishlist
 * Signficantly rewrite the shebang (-S) command line option to remove strcpy()s
 * Increase the padding for SHA256 xforms to avoid a buffer overflow (caf)
-*** One more permissions test ***
+* -- I switched to git here --
+* "Make install" modified permissions in the tree. Ew. Take that out.

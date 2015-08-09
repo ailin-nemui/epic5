@@ -158,9 +158,6 @@ installscript: installdirs test
 	for i in @srcdir@/script/*; \
 	do \
 		if ./my_test -f $$i; then \
-			if ./my_test -x $$i; then \
-				chmod a-x $$i; \
-			fi; \
 			target=$(IP)$(DESTDIR)$(scriptdir)/`basename $$i`; \
 			if ./my_test -f $$target; then \
 				if ./my_test $$i -nt $$target; then \
