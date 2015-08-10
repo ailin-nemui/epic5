@@ -677,3 +677,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Increase the padding for SHA256 xforms to avoid a buffer overflow (caf)
 * -- I switched to git here --
 * "Make install" modified permissions in the tree. Ew. Take that out.
+* EPIC5-1.2 released here (Deracination) (Commit: 1816)
