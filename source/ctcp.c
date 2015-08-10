@@ -439,6 +439,8 @@ CTCP_HANDLER(do_version)
 	 *
 	 * For the paranoid, UNAME_HACK hides the gory details of your OS.
 	 */
+/* This has outlived its usefulness */
+#define UNAME_HACK
 #if defined(HAVE_UNAME) && !defined(UNAME_HACK)
 	struct utsname un;
 	const char	*the_unix,
