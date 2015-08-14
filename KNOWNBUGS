@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* split_string() and $splitw() are not utf-8 aware
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -680,3 +680,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * EPIC5-1.2 released here (Deracination) (Commit: 1816)
 * Always #define UNAME_HACK; don't return detailed OS info on CTCP VERSION
 * OK, a compromise -- don't #define UNAME_HACK, but don't show OS version.
+* Fix a crash when you do $splitw("" abcd)
+* Make sure /encoding shows a builtin rule is "Set by User" if user changes it

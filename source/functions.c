@@ -7445,7 +7445,7 @@ BUILT_IN_FUNCTION(function_isutf8, input)
 
 /*
  * This function converts a delimited string (ie, $PATH) into a dword list.
- *  $splitw(: $PATH) -> /bin /usr/bin /usr/local/bin ...
+ *  $splitw(: $PATH) -> /bin /usr/bin "/home/user/my programs/" ...
  */
 BUILT_IN_FUNCTION(function_splitw, input)
 {

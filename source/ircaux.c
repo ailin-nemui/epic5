@@ -2795,7 +2795,17 @@ int 	split_string (char *str, char ***to, char delimiter)
 	for (counter = 0; counter < parts; counter++)
 	{
 		if ((x = strchr(str, delimiter)))
-			*x++ = 0;
+		{
+			/* 
+			 * IF AND ONLY IF 'delimiter' is not null,
+			 * advance past it.  If it is null, then 
+			 * there is already a null here, and we
+			 * definitely do not want to walk off 
+			 * the end! 
+			 */
+			if (delimiter != 0) 
+				*x++ = 0;
+		}
 		(*to)[counter] = str;
 		str = x;
 	}
@@ -3473,11 +3483,26 @@ int	figure_out_domain (char *fqdn, char **host, char **domain, int *ip)
 	return 0;
 }
 
+/*
+ * count_char - count the number of instances of a byte in a string.
+ *
+ * Arguments: 
+ *	src 	- A (non-utf8 - sigh) string
+ *	look	- A byte to look for in 'src'
+ *		  MUST NOT BE NUL (0)
+ *
+ * XXX This should be utf8-aware
+ */
 int 	count_char (const unsigned char *src, const unsigned char look)
 {
 	const unsigned char *t;
 	int	cnt = 0;
 
+	/* 'look' must not be 0 -- there is only 1 nul in a string */
+	if (look == 0)
+		return 1;
+
+	/* XXX This should be utf8 aware */
 	while ((t = strchr(src, look)))
 		cnt++, src = t + 1;
 

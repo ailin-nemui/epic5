@@ -338,6 +338,13 @@ static RecodeRule *	create_recoding_rule (const char *target, const char *encodi
  * Return Value:
  *	returns 0;
  *
+ * Side Effect:
+ *	This function sets "rule source" as "SET BY USER", because
+ *	every update happens as a result of the user creating or
+ *	modifying the rule.  YOU MUST NEVER CALL THIS FUNCTION FOR
+ *	THE INITIAL CREATION OF A BUILT-IN RECODING RULE.  Use 
+ *	create_recoding_rule() for that.
+ *
  * Note: If you call create_recoding_rule() with "encoding" == NULL, then 
  * 	you __MUST__ call this function immediately to set the encoding.  
  *	Failure to do so will probably call a NULL deref when the rule 
@@ -347,6 +354,9 @@ static int	update_recoding_encoding (RecodeRule *r, const char *encoding)
 {
 	/* Save the new encoding */
 	malloc_strcpy(&r->encoding, encoding);
+
+	/* Indicate the user changed it */
+	r->source = ENCODING_FROM_USER;
 
 	/* Invalidate prior iconv handles */
 	if (r->inbound_handle != 0)
