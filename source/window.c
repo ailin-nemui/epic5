@@ -1858,7 +1858,6 @@ void 	recalculate_windows (Screen *screen)
 	int	window_count = 0;
 	int	offset;
 	int	lin = 0;
-	double	remainder = 0.0;
 	int	force;
 
 	if (dumb_mode)

@@ -2553,7 +2553,7 @@ static char *	get_variable_with_args (const char *str, const char *args)
 	if ((local != -1) && (alias = find_local_alias(name, NULL)))
 		copy = 1, ret = alias->user_variable;
 	else if (local == 1)
-		;
+		(void) 0;
 
 	if (ret == NULL && ((alias = lookup_symbol(name)) != NULL))
 	{

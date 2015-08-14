@@ -843,7 +843,8 @@ pid_t	async_getaddrinfo (const char *nodename, const char *servname, const AI *h
         if ((err = my_getaddrinfo(nodename, servname, hints, &results)))
         {
 		err = -labs(err);		/* Always a negative number */
-		if (!write(fd, &err, sizeof(err))) ;
+		if (!write(fd, &err, sizeof(err))) 
+			(void) 0;
 		close(fd);
 #ifdef ASYNC_DNS
 		exit(0);
@@ -855,7 +856,8 @@ pid_t	async_getaddrinfo (const char *nodename, const char *servname, const AI *h
 	if (!results)
 	{
 		err = 0;
-		if (!write(fd, &err, sizeof(err))) ;
+		if (!write(fd, &err, sizeof(err))) 
+			(void) 0;
 		close(fd);
 #ifdef ASYNC_DNS
 		exit(0);
@@ -931,8 +933,10 @@ void	marshall_getaddrinfo (int fd, AI *results)
 			copy->ai_next = NULL;
 	}
 
-	if (!write(fd, (void *)&len, sizeof(len))) ;
-	if (!write(fd, (void *)retval, len)) ;
+	if (!write(fd, (void *)&len, sizeof(len))) 
+		(void) 0;
+	if (!write(fd, (void *)retval, len)) 
+		(void) 0;
 	new_free(&retval);
 }
 

@@ -668,7 +668,8 @@ int	ssl_connected (int vfd)
 		SSL_CTX_free(x->ctx);
 		x->ctx = NULL;
 		x->ssl_fd = NULL;
-		if (!write(x->channel, empty_string, 1)) ;  /* XXX Is this correct? */
+		if (!write(x->channel, empty_string, 1)) /* XXX Is this correct? */
+			(void) 0;
 		return -1;
 	}
 	say("SSL negotiation for channel [%d] complete", x->channel);

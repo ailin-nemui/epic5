@@ -687,3 +687,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix warnings about libarchive and abs() from clang
 * Fix warnings from ubuntu as a special favor to wjr.
 * I can't believe it's so difficult to believe "I don't care if this fails"
+* More complier warnings from gcc-4.9

@@ -6350,7 +6350,7 @@ static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *met
 	int	id;
 	char 	*dest_ptr;
 	char 	*orig_ptr;
-	iconv_t encoding;
+	iconv_t encodingx;
 
         if (!orig || !dest || dest_len <= 0)
                 return -1;
@@ -6385,7 +6385,7 @@ static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *met
 						yell ("Unicode debug: iconv_recoder(): iconv identifier: %i has no forward", id);
 					return 0;
 				}
-				encoding = iconv_list[id]->forward;
+				encodingx = iconv_list[id]->forward;
 			}
 			else
 			{
@@ -6395,7 +6395,7 @@ static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *met
 						yell ("Unicode debug: iconv_recoder(): iconv identifier: %i has no reverse", id);
 					return 0;
 				}
-				encoding = iconv_list[id]->reverse;
+				encodingx = iconv_list[id]->reverse;
 			}
 			close_it = 0;
 		}
@@ -6410,12 +6410,12 @@ static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *met
 	}
 	else
 	{
-		if (my_iconv_open(&encoding, NULL, (const char *) meta))
+		if (my_iconv_open(&encodingx, NULL, (const char *) meta))
 			return 0;
 	}
 
 	/* Stuff seems to be working... */
-	while ((n = iconv(encoding, &orig_ptr, &orig_left, &dest_ptr, 
+	while ((n = iconv(encodingx, &orig_ptr, &orig_left, &dest_ptr, 
 		&dest_left)) != 0)
 	{
 		/* I *THINK* this is a hack. */
@@ -6428,7 +6428,7 @@ static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *met
 		break;
 	}
 	if (close_it)
-		iconv_close (encoding);
+		iconv_close(encodingx);
 	return dest_len - dest_left;
 }
 
@@ -6509,7 +6509,7 @@ int	CTCP_xform, SHA256_xform;
  *	Returns the return value of the transform, which should be the
  *		number of bytes written to 'dest_str'.
  */
-size_t	transform_string (int type, int encoding, const char *meta, const char *orig_str, size_t orig_str_len, char *dest_str, size_t dest_str_len)
+size_t	transform_string (int type, int encodingx, const char *meta, const char *orig_str, size_t orig_str_len, char *dest_str, size_t dest_str_len)
 {
 	int	x;
 	int	meta_len;
@@ -6521,14 +6521,14 @@ size_t	transform_string (int type, int encoding, const char *meta, const char *o
 	{
 	    if (transformers[x].refnum == type)
 	    {
-		if (encoding == XFORM_ENCODE)
+		if (encodingx == XFORM_ENCODE)
 			return transformers[x].encoder(orig_str, orig_str_len, meta, meta_len, dest_str, dest_str_len);
-		else if (encoding == XFORM_DECODE)
+		else if (encodingx == XFORM_DECODE)
 			return transformers[x].decoder(orig_str, orig_str_len, meta, meta_len, dest_str, dest_str_len);
 		else
 		{
-			syserr(FROMSERV, "transform_string: type [%d], encoding [%d], is not %d or %d",
-				type, encoding, XFORM_ENCODE, XFORM_DECODE);
+			syserr(FROMSERV, "transform_string: type [%d], encodingx [%d], is not %d or %d",
+				type, encodingx, XFORM_ENCODE, XFORM_DECODE);
 			return 0;
 		}
 	    }

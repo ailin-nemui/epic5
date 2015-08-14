@@ -392,10 +392,10 @@ char *	file_read (int fd)
 		/* XXX TODO -- this is just temporary */
 		if (invalid_utf8str(ret))
 		{
-			const char *encoding;
+			const char *encodingx;
 
-			encoding = find_recoding("scripts", NULL, NULL);
-			recode_with_iconv(encoding, NULL, &ret, &retlen);
+			encodingx = find_recoding("scripts", NULL, NULL);
+			recode_with_iconv(encodingx, NULL, &ret, &retlen);
 		}
 
 		return ret;

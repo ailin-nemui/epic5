@@ -488,4 +488,10 @@ typedef struct stat		Stat;
 #define VALGRIND_DESTROY_MEMPOOL(x)
 #endif
 
+/*
+ * Ah, the joys of newer gcc's....
+ */
+#define CUC_PP (const unsigned char **)
+#define CC_PP (const char **)
+
 #endif /* __irc_std_h */

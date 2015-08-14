@@ -472,7 +472,7 @@ usage_error:
  * data.  You need to call cipher_message() directly for that.  You cannot
  * use this function to send binary data over irc.
  */
-char *	crypt_msg (const unsigned char *str, Crypt *crypt)
+char *	crypt_msg (const unsigned char *str, Crypt *crypti)
 {
 	char	buffer[CRYPT_BUFFER_SIZE + 1];
 	int	srclen;
@@ -482,7 +482,7 @@ char *	crypt_msg (const unsigned char *str, Crypt *crypt)
 
 	/* Convert the plaintext into ciphertext */
 	srclen = (int)strlen(str);
-	ciphertext = cipher_message(str, srclen + 1, crypt, &ciphertextlen);
+	ciphertext = cipher_message(str, srclen + 1, crypti, &ciphertextlen);
 
 	/* Convert the ciphertext into ctcp-enquoted payload */
 	if (!(dest = transform_string_dyn("+CTCP", ciphertext, ciphertextlen, NULL)))
@@ -491,12 +491,12 @@ char *	crypt_msg (const unsigned char *str, Crypt *crypt)
 		return ciphertext;	/* Here goes nothing! */
 	}
 
-	if (ciphers[crypt->sed_type].ctcpname)
+	if (ciphers[crypti->sed_type].ctcpname)
 	     snprintf(buffer, sizeof(buffer), "%c%s %s%c",
-			CTCP_DELIM_CHAR, ciphers[crypt->sed_type].ctcpname, 
+			CTCP_DELIM_CHAR, ciphers[crypti->sed_type].ctcpname, 
 			dest, CTCP_DELIM_CHAR);
 	else
-		panic(1, "crypt_msg: crypt->sed_type == %d not supported.", crypt->sed_type);
+		panic(1, "crypt_msg: crypti->sed_type == %d not supported.", crypti->sed_type);
 
 	new_free(&ciphertext);
 	new_free(&dest);
@@ -512,7 +512,7 @@ char *	crypt_msg (const unsigned char *str, Crypt *crypt)
  * string containing the decrypted text.
  *
  *	str	- A C string containing CTCP-enquoted ciphertext
- *	crypt	- Something previously returned by is_crypted().
+ *	crypti	- Something previously returned by is_crypted().
  * Returns:	- A C string containing plain text.
  *
  * This is a convenience wrapper for CTCP handling.  It does not do binary
@@ -524,7 +524,7 @@ char *	crypt_msg (const unsigned char *str, Crypt *crypt)
  * which requires a big buffer to scratch around.  (The decrypted text could
  * contain a CTCP UTC which would expand to a larger string of text)
  */ 
-char *	decrypt_msg (const unsigned char *str, Crypt *crypt)
+char *	decrypt_msg (const unsigned char *str, Crypt *crypti)
 {
 	char *	plaintext;
 	char *	dest;
@@ -541,7 +541,7 @@ char *	decrypt_msg (const unsigned char *str, Crypt *crypt)
 		return malloc_strdup(str);
 	}
 
-	if (!(plaintext = decipher_message(dest, destsize, crypt, &destlen)))
+	if (!(plaintext = decipher_message(dest, destsize, crypti, &destlen)))
 	{
 		plaintext = dest;
 		dest = NULL;

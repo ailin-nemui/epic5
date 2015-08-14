@@ -173,13 +173,13 @@ static char *	cipher_evp (const unsigned char *passwd, int passwdlen, const unsi
 static char *	encrypt_by_prog (const unsigned char *str, size_t *len, Crypt *crypt);
 
 /* This function is used by CTCP handling, but not by xform! */
-unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, Crypt *crypt, int *retlen)
+unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, Crypt *crypti, int *retlen)
 {
     do
     {
-	if (crypt->sed_type == CAST5CRYPT || crypt->sed_type == BLOWFISHCRYPT ||
-	    crypt->sed_type == AES256CRYPT || crypt->sed_type == AESSHA256CRYPT ||
-	    crypt->sed_type == FISHCRYPT)
+	if (crypti->sed_type == CAST5CRYPT || crypti->sed_type == BLOWFISHCRYPT ||
+	    crypti->sed_type == AES256CRYPT || crypti->sed_type == AESSHA256CRYPT ||
+	    crypti->sed_type == FISHCRYPT)
 	{
 	    unsigned char *	outbuf = NULL;
 #ifdef HAVE_SSL
@@ -187,19 +187,19 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 	    int	bytes_to_trim;
 	    int ivsize, blocksize;
 
-	    if (crypt->sed_type == CAST5CRYPT)
+	    if (crypti->sed_type == CAST5CRYPT)
 	    {
 		ivsize = 8, blocksize = 8;
 	    }
-	    else if (crypt->sed_type == BLOWFISHCRYPT)
+	    else if (crypti->sed_type == BLOWFISHCRYPT)
 	    {
 		ivsize = 8, blocksize = 8;
 	    }
-	    else if (crypt->sed_type == FISHCRYPT)
+	    else if (crypti->sed_type == FISHCRYPT)
 	    {
 		ivsize = 0, blocksize = 8;
 	    }
-	    else if (crypt->sed_type == AES256CRYPT || crypt->sed_type == AESSHA256CRYPT)
+	    else if (crypti->sed_type == AES256CRYPT || crypti->sed_type == AESSHA256CRYPT)
 	    {
 		ivsize = 16, blocksize = 16;
 	    }
@@ -224,18 +224,18 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 		break;
 	    }
 
-	    if (crypt->sed_type == CAST5CRYPT)
+	    if (crypti->sed_type == CAST5CRYPT)
 		type = EVP_cast5_cbc();
-	    else if (crypt->sed_type == BLOWFISHCRYPT)
+	    else if (crypti->sed_type == BLOWFISHCRYPT)
 		type = EVP_bf_cbc();
-	    else if (crypt->sed_type == FISHCRYPT)
+	    else if (crypti->sed_type == FISHCRYPT)
 		type = EVP_bf_ecb();
-	    else if (crypt->sed_type == AES256CRYPT || crypt->sed_type == AESSHA256CRYPT)
+	    else if (crypti->sed_type == AES256CRYPT || crypti->sed_type == AESSHA256CRYPT)
 		type = EVP_aes_256_cbc();
 	    else
 		break;		/* Not supported */
 
-	    if (!(outbuf = decipher_evp(crypt->passwd, crypt->passwdlen,
+	    if (!(outbuf = decipher_evp(crypti->passwd, crypti->passwdlen,
 					ciphertext, len, 
 					type, retlen, ivsize)))
 	    {
@@ -250,26 +250,26 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 #endif
 	    return outbuf;
 	}
-	else if (crypt->sed_type == SEDCRYPT || crypt->sed_type == SEDSHACRYPT)
+	else if (crypti->sed_type == SEDCRYPT || crypti->sed_type == SEDSHACRYPT)
 	{
 		unsigned char *	text;
 
 		text = new_malloc(len + 1);
 		memmove(text, ciphertext, len);
-		decrypt_sed(text, len, crypt->passwd, crypt->passwdlen);
+		decrypt_sed(text, len, crypti->passwd, crypti->passwdlen);
 		*retlen = len;
 		return text;
 	}
-	else if (crypt->sed_type == PROGCRYPT)
+	else if (crypti->sed_type == PROGCRYPT)
 	{
 		unsigned char *retval;
 
-		retval = decrypt_by_prog(ciphertext, &len, crypt);
+		retval = decrypt_by_prog(ciphertext, &len, crypti);
 		*retlen = len;
 		return retval;
 	}
 	else
-		panic(1, "decipher_message: crypt->sed_type %d is not valid", crypt->sed_type);
+		panic(1, "decipher_message: crypti->sed_type %d is not valid", crypti->sed_type);
     }
     while (0);
 
@@ -344,23 +344,23 @@ void     decrypt_sed (unsigned char *str, int len, const unsigned char *passwd, 
         str[i] = (char) 0;
 }
 
-static char *	decrypt_by_prog (const unsigned char *str, size_t *len, Crypt *crypt)
+static char *	decrypt_by_prog (const unsigned char *str, size_t *len, Crypt *crypti)
 {
         char    *ret = NULL, *input;
         char *  args[3];
         int     iplen;
 
-        args[0] = malloc_strdup(crypt->prog);
+        args[0] = malloc_strdup(crypti->prog);
         args[1] = malloc_strdup("decrypt");
         args[2] = NULL;
-        input = malloc_strdup2(crypt->passwd, "\n");
+        input = malloc_strdup2(crypti->passwd, "\n");
 
         iplen = strlen(input);
         new_realloc((void**)&input, *len + iplen);
         memmove(input + iplen, str, *len);
 
         *len += iplen;
-        ret = exec_pipe(crypt->prog, input, len, args);
+        ret = exec_pipe(crypti->prog, input, len, args);
 
         new_free(&args[0]);
         new_free(&args[1]);
@@ -372,38 +372,38 @@ static char *	decrypt_by_prog (const unsigned char *str, size_t *len, Crypt *cry
 }
 
 /*************************************************************************/
-unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, Crypt *crypt, int *retlen)
+unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, Crypt *crypti, int *retlen)
 {
 	if (retlen)
 		*retlen = 0;
-	if (!orig_message || !crypt || !retlen)
+	if (!orig_message || !crypti || !retlen)
 		return NULL;
 
-	if (crypt->sed_type == CAST5CRYPT || crypt->sed_type == BLOWFISHCRYPT ||
-	    crypt->sed_type == FISHCRYPT ||
-	    crypt->sed_type == AES256CRYPT || crypt->sed_type == AESSHA256CRYPT)
+	if (crypti->sed_type == CAST5CRYPT || crypti->sed_type == BLOWFISHCRYPT ||
+	    crypti->sed_type == FISHCRYPT ||
+	    crypti->sed_type == AES256CRYPT || crypti->sed_type == AESSHA256CRYPT)
 	{
 	    unsigned char *ciphertext = NULL;
 #ifdef HAVE_SSL
 	    size_t	ivlen;
 	    const EVP_CIPHER *type;
 
-	    if (crypt->sed_type == CAST5CRYPT)
+	    if (crypti->sed_type == CAST5CRYPT)
 	    {
 		type = EVP_cast5_cbc();
 		ivlen = 8;
 	    }
-	    else if (crypt->sed_type == BLOWFISHCRYPT)
+	    else if (crypti->sed_type == BLOWFISHCRYPT)
 	    {
 		type = EVP_bf_cbc();
 		ivlen = 8;
 	    }
-	    else if (crypt->sed_type == FISHCRYPT)
+	    else if (crypti->sed_type == FISHCRYPT)
 	    {
 		type = EVP_bf_ecb();
 		ivlen = 0;		/* XXX Sigh */
 	    }
-	    else if (crypt->sed_type == AES256CRYPT || crypt->sed_type == AESSHA256CRYPT)
+	    else if (crypti->sed_type == AES256CRYPT || crypti->sed_type == AESSHA256CRYPT)
 	    {
 		type = EVP_aes_256_cbc();
 		ivlen = 16;
@@ -411,7 +411,7 @@ unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, C
 	    else
 		return NULL;	/* Not supported */
 
-	    if (!(ciphertext = cipher_evp(crypt->passwd, crypt->passwdlen,
+	    if (!(ciphertext = cipher_evp(crypti->passwd, crypti->passwdlen,
 				      orig_message, len, 
 				      type, retlen, ivlen)))
 	    {
@@ -421,26 +421,26 @@ unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, C
 #endif
 	    return ciphertext;
 	}
-	else if (crypt->sed_type == SEDCRYPT || crypt->sed_type == SEDSHACRYPT)
+	else if (crypti->sed_type == SEDCRYPT || crypti->sed_type == SEDSHACRYPT)
 	{
 		unsigned char *	ciphertext;
 
 		ciphertext = new_malloc(len + 1);
 		memmove(ciphertext, orig_message, len);
-		encrypt_sed(ciphertext, len, crypt->passwd, strlen(crypt->passwd));
+		encrypt_sed(ciphertext, len, crypti->passwd, strlen(crypti->passwd));
 		*retlen = len;
 		return ciphertext;
 	}
-	else if (crypt->sed_type == PROGCRYPT)
+	else if (crypti->sed_type == PROGCRYPT)
 	{
 		unsigned char *ciphertext;
 
-		ciphertext = encrypt_by_prog(orig_message, &len, crypt);
+		ciphertext = encrypt_by_prog(orig_message, &len, crypti);
 		*retlen = len;
 		return ciphertext;
 	}
 	else
-		panic(1, "cipher_message: crypt->sed_type %d is not valid", crypt->sed_type);
+		panic(1, "cipher_message: crypti->sed_type %d is not valid", crypti->sed_type);
 
 	return NULL;
 }
@@ -528,23 +528,23 @@ void     encrypt_sed (unsigned char *str, int len, const unsigned char *passwd, 
         str[i] = (char) 0;
 }
 
-static char *	encrypt_by_prog (const unsigned char *str, size_t *len, Crypt *crypt)
+static char *	encrypt_by_prog (const unsigned char *str, size_t *len, Crypt *crypti)
 {
         char    *ret = NULL, *input;
         char *  args[3];
         int     iplen;
 
-        args[0] = malloc_strdup(crypt->prog);
+        args[0] = malloc_strdup(crypti->prog);
         args[1] = malloc_strdup("encrypt");
         args[2] = NULL;
-        input = malloc_strdup2(crypt->passwd, "\n");
+        input = malloc_strdup2(crypti->passwd, "\n");
 
         iplen = strlen(input);
         new_realloc((void**)&input, *len + iplen);
         memmove(input + iplen, str, *len);
 
         *len += iplen;
-        ret = exec_pipe(crypt->prog, input, len, args);
+        ret = exec_pipe(crypti->prog, input, len, args);
 
         new_free(&args[0]);
         new_free(&args[1]);

@@ -2827,7 +2827,7 @@ static void	set_server_userhost (int refnum, const char *uh)
 		     "a NAT firewall, DCC won't work with this server "
 		     "connection!", host + 1);
 #else
-		;
+		(void) 0;
 #endif
 }
 

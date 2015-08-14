@@ -1407,7 +1407,7 @@ abnormal_char:
 				output[pos++] = (char)(codepoint);
 				a.reverse = !a.reverse;
 				pos += attrout(output + pos, &olda, &a);
-				pc += cols;
+				pc += 1;
 				break;
 			}
 

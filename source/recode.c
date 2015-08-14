@@ -235,15 +235,15 @@ static const char *source_explain (int console, int source)
  *	After you complete the new rule, you can assign to recode_rules.
  *	Assigning an incomplete rule to recode_rules will lead to a crash.
  */
-static RecodeRule *	create_recoding_rule (const char *target, const char *encoding, int magic, int source)
+static RecodeRule *	create_recoding_rule (const char *target, const char *encodingx, int magic, int source)
 {
 	RecodeRule *	r;
 	char *	target_copy;
 
 	r = (RecodeRule *)new_malloc(sizeof(RecodeRule));
 	r->target = malloc_strdup(target);
-	if (encoding)
-		r->encoding = malloc_strdup(encoding);
+	if (encodingx)
+		r->encoding = malloc_strdup(encodingx);
 	else
 		r->encoding = NULL;
 	r->server_part = NULL;
@@ -330,10 +330,10 @@ static RecodeRule *	create_recoding_rule (const char *target, const char *encodi
  * update_recoding_encoding - Change the encoding of a new or existing rule
  *
  * Arguments:
- *	r	 - A RecodeRule that is either new or existing
- *	encoding - The encoding this rule should use.
- *		   YOU *_MUST_* HAVE PREVIOUSLY PASSED THIS  ARGUMENT TO 
- *		   sanity_check_encoding() AND IT RETURNED 0.
+ *	r	  - A RecodeRule that is either new or existing
+ *	encodingx - The encoding this rule should use.
+ *		    YOU *_MUST_* HAVE PREVIOUSLY PASSED THIS  ARGUMENT TO 
+ *		    sanity_check_encoding() AND IT RETURNED 0.
  *
  * Return Value:
  *	returns 0;
@@ -350,10 +350,10 @@ static RecodeRule *	create_recoding_rule (const char *target, const char *encodi
  *	Failure to do so will probably call a NULL deref when the rule 
  *	actually gets evaluated.
  */
-static int	update_recoding_encoding (RecodeRule *r, const char *encoding)
+static int	update_recoding_encoding (RecodeRule *r, const char *encodingx)
 {
 	/* Save the new encoding */
-	malloc_strcpy(&r->encoding, encoding);
+	malloc_strcpy(&r->encoding, encodingx);
 
 	/* Indicate the user changed it */
 	r->source = ENCODING_FROM_USER;
@@ -839,7 +839,7 @@ target_ok:
 const char *	outbound_recode (const char *to, int server, const char *message, char **extra)
 {
 	iconv_t	i;
-	const char *	encoding;
+	const char *	encodingx;
 	char *	new_buffer;
 	size_t	new_buffer_len;
 	char *copy;
@@ -859,7 +859,7 @@ const char *	outbound_recode (const char *to, int server, const char *message, c
 	}
 
 	/* If no recoding is necessary, then we're done. */
-	if (!(encoding = decide_encoding(NULL, to, server, &i)))
+	if (!(encodingx = decide_encoding(NULL, to, server, &i)))
 	{
 		if (x_debug & DEBUG_RECODE)
 			yell("ob: I can't decide on an encoding, so i can't recode");
@@ -912,7 +912,7 @@ const char *	inbound_recode (const char *from, int server, const char *to, const
 {
 	iconv_t	i;
 	char *	msg;
-	const char *	encoding;
+	const char *	encodingx;
 	char *	new_buffer;
 	size_t	new_buffer_len;
 
@@ -946,7 +946,7 @@ const char *	inbound_recode (const char *from, int server, const char *to, const
 	/*
 	 * XXX TODO -- This should be impossible.  A panic is probably better.
 	 */
-	if (!(encoding = decide_encoding(from, to, server, &i)))
+	if (!(encodingx = decide_encoding(from, to, server, &i)))
 	{
 		if (x_debug & DEBUG_RECODE)
 			yell("ib: I couldn't figure out what encoding rule to use.  This is supposed to be impossible.");
@@ -1047,7 +1047,7 @@ int     ucs_to_console (u_32int_t codepoint, unsigned char *deststr, size_t dest
 BUILT_IN_COMMAND(encoding)
 {
 	char *		arg;
-	const char *	encoding;
+	const char *	encodingx;
 	int		x;
 	const char *	server = NULL;
 	const char *	target = NULL;
@@ -1075,7 +1075,7 @@ BUILT_IN_COMMAND(encoding)
 	}
 
 	/* /ENCODING rule	-> Output a single rule */
-	if (!(encoding = next_arg(args, &args)))
+	if (!(encodingx = next_arg(args, &args)))
 	{
 		for (x = 0; x < MAX_RECODING_RULES; x++)
 		{
@@ -1105,7 +1105,7 @@ BUILT_IN_COMMAND(encoding)
 			break;
 	}
 
-	if (!my_stricmp(encoding, "none"))
+	if (!my_stricmp(encodingx, "none"))
 	{
 		if (!recode_rules[x])
 			say("There is no encoding for %s", arg);
@@ -1133,23 +1133,23 @@ BUILT_IN_COMMAND(encoding)
 		return;
 	}
 
-	if ((reason = sanity_check_encoding(encoding)))
+	if ((reason = sanity_check_encoding(encodingx)))
 	{
 		if (reason == -1)
 		{
-			say("/ENCODING: The encoding %s does not exist on your system.", encoding);
+			say("/ENCODING: The encoding %s does not exist on your system.", encodingx);
 			say("   It might be mis-spelled, or just not available.");
 			return;
 		}
 		else if (reason == -2)
 		{
-			say("/ENCODING: The encoding %s cannot be converted to UTF-8 on your system.", encoding);
+			say("/ENCODING: The encoding %s cannot be converted to UTF-8 on your system.", encodingx);
 			say("   Unfortunately you can't use this encoding.");
 			return;
 		}
 		else if (reason == -3)
 		{
-			say("/ENCODING: The encoding %s exists, but a lot of code points do not convert to UTF-8.", encoding);
+			say("/ENCODING: The encoding %s exists, but a lot of code points do not convert to UTF-8.", encodingx);
 			say("   If you have trouble typing some letters, this is probably the reason.");
 		}
 	}
@@ -1177,7 +1177,7 @@ BUILT_IN_COMMAND(encoding)
 	/* 
 	 * Modify the existing (or newly created) rule 
 	 */
-	update_recoding_encoding(recode_rules[x], encoding);
+	update_recoding_encoding(recode_rules[x], encodingx);
 
 	/* Declare what the new encoding is */
 	say("Encoding for %s is now %s", recode_rules[x]->target, 
@@ -1236,7 +1236,7 @@ int	mklower_l (int codepoint)
  *	-2 - The encoding exists but doesn't convert to UTF-8 at all
  *	-3 - The encoding exists but too many code points don't convert
  */
-int	sanity_check_encoding (const char *encoding)
+int	sanity_check_encoding (const char *encodingx)
 {
 	iconv_t		ti;
 	unsigned char	c;
@@ -1255,14 +1255,14 @@ int	sanity_check_encoding (const char *encoding)
 	 */
 
 	/* 1. It is "UTF-8" */
-	if (!strcmp(encoding, "UTF-8"))
+	if (!strcmp(encodingx, "UTF-8"))
 		return 0;
 
 	/* 2a. It exists */
-	ti = iconv_open(encoding, encoding);
+	ti = iconv_open(encodingx, encodingx);
 	if (ti == (iconv_t)-1)
 	{
-		say("Unfortunately, the encoding %s does not appear to be supported by your system", encoding);
+		say("Unfortunately, the encoding %s does not appear to be supported by your system", encodingx);
 		say("Possible causes:");
 		say(" 1. It might be mis-spelled");
 		say(" 2. It is not available on your system");
@@ -1271,10 +1271,10 @@ int	sanity_check_encoding (const char *encoding)
 	iconv_close(ti);
 
 	/* 2b. and can be converted to UTF-8 */
-	ti = iconv_open("UTF-8", encoding);
+	ti = iconv_open("UTF-8", encodingx);
 	if (ti == (iconv_t)-1)
 	{
-		say("Unfortunately, your system does not know how to convert the encoding %s to UTF-8", encoding);
+		say("Unfortunately, your system does not know how to convert the encoding %s to UTF-8", encodingx);
 		return -2;
 	}
 
@@ -1458,14 +1458,14 @@ char *	function_encodingctl (char *input)
 		retval = sanity_check_encoding(listc);
 		RETURN_INT(retval);
 	} else if (!my_strnicmp(listc, "CREATE", len)) {
-		char 	*target, *encoding;
+		char 	*target, *encodingx;
 		int	sanity, x;
 
 		GET_FUNC_ARG(target, input);
-		GET_FUNC_ARG(encoding, input);
+		GET_FUNC_ARG(encodingx, input);
 
 		/* First, sanity check the encoding */
-		sanity = sanity_check_encoding(encoding);
+		sanity = sanity_check_encoding(encodingx);
 		if (! (sanity == 0 || sanity == -3) )
 			RETURN_INT(-1);
 
@@ -1495,7 +1495,7 @@ char *	function_encodingctl (char *input)
 		}
 
 		/* Set the encoding for new rule (or update existing rule) */
-		update_recoding_encoding(recode_rules[x], encoding);
+		update_recoding_encoding(recode_rules[x], encodingx);
 		RETURN_INT(x);
 	} else {
 		RETURN_EMPTY;
