@@ -751,7 +751,7 @@ static int	unix_recv (int channel, int quiet)
 	{
 		if (!quiet)
 		   syserr(CSRV(channel), "unix_recv: dgets_buffer(%d, %*s) failed",
-				channel, c, buffer);
+				channel, (int)c, buffer);
 		return -1;
 	}
 

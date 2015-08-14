@@ -5004,8 +5004,8 @@ BUILT_IN_FUNCTION(function_randread, input)
 
 	offset = random_number(0) % filesize - 1;
 	fseek(fp, offset, SEEK_SET);
-	(void)fgets(buffer, BIG_BUFFER_SIZE, fp);
-	(void)fgets(buffer, BIG_BUFFER_SIZE, fp);
+	if (!fgets(buffer, BIG_BUFFER_SIZE, fp)) ;
+	if (!fgets(buffer, BIG_BUFFER_SIZE, fp)) ;
 	if (feof(fp))
 	{
 		fseek(fp, 0, SEEK_SET);

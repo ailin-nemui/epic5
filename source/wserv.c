@@ -110,7 +110,7 @@ int	main (int argc, char **argv)
 #else
 	sprintf(stuff, "version=%d\n", CURRENT_WSERV_VERSION);
 #endif
-	(void)write(cmd, stuff, strlen(stuff));
+	if (!write(cmd, stuff, strlen(stuff))) ;
 
 	/*
 	 * Next thing we take care of is to tell the parent client
@@ -136,7 +136,7 @@ int	main (int argc, char **argv)
 #else
 	sprintf(stuff, "tty=%s\n", tmp);
 #endif
-	(void)write(cmd, stuff, strlen(stuff));
+	if (!write(cmd, stuff, strlen(stuff))) ;
 
 	term_init();		/* Set up the xterm */
 	term_resize();		/* Figure out how big xterm is and tell epic */
@@ -165,14 +165,14 @@ int	main (int argc, char **argv)
 		if (FD_ISSET(0, &reads))
 		{
 			if ((nread = read(0, buffer, sizeof(buffer))) > 0)
-				(void)write(data, buffer, nread);
+				if (!write(data, buffer, nread)) ;
 			else
 				my_exit(3);
 		}
 		if (FD_ISSET(data, &reads))
 		{
 			if ((nread = read(data, buffer, sizeof(buffer))) > 0)
-				(void)write(0, buffer, nread);
+				if (!write(0, buffer, nread)) ;
 			else
 				my_exit(4);
 		}
@@ -185,7 +185,7 @@ static void 	ignore (int value)
 {
 	/* send a ^C */
 	char foo = 3;
-	(void)write(data, &foo, 1);
+	if (!write(data, &foo, 1)) ;
 }
 
 static void	sigwinch_func (int value)
@@ -303,7 +303,7 @@ static void 	term_resize (void)
 #else
 		sprintf(buffer, "geom=%d %d\n", old_li, old_co);
 #endif
-		(void)write(cmd, buffer, strlen(buffer));
+		if (!write(cmd, buffer, strlen(buffer))) ;
 	}
 }
 

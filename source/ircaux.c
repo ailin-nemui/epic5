@@ -6588,7 +6588,7 @@ char *	transform_string_dyn (const char *type, const char *orig_str, size_t orig
 	dest_str_len = orig_str_len * expansion_size + expansion_overhead;
 	if (dest_str_len <= 0)
 	{
-		yell("Transform [%s] on a string of size [l%d] resulted in "
+		yell("Transform [%s] on a string of size [%ld] resulted in "
 		     "an invalid destination size of [%ld].  Refusing to "
 		     " transform.  Sorry!", 
 			type, (long)orig_str_len, (long)dest_str_len);
