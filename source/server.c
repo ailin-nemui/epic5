@@ -1340,7 +1340,7 @@ void	do_server (int fd)
 				if (s->addr_len < 0)
 				{
 					if (EAI_AGAIN > 0)
-						s->addr_len = abs(s->addr_len);
+						s->addr_len = labs(s->addr_len);
 					yell("Getaddrinfo(%s) for server %d failed: %s",
 						s->info->host, len, gai_strerror(s->addr_len));
 					s->des = new_close(s->des);

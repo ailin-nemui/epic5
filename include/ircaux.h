@@ -113,6 +113,7 @@ char *	skip_spaces		(char *);
 int	split_args		(char *, char **to, size_t);
 int	splitw 			(char *, char ***, int);
 char *	unsplitw 		(char ***, int, int);
+int	new_split_string 	(unsigned char *, unsigned char ***, int);
 int	split_string 		(char *, char ***, char);
 int	check_val 		(const char *);
 char *	strext	 		(const char *, const char *);

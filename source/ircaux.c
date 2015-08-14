@@ -2813,6 +2813,96 @@ int 	split_string (char *str, char ***to, char delimiter)
 	return parts;
 }
 
+/*
+ * new_split_string - Splitting delimited UTF-8 string into parts.
+ * Arguments:
+ *	str	- A string containing delimiters (like PATH -- "/bin:/usr/bin")
+ *	to	- A pointer to a (unsigned char **) we can put the results.
+ *		  YOU MUST FREE THE RESULT OF (*to).  YOU MUST _NOT_ FREE
+ *		  THE STRINGS WITHIN (*to), BECAUSE THOSE POINT TO 'str'.
+ *	delimiter - A Unicode Code Point that may be present in 'str' and
+ *		    separates the segments within 'str'.  For example, ":".
+ *		    You can get a Unicode Code Point with next_code_point()
+ *
+ * Return Value:
+ *	The number of array elements in (*to).
+ *	You must new_free() the "to" pointer.
+ */
+int	new_split_string (unsigned char *str, unsigned char ***to, int delimiter)
+{
+	int	segments = 0;
+	unsigned char *s;
+	int	code_point;
+	int	i;
+
+	/* First, count the number of segments in 'str' */
+	s = str;
+	while ((code_point = next_code_point((const unsigned char **)&s, 0)))
+		if (code_point == delimiter)
+			segments++;
+	segments++;
+
+	/* Create an array for (*to) */
+	*to = (unsigned char **)new_malloc(sizeof(unsigned char *) * segments);
+	for (i = 0; i < segments; i++)
+		(*to)[i] = NULL;		/* Just in case */
+
+	/* Split up 'str' nulling out each instance of 'delimiter' */
+	i = 0;
+	s = str;
+	while ((code_point = next_code_point((const unsigned char **)&s, 0)))
+	{
+		/* If we've found a delimiter.... */
+		if (code_point == delimiter)
+		{
+			/* 
+			 * Back up one code point so that 'p' points
+			 * at the delimiter again.
+			 */
+			unsigned char *p = s;
+			previous_code_point(str, (const unsigned char **)&p);
+
+			/* 
+			 * Terminate the string there and put the result
+			 * into the result array
+			 */
+			*p = 0;
+			(*to)[i++] = str;
+			if (i >= segments)
+			{
+				privileged_yell("Warning: new_split_string() thought that string had %d parts, but there appear to be more.", segments, i);
+				return 0;
+			}
+
+			/*
+			 * Move the "start of string" to the code point
+			 * after the delimiter, so we may continue.
+			 */
+			str = s;
+		}
+	}
+
+	/* The final segment is the one terminated by a nul... */
+	if (str && *str)
+		(*to)[i++] = str;
+
+#if 0
+	/* This is just for helping me debug it. */
+	/* 
+	 * This can false-positive if the string ends with the delimiter,
+	 * which is not an error and should not be called out to the user.
+	 */
+	if (i != segments)
+	{
+		privileged_yell("Warning: new_split_string() thought that string had %d parts, but i only found %d parts", segments, i);
+	}
+#endif
+
+	/* Return the number of segments in 'str' */
+	return segments;
+}
+
+
 double strtod();	/* sunos must die. */
 int 	check_val (const char *sub)
 {

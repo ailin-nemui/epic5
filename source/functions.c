@@ -7449,17 +7449,22 @@ BUILT_IN_FUNCTION(function_isutf8, input)
  */
 BUILT_IN_FUNCTION(function_splitw, input)
 {
+	char *	delim_str;
+	int	delim;
+	char *	str;
+	unsigned char **wordl;
 	int 	wordc;
-	char **wordl;
-	char	*retval;
-	char *	delim;
+	char *	retval;
 
-	GET_DWORD_ARG(delim, input);
+	/* The delimiter is the first code point in the first argument. */
+	GET_DWORD_ARG(delim_str, input);
+	delim = next_code_point((const unsigned char **)&delim_str, 0);
 
-	if (!(wordc = split_string(input, &wordl, *delim)))
+	if (!(wordc = new_split_string(input, &wordl, delim)))
 		RETURN_EMPTY;
 
-	retval = unsplitw(&wordl, wordc, DWORD_YES);
+	/* unsplitw() disposes of "wordl" for us. */
+	retval = unsplitw((char ***)&wordl, wordc, DWORD_YES);
 	RETURN_MSTR(retval);
 }
 

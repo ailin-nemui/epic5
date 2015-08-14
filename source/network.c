@@ -842,7 +842,7 @@ pid_t	async_getaddrinfo (const char *nodename, const char *servname, const AI *h
 
         if ((err = my_getaddrinfo(nodename, servname, hints, &results)))
         {
-		err = -abs(err);		/* Always a negative number */
+		err = -labs(err);		/* Always a negative number */
 		write(fd, &err, sizeof(err));
 		close(fd);
 #ifdef ASYNC_DNS

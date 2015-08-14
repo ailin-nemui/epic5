@@ -129,7 +129,7 @@ static int	archive_fopen(struct epic_loadfile *elf, char *filename, const char *
         elf->a = archive_read_new();
         if (!archive_read_support_format_all(elf->a)) {
 
-            if ( !(ret = archive_read_open_file(elf->a, fname, 10240)) ) {
+            if ( !(ret = archive_read_open_filename(elf->a, fname, 10240)) ) {
                 if ( (strstr(safet, "/"))!=NULL ) { /* specific file provided */
                     if (!find_in_archive(elf->a, &elf->entry, extra, do_error))
                         return 0;
@@ -238,7 +238,7 @@ int	epic_fclose(struct epic_loadfile *elf)
 #ifdef HAVE_LIBARCHIVE
     else if ((elf->a)!=NULL) {
         archive_read_close(elf->a);
-        archive_read_finish(elf->a);
+        archive_read_free(elf->a);
         return 0;
     } 
 #endif
@@ -288,7 +288,7 @@ off_t	epic_stat(const char *filename, struct stat *buf)
         a = archive_read_new();
         archive_read_support_format_all(a);
 
-        if ( !(ret=archive_read_open_file(a, zipstr, 10240)) ) {
+        if ( !(ret=archive_read_open_filename(a, zipstr, 10240)) ) {
             if (scan) {
                 if (!(find_in_archive(a, &entry, zip, 0)) ) {
                     return -1;
@@ -299,7 +299,7 @@ off_t	epic_stat(const char *filename, struct stat *buf)
                     buf->st_mode=33188;
 
                     archive_read_close(a);
-                    archive_read_finish(a);
+                    archive_read_free(a);
                     return 0;
                 }
             }
@@ -323,7 +323,7 @@ static int	find_in_archive(struct archive *a, struct archive_entry **entry, cons
         ret = archive_read_next_header(a, entry);
         if (ret == ARCHIVE_EOF) {
             archive_read_close(a);
-            archive_read_finish(a);
+            archive_read_free(a);
             return 0;
         }
         if (ret != ARCHIVE_OK) {
@@ -331,7 +331,7 @@ static int	find_in_archive(struct archive *a, struct archive_entry **entry, cons
                 yell("%s", archive_error_string(a));
             }
             archive_read_close(a);
-            archive_read_finish(a);
+            archive_read_free(a);
             return 0;
         }
 

@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* split_string() and $splitw() are not utf-8 aware
+<None>
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -682,3 +682,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * OK, a compromise -- don't #define UNAME_HACK, but don't show OS version.
 * Fix a crash when you do $splitw("" abcd)
 * Make sure /encoding shows a builtin rule is "Set by User" if user changes it
+* Internal function new_split_string() is like split_string() but utf-8 aware
+* Rewrite $splitw() to use new_split_string(), so it's utf8-aware! yay!
+* Fix warnings about libarchive and abs() from clang

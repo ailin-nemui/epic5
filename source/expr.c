@@ -1894,7 +1894,7 @@ static	void	TruncateAndQuote (char **buff, const char *add, ssize_t length, cons
 		 * of the function, so yes, we can reference "add" after
 		 * the end of this block.
 		 */
-		real_size = abs(length) * 6 + 1;
+		real_size = labs(length) * 6 + 1;
 		buffer = alloca(real_size);
 		add = strformat(buffer, real_size, add, length, get_int_var(PAD_CHAR_VAR));
 	}
