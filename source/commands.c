@@ -1795,10 +1795,18 @@ BUILT_IN_COMMAND(load)
 	    {
 		if (invalid_utf8str(file_contents))
 		{
+		    size_t	really;
+
+		    really = file_contents_size;
+		    if ((off_t)really != file_contents_size)
+			privileged_yell("Loading a non-utf8 file whose size is greater than size_t will probably have problems");
+
 		    say("Recoding %s using encoding %s", 
 				expanded, declared_encoding);
 		    recode_with_iconv(declared_encoding, NULL, 
-				&file_contents, &file_contents_size);
+				&file_contents, &really);
+
+		    file_contents_size = (off_t)really;
 	        }
 	    }
 	    epic_fclose(elf);
