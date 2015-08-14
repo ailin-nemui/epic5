@@ -1033,7 +1033,11 @@ int 		text_to_process (int proc_index, const char *text, int show)
 
 	index_to_target(proc_index, logical_name, sizeof(logical_name));
 	recoded_text = outbound_recode(logical_name, proc->server, my_buffer, &extra);
-	write(proc->p_stdin, recoded_text, strlen(recoded_text));
+	if (write(proc->p_stdin, recoded_text, strlen(recoded_text)) <= 0)
+	{
+		yell("Was unable to write text %s to process %d",
+			text, proc_index);
+	}
 	new_free(&extra);
 
 	set_prompt_by_refnum(proc->refnum, empty_string);

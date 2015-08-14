@@ -1667,8 +1667,8 @@ void	rfc1459_any_to_utf8 (char *buffer, size_t buffsiz, char **extra)
 		{
 			*payload_part++ = 0;	/* Whack the space */
 			if (x_debug & DEBUG_RECODE)
-				yell(">> Found payload (%d bytes): %s", 
-					strlen(payload_part), payload_part);
+				yell(">> Found payload (%ld bytes): %s", 
+					(long)strlen(payload_part), payload_part);
 			break;
 		}
 	}

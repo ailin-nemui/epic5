@@ -1052,8 +1052,10 @@ static void	bsd_arc4_stir (ARC4 *as)
 
 	gettimeofday(&rdat.tv, NULL);
 	rdat.pid = getpid();
-	if ((fd = open("/dev/urandom", O_RDONLY, 0)) >= 0) {
-		read(fd, rdat.rnd, sizeof(rdat.rnd));
+	if ((fd = open("/dev/urandom", O_RDONLY, 0)) >= 0) 
+	{
+		if (read(fd, rdat.rnd, sizeof(rdat.rnd)) <= 0)
+			yell("Read from /dev/urandom failed.  Bummer.");
 		close(fd);
 	}
 	/* 

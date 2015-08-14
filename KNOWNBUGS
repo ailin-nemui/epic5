@@ -685,3 +685,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Internal function new_split_string() is like split_string() but utf-8 aware
 * Rewrite $splitw() to use new_split_string(), so it's utf8-aware! yay!
 * Fix warnings about libarchive and abs() from clang
+* Fix warnings from ubuntu as a special favor to wjr.

@@ -668,7 +668,7 @@ int	ssl_connected (int vfd)
 		SSL_CTX_free(x->ctx);
 		x->ctx = NULL;
 		x->ssl_fd = NULL;
-		write(x->channel, empty_string, 1);  /* XXX Is this correct? */
+		(void)write(x->channel, empty_string, 1);  /* XXX Is this correct? */
 		return -1;
 	}
 	say("SSL negotiation for channel [%d] complete", x->channel);

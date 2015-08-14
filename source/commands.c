@@ -4002,7 +4002,11 @@ BUILT_IN_COMMAND(botmodecmd)
 		use_input = 0;
 		background = 1;
 		my_signal(SIGHUP, SIG_IGN);
-		freopen("/dev/null", "w", stdout);
+		if (!freopen("/dev/null", "w", stdout))
+		{
+		     yell("Could not redirect stdout to /dev/null.  Can't become a bot.");
+		     return;
+		}
 		new_close(0);
 		if (fork())
 			_exit(0);

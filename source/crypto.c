@@ -208,14 +208,19 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 
 	    if (blocksize > 0 && len % blocksize != 0)
 	    {
-		yell("Encrypted message [%s] isn't multiple of %d! (is %d)", 
-				ciphertext, blocksize, len);
+		/* 
+		 * XXX Sigh, you can't portably printf() a size_t, since 
+		 * maybe it's an int, maybe it's a long, and any printf
+		 * format that DTRT is too new to trust.  bleh.
+		 */
+		yell("Encrypted message [%s] isn't multiple of %d! (is %ld)", 
+				ciphertext, blocksize, (long)len);
 		break;
 	    }
 	    if ((int)len < blocksize + ivsize)
 	    {
 		yell("Encrypted message [%s] doesn't contain message! "
-				"(len is %d)", ciphertext, len);
+				"(len is %ld)", ciphertext, (long)len);
 		break;
 	    }
 
@@ -461,8 +466,8 @@ static char *	cipher_evp (const unsigned char *passwd, int passwdlen, const unsi
 	{
 	    if (ivsize % sizeof(u_32int_t) != 0)
 		panic(1, "The IV size for a crypto type you're using is %d "
-			"which is not a multiple of %d", 
-			ivsize, sizeof(u_32int_t));
+			"which is not a multiple of %ld", 
+			ivsize, (long)sizeof(u_32int_t));
 
 	    iv = new_malloc(ivsize);
 	    for (iv_count = 0; iv_count < ivsize; iv_count += sizeof(u_32int_t))

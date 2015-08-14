@@ -172,8 +172,8 @@ void *	really_new_malloc (size_t size, const char *fn, int line)
 	char	*ptr;
 
 	if (!(ptr = (char *)malloc(size + sizeof(MO))))
-		panic(1, "Malloc(%d) failed from [%s/%d], giving up!", 
-				size, fn, line);
+		panic(1, "Malloc(%ld) failed from [%s/%d], giving up!", 
+				(long)size, fn, line);
 
 	/* Store the size of the allocation in the buffer. */
 	ptr += sizeof(MO);
@@ -2870,7 +2870,7 @@ int	new_split_string (unsigned char *str, unsigned char ***to, int delimiter)
 			(*to)[i++] = str;
 			if (i >= segments)
 			{
-				privileged_yell("Warning: new_split_string() thought that string had %d parts, but there appear to be more.", segments, i);
+				privileged_yell("Warning: new_split_string() thought that string had %d parts, but there appear to be more.", segments);
 				return 0;
 			}
 
@@ -3763,7 +3763,12 @@ static	int		random_fd = -1;
 		}
 	}
 
-	read(random_fd, (void *)&value, sizeof(value));
+	if (read(random_fd, (void *)&value, sizeof(value)) <= 0)
+	{
+		random_fd = -2;
+		return randm(l);	/* Fall back to randm */
+	}
+
 	return value;
 }
 
@@ -6583,9 +6588,10 @@ char *	transform_string_dyn (const char *type, const char *orig_str, size_t orig
 	dest_str_len = orig_str_len * expansion_size + expansion_overhead;
 	if (dest_str_len <= 0)
 	{
-		yell("Transform [%s] on a string of size [%d] resulted in "
-		     "an invalid destination size of [%d].  Refusing to "
-		     " transform.  Sorry!", type, orig_str_len, dest_str_len);
+		yell("Transform [%s] on a string of size [l%d] resulted in "
+		     "an invalid destination size of [%ld].  Refusing to "
+		     " transform.  Sorry!", 
+			type, (long)orig_str_len, (long)dest_str_len);
 		*my_dest_str_len = orig_str_len;
 		return malloc_strdup(orig_str);
 	}
@@ -6597,8 +6603,8 @@ char *	transform_string_dyn (const char *type, const char *orig_str, size_t orig
 
 	if (retval <= 0)	/* It failed */
 	{
-		yell("Transform [%s] failed to transform string [%s] (%d bytes) (returned %d)", 
-			type, orig_str, orig_str_len, retval);
+		yell("Transform [%s] failed to transform string [%s] (%ld bytes) (returned %d)", 
+			type, orig_str, (long)orig_str_len, retval);
 		new_free(&dest_str);
 		if (my_dest_str_len)
 			*my_dest_str_len = 0;

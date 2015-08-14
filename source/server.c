@@ -1331,8 +1331,8 @@ void	do_server (int fd)
 						yell("Got part of the dns response, waiting "
 							"for the rest, stand by...");
 					else
-						yell("Got %d, expected %d bytes.  HELP!", 
-							len, sizeof(s->addr_len));
+						yell("Got %ld, expected %ld bytes.  HELP!", 
+							(long)len, (long)sizeof(s->addr_len));
 					pop_message_from(l);
 					continue;		/* Not ready yet */
 				}
@@ -1342,7 +1342,7 @@ void	do_server (int fd)
 					if (EAI_AGAIN > 0)
 						s->addr_len = labs(s->addr_len);
 					yell("Getaddrinfo(%s) for server %d failed: %s",
-						s->info->host, len, gai_strerror(s->addr_len));
+						s->info->host, i, gai_strerror(s->addr_len));
 					s->des = new_close(s->des);
 					set_server_status(i, SERVER_ERROR);
 					set_server_status(i, SERVER_CLOSED);
@@ -1390,9 +1390,9 @@ void	do_server (int fd)
 					     "stand by...");
 				    else
 				    {
-					yell("Got %d, expected %d bytes", 
-						len, 
-						s->addr_len - s->addr_offset);
+					yell("Got %ld, expected %ld bytes", 
+						(long)len, 
+						(long)(s->addr_len - s->addr_offset));
 					s->addr_offset += len;
 				    }
 				    pop_message_from(l);

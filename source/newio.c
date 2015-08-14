@@ -314,8 +314,8 @@ ssize_t	dgets (int vfd, char *buf, size_t buflen, int buffer)
 	 */
 	if (buffer == -2 && ioe->write_pos - ioe->read_pos < buflen)
 	{
-		yell("dgets: Wanted %d bytes, have %d bytes", 
-			ioe->write_pos - ioe->read_pos, buflen);
+		yell("dgets: Wanted %ld bytes, have %ld bytes", 
+			(long)(ioe->write_pos - ioe->read_pos), (long)buflen);
 		ioe->clean = 1;
 		kcleaned(vfd);
 		return 0;
@@ -371,8 +371,8 @@ ssize_t	dgets (int vfd, char *buf, size_t buflen, int buffer)
 	if (cnt < consumed)
 	{
 		if (x_debug & DEBUG_INBOUND) 
-			yell("VFD [%d], Truncated (did [%d], max [%d])", 
-					vfd, consumed, cnt);
+			yell("VFD [%d], Truncated (did [%ld], max [%ld])", 
+					vfd, (long)consumed, (long)cnt);
 
 		/* If the line had a newline, then put the newline in. */
 		if (buffer >= 0 && h == '\n')
@@ -720,7 +720,7 @@ static int	unix_read (int channel, int quiet)
 	{
 		if (!quiet)
 		   syserr(CSRV(channel), "unix_read: dgets_buffer(%d, %*s) failed",
-				channel, c, buffer);
+				channel, (int)c, buffer);
 		return -1;
 	}
 
