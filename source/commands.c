@@ -3196,11 +3196,17 @@ struct target_type target[4] =
 	 *
 	 * XXX - The 'hook == -1' hack is there until I write something 
 	 * more decent than recursion to handle /msg -<server>/<target>.
+	 *
+	 * I've gotten into too many scrapes with infinite recursion here.
+	 * So, if you recurse twice, then something is seriously wrong
+	 * and we will just flat out refuse to send the message.
 	 */
 	if (hook == -1)
 		hook = 1;
-	else if (recursion)
+	else if (recursion == 1)
 		hook = 0;
+	else if (recursion >= 2)
+		return;
 
 	window_display = hook;
 	recursion++;
