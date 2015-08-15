@@ -441,19 +441,12 @@ CTCP_HANDLER(do_version)
 	 */
 #if defined(HAVE_UNAME) && !defined(UNAME_HACK)
 	struct utsname un;
-	const char	*the_unix,
-			*the_version;
+	const char	*the_unix;
 
 	if (uname(&un) < 0)
-	{
-		the_version = empty_string;
 		the_unix = "unknown";
-	}
 	else
-	{
-		the_version = un.release;
 		the_unix = un.sysname;
-	}
 
 	/* We no longer show the detailed version of your OS. */
 	send_ctcp(CTCP_NOTICE, from, CTCP_VERSION, 

@@ -690,3 +690,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * More complier warnings from gcc-4.9
 * Final compiler warning, from openbsd this time.
 * Lots of OS's and compilers checked.  Looks good!
+* Final warning fixed!
