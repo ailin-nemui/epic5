@@ -1107,7 +1107,7 @@ BUILT_IN_COMMAND(encoding)
 
 	if (!my_stricmp(encodingx, "none"))
 	{
-		if (!recode_rules[x])
+		if (x >= MAX_RECODING_RULES || !recode_rules[x])
 			say("There is no encoding for %s", arg);
 
 		/* You can't delete the system rules */
