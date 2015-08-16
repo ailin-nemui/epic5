@@ -7138,8 +7138,11 @@ int	invalid_utf8str (unsigned char *utf8str)
 			}
 		}
 
-		/* We count the number of valid utf8 points we've seen */
-		else
+		/* 
+		 * We count the number of non-ascii utf8 code points
+		 * we've seen
+		 */
+		else if (code_point > 127)
 			count++;
 	}
 
