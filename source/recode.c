@@ -185,6 +185,7 @@ typedef struct RecodeRule RecodeRule;
 #define MAX_RECODING_RULES 128
 RecodeRule **	recode_rules = NULL;
 static int	update_recoding_encoding (RecodeRule *r, const char *encoding);
+static	int	remove_encoding (int refnum);
 
 
 /* 
@@ -324,6 +325,22 @@ static RecodeRule *	create_recoding_rule (const char *target, const char *encodi
 	}
 
 	return r;
+}
+
+/* Call this to blow away an encoding. */
+static	int	remove_encoding (int refnum)
+{
+	if (recode_rules[refnum]->inbound_handle != 0)
+		iconv_close(recode_rules[refnum]->inbound_handle);
+	recode_rules[refnum]->inbound_handle = 0;
+	if (recode_rules[refnum]->outbound_handle != 0)
+		iconv_close(recode_rules[refnum]->outbound_handle);
+	recode_rules[refnum]->outbound_handle = 0;
+
+	new_free(&recode_rules[refnum]->encoding);
+	new_free(&recode_rules[refnum]->target);
+	new_free((char **)&recode_rules[refnum]);
+	return 0;
 }
 
 /*
@@ -1117,16 +1134,9 @@ BUILT_IN_COMMAND(encoding)
 			return;
 		}
 
-		/* XXX TODO - Removing a rule should be in its own func */
 		else
 		{
-			iconv_close(recode_rules[x]->inbound_handle);
-			recode_rules[x]->inbound_handle = 0;
-			iconv_close(recode_rules[x]->outbound_handle);
-			recode_rules[x]->outbound_handle = 0;
-			new_free(&recode_rules[x]->encoding);
-			new_free(&recode_rules[x]->target);
-			new_free((char **)&recode_rules[x]);
+			remove_encoding(x);
 			say("Removed encoding for %s", arg);
 		}
 
@@ -1441,15 +1451,7 @@ char *	function_encodingctl (char *input)
 		if (r->magic == 1)
 			RETURN_INT(0);
 
-		/* XXXX TODO - Removing a rule should be in its own func. */
-		/* Check encoding command for the other impl of this */
-		iconv_close(recode_rules[refnum]->inbound_handle);
-		recode_rules[refnum]->inbound_handle = 0;
-		iconv_close(recode_rules[refnum]->outbound_handle);
-		recode_rules[refnum]->outbound_handle = 0;
-		new_free(&recode_rules[refnum]->encoding);
-		new_free(&recode_rules[refnum]->target);
-		new_free((char **)&recode_rules[refnum]);
+		remove_encoding(refnum);
 		RETURN_INT(1);
 	} else if (!my_strnicmp(listc, "CHECK", len)) {
 		int	retval;
