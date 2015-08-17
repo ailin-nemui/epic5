@@ -686,19 +686,45 @@ static ssize_t	read_color_seq (const unsigned char *start, void *d, int blinkbol
 			    }
 
 			    /* FALLTHROUGH */
+			    /* 
+			     * Fallthrough if 1st digit is 0-5
+			     * and the 2nd digit is not a number.
+			     * This is a 1 digit color code.
+			     */
+			}
+
+			/* This might take one or two characters (sigh) */
+			case '9':
+			{
+				/* Ignore color 99. sigh. */
+				if (c1 == '9' && c2 == '9')
+				{
+					ptr += 2;
+					noval = 1;
+					break;
+				}
+
+				/* FALLTHROUGH */
+				/*
+				 * Fallthrough if 1st digit is 0-5
+				 * and the 2nd digit is not a number,
+				 * or if 1st digit is 9, the 2nd digit 
+				 * is not 9.
+				 */
 			}
 
 			/* These can only take one character */
 			case '6':
 			case '7':
 			case '8':
-			case '9':
 			{
 				ptr++;
 
 				val = mkdigit(c1);
 				break;
 			}
+
+					
 
 			/*
 			 * Y -> <stop> Y for any other nonnumeric Y

@@ -695,3 +695,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix crash if you try to clear an /encoding rule that doesn't eixst.
 * Refactor deleting a recode rule into a func and have everyone use it (rb des)
 * "Valid UTF8" requires something other than a broken code point at end (rb des)
+* Treat ^C99 as a bare ^C, because of other clients (rb wuf)
