@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<None>
+* /PAUSE does not save/restore context, and it should.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -696,3 +696,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Refactor deleting a recode rule into a func and have everyone use it (rb des)
 * "Valid UTF8" requires something other than a broken code point at end (rb des)
 * Treat ^C99 as a bare ^C, because of other clients (rb wuf)
+* Turn #define use_automargins on for now
+* Add /SET FIRST_LINE which will be prefixed to all lines of output.
+* Do a term_clreol() at the START of output, not the end
+* This allows us to write to the last column of the display!
+* Just /set -continued_line and /set first_line @ (or whatever)!
+* You _MUST_ use an automargin TERM (ie, export TERM=vt102am) for this to work
+

@@ -1807,6 +1807,9 @@ const 	unsigned char	*ptr;
 	unsigned char 	buffer[BIG_BUFFER_SIZE + 1],
 			c,
 			*pos_copy;
+	unsigned char 	*str_free = NULL;
+const	unsigned char	*first_ptr;
+	unsigned char	*first = NULL;
 const	unsigned char	*cont_ptr;
 	unsigned char	*cont = NULL;
 	const char 	*words;
@@ -1847,6 +1850,12 @@ const	unsigned char	*cont_ptr;
 		while (output_size < new_i)
 			output[output_size++] = 0;
 	}
+
+	if (!(first_ptr = get_string_var(FIRST_LINE_VAR)))
+		first_ptr = empty_string;
+	malloc_strcpy((char **)&str_free, first_ptr);
+	malloc_strcat((char **)&str_free, str);
+	str = str_free;
 
 	/*
 	 * Start walking through the entire string.
@@ -2253,6 +2262,7 @@ const	unsigned char	*cont_ptr;
 	recursion--;
 	new_free(&output[line]);
 	new_free(&cont_free);
+	new_free(&str_free);
 	*lused = line - 1;
 	return output;
 }
@@ -2461,6 +2471,10 @@ size_t 	output_with_count (const unsigned char *str1, int clreol, int output)
         a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
 	a.italic = 0;
 
+	if (output)
+		if (clreol)
+			term_clear_to_eol();
+
 	for (str = str1; str && *str; )
 	{
 	    /* On any error, just stop. */
@@ -2535,8 +2549,6 @@ size_t 	output_with_count (const unsigned char *str1, int clreol, int output)
 	{
 		if (beep)
 			term_beep();
-		if (clreol)
-			term_clear_to_eol();
 		term_all_off();		/* Clean up after ourselves! */
 	}
 

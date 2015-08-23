@@ -22,6 +22,7 @@
  *     properly.
  */
 
+#define use_automargins 1
 
 /* 
  *  This is where you define a list of ``fallback'' servers in case the client
@@ -298,6 +299,7 @@
 #define DEFAULT_DISPLAY_PC_CHARACTERS 4
 #define DEFAULT_DO_NOTIFY_IMMEDIATELY 1
 #define DEFAULT_EIGHT_BIT_CHARACTERS 1
+#define DEFAULT_FIRST_LINE NULL
 #define DEFAULT_FLOATING_POINT_MATH 0
 #define DEFAULT_FLOATING_POINT_PRECISION 16
 #define DEFAULT_FLOOD_AFTER 3
