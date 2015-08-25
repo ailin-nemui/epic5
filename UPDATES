@@ -1,3 +1,48 @@
+*** News 08/25/2015 -- Improved automargin support 
+	You can now use automargins to get better wrapping of long urls.
+
+	1. Use a terminal emulator that supports automargins
+	   (they pretty much all do)
+	2. Set your TERM env variable to something that supports automargins
+		export TERM=vt102am        
+	   should do the job
+	3. Restart EPIC after you've updated the TERM.  It's not enough 
+	   to just change the TERM and re-attach screen.  It's a good 
+	   idea to check this when you're upgrading.
+	4. /SET -CONTINUED_LINE	
+		to get rid of the + thingee
+	5. /SET FIRST_LINE »    
+		or something if you don't use /set output_rewrite 
+		to prefix every line
+	6. /SET WORD_BREAK<space><space><enter>
+		URLs contain commas and dots and semicolons, and you 
+		don't want epic to word break on anything other than 
+		a space.
+
+	That should do it!  Your display will now use the final column
+	on the display, and urls should be unmangled when you copy them
+
+	If you "forget" to /SET -CONTINUED_LINE or /SET WORD_BREAK and want 
+	to rebreak your windows in order to take advantage of this after 
+	the fact, you can always just do /window rebreak_scrollback.  
+
+	*** IMPORTANT! ***
+	Note that you _must_ be running with a TERM supporting 
+	automargins or this will not change things!
+
+	You can check this by doing /eval echo $getcap(TERM enter_am_mode)
+	If it returns blank, then your TERM does not support automargins.
+	*** IMPORTANT! ***
+
+*** News 08/25/2015 -- New /SET, /SET FIRST_LINE
+	For those of you who use /SET OUTPUT_REWRITE to prefix every line
+	of output with something (like a timestamp), you can ignore this.
+
+	If you /SET FIRST_LINE, the string will be prefixed before every
+	logical line of output.  This is great if you /SET -CONTINUED_LINE
+	so you can continue to tell what lines are what.
+
+EPIC5-1.2 
 EPIC5-1.1.11
 
 *** News 07/20/2015 -- New operation: @serverctl(SET refnum UMODE ...)
