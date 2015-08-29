@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* /PAUSE does not save/restore context, and it should.
+<none>
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -26,6 +26,7 @@ MEDIUM-TERM PROJECTS
 * /Foreach should work with local variables.  It can't right now because
   of the challenge of indicating which elements are from local variables.
 * Harz would like a way to do /bind -default for just a single binding.
+* /PAUSE does not save/restore context, and it should.
 
 [I moved the old list to the file "WISHLIST" to keep this file short]
 
@@ -702,4 +703,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This allows us to write to the last column of the display!
 * Just /set -continued_line and /set first_line @ (or whatever)!
 * You _MUST_ use an automargin TERM (ie, export TERM=vt102am) for this to work
-
+* EPIC5-1.4 released here (Sententious) (Commit: 1833)
