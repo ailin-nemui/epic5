@@ -2542,6 +2542,8 @@ static char *	matheval (char *s, const char *args)
 	/* Sanity check */
 	if (!s || !*s)
 		return malloc_strdup(empty_string);
+	if (!args)
+		args = empty_string;
 
 	/* Create new state */
 	setup_expr_info(&context);

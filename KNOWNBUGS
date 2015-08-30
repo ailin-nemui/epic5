@@ -704,3 +704,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Just /set -continued_line and /set first_line @ (or whatever)!
 * You _MUST_ use an automargin TERM (ie, export TERM=vt102am) for this to work
 * EPIC5-1.4 released here (Sententious) (Commit: 1833)
+* Fix null deref when you used an implied unary operator in expression stmt.
