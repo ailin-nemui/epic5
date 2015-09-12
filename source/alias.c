@@ -2465,29 +2465,29 @@ void	unlock_stack_frame	(void)
 
 void 	dump_call_stack 	(void)
 {
-	int my_wind_index = wind_index;
-	if (wind_index >= 0)
-	{
-		yell("Call stack");
-		while (my_wind_index--)
-			yell("[%3d] %s", my_wind_index, call_stack[my_wind_index].current);
-		yell("End of call stack");
-	}
+	int i;
+
+	yell("Call stack");
+	for (i = wind_index; i >= 0; i--)
+		yell("[%3d] %s", i, call_stack[i].current ? call_stack[i].current : "<async>");
+	yell("End of call stack");
 }
 
 void 	panic_dump_call_stack 	(void)
 {
-	int my_wind_index = wind_index;
-	fprintf(stderr, "Call stack\n");
 	if (wind_index >= 0)
 	{
-		while (my_wind_index--)
-			fprintf(stderr, "[%3d] %s\n", my_wind_index, call_stack[my_wind_index].current);
+		int i;
+
+		fprintf(stderr, "Call stack\n");
+		for (i = wind_index; i >= 0; i--)
+			fprintf(stderr, "[%3d] %s\n", i, 
+				call_stack[i].current ? call_stack[i].current : "<async>");
+		fprintf(stderr, "End of call stack\n");
 	}
 	else
 		fprintf(stderr, "Stack is corrupted [wind_index is %d], sorry.\n",
 			wind_index);
-	fprintf(stderr, "End of call stack\n");
 }
 
 
