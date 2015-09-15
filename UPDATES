@@ -1,5 +1,16 @@
 EPIC5-1.4
 
+*** News 09/15/2015 -- New /ON, /ON RAW_IRC_BYTES
+	This new /ON, /ON RAW_IRC_BYTES is the same as /ON RAW_IRC, 
+	except $* is the _raw unmodified bytes_ received from IRC.
+	Specifically, $* is not guaranteed to be a UTF-8 string, so 
+	functions that expect a UTF-8 string won't work.  You should
+	not try to /ECHO the $* from this /ON.
+
+	Just like /on raw_irc, if you catch this hook, you will 
+	suppress normal handling of the event:
+		/on ^raw_irc_bytes * {echo nothing further happens}
+
 *** News 08/25/2015 -- Improved automargin support 
 	You can now use automargins to get better wrapping of long urls.
 

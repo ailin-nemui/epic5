@@ -706,3 +706,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * EPIC5-1.4 released here (Sententious) (Commit: 1833)
 * Fix null deref when you used an implied unary operator in expression stmt.
 * Fix call stack dumping, which was missing a frame, null derefing (caf)
+* Add /on raw_irc_bytes for caf - raw, unfiltered data from server

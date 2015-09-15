@@ -1613,29 +1613,17 @@ return_from_ssl_detour:
 					if (extra)
 						bufptr = extra;
 
-#if 0
-					    char *buf2;
-					    size_t buf2len;
-					    const char *e;
-
-					    buf2 = malloc_strdup(buffer);
-					    buf2len = strlen(buf2) + 1;
-
-					    if (!(e = s->default_encoding))
-						e = "ISO-8859-1";
-
-					    recode_with_iconv(e, NULL, &buf2, &buf2len);
-					    strlcpy(buffer, buf2, sizeof(buffer));
-					    new_free(&buf2);
-#endif
-
 					if (x_debug & DEBUG_INBOUND)
 						yell("[%d] <- [%s]", 
 							s->des, bufptr);
 
 					parsing_server_index = i;
-					/* XXX What should 2nd arg be? */
-					parse_server(bufptr, sizeof buffer);
+					/* I added this for caf. :) */
+					if (do_hook(RAW_IRC_BYTES_LIST, "%s", buffer))
+					{
+					    /* XXX What should 2nd arg be? */
+					    parse_server(bufptr, sizeof buffer);
+					}
 					parsing_server_index = NOSERV;
 
 					new_free(&extra);
