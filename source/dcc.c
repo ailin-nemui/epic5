@@ -1930,6 +1930,7 @@ jumpstart_get:
 				dcc->othername, (long)sb.st_size);
 		    set_server_protocol_state(from_server, proto);
 	        }
+		else
 #endif
 
 	        if ((file = open(fullname, O_WRONLY|O_TRUNC|O_CREAT, 0644))==-1)
