@@ -59,21 +59,22 @@
 #define DCC_RCV_BLOCK_SIZE (1<<16)
 
 /* These are the settings for ``flags'' */
-#define DCC_CHAT	((unsigned) 0x0001)
-#define DCC_FILEOFFER	((unsigned) 0x0002)
-#define DCC_FILEREAD	((unsigned) 0x0003)
-#define	DCC_RAW		((unsigned) 0x0004)
-#define	DCC_RAW_LISTEN	((unsigned) 0x0005)
-#define DCC_TYPES	((unsigned) 0x000f)
-#define DCC_MY_OFFER	((unsigned) 0x0010)
-#define DCC_ACTIVE	((unsigned) 0x0020)
-#define DCC_THEIR_OFFER	((unsigned) 0x0040)
-#define DCC_DELETE	((unsigned) 0x0080)
-#define DCC_TWOCLIENTS	((unsigned) 0x0100)
-#define DCC_REJECTED	((unsigned) 0x0200)
-#define DCC_QUOTED	((unsigned) 0x0400)
-#define DCC_CONNECTING	((unsigned) 0x0800)
-#define DCC_STATES	((unsigned) 0xfff0)
+#define DCC_CHAT	0x0001U
+#define DCC_FILEOFFER	0x0002U
+#define DCC_FILEREAD	0x0003U
+#define DCC_RAW		0x0004U
+#define DCC_RAW_LISTEN	0x0005U
+#define DCC_TYPES	0x000fU
+#define DCC_MY_OFFER	0x0010U
+#define DCC_ACTIVE	0x0020U
+#define DCC_THEIR_OFFER	0x0040U
+#define DCC_DELETE	0x0080U
+#define DCC_TWOCLIENTS	0x0100U
+#define DCC_REJECTED	0x0200U
+#define DCC_QUOTED	0x0400U
+#define DCC_CONNECTING	0x0800U
+#define DCC_RESUME_REQ	0x1000U
+#define DCC_STATES	0xfff0U
 
 static char *dcc_target (const char *name) 
 {
@@ -1800,31 +1801,31 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 	normalize_filename(argv[argc-1], pathname);
 	if (isdir(pathname))
 	{
-	    /* Pretend the user did /set dcc_store_path argv[argc-1] */
-	    x = pathname;
-	    argv[argc-1] = NULL;
-	    argc--;
+		/* Pretend the user did /set dcc_store_path argv[argc-1] */
+		x = pathname;
+		argv[argc-1] = NULL;
+		argc--;
 	}
 
 	/* Handle a straight rename */
 	else if (argc == 4 && dcc_get_bucket(NULL, user, argv[2]) == 1 &&
 			 dcc_get_bucket(NULL, user, argv[3]) == 0)
 	{
-	    /* Pretend the user did /dcc rename get <user> argv[2] argv[3] */
-	    if (!(b = new_bucket()))
-	    {
-		yell("DCC GET: new_bucket() failed. [1] help!");
-		return;
-	    }
+		/* Pretend the user did /dcc rename get <user> argv[2] argv[3] */
+		if (!(b = new_bucket()))
+		{
+			yell("DCC GET: new_bucket() failed. [1] help!");
+			return;
+		}
 
-	    dcc_get_bucket(b, user, argv[2]);
-	    dcc = b->list[0].stuff;
-	    malloc_strcpy(&dcc->description, argv[3]);
-	    free_bucket(&b);
+		dcc_get_bucket(b, user, argv[2]);
+		dcc = b->list[0].stuff;
+		malloc_strcpy(&dcc->description, argv[3]);
+		free_bucket(&b);
 
-	    /* Pretend the user did /dcc get <user> argv[3] */
-	    argv[2] = argv[3];
-	    argc = 3;
+		/* Pretend the user did /dcc get <user> argv[3] */
+		argv[2] = argv[3];
+		argc = 3;
 	}
 
 	/* Calculate "default_savedir" */
@@ -1845,115 +1846,117 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 
 	for (j = 2; j < argc; j++)
 	{
-	    filename = argv[j];
+		filename = argv[j];
 jumpstart_get:
-	    if (!(b = new_bucket()))
-	    {
-		yell("DCC GET: new_bucket() failed.  [2] Help!");
-		return;
-	    }
-	    count = dcc_get_bucket(b, user, filename);
-	    for (i = 0; i < count; i++)
-	    {
-		/* Skip any null pointers. sigh. */
-		if (!(dcc = b->list[i].stuff))
-			continue;
-
-		lock_dcc(dcc);
-
-		/* 
-		 * Figure out where we will save this file.  If the user has
-		 * /DCC RENAMEd this file to an absolute path, we honor that.
-		 * Otherwise, we use the default directory from above 
-		 * (09/24/2003)
-		 */
-		realfilename = dcc_urldecode(dcc->description);
-		if (*realfilename == '/')
-		    strlcpy(fullname, realfilename, sizeof(fullname));
-		else
+		if (!(b = new_bucket()))
 		{
-		    if (savedir_is_invalid == 1)
-		    {
-			handle_invalid_savedir(x);
-			savedir_is_invalid++;
-			new_free(&realfilename);
-			unlock_dcc(dcc);
-			continue;
-		    }
-
-		    strlcpy(fullname, default_savedir, sizeof(fullname));
-		    strlcat(fullname, "/", sizeof(fullname));
-		    strlcat(fullname, realfilename, sizeof(fullname));
+			yell("DCC GET: new_bucket() failed.  [2] Help!");
+			return;
 		}
+		count = dcc_get_bucket(b, user, filename);
+		for (i = 0; i < count; i++)
+		{
+			/* Skip any null pointers. sigh. */
+			if (!(dcc = b->list[i].stuff))
+				continue;
 
-		new_free(&realfilename);
-		dcc->local_filename = malloc_strdup(fullname);
-		dcc->open_callback = NULL;
+			lock_dcc(dcc);
+
+			/* 
+			 * Figure out where we will save this file.  If the user has
+			 * /DCC RENAMEd this file to an absolute path, we honor that.
+			 * Otherwise, we use the default directory from above 
+			 * (09/24/2003)
+			 */
+			realfilename = dcc_urldecode(dcc->description);
+			if (*realfilename == '/')
+				strlcpy(fullname, realfilename, sizeof(fullname));
+			else
+			{
+				if (savedir_is_invalid == 1)
+				{
+					handle_invalid_savedir(x);
+					savedir_is_invalid++;
+					new_free(&realfilename);
+					unlock_dcc(dcc);
+					continue;
+				}
+
+				strlcpy(fullname, default_savedir, sizeof(fullname));
+				strlcat(fullname, "/", sizeof(fullname));
+				strlcat(fullname, realfilename, sizeof(fullname));
+			}
+
+			new_free(&realfilename);
+			dcc->local_filename = malloc_strdup(fullname);
+			dcc->open_callback = NULL;
 
 #ifdef MIRC_BROKEN_DCC_RESUME
-		if (resume && get_int_var(MIRC_BROKEN_DCC_RESUME_VAR) && 
+			if (resume && get_int_var(MIRC_BROKEN_DCC_RESUME_VAR) && 
 				stat(fullname, &sb) != -1) 
-		{
-		    dcc->bytes_sent = 0;
-		    dcc->bytes_read = dcc->resume_size = sb.st_size;
+			{
+				dcc->bytes_sent = 0;
+				dcc->bytes_read = dcc->resume_size = sb.st_size;
 
-		    if ((file = open(fullname, O_WRONLY|O_APPEND, 0644)) == -1)
-		    {
-			say("Unable to open %s: %s", fullname, strerror(errno));
-			unlock_dcc(dcc);
-			continue;
-		    }
-		    dcc->file = file;
+				if ((file = open(fullname, O_WRONLY|O_APPEND, 0644)) == -1)
+				{
+					say("Unable to open %s: %s", fullname, strerror(errno));
+					unlock_dcc(dcc);
+					continue;
+				}
+				dcc->file = file;
+				dcc->flags |= DCC_RESUME_REQ;
 	
-		    if (((SA *)&dcc->offer)->sa_family == AF_INET)
-			malloc_strcpy(&dcc->othername, 
-					ltoa(ntohs(V4PORT(dcc->offer))));
+				if (((SA *)&dcc->offer)->sa_family == AF_INET)
+					malloc_strcpy(&dcc->othername, 
+						ltoa(ntohs(V4PORT(dcc->offer))));
 		
-		    if (x_debug & DEBUG_DCC_XMIT)
-			yell("SENDING DCC RESUME to [%s] [%s|%s|%ld]", 
-				user, filename, dcc->othername, 
-				(long)sb.st_size);
+				if (x_debug & DEBUG_DCC_XMIT)
+					yell("SENDING DCC RESUME to [%s] [%s|%s|%ld]", 
+						user, filename, dcc->othername, 
+						(long)sb.st_size);
 		
-		    /* Just in case we have to fool the protocol enforcement. */
-		    proto = get_server_protocol_state(from_server);
-		    set_server_protocol_state(from_server, 0);
-		    send_ctcp(CTCP_PRIVMSG, user, CTCP_DCC,
+				/* Just in case we have to fool the protocol enforcement. */
+				proto = get_server_protocol_state(from_server);
+				set_server_protocol_state(from_server, 0);
+				send_ctcp(CTCP_PRIVMSG, user, CTCP_DCC,
 #if 1
-				strchr(dcc->description, ' ')
-					? "RESUME \"%s\" %s %ld"
-					: "RESUME %s %s %ld",
-				dcc->description,
+					strchr(dcc->description, ' ')
+						? "RESUME \"%s\" %s %ld"
+						: "RESUME %s %s %ld",
+					dcc->description,
 #else
-				/* This is for testing mirc compatability */
-				"RESUME file.ext %s %ld",
+					/* This is for testing mirc compatability */
+					"RESUME file.ext %s %ld",
 #endif
-				dcc->othername, (long)sb.st_size);
-		    set_server_protocol_state(from_server, proto);
-	        }
-		else
+					dcc->othername, (long)sb.st_size);
+				set_server_protocol_state(from_server, proto);
+			}
+			else
 #endif
+			{
+				if ((file = open(fullname, O_WRONLY|O_TRUNC|O_CREAT, 0644))==-1)
+				{
+					say("Unable to open %s: %s", fullname, strerror(errno));
+					unlock_dcc(dcc);
+					continue;
+				}
 
-	        if ((file = open(fullname, O_WRONLY|O_TRUNC|O_CREAT, 0644))==-1)
-	        {
-		    say("Unable to open %s: %s", fullname, strerror(errno));
-		    unlock_dcc(dcc);
-		    continue;
-	        }
-
-	        dcc->file = file;
-	        dcc->flags |= DCC_TWOCLIENTS;
-	        dcc_connect(dcc);	/* Nonblocking should be ok here */
-	        unlock_dcc(dcc);
-	    }
+				dcc->file = file;
+				dcc->flags |= DCC_TWOCLIENTS;
+				dcc_connect(dcc);	/* Nonblocking should be ok here */
+				unlock_dcc(dcc);
+			}
+		}
 	}
 	unlock_dcc(NULL);
 
 	if (!count)
 	{
-	    if (filename)
-		say("No file (%s) offered in SEND mode by %s", filename, user);
-	    else
-		say("No file offered in SEND mode by %s", user);
+		if (filename)
+			say("No file (%s) offered in SEND mode by %s", filename, user);
+		else
+			say("No file offered in SEND mode by %s", user);
 	}
 }
 
@@ -4104,6 +4107,13 @@ static	void	dcc_getfile_resume_start (const char *nick, char *filename, char *po
 
 	if (!(Client = dcc_searchlist(DCC_FILEREAD, nick, filename, port, 0)))
 		return;		/* Its fake. */
+
+	if (!(Client->flags & DCC_RESUME_REQ))
+	{
+		if (x_debug & DEBUG_DCC_XMIT)
+			yell("Unsolicited DCC ACCEPT from [%s] [%s]", nick, filename);
+		return;
+	}
 
 	Client->flags |= DCC_TWOCLIENTS;
 	dcc_connect(Client);

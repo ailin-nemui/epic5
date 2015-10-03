@@ -2,7 +2,10 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* You should be able to /window query %proc a proc that isn't started yet
+* You should be able to pass in arglists to /exec -line and /exec -end
+* You should be able to pass in extra args to /exec -line and /exec -end
+
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -708,3 +711,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix call stack dumping, which was missing a frame, null derefing (caf)
 * Add /on raw_irc_bytes for caf - raw, unfiltered data from server
 * Fix dcc resume (caf)
+* Be reasonable handling DCC ACCEPTs where DCC RESUME was not requested (caf)
