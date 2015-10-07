@@ -712,3 +712,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /on raw_irc_bytes for caf - raw, unfiltered data from server
 * Fix dcc resume (caf)
 * Be reasonable handling DCC ACCEPTs where DCC RESUME was not requested (caf)
+* Fix dcc resume again (caf)

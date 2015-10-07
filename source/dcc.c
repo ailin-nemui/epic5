@@ -4073,7 +4073,7 @@ static void	dcc_getfile_resume_demanded (const char *user, char *filename, char 
 	if (!offset)
 		return;		/* Its a fake */
 
-	Client->bytes_sent = Client->resume_size = STR2INT(offset);
+	Client->bytes_acked = Client->bytes_sent = Client->resume_size = STR2INT(offset);
 	Client->bytes_read = 0;
 
 	/* Just in case we have to fool the protocol enforcement. */
