@@ -1692,18 +1692,16 @@ BUILT_IN_COMMAND(bindcmd)
 		}
 	}
 
-	if ((function = new_next_arg(args, &args)) == NULL) 
-	{
-		if (!(cs = bind_string_compress(seq, &slen)))
-			return; /* umm.. */
-
-		show_key(NULL, cs, slen, recurse);
-		return;
-	}
-
 	if (!(cs = bind_string_compress(seq, &slen))) 
 	{
 		yell("BIND: couldn't compress sequence %s", seq);
+		return;
+	}
+
+	if ((function = new_next_arg(args, &args)) == NULL) 
+	{
+		show_key(NULL, cs, slen, recurse);
+		new_free(&cs);
 		return;
 	}
 
@@ -1980,24 +1978,21 @@ char *	bindctl (char *input)
 	GET_FUNC_ARG(listc, input);
 	if (!(seq = bind_string_compress(seq, &slen)))
 		RETURN_EMPTY;
-	if (!(key = find_sequence(head_keymap, seq, slen)))
-		RETURN_EMPTY;
+	if (!my_stricmp(listc, "SET")) {
+	    GET_FUNC_ARG(listc, input);
+
+	    RETURN_INT(bind_string(seq, listc, (*input ? input : NULL)));
+	}
+	key = find_sequence(head_keymap, seq, slen);
+	new_free(&seq);
 	if (!my_stricmp(listc, "GET")) {
 	    if (key == NULL || key->bound == NULL)
-	    {
-		new_free(&seq);
 		RETURN_EMPTY;
-	    }
 
 	    retval = malloc_strdup(key->bound->name);
 	    if (key->stuff)
 		malloc_strcat_wordlist(&retval, " ", key->stuff);
-	    new_free(&seq);
 	    RETURN_STR(retval);
-	} else if (!my_stricmp(listc, "SET")) {
-	    GET_FUNC_ARG(listc, input);
-
-	    RETURN_INT(bind_string(seq, listc, (*input ? input : NULL)));
 	} else if (!my_strnicmp(listc, "GETPACKAGE", 4)) {
 	    if (key == NULL)
 		RETURN_EMPTY;
@@ -2032,7 +2027,9 @@ char *	bindctl (char *input)
 	    bindctl_getmap(key->map, seq, slen, &retval);
 	    new_free(&seq);
 	    RETURN_STR(retval);
-	} else if (!my_strnicmp(listc, "CLEAR", 1)) {
+	}
+	new_free(&seq);
+	if (!my_strnicmp(listc, "CLEAR", 1)) {
 	    if (key == NULL || key->map == NULL)
 		RETURN_INT(0);
 	    remove_bindings_recurse(&key->map);

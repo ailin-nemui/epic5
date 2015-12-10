@@ -3726,7 +3726,7 @@ void	translate_user_input (unsigned char byte)
 static	unsigned char	workbuf[32];
 static	size_t		workbuf_idx = 0;
 const	unsigned char *	s;
-	char		dest_ptr[32];
+	char		dest_ptr[32] = { 0 };
 	size_t		dest_left;
 	int		codepoint;
 	char *		in;
@@ -3758,8 +3758,10 @@ static	int		never_warn_again = 0;
 
 	in = workbuf;
 	inlen = workbuf_idx;
+	/* Must leave at least one \0 at the end of the buffer, as
+	 * next_code_point() expects a nul-terminated string. */
 	out = dest_ptr;
-	outlen = 32;
+	outlen = sizeof dest_ptr - 1;
 
 	enc = find_recoding("console", &xlat, NULL);
 

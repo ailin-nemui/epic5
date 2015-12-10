@@ -1305,6 +1305,8 @@ int	sanity_check_encoding (const char *encodingx)
 		}
 	}
 
+	iconv_close(ti);
+
 	if (errors >= 24)
 		return -3;		/* Too many. */
 

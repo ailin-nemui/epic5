@@ -5,7 +5,12 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * You should be able to /window query %proc a proc that isn't started yet
 * You should be able to pass in arglists to /exec -line and /exec -end
 * You should be able to pass in extra args to /exec -line and /exec -end
-
+* Add /window mangle_logfiles -- to mangle window specific logfiles
+* Add /window log_rewrite -- to rewrite window-specific logfile
+* setting a server vhost appears to set the global vhost afterwards
+  (stygian)
+* If you set a vhost, only the ipv4/v6 protos it renders to should be used
+* Make this go away -- ssl chatter http://pastebin.ca/3260484
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -713,3 +718,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix dcc resume (caf)
 * Be reasonable handling DCC ACCEPTs where DCC RESUME was not requested (caf)
 * Fix dcc resume again (caf)
+* Ensure translate_user_input() passes nul terminated string to n_c_p (caf)
+* Fix memory leak with sanity_checking_encoding() (caf)
+* Fix memory leak with bind_string_comporess() (caf)
+* Fix $bindctl(SEQUENCE .. SET ..) when find_sequence() fails (caf)
+
