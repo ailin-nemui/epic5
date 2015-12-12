@@ -3632,7 +3632,7 @@ static char *	get_all_server_groups (void)
 	Server *s;
 	int	i, j;
 	char *	retval = NULL;
-	size_t	clue;
+	size_t	clue = 0;
 
 	for (i = 0; i < number_of_servers; i++)
 	{

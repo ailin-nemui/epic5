@@ -11,6 +11,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   (stygian)
 * If you set a vhost, only the ipv4/v6 protos it renders to should be used
 * Make this go away -- ssl chatter http://pastebin.ca/3260484
+* For folks without sys_siglist, build one up at startup
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -722,4 +723,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix memory leak with sanity_checking_encoding() (caf)
 * Fix memory leak with bind_string_comporess() (caf)
 * Fix $bindctl(SEQUENCE .. SET ..) when find_sequence() fails (caf)
-
+* Below two items were reported by Felix Janda
+* Musl C library (for linux) doesn't support sys_siglist, and our shim fails
+* Don't require sys_siglist to be present to build epic; just remove features
+* Eventually I'll build something into epic to do this at startup.
+* Fix clueless function get_all_server_groups() (rb ce)
