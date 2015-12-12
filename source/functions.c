@@ -6857,7 +6857,7 @@ BUILT_IN_FUNCTION(function_killpid, input)
 	if (is_number(sig_str))
 	{
 		sig = my_atol(sig_str);
-		if ((sig < 0) || (sig >= NSIG))
+		if ((sig < 1) || (sig >= NSIG))
 			RETURN_EMPTY;
 	}
 #ifdef HAVE_SYS_SIGLIST

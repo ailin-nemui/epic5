@@ -728,3 +728,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't require sys_siglist to be present to build epic; just remove features
 * Eventually I'll build something into epic to do this at startup.
 * Fix clueless function get_all_server_groups() (rb ce)
+* Proper signal numbers start with 0. (0 is permitted by some systems) (fj)

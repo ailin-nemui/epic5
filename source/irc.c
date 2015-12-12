@@ -52,7 +52,7 @@ const char internal_version[] = "20150829";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1841;
+const unsigned long	commit_id = 1842;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -838,7 +838,7 @@ static void	do_signals(void)
 	int sig_no;
 
 	signals_caught[0] = 0;
-	for (sig_no = 0; sig_no < NSIG; sig_no++)
+	for (sig_no = 1; sig_no < NSIG; sig_no++)
 	{
 		while (signals_caught[sig_no])
 		{

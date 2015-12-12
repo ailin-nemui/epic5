@@ -119,7 +119,7 @@ sigfunc *	init_signals (void)
 
 	memset((void *)&signals_caught, 0, NSIG * sizeof(int));
 
-	for (sig_no = 0; sig_no < NSIG; sig_no++)
+	for (sig_no = 1; sig_no < NSIG; sig_no++)
 	{
 		if ((reset_one_signal(sig_no, signal_handler)) == SIG_ERR)
 			error = SIG_ERR;
