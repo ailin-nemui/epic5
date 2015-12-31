@@ -352,9 +352,10 @@ static	int	preserve_serverinfo (ServerInfo *si)
 
 	if (si->host && strchr(si->host, ':'))
 	   malloc_strcat_c(&resultstr, "[", &clue);
-	malloc_strcat2_c(&resultstr, si->host, ":", &clue);
+	malloc_strcat_c(&resultstr, si->host, &clue);
 	if (si->host && strchr(si->host, ':'))
 	   malloc_strcat_c(&resultstr, "]", &clue);
+	malloc_strcat_c(&resultstr, ":", &clue);
 	malloc_strcat2_c(&resultstr, ltoa(si->port), ":", &clue);
 	malloc_strcat2_c(&resultstr, si->password, ":", &clue);
 	malloc_strcat2_c(&resultstr, si->nick, ":", &clue);

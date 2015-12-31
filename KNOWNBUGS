@@ -12,6 +12,9 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * If you set a vhost, only the ipv4/v6 protos it renders to should be used
 * Make this go away -- ssl chatter http://pastebin.ca/3260484
 * For folks without sys_siglist, build one up at startup
+* /window maximize + new status expando when a zero-height window gets output
+* $pad(23 \" \" ^C16@^C13wcarson) does the wrong thing
+* $leftpc(23 ^C16@^C13wcarson) does too
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -729,3 +732,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Eventually I'll build something into epic to do this at startup.
 * Fix clueless function get_all_server_groups() (rb ce)
 * Proper signal numbers start with 0. (0 is permitted by some systems) (fj)
+* Fix preserve_serverinfo() when the hostname is an ipv6 paddr.
