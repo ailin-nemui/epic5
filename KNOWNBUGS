@@ -735,3 +735,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $[len]var to use fix_width(), for well-defined behavior (see UPDATES)
 * Fix $pad() to use fix_width(), for well-defined behavior (see UPDATES)
 * Hide all the SSL debugging chatter behind /xdebug SSL
+* Add /window log_rewrite, to overrule /set log_rewrite on window logs

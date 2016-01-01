@@ -2760,6 +2760,7 @@ static void 	add_to_window (Window *window, const unsigned char *str)
         int             cols;
 	int		numl = 0;
 	intmax_t	refnum;
+	char *		rewriter = NULL;
 
 	if (get_server_redirect(window->server))
 		if (redirect_text(window->server, 
@@ -2794,7 +2795,9 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 	}
 
 	/* Add to logs + lastlog... */
-	add_to_log(0, window->log_fp, window->refnum, str, 0, NULL);
+	if (window->log_rewrite)
+		rewriter = window->log_rewrite;
+	add_to_log(0, window->log_fp, window->refnum, str, 0, rewriter);
 	add_to_logs(window->refnum, from_server, who_from, who_level, str);
 	refnum = add_to_lastlog(window, str);
 

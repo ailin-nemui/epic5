@@ -1,5 +1,12 @@
 EPIC5-1.4
 
+*** News 01/01/2016 -- New /window operation, /window log_rewrite
+	This allows you to overrule /SET LOG_REWRITE for logs that
+	you create with /WINDOW LOG ON (only!)
+	Example:
+		window logfile "my.windowlog" rewrite "HOOBOO $1-" log on
+
+	
 *** News 01/01/2016 -- Refinement to $pad(), $[len]var, and $leftpc()
 	These functions do not behave graciously since our conversion
 	to UTF-8, since they count code points rather than columns.

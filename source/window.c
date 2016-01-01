@@ -4581,6 +4581,22 @@ static Window *window_logfile (Window *window, char **args)
 }
 
 /*
+ * /WINDOW LOG_REWRITE <newval>
+ * If you have /window log on, you can set this to overrule the global
+ * /set log_rewrite value for just this window's log.
+ */
+static Window *window_log_rewrite (Window *window, char **args)
+{
+	char *arg;
+
+	arg = new_next_arg(*args, args);
+	malloc_strcpy(&window->log_rewrite, arg);
+
+	return window;
+}
+
+
+/*
  * /WINDOW MERGE <newwin>
  * This moves everything (channels, queries, and lastlog) from the current
  * window into another window <newwin>.  For now, <newwin> must be on the
@@ -5833,6 +5849,7 @@ static const window_ops options [] = {
 	{ "LIST",		window_list 		},
 	{ "LOG",		window_log 		},
 	{ "LOGFILE",		window_logfile 		},
+	{ "LOG_REWRITE",	window_log_rewrite	},
 	{ "MERGE",		window_merge		},
 	{ "MOVE",		window_move 		},
 	{ "MOVE_TO",		window_move_to		},
@@ -7220,6 +7237,8 @@ char 	*windowctl 	(char *input)
 		RETURN_INT(w->log);
 	    } else if (!my_strnicmp(listc, "LOGFILE", len)) {
 		RETURN_STR(w->logfile);
+	    } else if (!my_strnicmp(listc, "LOG_REWRITE", len)) {
+		RETURN_STR(w->log_rewrite);
 	    } else if (!my_strnicmp(listc, "SWAPPABLE", len)) {
 		RETURN_INT(w->swappable);
 	    } else if (!my_strnicmp(listc, "SCROLLADJ", len)) {
@@ -7389,6 +7408,11 @@ char 	*windowctl 	(char *input)
 		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "LOGFILE", len)) {
 		RETURN_EMPTY;
+	    } else if (!my_strnicmp(listc, "LOG_REWRITE", len)) {
+		if (empty(input))
+			new_free(&w->log_rewrite);
+		else
+			malloc_strcpy(&w->log_rewrite, input);
 	    } else if (!my_strnicmp(listc, "SWAPPABLE", len)) {
 		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "SCROLLADJ", len)) {

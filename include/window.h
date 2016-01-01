@@ -166,6 +166,7 @@ struct lastlog_stru *lastlog_oldest;	/* pointer to bottom of lastlog list */
 	short	log;			/* True if file logging is on */
 	char	*logfile;		/* window's logfile name */
 	FILE	*log_fp;		/* file pointer for the log file */
+	char	*log_rewrite;		/* Overrules /set log_rewrite */
 
 	/* TOPLINES stuff */
 	short	toplines_wanted;
