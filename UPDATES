@@ -1,5 +1,54 @@
 EPIC5-1.4
 
+*** News 01/01/2016 -- Refinement to $pad(), $[len]var, and $leftpc()
+	These functions do not behave graciously since our conversion
+	to UTF-8, since they count code points rather than columns.
+	It just seems sensible to redefine the behavior of these 
+	functions based on columns, which is what everybody probably
+	expects them to do.
+
+	Function: $pad(len char string)
+	Summary: Extend, but do not truncate, do not justify 'string'
+	Definition: 
+		Return 'string' so that it takes up at least 'len' columns.
+		If it is too short, it will be padded with 'char's until
+			it is 'len' columns wide.
+		If it is too long, it is NOT truncated.
+
+	Function: $leftpc(len string)
+	Summary: Truncate, but do not extend, do not justify 'string'
+	Definition:
+		Return the first 'len' columns of 'string'.  
+		If it is too short, it will NOT be padded.
+		If it is too long, it will be truncated on the right end.
+
+	Function: $[len]var
+	Summary: Extend, truncate, and justify $var
+	Definition:
+		Return $var so that it takes up EXACTLY 'len' columns.
+		If it is too short, it will be padded with /set pad_char
+			until it is 'len' columns wide.
+		If it is too long, it is truncated.
+		If 'len' is > 0, then the string is left justified, and
+			padding (or truncation) happens on the right end.
+		If 'len' is < 0, then the string is right justified, and
+			padding (or truncation) happens on the left end.
+
+	Function: $fix_width(len justify pad string)
+	Summary: Extend, truncate, and justify 'string'
+	Definition:
+		Return 'string' so it takes up EXACTLY 'len' columns.
+		If it is too short, it will be padded with 'pad'
+			until it is 'len' columns wide.
+		If it is too long, it is truncated.
+		If 'justify' is "l" then the string is left justified,
+			and padding (or truncation) happens at the right
+		If 'justify' is "c" then the string is centered, and 
+			padding (or truncation) happens equally at both
+			ends.
+		If 'justify' is "r" then the string is right justified,
+			and padding (or truncation) happens at the left.
+
 *** News 09/15/2015 -- New /ON, /ON RAW_IRC_BYTES
 	This new /ON, /ON RAW_IRC_BYTES is the same as /ON RAW_IRC, 
 	except $* is the _raw unmodified bytes_ received from IRC.

@@ -2465,6 +2465,12 @@ const char *	ftoa (double foo)
 	return buffer;
 }
 
+/*  
+ * This function is bad -- it does not correctly count columns,
+ * You should use:
+ *	dest = fix_string_width(src, "left", pad, length);
+ */
+#if 0
 /*
  * strformat - Return 'src' so it is 'length' columns wide.
  *
@@ -2576,6 +2582,7 @@ char *	strformat (char *dest, size_t destlen, const unsigned char *src, ssize_t 
 
 	return dest;
 }
+#endif
 
 
 /* 
@@ -5310,6 +5317,7 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
  *	justify	 - -1 : Left Justify; 0 : Center; 1 : Right Justify
  *	fillchar - A Code Point to use to fill (usually a space)
  *	newlen	 - How many columns the result should be.
+ *	chop	 - Whether too-long strings should be chopped off (or not)
  *
  * For this function, "length" means "display columns", as opposed to 
  * a count of "bytes" or "code points" like other columns use.
@@ -5331,51 +5339,8 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
  * be terrible, wouldn't it?  Don't do that.
  *
  */
-char *	fix_string_width (const char *orig_str, int justify, int fillchar, size_t newlen)
+char *	fix_string_width (const char *orig_str, int justify, int fillchar, size_t newlen, int chop)
 {
-#if 0
-	/* In this legacy implementation, only justify == -1 is supported */
-	/* It is also not utf8 aware. */
-
-        char *  word;
-        char *  retval;
-        size_t  len;
-
-        if (justify != -1)
-                return NULL;
-
-        word = new_normalize_string(orig_str, 3, display_line_mangler);
-        len = output_with_count(word, 0, 0);
-        if (len < newlen)               /* Extend it */
-        {
-                char    filler[2];
-                ssize_t numchars;
-
-                /* add */
-                filler[0] = (char)fillchar;
-                filler[1] = 0;
-
-                numchars = newlen - len;
-                while (numchars-- > 0)
-                        malloc_strcat_c(&word, filler, NULL);
-                retval = denormalize_string(word);
-        }
-        else if (len > newlen)          /* Truncate it */
-        {
-                unsigned char **prepared = NULL;
-                int     my_lines = 1;
-
-                prepared = prepare_display(-1, word, newlen-1, &my_lines,
-                                                PREPARE_NOWRAP);
-                retval = denormalize_string(prepared[0]);
-        }
-        else            /* 'word' is already the correct width */
-                retval = denormalize_string(word);
-
-        new_free(&word);
-        return retval;
-#endif
-
 	/*
 	 * Here's the plan....
 	 * 
@@ -5475,8 +5440,11 @@ char *	fix_string_width (const char *orig_str, int justify, int fillchar, size_t
 
 	/* Do the chops */
 	new_str = input;
-	chop_columns((unsigned char **)&new_str, left_chop);
-	chop_final_columns((unsigned char **)&new_str, right_chop);
+	if (chop)
+	{
+		chop_columns((unsigned char **)&new_str, left_chop);
+		chop_final_columns((unsigned char **)&new_str, right_chop);
+	}
 
 	/* Assemble the final string */
 	for (x = 0; x < left_add; x++)

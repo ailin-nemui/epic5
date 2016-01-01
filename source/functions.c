@@ -2940,12 +2940,17 @@ BUILT_IN_FUNCTION(function_center, word)
 }
 
 /* 
- * fix_width(<width> <l, c, r> "<fill char>" <string>)
- * params
- * 1 - how long the resulting string should be
- * 2 - left, center, or right justified
- * 3 - character to append if string is too short (always a dword)
- * 4 - the string
+ * Usage: $fix_width(<width> <l, c, r> "<fill char>" <string>)
+ * Returns: A string exactly <width> columns wide.
+ * Arguments:
+ *   $0  - How many columns the resulting string should be
+ *   $1  - Justification - left, center, or right
+ *   $2  - Character to use if the string is too short (always a dword)
+ *   $3- - The string to format
+ *
+ * Note: The resulting string is always exactly <width> columns long.
+ * If the string is too long, it will be truncated in accordance with
+ * the justification (ie, 'l' means the end of the string is truncated)
  */
 BUILT_IN_FUNCTION(function_fix_width, word)
 {
@@ -2973,7 +2978,7 @@ BUILT_IN_FUNCTION(function_fix_width, word)
 	GET_DWORD_ARG(fillchar_str, word);
 	fillchar = next_code_point(CUC_PP &fillchar_str, 1);
 
-	retval = fix_string_width(word, justifynum, fillchar, width);
+	retval = fix_string_width(word, justifynum, fillchar, width, 1);
 	RETURN_MSTR(retval);
 }
 
@@ -5689,21 +5694,13 @@ BUILT_IN_FUNCTION(function_pad, input)
 
 	GET_INT_ARG(width, input);
 	GET_DWORD_ARG(pads, input);
-	len = quick_display_column_count(input);
 
 	if ((codepoint = next_code_point(CUC_PP &pads, 0)) == -1)
 		codepoint = ' ';	/* Sigh */
 
-	if ((awidth = labs(width)) < len)
-		RETURN_STR(input);
-
-	/* Don't allow this to be > 1MB to avoid malloc failure panic */
-	if (awidth > 1000000)
-		awidth = 1000000;
-
-	retvalsiz = awidth * 6 + 2;
-	retval = new_malloc(retvalsiz);
-	return strformat(retval, retvalsiz, input, width, codepoint);
+	/* -1 is left justify */
+	retval = fix_string_width(input, -1, codepoint, width, 0);
+	RETURN_MSTR(retval);
 }
 
 

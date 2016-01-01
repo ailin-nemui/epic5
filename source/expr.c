@@ -1872,6 +1872,9 @@ static	void	TruncateAndQuote (char **buff, const char *add, ssize_t length, cons
 {
 	size_t	real_size;
 	char *	buffer;
+	char *	free_me = NULL;
+	int	justify;
+	int	pad;
 
 	if (!add)
 		panic(1, "add is NULL");
@@ -1886,17 +1889,14 @@ static	void	TruncateAndQuote (char **buff, const char *add, ssize_t length, cons
 	 *	If quote_em is NULL, then the value of "add" is
 	 *	   appended to "buff"
 	 */
-
 	if (length)
 	{
-		/*
-		 * No, the "alloca" space doesnt go away until the end
-		 * of the function, so yes, we can reference "add" after
-		 * the end of this block.
-		 */
-		real_size = labs(length) * 6 + 1;
-		buffer = alloca(real_size);
-		add = strformat(buffer, real_size, add, length, get_int_var(PAD_CHAR_VAR));
+		/* -1 is left justify, 1 is right justify */
+		justify = (length > 0) ? -1 : 1;
+		if (length < 0)
+			length = -length;
+		pad = get_int_var(PAD_CHAR_VAR);
+		add = free_me = fix_string_width(add, justify, pad, length, 1);
 	}
 	if (quote_em && add)	/* add shouldnt ever be NULL, though! */
 	{
@@ -1907,7 +1907,8 @@ static	void	TruncateAndQuote (char **buff, const char *add, ssize_t length, cons
 
 	if (buff)
 		malloc_strcat(buff, add);
-
+	if (free_me)
+		new_free(&free_me);
 	return;
 }
 

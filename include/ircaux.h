@@ -107,7 +107,9 @@ char *	forcibly_remove_trailing_spaces (char *, size_t *);
 const char *	my_ltoa 		(long);
 const char *	intmaxtoa 		(intmax_t);
 const char *	ftoa			(double);
+#if 0
 char *	strformat 		(char *, size_t, const unsigned char *, ssize_t, int);
+#endif
 char *	chop_word 		(char *);
 char *	skip_spaces		(char *);
 int	split_args		(char *, char **to, size_t);
@@ -169,7 +171,7 @@ char *	endstr			(char *);
 ssize_t searchbuf		(const unsigned char *, size_t, size_t, int);
 int	remove_from_comma_list	(char *str, const char *what);
 char *	dequote_buffer		(char *str, size_t *len);
-char *	fix_string_width	(const char *, int, int, size_t);
+char *	fix_string_width	(const char *, int, int, size_t, int);
 int     check_xdigit 		(unsigned char digit);
 
 void	add_mode_to_str		(char *, size_t, int);

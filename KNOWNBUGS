@@ -733,3 +733,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix clueless function get_all_server_groups() (rb ce)
 * Proper signal numbers start with 0. (0 is permitted by some systems) (fj)
 * Fix preserve_serverinfo() when the hostname is an ipv6 paddr.
+* Deprecate the use of strformat() which can't count columns correctly
+* Add truncation to fix_width(), to allow the below...
+* Fix $[len]var to use fix_width(), for well-defined behavior (see UPDATES)
+* Fix $pad() to use fix_width(), for well-defined behavior (see UPDATES)
