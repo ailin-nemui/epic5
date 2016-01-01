@@ -91,17 +91,20 @@ void	set_ssl_root_certs_location (void *stuff)
 	VARIABLE *	v;
 	const char *	p;
 
-	yell("SSL >>> HERE WE GO -- SETTING SSL ROOT CERTS LOCATION");
+	if (x_debug & DEBUG_SSL)
+		yell("SSL >>> HERE WE GO -- SETTING SSL ROOT CERTS LOCATION");
 	/* 'p' will point to /SET SSL_ROOT_CERTS_LOCATION */
 	v = (VARIABLE *)stuff;
 	p = v->string;
 
-	yell("SSL >>> The new value is: %s", p ? p : "(unset)");
+	if (x_debug & DEBUG_SSL)
+		yell("SSL >>> The new value is: %s", p ? p : "(unset)");
 
 	/* If you /SET -SSL_ROOT_CERTS_LOCATION, it forces resets to default */
 	if (!p)
 	{
-		yell("SSL >>> Unsetting previous values for x509_default_cert_location_dir");
+		if (x_debug & DEBUG_SSL)
+			yell("SSL >>> Unsetting previous values for x509_default_cert_location_dir");
 		new_free(&x509_default_cert_location_dir);
 		new_free(&x509_default_cert_location_file);
 	}
@@ -115,17 +118,20 @@ void	set_ssl_root_certs_location (void *stuff)
 	{
 		if (S_ISDIR(st.st_mode))
 		{
-			yell("SSL >>> The new value of the /set is a directory, so setting the directory");
+			if (x_debug & DEBUG_SSL)
+				yell("SSL >>> The new value of the /set is a directory, so setting the directory");
 			malloc_strcpy(&x509_default_cert_location_dir, p);
 		}
 		else if (S_ISREG(st.st_mode))
 		{
-			yell("SSL >>> The new value of the /set is a file, so setting the file");
+			if (x_debug & DEBUG_SSL)
+				yell("SSL >>> The new value of the /set is a file, so setting the file");
 			malloc_strcpy(&x509_default_cert_location_file, p);
 		}
 		else
 		{
-			yell("SSL >>> The new value of the /set is neither file nor directory, so doing nothing.");
+			if (x_debug & DEBUG_SSL)
+				yell("SSL >>> The new value of the /set is neither file nor directory, so doing nothing.");
 		}
 	}
 
@@ -137,13 +143,15 @@ void	set_ssl_root_certs_location (void *stuff)
 	{
 		const char *	dir = NULL;
 
-		yell("SSL >>> There is no default location for the directory, looking for one.");
+		if (x_debug & DEBUG_SSL)
+			yell("SSL >>> There is no default location for the directory, looking for one.");
 
 		/* This is where OpenSSL says our cert chain should live */
 		if (!(dir = getenv(X509_get_default_cert_dir_env())))
 			dir = X509_get_default_cert_dir();
 
-		yell("SSL >>> OpenSSL suggests %s", dir);
+		if (x_debug & DEBUG_SSL)
+			yell("SSL >>> OpenSSL suggests %s", dir);
 
 		/* If that location is a directory, use it. */
 		if (dir)
@@ -152,34 +160,40 @@ void	set_ssl_root_certs_location (void *stuff)
 		    {
 			if (S_ISDIR(st.st_mode))
 			{
-				yell("SSL >>> We have a winner for the directory.");
+				if (x_debug & DEBUG_SSL)
+					yell("SSL >>> We have a winner for the directory.");
 				malloc_strcpy(&x509_default_cert_location_dir, dir);
 			}
 			else
-				yell("SSL >>> It wasn't a directory.");
-
+				if (x_debug & DEBUG_SSL)
+					yell("SSL >>> It wasn't a directory.");
 		    }
 		    else
-			yell("SSL >>> I couldn't stat that...");
+			if (x_debug & DEBUG_SSL)
+				yell("SSL >>> I couldn't stat that...");
 		}
 		else
-			yell("SSL >>> OpenSSL didn't suggest anything..");
+			if (x_debug & DEBUG_SSL)
+				yell("SSL >>> OpenSSL didn't suggest anything..");
 	}
 	else
-		yell("SSL >>> I already have a directory location: %s", x509_default_cert_location_dir);
+		if (x_debug & DEBUG_SSL)
+			yell("SSL >>> I already have a directory location: %s", x509_default_cert_location_dir);
 
 
 	if (!x509_default_cert_location_file)
 	{
 		const char *	file = NULL;
 
-		yell("SSL >>> There is no default location for the file, looking for one.");
+		if (x_debug & DEBUG_SSL)
+			yell("SSL >>> There is no default location for the file, looking for one.");
 
 		/* This is where OpenSSL says our cert chain should live */
 		if (!(file = getenv(X509_get_default_cert_file_env())))
 			file = X509_get_default_cert_file();
 
-		yell("SSL >> OpenSSL suggests %s", file);
+		if (x_debug & DEBUG_SSL)
+			yell("SSL >> OpenSSL suggests %s", file);
 
 		/* If that location is a file, use it. */
 		if (file)
@@ -188,20 +202,25 @@ void	set_ssl_root_certs_location (void *stuff)
 		    {
 			if (S_ISREG(st.st_mode))
 			{
-				yell("SSL >>> We have a winner for the file.");
+				if (x_debug & DEBUG_SSL)
+					yell("SSL >>> We have a winner for the file.");
 				malloc_strcpy(&x509_default_cert_location_file, file);
 			}
 			else
-				yell("SSL >>> It wasn't a file.");
+				if (x_debug & DEBUG_SSL)
+					yell("SSL >>> It wasn't a file.");
 		    }
 		    else
-			yell("SSL >>> I couldn't stat that.");
+			if (x_debug & DEBUG_SSL)
+				yell("SSL >>> I couldn't stat that.");
 		}
 		else
-			yell("SSL >>> OpenSSL didn't suggest anything..");
+			if (x_debug & DEBUG_SSL)
+				yell("SSL >>> OpenSSL didn't suggest anything..");
 	}
 	else
-		yell("SSL >>> I already have a file location: %s", x509_default_cert_location_file);
+		if (x_debug & DEBUG_SSL)
+			yell("SSL >>> I already have a file location: %s", x509_default_cert_location_file);
 }
 
 /*

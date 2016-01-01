@@ -10,11 +10,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * setting a server vhost appears to set the global vhost afterwards
   (stygian)
 * If you set a vhost, only the ipv4/v6 protos it renders to should be used
-* Make this go away -- ssl chatter http://pastebin.ca/3260484
 * For folks without sys_siglist, build one up at startup
 * /window maximize + new status expando when a zero-height window gets output
-* $pad(23 \" \" ^C16@^C13wcarson) does the wrong thing
-* $leftpc(23 ^C16@^C13wcarson) does too
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -737,3 +734,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add truncation to fix_width(), to allow the below...
 * Fix $[len]var to use fix_width(), for well-defined behavior (see UPDATES)
 * Fix $pad() to use fix_width(), for well-defined behavior (see UPDATES)
+* Hide all the SSL debugging chatter behind /xdebug SSL
