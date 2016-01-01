@@ -5,8 +5,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * You should be able to /window query %proc a proc that isn't started yet
 * You should be able to pass in arglists to /exec -line and /exec -end
 * You should be able to pass in extra args to /exec -line and /exec -end
-* Add /window mangle_logfiles -- to mangle window specific logfiles
-* Add /window log_rewrite -- to rewrite window-specific logfile
 * setting a server vhost appears to set the global vhost afterwards
   (stygian)
 * If you set a vhost, only the ipv4/v6 protos it renders to should be used
@@ -736,3 +734,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $pad() to use fix_width(), for well-defined behavior (see UPDATES)
 * Hide all the SSL debugging chatter behind /xdebug SSL
 * Add /window log_rewrite, to overrule /set log_rewrite on window logs
+* Add /window log_mangle, to overrule /set mangle_logfiles on window logs

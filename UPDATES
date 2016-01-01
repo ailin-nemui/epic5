@@ -1,5 +1,11 @@
 EPIC5-1.4
 
+*** News 01/01/2016 -- New /window operation, /window log_mangle
+	This allows you to overrule /SET MANGLE_LOGFILES for logs that
+	you create with /WINDOW LOG ON (only!)
+	Example:
+		window logfile "my.windowlog" mangle NORMALIZE,COLOR log on
+
 *** News 01/01/2016 -- New /window operation, /window log_rewrite
 	This allows you to overrule /SET LOG_REWRITE for logs that
 	you create with /WINDOW LOG ON (only!)

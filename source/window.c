@@ -4595,6 +4595,25 @@ static Window *window_log_rewrite (Window *window, char **args)
 	return window;
 }
 
+/*
+ * /WINDOW LOG_MANGLE <newval>
+ * If you have /window log on, you can set this to overrule the global
+ * /set mangle_logfiles value for just this window's log.
+ */
+static Window *window_log_mangle (Window *window, char **args)
+{
+	char *	arg;
+	int	mangle;
+	char *	nv;
+
+	arg = new_next_arg(*args, args);
+	window->log_mangle = parse_mangle(arg, window->log_mangle, &nv);
+	malloc_strcpy(&window->log_mangle_str, nv);
+	new_free(&nv);
+
+	return window;
+}
+
 
 /*
  * /WINDOW MERGE <newwin>
@@ -5849,6 +5868,7 @@ static const window_ops options [] = {
 	{ "LIST",		window_list 		},
 	{ "LOG",		window_log 		},
 	{ "LOGFILE",		window_logfile 		},
+	{ "LOG_MANGLE",		window_log_mangle	},
 	{ "LOG_REWRITE",	window_log_rewrite	},
 	{ "MERGE",		window_merge		},
 	{ "MOVE",		window_move 		},
@@ -7237,6 +7257,8 @@ char 	*windowctl 	(char *input)
 		RETURN_INT(w->log);
 	    } else if (!my_strnicmp(listc, "LOGFILE", len)) {
 		RETURN_STR(w->logfile);
+	    } else if (!my_strnicmp(listc, "LOG_MANGLE", len)) {
+		RETURN_STR(w->log_mangle_str);
 	    } else if (!my_strnicmp(listc, "LOG_REWRITE", len)) {
 		RETURN_STR(w->log_rewrite);
 	    } else if (!my_strnicmp(listc, "SWAPPABLE", len)) {
@@ -7408,6 +7430,19 @@ char 	*windowctl 	(char *input)
 		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "LOGFILE", len)) {
 		RETURN_EMPTY;
+	    } else if (!my_strnicmp(listc, "LOG_MANGLE", len)) {
+		if (empty(input))
+		{
+			new_free(&w->log_mangle_str);
+			w->log_mangle = 0;
+		}
+		else
+		{
+			char *nv = NULL;
+			w->log_mangle = parse_mangle(input, w->log_mangle, &nv);
+			malloc_strcpy(&w->log_mangle_str, nv);
+			new_free(&nv);
+		}
 	    } else if (!my_strnicmp(listc, "LOG_REWRITE", len)) {
 		if (empty(input))
 			new_free(&w->log_rewrite);
