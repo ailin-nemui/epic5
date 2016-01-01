@@ -5019,8 +5019,17 @@ Window *window_query (Window *window, char **args)
 	}
 	else if (*nick == '%')
 	{
+		/* 
+		 * You are allowed to query non-existant /exec's.
+		 * This allows you to capture all output from the
+		 * /exec by redirecting it to the window before it
+		 * is launched.  Be careful not to send a message
+		 * to a non-existing process!
+		 */
+#if 0
 		if (is_valid_process(nick) == -1)
 			nick = NULL;
+#endif
 	}
 
 	if (!nick)

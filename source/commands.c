@@ -3235,8 +3235,11 @@ struct target_type target[4] =
 
 	    if (*current_nick == '%')
 	    {
-		if ((i = get_process_index(&current_nick)) == -1)
-			say("Invalid process specification");
+		char *current_nick_copy;
+
+		current_nick_copy = LOCAL_COPY(current_nick);
+		if ((i = get_process_index(&current_nick_copy)) == -1)
+			say("Sending message to /EXEC %s failed because it doesn't exist.", current_nick);
 		else
 			text_to_process(i, recode_text, 1);
 	    }

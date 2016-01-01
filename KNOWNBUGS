@@ -2,7 +2,6 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* You should be able to /window query %proc a proc that isn't started yet
 * You should be able to pass in arglists to /exec -line and /exec -end
 * You should be able to pass in extra args to /exec -line and /exec -end
 * setting a server vhost appears to set the global vhost afterwards
@@ -735,3 +734,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Hide all the SSL debugging chatter behind /xdebug SSL
 * Add /window log_rewrite, to overrule /set log_rewrite on window logs
 * Add /window log_mangle, to overrule /set mangle_logfiles on window logs
+* Remove prohibition from /query'ing an exec process that doesn't exist

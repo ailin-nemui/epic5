@@ -1,5 +1,17 @@
 EPIC5-1.4
 
+*** News 01/01/2016 -- Can now /query an exec process that doesn't exist
+	Previously, you were forbidden from setting up a /query to an 
+	/EXEC process that didn't exist.  That set up a race condition
+	between running an /EXEC process and being able to corral its 
+	output into a window via the query.  
+
+	So now you can /query an exec process before you start it.  
+
+	If you try to send a message to it before you do fire it up, 
+	the user will see a diagnostic telling them that the message 
+	could not be sent to a non-existing exec process.
+
 *** News 01/01/2016 -- New /window operation, /window log_mangle
 	This allows you to overrule /SET MANGLE_LOGFILES for logs that
 	you create with /WINDOW LOG ON (only!)
