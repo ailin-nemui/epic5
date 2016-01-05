@@ -124,16 +124,6 @@ static	int	index_to_target 	(int, char *, size_t);
 static	void 	do_exec 		(int fd);
 
 /*
- * A nice array of the possible signals.  Used by the coredump trapping
- * routines and in the exec.c package 
- */
-#if 0
-#ifndef HAVE_SYS_SIGLIST
-#include "sig.inc"
-#endif
-#endif
-
-/*
  * exec: the /EXEC command.  Does the whole shebang for ircII sub procceses
  * I melded in about half a dozen external functions, since they were only
  * ever used here.  Perhaps at some point theyll be broken out again, but
@@ -400,21 +390,19 @@ BUILT_IN_COMMAND(execcmd)
 				return;
 			}
 
-#ifdef HAVE_SYS_SIGLIST
 			/*
 			 * Handle /exec -<SIGNAME> %<process>
 			 */
 			for (sig = 1; sig < NSIG; sig++)
 			{
-				if (!sys_siglist[sig])
+				if (!get_signal_name(sig))
 					continue;
-				if (!my_strnicmp(sys_siglist[sig], flag, len))
+				if (!my_strnicmp(get_signal_name(sig), flag, len))
 				{
 					kill_process(i, sig);
 					return;
 				}
 			}
-#endif
 
 			/*
 			 * Give up! =)
@@ -1174,18 +1162,11 @@ static void 	cleanup_dead_processes (void)
 		    {
 			if (deadproc->termsig > 0 && deadproc->termsig < NSIG)
 			{
-#ifdef HAVE_SYS_SIGLIST
 				say("Process %d (%s) terminated "
 					"with signal %s (%d)", 
 				   deadproc->index, deadproc->name, 
-				   sys_siglist[deadproc->termsig], 
+				   get_signal_name(deadproc->termsig),
 				   deadproc->termsig);
-#else
-				say("Process %d (%s) terminated "
-					"with signal (%d)", 
-				   deadproc->index, deadproc->name, 
-				   deadproc->termsig);
-#endif
 
 			}
 			else if (deadproc->disowned)
@@ -1313,15 +1294,9 @@ static void 	kill_process (int kill_index, int sig)
 	from_server = process_list[kill_index]->server;
 	l = message_from(NULL, LEVEL_OTHER);
 
-#ifdef HAVE_SYS_SIGLIST
 	say("Sending signal %s (%d) to process %d: %s", 
-		sys_siglist[sig], sig, kill_index, 
+		get_signal_name(sig), sig, kill_index, 
 		process_list[kill_index]->name);
-#else
-	say("Sending signal (%d) to process %d: %s", 
-		sig, kill_index, 
-		process_list[kill_index]->name);
-#endif
 
 	pop_message_from(l);
 	from_server = old_from_server;

@@ -204,7 +204,7 @@ clean:
 	$(RM) test.o my_test
 
 distclean cleandir realclean: clean
-	$(RM) Makefile source/Makefile source/sig.inc config.status config.cache config.log include/defs.h source/info.c.sh
+	$(RM) Makefile source/Makefile config.status config.cache config.log include/defs.h source/info.c.sh
 
 depend:
 	(cd source;make depend)

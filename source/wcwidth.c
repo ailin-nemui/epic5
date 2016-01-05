@@ -462,6 +462,7 @@ int	grab_codepoint (const unsigned char *x)
  *	ircaux.c:fix_string_width(), which involves using 
  *	new_normalize_string() and output_with_count().
  */
+/* XXX DO NOT USE THIS FUNCTION IF 'str' MIGHT CONTAIN HIGHLIGHT CHARS! XXX */
 int	quick_display_column_count (const unsigned char *str)
 {
 	const unsigned char *s;

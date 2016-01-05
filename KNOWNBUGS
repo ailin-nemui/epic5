@@ -7,7 +7,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * setting a server vhost appears to set the global vhost afterwards
   (stygian)
 * If you set a vhost, only the ipv4/v6 protos it renders to should be used
-* For folks without sys_siglist, build one up at startup
 * /window maximize + new status expando when a zero-height window gets output
 
 MEDIUM-TERM PROJECTS
@@ -735,3 +734,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /window log_rewrite, to overrule /set log_rewrite on window logs
 * Add /window log_mangle, to overrule /set mangle_logfiles on window logs
 * Remove prohibition from /query'ing an exec process that doesn't exist
+* For musl libc (linux), eliminate use of sys_siglist and sig.inc.
+* Roll our own signal names at runtime (ie, SIGHUP -> "HUP")
+* This fixes /exec -SIGNAL %process.

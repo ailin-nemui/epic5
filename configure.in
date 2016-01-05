@@ -613,55 +613,6 @@ main()
   AC_DEFINE(HAVE_SYS_SIGLIST),
   AC_MSG_RESULT(no), :)
 
-dnl dnl ----------------------------------------------------------
-dnl dnl
-dnl dnl Generate signal list, from perl4
-dnl dnl
-dnl if test x$sys_siglist != x1
-dnl then
-dnl echo "generating a list of signal names..."
-dnl set X `cat /usr/include/signal.h /usr/include/sys/signal.h /usr/include/linux/signal.h 2>&1 | sed 's/^#[	]*/#/' | awk '
-dnl $1 ~ /^#define$/ && $2 ~ /^SIG[A-Z0-9]*$/ && $3 ~ /^[1-9][0-9]*$/ {
-dnl   [sig[$3] = substr($2,4,20)]
-dnl   if (max < $3 && $3 < 60) {
-dnl 	max = $3
-dnl   }
-dnl }
-dnl 
-dnl END {
-dnl   for (i=1; i<=max; i++) {
-dnl     [if (sig[i] == "")]
-dnl       printf "%d", i
-dnl     else
-dnl       [printf "%s", sig[i]]
-dnl     if (i < max)
-dnl       printf " "
-dnl   }
-dnl   printf "\n"
-dnl }
-dnl '`
-dnl shift
-dnl case $# in
-dnl 0)
-dnl   if test -f /bin/csh; then
-dnl      set X `/bin/csh -cf 'kill -l'`
-dnl      shift
-dnl      case $* in
-dnl      0) 
-dnl        set HUP INT QUIT ILL TRAP ABRT EMT FPE KILL BUS SEGV SYS PIPE ALRM TERM
-dnl        ;;
-dnl     esac
-dnl   fi
-dnl   ;;
-dnl esac
-dnl 
-dnl sig_name="ZERO $*"
-dnl if test -f sig.inc; then
-dnl   /bin/rm -f sig.inc
-dnl fi
-dnl [echo $sig_name | sed -e 's/$/"};/' -e 's/ /", "/g' -e 's/^/static char *sys_siglist[] = { "/' >> sig.inc]
-dnl fi
-
 dnl ---------------------------------------------------------
 dnl Check for NSIG vs sys_nsig vs __sys_nsig
 dnl
@@ -1434,12 +1385,6 @@ AC_SUBST(program_prefix)
 AC_SUBST(mandir)
 
 AC_OUTPUT(Makefile source/Makefile source/info.c.sh)
-
-dnl dnl ---- BLAH BLAH BLAH ---
-dnl if test -f sig.inc ; then
-dnl     mv sig.inc include/
-dnl fi
-
 
 dnl ----------------------------------------------------------
 dnl

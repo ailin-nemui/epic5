@@ -6834,12 +6834,6 @@ BUILT_IN_FUNCTION(function_killpid, input)
 {
 	RETURN_EMPTY;
 }
-#else
-#if 0
-/* Must include this if we use sys_siglist. */
-#ifndef HAVE_SYS_SIGLIST
-#include "sig.inc"
-#endif
 #endif
 
 BUILT_IN_FUNCTION(function_killpid, input)
@@ -6857,20 +6851,18 @@ BUILT_IN_FUNCTION(function_killpid, input)
 		if ((sig < 1) || (sig >= NSIG))
 			RETURN_EMPTY;
 	}
-#ifdef HAVE_SYS_SIGLIST
 	else
 	{
 		for (sig = 1; sig < NSIG; sig++)
 		{
-			if (!sys_siglist[sig])
+			if (!get_signal_name(sig))
 				continue;
-			if (!my_stricmp(sys_siglist[sig], sig_str))
+			if (!my_stricmp(get_signal_name(sig), sig_str))
 				goto do_kill;	/* Oh, bite me. */
 		}
 
 		RETURN_EMPTY;
 	}
-#endif
 
 do_kill:
 	while ((pid_str = next_func_arg(input, &input)))
@@ -6882,7 +6874,6 @@ do_kill:
 
 	RETURN_INT(retval);
 }
-#endif
 
 BUILT_IN_FUNCTION(function_bindctl, input)
 {

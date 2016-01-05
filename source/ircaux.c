@@ -7215,3 +7215,130 @@ double	time_since_startup (Timeval t)
 	return time_diff(start_time, t);
 }
 
+static  char *          signal_name[NSIG + 1];
+
+/*
+ * This is required because musl linux does not implement sys_siglist[],
+ * and stock ircII does not require it, so we should not either.
+ */
+void	init_signal_names (void)
+{
+	int	i;
+
+	for (i = 1; i < NSIG; i++)
+	{
+		signal_name[i] = NULL;
+
+#define SIGH(x) if (i == x) malloc_strcpy(&signal_name[i], #x + 3);
+
+#ifdef SIGABRT
+		SIGH(SIGABRT)
+#endif
+#ifdef SIGALRM
+		else SIGH(SIGALRM)
+#endif
+#ifdef SIGABRT
+		else SIGH(SIGABRT)
+#endif
+#ifdef SIGBUS
+		else SIGH(SIGBUS)
+#endif
+#ifdef SIGCHLD
+		else SIGH(SIGCHLD)
+#endif
+#ifdef SIGCONT
+		else SIGH(SIGCONT)
+#endif
+#ifdef SIGFPE
+		else SIGH(SIGFPE)
+#endif
+#ifdef SIGHUP
+		else SIGH(SIGHUP)
+#endif
+#ifdef SIGINFO
+		else SIGH(SIGINFO)
+#endif
+#ifdef SIGILL
+		else SIGH(SIGILL)
+#endif
+#ifdef SIGINT
+		else SIGH(SIGINT)
+#endif
+#ifdef SIGKILL
+		else SIGH(SIGKILL)
+#endif
+#ifdef SIGPIPE
+		else SIGH(SIGPIPE)
+#endif
+#ifdef SIGPOLL
+		else SIGH(SIGPOLL)
+#endif
+#ifdef SIGRTMIN
+		else SIGH(SIGRTMIN)
+#endif 
+#ifdef SIGRTMAX
+		else SIGH(SIGRTMAX)
+#endif
+#ifdef SIGQUIT
+		else SIGH(SIGQUIT)
+#endif
+#ifdef SIGSEGV
+		else SIGH(SIGSEGV)
+#endif
+#ifdef SIGSTOP
+		else SIGH(SIGSTOP)
+#endif
+#ifdef SIGSYS
+		else SIGH(SIGSYS)
+#endif
+#ifdef SIGTERM
+		else SIGH(SIGTERM)
+#endif
+#ifdef SIGTSTP
+		else SIGH(SIGTSTP)
+#endif
+#ifdef SIGTTIN
+		else SIGH(SIGTTIN)
+#endif
+#ifdef SIGTTOU
+		else SIGH(SIGTTOU)
+#endif
+#ifdef SIGTRAP
+		else SIGH(SIGTRAP)
+#endif
+#ifdef SIGURG
+		else SIGH(SIGURG)
+#endif
+#ifdef SIGUSR1
+		else SIGH(SIGUSR1)
+#endif
+#ifdef SIGUSR2
+		else SIGH(SIGUSR2)
+#endif
+#ifdef SIGXCPU
+		else SIGH(SIGXCPU)
+#endif
+#ifdef SIGXFSZ
+		else SIGH(SIGXFSZ)
+#endif
+#ifdef SIGWINCH
+		else SIGH(SIGWINCH)
+#endif
+		else
+			malloc_sprintf(&signal_name[i], "SIG%d", i);
+	}
+}
+
+const char *	get_signal_name (int signo)
+{
+	static	char	static_signal_name[128];
+
+	if (signo <= 0 || signo > NSIG || signal_name[signo] == NULL)
+	{
+		snprintf(static_signal_name, 127, "SIG%d", signo);
+		return static_signal_name;
+	}
+	else
+		return signal_name[signo];
+}
+
