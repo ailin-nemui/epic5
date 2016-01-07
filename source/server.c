@@ -1970,10 +1970,24 @@ static int	connect_next_server_address (int server)
 	    if ((err = inet_vhostsockaddr(ai->ai_family, -1, s->info->vhost,
 						&localaddr, &locallen)) < 0)
 	    {
-		syserr(server, "connect_next_server_address: Can't use address [%d] "
+		/* 
+		 * If using the server-specific vhost failed (possibly because 
+		 * it does not resolve in the ai_family you're trying to 
+		 * connect to), we will stake another stab without a vhost.
+		 * This would fall back to your /hostname, if you have one.
+		 */
+		syserr(server, "connect_next_server_address: Your vhost for "
+				"[%d] (%s) did not resolve - using your normal "
+				"vhost (if you have one)", 
+					server, s->info->vhost);
+	        if ((err = inet_vhostsockaddr(ai->ai_family, -1, NULL,
+						&localaddr, &locallen)) < 0)
+		{
+		    syserr(server, "connect_next_server_address: Can't use address [%d] "
 				" because I can't get vhost for protocol [%d]",
 					 s->addr_counter, ai->ai_family);
-		continue;
+		    continue;
+		}
 	    }
 
 	    if ((fd = client_connect((SA *)&localaddr, locallen, 
@@ -2418,6 +2432,7 @@ void	register_server (int refnum, const char *nick)
 {
 	Server *	s;
 	int		ofs = from_server;
+	const char *	usehost;
 
 	if (!(s = get_server(refnum)))
 		return;
@@ -2461,10 +2476,24 @@ void	register_server (int refnum, const char *nick)
 				space) :
 		s->default_realname);
 
+	/* 
+	 * Use the correct vhost for the socket type
+	 * (ie, if we connected via ipv6, use the ipv6 vhost)
+	 * If we're not using a vhost, then just fallback to hostname.
+	 */
+	if (((SA *)&s->remote_sockname)->sa_family == AF_INET)
+		usehost = LocalIPv4HostName;
+	else if (((SA *)&s->remote_sockname)->sa_family == AF_INET6)
+		usehost = LocalIPv6HostName;
+	else
+		usehost = hostname;
+	if (usehost == NULL)
+		usehost = hostname;
+
 	send_to_aserver(refnum, "USER %s %s %s :%s", 
 			get_string_var(DEFAULT_USERNAME_VAR),
 			(send_umode && *send_umode) ? send_umode : 
-			     (LocalHostName ? LocalHostName : hostname), 
+			usehost,
 			get_string_var(DEFAULT_USERNAME_VAR),
 			s->realname);
 	change_server_nickname(refnum, nick);

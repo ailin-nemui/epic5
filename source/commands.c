@@ -1406,8 +1406,9 @@ BUILT_IN_COMMAND(e_hostname)
 		new_free(&s);
 	}
 	else
-		say("Local Host name is %s",
-			LocalHostName ? LocalHostName : hostname);
+		say("Local Host name is (IPv4: %s, IPv6: %s)",
+			LocalIPv4HostName ? LocalIPv4HostName : "<default>",
+			LocalIPv6HostName ? LocalIPv6HostName : "<default>");
 }
 
 

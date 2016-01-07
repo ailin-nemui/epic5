@@ -303,7 +303,7 @@ int	inet_vhostsockaddr (int family, int port, const char *wanthost, SS *storage,
 	 * If port == -1, AND "wanthost" is NULL, then this is a client connection, 
 	 * so we punt if there is no virtual host name.  But if port is NOT zero, 
 	 * then the caller expects us to return a sockaddr they can bind() to, 
-	 * so we need to use LocalHostName, even if it's NULL.  If you 
+	 * so we need to use LocalIPv(4|6)HostName, even if it's NULL.  If you 
 	 * return *len == 0 for port != -1, then /dcc breaks.
 	 */
 	if ((family == AF_UNIX) || 

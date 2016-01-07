@@ -740,3 +740,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This fixes /exec -SIGNAL %process.
 * Support iconv()s that don't support //TRANSLIT (Felix Janda)
 * Fix /load guh, it had an old-style C comment
+* Eliminate LocalHostName in favor of LocalIPv(4|6)HostName
+* If your Vhost does not resolve in the family you're using, use fallback
+* Use the protocol-specific vhost when registering with the server

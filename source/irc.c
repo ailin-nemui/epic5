@@ -52,7 +52,7 @@ const char internal_version[] = "20150829";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1850;
+const unsigned long	commit_id = 1851;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -164,7 +164,7 @@ int		do_window_notifies = 1;
 /*
  * If set, outbound connections will be bind()ed to the address
  * specified.  if unset, the default address for your host will
- * be used.  LocalHostName can be set by the /HOSTNAME command 
+ * be used.  VHosts can be set by the /HOSTNAME command 
  * or via the IRCHOST environment variable.  These variables should
  * be considered read-only.  Dont ever change them.
  *
@@ -174,7 +174,6 @@ int		do_window_notifies = 1;
  */
 char *		LocalIPv4HostName = NULL;
 char *		LocalIPv6HostName = NULL;
-char *		LocalHostName = NULL;
 
 int		inbound_line_mangler = 0,
 		outbound_line_mangler = 0;
@@ -801,7 +800,6 @@ static	void	parse_args (int argc, char **argv)
 	/*
 	 * Figure out our virtual hostname, if any.
 	 */
-	LocalHostName = NULL;
 	if (tmp_hostname)
 	{
 		char *s = switch_hostname(tmp_hostname);
@@ -812,7 +810,7 @@ static	void	parse_args (int argc, char **argv)
 	/*
 	 * Make sure we have a hostname.
 	 */
-	if (!LocalHostName)
+	if (!LocalIPv4HostName && !LocalIPv6HostName)
 	{
 		if (gethostname(hostname, NAME_LEN) || strlen(hostname) == 0)
 		{
