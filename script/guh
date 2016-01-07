@@ -1,4 +1,5 @@
 if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+:{ 
 /*
  * guh Copyright 1993 - Dont ask me why i called it that.  I just did.
  *
@@ -12,6 +13,7 @@ if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
  *         corresponding to those nicks
  *  "inc" - more for antiquity's sake, proves a point
  */
+}
 
 alias whatchan 
 {

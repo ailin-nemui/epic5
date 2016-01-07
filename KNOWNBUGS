@@ -2,12 +2,9 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* You should be able to pass in arglists to /exec -line and /exec -end
-* You should be able to pass in extra args to /exec -line and /exec -end
 * setting a server vhost appears to set the global vhost afterwards
   (stygian)
 * If you set a vhost, only the ipv4/v6 protos it renders to should be used
-* /window maximize + new status expando when a zero-height window gets output
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -32,6 +29,10 @@ MEDIUM-TERM PROJECTS
   of the challenge of indicating which elements are from local variables.
 * Harz would like a way to do /bind -default for just a single binding.
 * /PAUSE does not save/restore context, and it should.
+* You should be able to pass in arglists to /exec -line and /exec -end
+* You should be able to pass in extra args to /exec -line and /exec -end
+* The "anonymous function" statement -- (arglist) {block}
+* /window maximize + new status expando when a zero-height window gets output
 
 [I moved the old list to the file "WISHLIST" to keep this file short]
 
@@ -737,3 +738,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * For musl libc (linux), eliminate use of sys_siglist and sig.inc.
 * Roll our own signal names at runtime (ie, SIGHUP -> "HUP")
 * This fixes /exec -SIGNAL %process.
+* Support iconv()s that don't support //TRANSLIT (Felix Janda)
+* Fix /load guh, it had an old-style C comment

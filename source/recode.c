@@ -421,24 +421,25 @@ static const char *	check_recoding_iconv (RecodeRule *r, iconv_t *inbound, iconv
 	/* If requested, provide an (iconv_t) used for messages TO person */
 	if (outbound)
 	{
-		if (r->outbound_handle == 0)
-		{
-			char *str;
-			str = malloc_strdup2(r->encoding, "//TRANSLIT");
-			r->outbound_handle = iconv_open(str, "UTF-8");
+	    if (r->outbound_handle == 0)
+	    {
+		char *str;
 
-			if (r->outbound_handle == (iconv_t)-1)
-				say("The outbound encoding %s is not valid", str);
-			else
-				*outbound = r->outbound_handle;
-			new_free(&str);
-		}
-		*outbound = r->outbound_handle;
+		str = malloc_strdup2(r->encoding, "//TRANSLIT");
+		if ((r->outbound_handle = iconv_open(str, "UTF-8")) == (iconv_t)-1)
+		    r->outbound_handle = iconv_open(r->encoding, "UTF-8");
+
+		if (r->outbound_handle == (iconv_t)-1)
+			say("The outbound encoding %s is not valid", str);
+		else
+			*outbound = r->outbound_handle;
+		new_free(&str);
+	    }
+	    *outbound = r->outbound_handle;
 	}
 
 	return r->encoding;
 }
-
 
 /*
  * init_recodings - Set up the three "magic" /RECODE rules at start-up
