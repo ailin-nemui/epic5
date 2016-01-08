@@ -1,5 +1,30 @@
 EPIC5-1.4
 
+*** News 01/08/2016 -- Per-server vhosts now restrict protocol (ipv4/ipv6)
+	Historically, the client tries to connect to the server using the
+	addresses as they are returned in order.  (This is a great thing 
+	for round-robin or geographic-aware dns resolvers.)
+
+	However, if you have a per-server vhost, you probably intend that
+	epic use that vhost to connect to the server.  But what happens if
+	your vhost is ipv4 only or ipv6 only, and the first address to the
+	server is to the other protocol?  Historically, epic will just go 
+	ahead and connect without your vhost.
+
+	You've been able to correct this behavior by specifying explicitly
+	the protocol family:
+		/server irc.foo.com:proto=v6:vhost=irc.leet6.com
+	Some folks said it violated POLA, so here's a new rule:
+
+	"If you set a per-server vhost, then that server can only be 
+	 connected to if the vhost can be used.  If ths means that no
+	 addresses can be used, then you will not be able to connect 
+	 to the server until you clear the vhost."
+
+	This rule does not apply to you if you're using /HOSTNAME but
+	only if you are doing something like 
+		/server irc.foo.com:vhost=irc.leet6.com
+
 *** News 01/01/2016 -- Can now /query an exec process that doesn't exist
 	Previously, you were forbidden from setting up a /query to an 
 	/EXEC process that didn't exist.  That set up a race condition

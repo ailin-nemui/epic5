@@ -790,22 +790,22 @@ fe (function fnexist command cexist set) label exist {
 }
 
 # Check whether documentation exists.
-echo
-if (fexist($getset(help_path))) {
-	fe (function 6* command [1-5]* set 4*/set*) type section {
-		@ :list = [get${type}s]()
-		@ :list = tolower($list)
-		@ :section = [$getset(help_path)/$section]
-		fe list item {
-			@ item = 0 < fsize($globi($section/$item)) ? [] : item
-		}
-		if (#list) {
-			echo Undocumented ${type}s: $list
-		}
-	}
-} else {
-	echo Skipping documentation test since no documentation was found.
-}
+#echo
+#if (fexist($getset(help_path))) {
+#	fe (function 6* command [1-5]* set 4*/set*) type section {
+#		@ :list = [get${type}s]()
+#		@ :list = tolower($list)
+#		@ :section = [$getset(help_path)/$section]
+#		fe list item {
+#			@ item = 0 < fsize($globi($section/$item)) ? [] : item
+#		}
+#		if (#list) {
+#			echo Undocumented ${type}s: $list
+#		}
+#	}
+#} else {
+#	echo Skipping documentation test since no documentation was found.
+#}
 
 echo
 echo

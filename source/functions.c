@@ -1810,7 +1810,9 @@ BUILT_IN_FUNCTION(function_after, word)
 	numint = my_atol(tmp);
 
 	if (numint)
-		chars = new_next_arg(word, &word);
+	{
+		GET_DWORD_ARG(chars, word)
+	}
 	else
 	{
 		numint = 1;
@@ -3002,7 +3004,7 @@ const	unsigned char	*p, *s;
 	 * What chars does the user want converted to space? 
 	 * This has "sindex" semantics -- so a leading ^ inverts the set 
 	 */
-	search = next_arg(word, &word);
+	GET_DWORD_ARG(search, word)
 	if (*search == '^')
 	{
 		inverted = 1;

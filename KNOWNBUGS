@@ -2,9 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* setting a server vhost appears to set the global vhost afterwards
-  (stygian)
-* If you set a vhost, only the ipv4/v6 protos it renders to should be used
+* /load ../regress/funcs has failures.  Fix them.
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -743,3 +741,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Eliminate LocalHostName in favor of LocalIPv(4|6)HostName
 * If your Vhost does not resolve in the family you're using, use fallback
 * Use the protocol-specific vhost when registering with the server
+* Fix a crash with $after(1).  There are more bogons downwind here.

@@ -1970,6 +1970,7 @@ static int	connect_next_server_address (int server)
 	    if ((err = inet_vhostsockaddr(ai->ai_family, -1, s->info->vhost,
 						&localaddr, &locallen)) < 0)
 	    {
+#if 0
 		/* 
 		 * If using the server-specific vhost failed (possibly because 
 		 * it does not resolve in the ai_family you're trying to 
@@ -1982,6 +1983,7 @@ static int	connect_next_server_address (int server)
 					server, s->info->vhost);
 	        if ((err = inet_vhostsockaddr(ai->ai_family, -1, NULL,
 						&localaddr, &locallen)) < 0)
+#endif
 		{
 		    syserr(server, "connect_next_server_address: Can't use address [%d] "
 				" because I can't get vhost for protocol [%d]",
