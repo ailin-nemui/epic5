@@ -1,4 +1,4 @@
-EPIC5-1.4
+EPIC5-1.6
 
 *** News 01/08/2016 -- Per-server vhosts now restrict protocol (ipv4/ipv6)
 	Historically, the client tries to connect to the server using the
@@ -49,7 +49,6 @@ EPIC5-1.4
 	Example:
 		window logfile "my.windowlog" rewrite "HOOBOO $1-" log on
 
-	
 *** News 01/01/2016 -- Refinement to $pad(), $[len]var, and $leftpc()
 	These functions do not behave graciously since our conversion
 	to UTF-8, since they count code points rather than columns.
@@ -109,6 +108,8 @@ EPIC5-1.4
 	Just like /on raw_irc, if you catch this hook, you will 
 	suppress normal handling of the event:
 		/on ^raw_irc_bytes * {echo nothing further happens}
+
+EPIC5-1.4
 
 *** News 08/25/2015 -- Improved automargin support 
 	You can now use automargins to get better wrapping of long urls.

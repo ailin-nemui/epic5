@@ -747,3 +747,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $tr() to behave the way it is documented
 * Change transform_string_dyn() to return the bytes in retval, not it's size
 * -- I hope this doesn't break anything else!
+* EPIC5-1.6 released here (Usufruct) (Commit: 1854)
