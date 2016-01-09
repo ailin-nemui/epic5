@@ -1317,20 +1317,49 @@ const unsigned char *	cpindex (const unsigned char *string, const unsigned char 
 	p = string;
 	while ((c = next_code_point(&p, 1)))
 	{
-		s = search;
-		while ((d = next_code_point(&s, 1)))
+		/* 
+		 * This code point 'c' is "found" IF AND ONLY IF:
+		 *	inverted == 1:	for every d in search, x != c
+		 *	inverted == 0:	for any d in search, x = c
+		 */
+		if (inverted)
 		{
-			if ((c == d) + inverted == 1)
+			s = search;
+			while ((d = next_code_point(&s, 1)))
 			{
-				if (++found >= howmany)
-				{
-					previous_code_point(string, &p);
-					*cpoffset = quick_code_point_index(string, p);
-					return p;
-				}
-				break;
+				/* If any d == c, this 'c' is NOT FOUND */
+				if (c == d)
+					goto cpindex_not_found;
 			}
+			/* If we reach this point, 'c' was FOUND -- FALLTHROUGH */
+			goto cpindex_found;
 		}
+		else
+		{
+			s = search;
+			while ((d = next_code_point(&s, 1)))
+			{
+				/* If any d == c, this 'c' is FOUND */
+				if (c == d)
+					goto cpindex_found;
+			}
+			/* If we reach this point, 'c' was NOT FOUND */
+			continue;
+		}
+
+cpindex_found:
+		/* If we reach this point, 'c' was FOUND */
+		if (++found >= howmany)
+		{
+			previous_code_point(string, &p);
+			*cpoffset = quick_code_point_index(string, p);
+			return p;
+		}
+		else
+			continue;
+
+cpindex_not_found:
+		/* If we reach this point 'c' was NOT FOUND */;
 	}
 
 	return NULL;
@@ -1352,21 +1381,48 @@ const unsigned char *	rcpindex (const unsigned char *where, const unsigned char 
 	p = where;
 	while ((c = previous_code_point(string, &p)))
 	{
-		s = search;
-		while ((d = next_code_point(&s, 1)))
+		/* 
+		 * This code point 'c' is "found" IF AND ONLY IF:
+		 *	inverted == 1:	for every d in search, x != c
+		 *	inverted == 0:	for any d in search, x = c
+		 */
+		if (inverted)
 		{
-			if ((c == d) + inverted == 1)
+			s = search;
+			while ((d = next_code_point(&s, 1)))
 			{
-				if (++found >= howmany)
-				{
-					*cpoffset = quick_code_point_index(string, p);
-					return p;
-				}
-				break;
+				/* If any d == c, this 'c' is NOT FOUND */
+				if (c == d)
+					goto rcpindex_not_found;
 			}
+			/* If we reach this point, 'c' was FOUND -- FALLTHROUGH */
+			goto rcpindex_found;
 		}
-		if (p == string)
-			break;
+		else
+		{
+			s = search;
+			while ((d = next_code_point(&s, 1)))
+			{
+				/* If any d == c, this 'c' is FOUND */
+				if (c == d)
+					goto rcpindex_found;
+			}
+			/* If we reach this point, 'c' was NOT FOUND */
+			continue;
+		}
+
+rcpindex_found:
+		/* If we reach this point, 'c' was FOUND */
+		if (++found >= howmany)
+		{
+			*cpoffset = quick_code_point_index(string, p);
+			return p;
+		}
+		else
+			continue;
+
+rcpindex_not_found:
+		/* If we reach this point 'c' was NOT FOUND */;
 	}
 
 	return NULL;
@@ -6514,7 +6570,9 @@ size_t	transform_string (int type, int encodingx, const char *meta, const char *
  *  'orig_str'	   - The string you want to transform
  *  'orig_str_len' - The number of bytes of 'orig_str' to transform
  *		     If this value is 0, then will do a strlen(orig_str)
- *  'dest_str_len' - If non-NULL, the size of the return value.
+ *  'dest_str_len' - If non-NULL, the number of bytes written to return value.
+ *			THIS IS NOT THE SAME AS THE MALLOC() SIZE!
+ *			We don't return that.  We could, though...
  *
  * Return value:
  *  Returns the transformed buffer.  
@@ -6580,7 +6638,8 @@ char *	transform_string_dyn (const char *type, const char *orig_str, size_t orig
 	}
 
 	if (my_dest_str_len)
-		*my_dest_str_len = dest_str_len;
+		*my_dest_str_len = retval;
+		/* *my_dest_str_len = dest_str_len; */	/* This was the old value */
 	return dest_str;
 }
 

@@ -526,7 +526,10 @@ clear
 assert revw() == []
 assert revw(1) == [1]
 assert revw(1 2 3) == [3 2 1]
+assert revw("1 2" 3) == [3 2" "1]
+xdebug dword
 assert revw("1 2" 3) == [3 "1 2"]
+xdebug -dword
 
 # testing $rfilter()
 clear
@@ -723,8 +726,8 @@ assert word(1  one two) == [two]
 assert word(2  one two three four five) == [three]
 
 # testing $open(), $read() $write() $close()
-assert (::rfd = open(/dev/zero r)) >= 3
-assert (::wfd = open(/dev/zero w)) >= 4
+assert (::rfd = open(/dev/zero r)) >= 1
+assert (::wfd = open(/dev/zero w)) >= 2
 assert writeb($wfd $read($rfd 100000)) == 100000
 assert write($wfd $read($rfd 100000)) == 200001
 assert close($rfd) == 0

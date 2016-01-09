@@ -3507,7 +3507,7 @@ BUILT_IN_FUNCTION(function_translate, input)
 	unsigned char 	*s, *p;
 	unsigned char	*chars_in, *chars_out, *text;
 	char		*retval, *r;
-	int		char_out, char_in;
+	int		char_out, char_in, final_char_in;
 	unsigned char 	utf8str[16];
 
 	RETURN_IF_EMPTY(input);
@@ -3615,10 +3615,28 @@ BUILT_IN_FUNCTION(function_translate, input)
 		 */
 		s = chars_out;
 		p = chars_in;
+		final_char_in = 0;
 		for (;;)
 		{
 			char_out = next_code_point(CUC_PP &s, 1);
 			char_in = next_code_point(CUC_PP &p, 1);
+
+			/*
+			 * The historical (and defined) behavior is that
+			 * every character in 'char_out' maps to a character
+			 * in 'char_in' and whenever 'char_in' is shorter
+			 * than 'char_out', it shall be extended with its 
+			 * final character.
+			 *
+			 * For example:
+			 *	$tr(/abcde/xyz/tasty cakes/)
+			 * behaves as though it were:
+			 *	$tr(/abcde/xyzzz/tasty cakes/)
+			 */
+			if (char_in == 0)
+				char_in = final_char_in;
+			else
+				final_char_in = char_in;
 
 			/* 
 			 * This CP was not in 'char_out' -- copy it.

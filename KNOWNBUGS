@@ -3,6 +3,8 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * /load ../regress/funcs has failures.  Fix them.
+* transform_string_dyn() returns the size of the return buffer,
+  but not the number of bytes in there (size is usually >>= bytes)
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -741,4 +743,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Eliminate LocalHostName in favor of LocalIPv(4|6)HostName
 * If your Vhost does not resolve in the family you're using, use fallback
 * Use the protocol-specific vhost when registering with the server
+* The following fixes make /load ../regress/func work again
 * Fix a crash with $after(1).  There are more bogons downwind here.
+* Fix cpindex() and rcpindex() which fixes $index() and $rindex().
+* Fix $tr() to behave the way it is documented
+* Change transform_string_dyn() to return the bytes in retval, not it's size
+* -- I hope this doesn't break anything else!
