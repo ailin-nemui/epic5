@@ -2,9 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* /load ../regress/funcs has failures.  Fix them.
-* transform_string_dyn() returns the size of the return buffer,
-  but not the number of bytes in there (size is usually >>= bytes)
+<none>
 
 MEDIUM-TERM PROJECTS
 --------------------
