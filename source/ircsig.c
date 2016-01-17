@@ -1,4 +1,3 @@
-/* $EPIC: ircsig.c,v 1.10 2014/04/01 18:11:14 jnelson Exp $ */
 /*
  * ircsig.c: has a `my_signal()' that uses sigaction().
  *

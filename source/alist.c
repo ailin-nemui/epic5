@@ -1,8 +1,7 @@
-/* $EPIC: alist.c,v 1.15 2015/07/25 17:24:13 jnelson Exp $ */
 /*
  * alist.c -- resizeable arrays.
  *
- * Copyright © 1997, 1998 EPIC Software Labs
+ * Copyright 1997, 2015 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

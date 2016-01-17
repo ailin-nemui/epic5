@@ -1,4 +1,3 @@
-/* $EPIC: recode.c,v 1.28 2015/05/16 22:36:47 jnelson Exp $ */
 /*
  * recode.c - Transcoding between string encodings
  * 

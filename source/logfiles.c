@@ -1,8 +1,7 @@
-/* $EPIC: logfiles.c,v 1.41 2014/07/25 04:54:07 jnelson Exp $ */
 /*
  * logfiles.c - General purpose log files
  *
- * Copyright © 2002 EPIC Software Labs
+ * Copyright 2002, 2012 EPIC Software Labs
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without

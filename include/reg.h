@@ -2,7 +2,7 @@
 /*
  * reg.h: pattern matching and other assorted things
  *
- * Copyright © 2000 EPIC Software Labs.
+ * Copyright 2000 EPIC Software Labs.
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without

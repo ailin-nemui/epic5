@@ -1,5 +1,5 @@
 /*
- * Copyright © 2003, 2005 Jeremy Nelson
+ * Copyright 2003, 2005 Jeremy Nelson
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without

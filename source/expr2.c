@@ -1,4 +1,3 @@
-/* $EPIC: expr2.c,v 1.41 2013/10/30 02:56:52 jnelson Exp $ */
 /*
  * Zsh: math.c,v 3.1.2.1 1997/06/01 06:13:15 hzoli Exp 
  * math.c - mathematical expression evaluation

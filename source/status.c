@@ -1,12 +1,11 @@
-/* $EPIC: status.c,v 1.87 2015/04/11 04:16:35 jnelson Exp $ */
 /*
  * status.c: handles the status line updating, etc for IRCII 
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1994 Jake Khuon.
- * Copyright © 1995, 2003 EPIC Software Labs.
+ * Copyright 1994 Jake Khuon.
+ * Copyright 1995, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

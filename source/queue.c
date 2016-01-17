@@ -1,4 +1,3 @@
-/* $EPIC: queue.c,v 1.16 2013/01/10 04:24:54 jnelson Exp $ */
 /*
  *  queue.c - The queue command
  *
@@ -8,7 +7,7 @@
  *  Syntax:  /QUEUE -DO -LIST -NO_FLUSH -DELETE -FLUSH <name>
  *  Syntax:  /QUEUE <name> <commands>
  *
- * Copyright © 1993, 2002 EPIC Software Labs.
+ * Copyright 1993, 2002 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

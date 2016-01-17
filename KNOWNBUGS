@@ -748,3 +748,14 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change transform_string_dyn() to return the bytes in retval, not it's size
 * -- I hope this doesn't break anything else!
 * EPIC5-1.6 released here (Usufruct) (Commit: 1854)
+* Remove non-utf8 characters (rb Felix Janda)
+* These bug fixes from caf
+* Report getsockopt() errno and result in the right order (caf)
+* Prevent memory leak after /DUMP (caf)
+* Fix a memory leak in $bindctl(SEQUENCE .. SET ..) (caf)
+* Fix memory leak caused by $open(file R) when file is executable (caf)
+* Fix memory leak in /ASSIGN <name> (caf)
+* Fix memory leak in $close() (caf)
+* Stop looping in $delitem() after the entire array is deleted (caf)
+* When deleting the only item in an array, $delitems() should return 0 (caf)
+* Thanks to caf for his bug hunting and fixing! :)

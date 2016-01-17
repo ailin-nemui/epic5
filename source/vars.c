@@ -1,11 +1,10 @@
-/* $EPIC: vars.c,v 1.122 2015/05/16 22:36:47 jnelson Exp $ */
 /*
  * vars.c: All the dealing of the irc variables are handled here. 
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993, 2003 EPIC Software Labs.
+ * Copyright 1993, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

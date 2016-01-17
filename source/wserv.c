@@ -1,4 +1,3 @@
-/* $EPIC: wserv.c,v 1.19 2015/08/05 04:00:52 jnelson Exp $ */
 /*
  * wserv.c -- A little program to act as a pipe between the ircII process
  * 	      and an xterm window or GNU screen.
@@ -9,7 +8,7 @@
  *
  * Copyright (c) 1992 Troy Rollo.
  * Copyright (c) 1993 Matthew Green.
- * Copyright © 1995-2002 EPIC Software Labs
+ * Copyright 1995-2002 EPIC Software Labs
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without

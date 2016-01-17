@@ -1,11 +1,10 @@
-/* $EPIC: ignore.c,v 1.39 2015/04/11 04:16:34 jnelson Exp $ */
 /*
  * ignore.c: handles the ingore command for irc 
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1995, 2003 EPIC Software Labs.
+ * Copyright 1995, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

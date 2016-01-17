@@ -2,7 +2,7 @@
 /*
  * crypt.c: The /ENCRYPT command and all its attendant baggage.
  *
- * Copyright © 2006 EPIC Software Labs
+ * Copyright 2006, 2015 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

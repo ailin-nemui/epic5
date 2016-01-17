@@ -1,4 +1,3 @@
-/* $EPIC: list.c,v 1.6 2006/06/29 01:13:53 jnelson Exp $ */
 /*
  * list.c: some generic linked list managing stuff 
  *

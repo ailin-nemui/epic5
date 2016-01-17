@@ -1,8 +1,7 @@
-/* $EPIC: files.c,v 1.47 2015/04/11 04:16:34 jnelson Exp $ */
 /*
  * files.c -- allows you to read/write files. Wow.
  *
- * Copyright © 1995, 2003 EPIC Software Labs
+ * Copyright 1995, 2003 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -110,34 +109,32 @@ static void	remove_file (File *file)
 			tmp->next = tmp->next->next;
 	}
 	epic_fclose(file->elf);
-	new_free((char **)&file);
+	new_free(&file->elf);
+	new_free(&file);
 }
 
 
 int	open_file_for_read (const char *filename)
 {
-	char *dummy_filename = (char *) 0;
-        struct epic_loadfile *elf;
-        struct stat sb;
+	char *dummy_filename = malloc_strdup(filename);
+	struct epic_loadfile *elf;
+	struct stat sb;
+	File *fr;
 
-        File * fr;
-
-	malloc_strcpy(&dummy_filename, filename);
 	elf = uzfopen(&dummy_filename, ".", 1, &sb);
 	new_free(&dummy_filename);
 
-        if (!elf) {
-                new_free(&elf);
-                return -1;
-        }
+	if (!elf)
+		return -1;
 
 	if (sb.st_mode & 0111)
 	{
 		say("Cannot open %s -- executable file", filename);	
+		new_free(&elf);
 		return -1;
 	}
 
-	fr=new_file(elf);
+	fr = new_file(elf);
 	return fr->id;
 }
 

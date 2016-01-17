@@ -1,11 +1,10 @@
-/* $EPIC: hook.c,v 1.95 2015/04/11 04:16:34 jnelson Exp $ */
 /*
  * hook.c: Does those naughty hook functions. 
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993, 2003 EPIC Software Labs.
+ * Copyright 1993, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -590,8 +589,6 @@ void    flush_on_hooks (void)
         window_display = old_display;
 
 		new_free(&hooklist);
-		hooklist = new_malloc(sizeof(Hook *));
-		hooklist[0] = NULL;
 		hooklist_size = 0;
 		last_created_hook = -2;
 

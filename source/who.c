@@ -1,8 +1,7 @@
-/* $EPIC: who.c,v 1.76 2015/04/11 04:16:35 jnelson Exp $ */
 /*
  * who.c -- The WHO queue.  The ISON queue.  The USERHOST queue.
  *
- * Copyright © 1996, 2003 EPIC Software Labs.
+ * Copyright 1996, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

@@ -1,7 +1,7 @@
 /*
  * elf.c: code for generalizing loading from just about anywhere
  *
- * Copyright © 2007 EPIC Software Labs.
+ * Copyright 2007, 2012 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

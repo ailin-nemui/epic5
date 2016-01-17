@@ -1,10 +1,9 @@
-/* $EPIC: screen.c,v 1.181 2015/04/11 04:16:34 jnelson Exp $ */
 /*
  * screen.c
  *
  * Copyright (c) 1993-1996 Matthew Green.
- * Copyright © 1998 J. Kean Johnston, used with permission
- * Copyright © 1997, 2005 EPIC Software Labs.
+ * Copyright 1998 J. Kean Johnston, used with permission
+ * Copyright 1997, 2015 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

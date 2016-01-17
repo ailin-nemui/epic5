@@ -1,8 +1,7 @@
-/* $EPIC: debug.c,v 1.30 2014/03/12 02:38:19 jnelson Exp $ */
 /*
  * debug.c -- controll the values of x_debug.
  *
- * Copyright © 1997, 2002 EPIC Software Labs
+ * Copyright 1997, 2006 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

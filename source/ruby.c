@@ -1,8 +1,7 @@
-/* $EPIC: ruby.c,v 1.16 2013/10/30 02:56:53 jnelson Exp $ */
 /*
  * ruby.c -- Calling RUBY from epic.
  *
- * Copyright © 2006 EPIC Software Labs.
+ * Copyright 2006 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

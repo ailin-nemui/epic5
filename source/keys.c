@@ -1,8 +1,7 @@
-/* $EPIC: keys.c,v 1.72 2015/05/16 22:36:47 jnelson Exp $ */
 /*
  * keys.c:  Keeps track of what happens whe you press a key.
  *
- * Copyright © 2002 EPIC Software Labs.
+ * Copyright 2002, 2015 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -1976,13 +1975,13 @@ char *	bindctl (char *input)
 
 	GET_DWORD_ARG(seq, input);
 	GET_FUNC_ARG(listc, input);
-	if (!(seq = bind_string_compress(seq, &slen)))
-		RETURN_EMPTY;
 	if (!my_stricmp(listc, "SET")) {
 	    GET_FUNC_ARG(listc, input);
 
 	    RETURN_INT(bind_string(seq, listc, (*input ? input : NULL)));
 	}
+	if (!(seq = bind_string_compress(seq, &slen)))
+		RETURN_EMPTY;
 	key = find_sequence(head_keymap, seq, slen);
 	new_free(&seq);
 	if (!my_stricmp(listc, "GET")) {

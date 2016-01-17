@@ -1,11 +1,10 @@
-/* $EPIC: names.c,v 1.84 2014/03/26 20:44:57 jnelson Exp $ */
 /*
  * names.c: Channels and Nicks and Servers, oh my!
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993, 2012 EPIC Software Labs.
+ * Copyright 1993, 2012 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

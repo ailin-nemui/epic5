@@ -1,8 +1,7 @@
-/* $EPIC: tcl.c,v 1.13 2008/11/28 16:28:03 jnelson Exp $ */
 /*
  * tcl.c -- The tcl interfacing routines.
  *
- * Copyright © 2001, 2006 EPIC Software Labs.
+ * Copyright 2001, 2006 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

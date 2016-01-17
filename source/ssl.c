@@ -1,12 +1,11 @@
-/* $EPIC: ssl.c,v 1.35 2015/07/21 03:36:17 jnelson Exp $ */
 /*
  * ssl.c: SSL connection functions
  *
  * Original framework written by Juraj Bednar
  * Modified by B. Thomas Frazier
  *
- * Copyright © 2000 Juraj Bednar.
- * Copyright © 2000, 2005 EPIC Software Labs.
+ * Copyright 2000 Juraj Bednar.
+ * Copyright 2000, 2015 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

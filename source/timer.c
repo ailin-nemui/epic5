@@ -1,10 +1,9 @@
-/* $EPIC: timer.c,v 1.58 2015/04/11 04:16:35 jnelson Exp $ */
 /*
  * timer.c -- handles timers in ircII
  *
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1997, 2003 EPIC Software Labs.
+ * Copyright 1997, 2015 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

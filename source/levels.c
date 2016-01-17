@@ -1,11 +1,10 @@
-/* $EPIC: levels.c,v 1.13 2008/02/16 23:42:05 jnelson Exp $ */
 /*
  * levels.c - Sorting things by category -- Window/Lastlog, Ignore, and Floods
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1993, 2005 EPIC Software Labs.
+ * Copyright 1993, 2005 EPIC Software Labs.
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without

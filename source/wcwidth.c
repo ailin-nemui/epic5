@@ -214,6 +214,7 @@ int	codepoint_numcolumns (int ucs)
   return retval;
 }
 
+/* *** ADDED STUFF - NOT IN ORIGINAL *** */
 
 int     next_code_point (const unsigned char **i, int resync)
 {

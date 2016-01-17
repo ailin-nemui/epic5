@@ -1,4 +1,3 @@
-/* $EPIC: glob.c,v 1.16 2012/11/24 01:42:51 jnelson Exp $ */
 #include "config.h"
 #ifdef NEED_GLOB
 

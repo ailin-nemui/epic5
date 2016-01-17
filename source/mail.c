@@ -1,9 +1,8 @@
-/* $EPIC: mail.c,v 1.29 2014/01/14 03:56:01 jnelson Exp $ */
 /*
  * mail.c -- a gross simplification of mail checking.
- * Only unix maildrops (``mbox'') are supported.
+ * Only unix maildrops (``mbox'') and Maildir are supported.
  *
- * Copyright © 1996, 2003 EPIC Software Labs.
+ * Copyright 1996, 2003 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

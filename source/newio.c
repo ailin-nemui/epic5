@@ -1,11 +1,10 @@
-/* $EPIC: newio.c,v 1.73 2015/04/15 04:06:19 jnelson Exp $ */
 /*
  * newio.c:  Passive, callback-driven IO handling for sockets-n-stuff.
  *
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1997, 2007 EPIC Software Labs.
+ * Copyright 1997, 2007 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -824,8 +823,8 @@ static int	unix_connect (int channel, int quiet)
 	getsockopt(channel, SOL_SOCKET, SO_ERROR, &sockerr, &len);
 	gso_result = errno;
 
-	dgets_buffer(channel, &sockerr, sizeof(sockerr));
 	dgets_buffer(channel, &gso_result, sizeof(gso_result));
+	dgets_buffer(channel, &sockerr, sizeof(sockerr));
 
 	/* * */
 	len = sizeof(localaddr);

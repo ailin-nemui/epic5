@@ -1,4 +1,3 @@
-/* $EPIC: output.c,v 1.26 2014/07/24 21:58:20 jnelson Exp $ */
 /*
  * output.c: handles a variety of tasks dealing with the output from the irc
  * program 
@@ -6,7 +5,7 @@
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright © 1997, 2002 EPIC Software Labs.
+ * Copyright 1997, 2002 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

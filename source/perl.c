@@ -1,8 +1,7 @@
-/* $EPIC: perl.c,v 1.24 2012/11/25 05:56:28 jnelson Exp $ */
 /*
  * perl.c -- The perl interfacing routines.
  *
- * Copyright © 2001, 2006 EPIC Software Labs.
+ * Copyright 2001, 2006 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

@@ -1,9 +1,8 @@
-/* $EPIC: reg.c,v 1.20 2012/11/26 05:09:35 jnelson Exp $ */
 /*
  * reg.c - "glob"-like wildcard pattern matching (not regexes)
  *
  * Copyright (c) 1992 Troy Rollo.
- * Copyright © 1997, 2002 EPIC Software Labs.
+ * Copyright 1997, 2002 EPIC Software Labs.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
