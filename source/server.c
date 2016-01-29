@@ -797,6 +797,7 @@ static 	void 	remove_from_server_list (int i)
 	new_free(&s->unique_id);
 	new_free(&s->userhost);
 	new_free(&s->cookie);
+	new_free(&s->quit_message);
 	new_free(&s->ison_queue);		/* XXX Aren't these free? */
 	new_free(&s->ison_wait);
 	new_free(&s->who_queue);
@@ -810,6 +811,7 @@ static 	void 	remove_from_server_list (int i)
 	new_free(&s->ssl_certificate);
 	new_free(&s->ssl_certificate_hash);
 	new_free(&s->funny_match);
+	new_free(&s->default_realname);
 	destroy_notify_list(i);
 	destroy_005(i);
 	reset_server_altnames(i, NULL);

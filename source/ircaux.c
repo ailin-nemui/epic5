@@ -288,7 +288,8 @@ void *	really_new_realloc (void **ptr, size_t size, const char *fn, int line)
 		/* If it's already big enough, keep it. */
 		if ((ssize_t)alloc_size(*ptr) >= (ssize_t)size)
 		{
-			VALGRIND_MEMPOOL_TRIM(mo_ptr(*ptr), *ptr, size);
+			VALGRIND_MEMPOOL_FREE(mo_ptr(*ptr), *ptr);
+			VALGRIND_MEMPOOL_ALLOC(mo_ptr(*ptr), *ptr, size);
 			return (*ptr);
 		}
 

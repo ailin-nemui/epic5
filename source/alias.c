@@ -2492,19 +2492,6 @@ void 	panic_dump_call_stack 	(void)
 }
 
 
-/*
- * You may NOT call this unless youre about to exit.
- * If you do (call this when youre not about to exit), and you do it more 
- * than a few times, max_wind will get absurdly large.  So dont do it.
- *
- * XXXX - this doesnt clean up everything -- but do i care?
- */
-void 	destroy_call_stack 	(void)
-{
-	wind_index = -1;
-	new_free((char **)&call_stack);
-}
-
 /************************* DIRECT VARIABLE EXPANSION ************************/
 /*
  * get_variable: This returns the rvalue of the symbol "str".  

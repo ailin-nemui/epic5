@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* Changing /window logfile while /window log on, should open new file
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -759,3 +759,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Stop looping in $delitem() after the entire array is deleted (caf)
 * When deleting the only item in an array, $delitems() should return 0 (caf)
 * Thanks to caf for his bug hunting and fixing! :)
+* Fix false positive memory leak from using VALGRIND_MEMORY_TRIM (caf)
+* Fix false positive memory leak deleting local variable stack at exit (caf)
+* Fix memory leak when deleting server (caf)

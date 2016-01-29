@@ -51,7 +51,7 @@ const char internal_version[] = "20160109";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1855;
+const unsigned long	commit_id = 1856;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -311,7 +311,6 @@ void	irc_exit (int really_quit, const char *format, ...)
 	delete_all_windows();
 	destroy_server_list();
 
-	destroy_call_stack();
 	remove_bindings();
 	flush_on_hooks();
 	flush_all_symbols();

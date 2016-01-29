@@ -176,7 +176,6 @@
 	void	unset_current_command 	(void);
 	void	lock_stack_frame	(void);
 	void	unlock_stack_frame	(void);
-	void	destroy_call_stack	(void);
 	void	dump_call_stack		(void);
 	void	panic_dump_call_stack 	(void);
 
