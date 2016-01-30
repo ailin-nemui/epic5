@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Changing /window logfile while /window log on, should open new file
+<none>
 
 MEDIUM-TERM PROJECTS
 --------------------
@@ -774,3 +774,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make /set logfile behave more like /log filename (see UPDATES)
 * Make /window logfile behave more like /log filename (see UPDATES)
 * Ooops.  Should have tested that better.
+* EPIC5-1.8 released here (Perlustration) (Commit: 1862)

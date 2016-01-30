@@ -1,4 +1,4 @@
-EPIC5-1.6
+EPIC5-1.8
 
 *** News 01/30/2016 -- /WINDOW LOGFILE and /SET LOGFILE more like /LOG FILNAME
 	Historically, changing a logfile name (with /WINDOW LOGFILE and
@@ -15,6 +15,8 @@ EPIC5-1.6
 	The behavior of /WINDOW LOGFILE and /SET LOGFILE have been changed
 	to match the behavior of /LOG FILENAME -- changing the logfile name
 	while it is open will close the existing log and open a new one.
+
+EPIC5-1.6
 
 *** News 01/08/2016 -- Per-server vhosts now restrict protocol (ipv4/ipv6)
 	Historically, the client tries to connect to the server using the
