@@ -328,7 +328,7 @@ void 	init_variables_stage1 (void)
 #define DEFAULT_LOAD_PATH NULL
 	VAR(LOAD_PATH,			STR,  NULL);
 	VAR(LOG,			BOOL, logger);
-	VAR(LOGFILE,			STR,  NULL);
+	VAR(LOGFILE,			STR,  set_logfile);
 #define DEFAULT_LOG_REWRITE NULL
 	VAR(LOG_REWRITE,		STR,  NULL);
 	VAR(MAIL,			INT,  set_mail);

@@ -164,20 +164,66 @@ void	logger (void *stuff)
 {
 	VARIABLE *v;
 	int	flag;
-	char *	logfile;
+	char *	logfile = NULL;
 
 	v = (VARIABLE *)stuff;
 	flag = v->integer;
 
-	if ((logfile = get_string_var(LOGFILE_VAR)) == (char *) 0)
+	/* Always allow /SET LOG OFF, regardless of /SET LOGFILE */
+	if (flag == 0)
+		do_log(flag, NULL, &irclog_fp);
+	else
 	{
-		say("You must set the LOGFILE variable first!");
-		v->integer = 0;
-		return;
+		/* You cannot /SET LOG ON if you cleared /SET LOGFILE */
+		/* (This is rare - /SET LOGFILE has a default value) */
+		if ((logfile = get_string_var(LOGFILE_VAR)) == (char *) 0)
+		{
+			say("You must set the LOGFILE variable first!");
+			v->integer = 0;
+			return;
+		}
+
+		do_log(flag, logfile, &irclog_fp);
+
+		/* If opening the logfile failed, set log off */
+		if (!irclog_fp && flag)
+			v->integer = 0;
 	}
-	do_log(flag, logfile, &irclog_fp);
-	if (!irclog_fp && flag)
-		v->integer = 0;
+}
+
+/*
+ * set_logfile 	- Callback for /SET LOGFILE
+ *
+ * Arguments:
+ *  stuff	- A (VARIABLE *) object
+ *
+ * Notes:
+ *  + In EPIC5-1.8, we changed this so if you change the logfile name when 
+ *    SET LOG ON, it will close the old filename and open the new filename.
+ *  + Unsetting the logfile name while logging is on will stop logging.
+ *  + Changing the logfile name to itself will result in a close+reopen,
+ */
+void	set_logfile (void *stuff)
+{
+	VARIABLE *v;
+	char *logfile;
+
+	/* If SET LOG OFF, then we are done here! */
+	if (!irclog_fp)
+		return;
+
+	v = (VARIABLE *)stuff;
+
+	if (!(logfile = v->string))
+	{
+		say("Unsetting LOGFILE turns off logging");
+		set_var_value(LOG_VAR, zero, 1);
+	}
+	else
+	{
+		do_log(0, NULL, &irclog_fp);
+		do_log(1, logfile, &irclog_fp);
+	}
 }
 
 /*

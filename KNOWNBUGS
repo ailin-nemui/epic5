@@ -771,4 +771,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * End changes requested by gentoo
 * Fix to make --with-localdir more gentoo friendly (binki)
 * Fix to make parallel builds work better for gentoo (binki)
-
+* Make /set logfile behave more like /log filename (see UPDATES)
+* Make /window logfile behave more like /log filename (see UPDATES)

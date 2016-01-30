@@ -1,5 +1,21 @@
 EPIC5-1.6
 
+*** News 01/30/2016 -- /WINDOW LOGFILE and /SET LOGFILE more like /LOG FILNAME
+	Historically, changing a logfile name (with /WINDOW LOGFILE and
+	/SET LOGFILE) does not affect the log status.  This leads to 
+	unexpected behavior if you do /WINDOW LOG ON LOGFILE foo.txt
+	because /WINDOW LOGFILE only changes the filename the *next* time
+	you open the log, not affecting the currently open log.
+
+	The behavior of /LOG FILENAME is more in line with what people 
+	said they expected.  If you change /LOG FILENAME while the 
+	log is ON, then it will 1) close the existing log, 2) change
+	the filename, and 3) re-open the log under the new name.
+
+	The behavior of /WINDOW LOGFILE and /SET LOGFILE have been changed
+	to match the behavior of /LOG FILENAME -- changing the logfile name
+	while it is open will close the existing log and open a new one.
+
 *** News 01/08/2016 -- Per-server vhosts now restrict protocol (ipv4/ipv6)
 	Historically, the client tries to connect to the server using the
 	addresses as they are returned in order.  (This is a great thing 

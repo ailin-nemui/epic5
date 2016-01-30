@@ -4576,6 +4576,23 @@ static Window *window_logfile (Window *window, char **args)
 	else
 		say("Window LOGFILE is not set.");
 
+	/* 
+	 * If the window is logging, close the old logfile,
+	 * and re-open under the new name.
+	 */
+	if (window->log_fp)
+	{
+		if (!window->logfile)
+		{
+			say("Unsetting WINDOW LOGFILE turns off logging");
+			do_log(0, NULL, &window->log_fp);
+		}
+		else
+		{
+			do_log(0, NULL, &window->log_fp);
+			do_log(1, window->logfile, &irclog_fp);
+		}
+	}
 	return window;
 }
 
