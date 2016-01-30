@@ -770,3 +770,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * The patches were for autoconf-2.60, so some changes were made
 * End changes requested by gentoo
 * Fix to make --with-localdir more gentoo friendly (binki)
+* Fix to make parallel builds work better for gentoo (binki)
+
