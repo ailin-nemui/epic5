@@ -4590,7 +4590,7 @@ static Window *window_logfile (Window *window, char **args)
 		else
 		{
 			do_log(0, NULL, &window->log_fp);
-			do_log(1, window->logfile, &irclog_fp);
+			do_log(1, window->logfile, &window->log_fp);
 		}
 	}
 	return window;

@@ -773,3 +773,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix to make parallel builds work better for gentoo (binki)
 * Make /set logfile behave more like /log filename (see UPDATES)
 * Make /window logfile behave more like /log filename (see UPDATES)
+* Ooops.  Should have tested that better.
