@@ -42,7 +42,7 @@
  *  the client will NOT compile and work properly!  Use the default here if
  *  you dont have other servers to use.
  */
-#define DEFAULT_SERVER "localhost irc.efnet.net irc.undernet.org irc.dal.net"
+#define DEFAULT_SERVER "irc.efnet.net irc.undernet.org irc.dal.net"
 
 /*
  * This is the location of your SSL certificate file.
@@ -361,9 +361,9 @@
 #define DEFAULT_STATUS_CHANOP "@"
 #define DEFAULT_STATUS_CLOCK " %T"
 #define DEFAULT_STATUS_CPU_SAVER " (%L)"
-#define DEFAULT_STATUS_FORMAT "%T [%R] %*%=%@%N%#%S%{1}H%H%B%Q%A%C%+%I%O%M%F%L %D %U %W"
-#define DEFAULT_STATUS_FORMAT1 "%T [%R] %*%=%@%N%#%S%{1}H%H%B%Q%A%C%+%I%O%M%F%L %U "
-#define DEFAULT_STATUS_FORMAT2 "%W %X %Y %Z "
+#define DEFAULT_STATUS_FORMAT REV_TOG_STR "%T [%R] %*%=%@%N%#%S%{1}H%H%B%Q%A%C%+%I%O%M%F%L %D %U %W"
+#define DEFAULT_STATUS_FORMAT1 REV_TOG_STR "%T [%R] %*%=%@%N%#%S%{1}H%H%B%Q%A%C%+%I%O%M%F%L %U "
+#define DEFAULT_STATUS_FORMAT2 REV_TOG_STR "%W %X %Y %Z "
 #define DEFAULT_STATUS_HALFOP "%"
 #define DEFAULT_STATUS_HOLD " Held: "
 #define DEFAULT_STATUS_HOLD_LINES "%B"

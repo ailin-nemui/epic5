@@ -1464,7 +1464,7 @@ char	*expand_alias	(const char *string, const char *args)
 		malloc_strcat_ues_c(&buffer, stuff, unescape, &buffclue);
 
 	if (get_int_var(DEBUG_VAR) & DEBUG_EXPANSIONS)
-		privileged_yell("Expanded [%s] to [%s]", string, buffer);
+		privileged_yell("Expanded " BOLD_TOG_STR "[" BOLD_TOG_STR "%s" BOLD_TOG_STR "]" BOLD_TOG_STR " to " BOLD_TOG_STR "[" BOLD_TOG_STR "%s" BOLD_TOG_STR "]" BOLD_TOG_STR, string, buffer);
 
 #if 0						/* Maybe a good idea later? */
 	if (!buffer)

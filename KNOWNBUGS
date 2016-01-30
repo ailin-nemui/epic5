@@ -762,3 +762,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix false positive memory leak from using VALGRIND_MEMORY_TRIM (caf)
 * Fix false positive memory leak deleting local variable stack at exit (caf)
 * Fix memory leak when deleting server (caf)
+* At the request of gentoo, the following patches and requests...
+* Change highlight chars (^V) to #def's (REV_TOG_STR) because file(1) is weak
+* Fix tcl, ruby, perl, libarchive support to be more gentoo friendly (binki)
+* (We had already applied their socks patch a long time ago)
+* Remove 'localhost' from IRCSERVERS default list - default is efnet now.
+* The patches were for autoconf-2.60, so some changes were made
+* End changes requested by gentoo

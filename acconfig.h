@@ -366,19 +366,19 @@
 #undef RUBYCFLAGS
 
 /* Define this if you have ruby and stuff */
-#undef RUBYLDFLAGS
+#undef RUBYLIBS
 
 /* Define this if you have tcl and stuff */
 #undef TCLCFLAGS
 
 /* Define this if you have tcl and stuff */
-#undef TCLLDFLAGS
+#undef TCLLIBS
 
 /* Define this if you have perl and stuff */
 #undef PERLCFLAGS
 
 /* Define this if you have perl and stuff */
-#undef PERLLDFLAGS
+#undef PERLLIBS
 
 /* Define this if you have finite() */
 #undef HAVE_FINITE
