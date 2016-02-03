@@ -2185,6 +2185,8 @@ void	close_server (int refnum, const char *message)
 	new_free(&s->realname);
 	new_free(&s->ssl_certificate);
 	new_free(&s->ssl_certificate_hash);
+	new_free(&s->addrs);
+	s->next_addr = NULL;
 
 	if (s->des == -1)
 		return;		/* Nothing to do here */

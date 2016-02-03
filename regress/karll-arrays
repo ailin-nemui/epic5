@@ -29,6 +29,19 @@ fe (baz bar foo) qwer {
 	}
 }
 
+@delarray(quux)
+@setitem(quux 0 AAAAAAAAAAAAAAA)
+@res = delitem(quux 0 0 0 0 0)
+if (res != 0) {
+	echo delitem returned incorrect value $res
+}
+@delarray(quux)
+@setitem(quux 0 AAAAAAAAAAAAAAA)
+@res = delitems(quux 0 0 0 0 0)
+if (res != 0) {
+	echo delitems returned incorrect value $res
+}
+
 if (getarrays()!=sort($uniq($getarrays()))) {
 	echo Array list destroyed: $getarrays()
 } elsif (3>numwords($getarrays())) {

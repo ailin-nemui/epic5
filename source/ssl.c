@@ -43,6 +43,7 @@
 
 #include <openssl/crypto.h>
 #include <openssl/x509.h>
+#include <openssl/evp.h>
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -477,6 +478,7 @@ int	ssl_shutdown (int vfd)
 	new_free(&x->md.issuer);
 	new_free(&x->md.u_cert_issuer);
 	new_free(&x->md.ssl_version);
+	new_free(&x);
 	return 0;
 }
 
@@ -609,6 +611,17 @@ int	ssl_connect (int vfd, int quiet)
 	return 1;
 }
 
+static int get_x509_pkey_bits(X509 *cert)
+{
+	EVP_PKEY *pubkey;
+	int pkey_bits;
+
+	pubkey = X509_get_pubkey(cert);
+	pkey_bits = EVP_PKEY_bits(pubkey);
+	EVP_PKEY_free(pubkey);
+	return pkey_bits;
+}	
+
 /*
  * ssl_connected - retrieve the vital statstics about an established SSL
  *			connection
@@ -645,7 +658,7 @@ int	ssl_connect (int vfd, int quiet)
  */
 int	ssl_connected (int vfd)
 {
-	X509 *          server_cert;	/* X509 in SSL internal fmt */
+	X509 *	 	server_cert;	/* X509 in SSL internal fmt */
 	ssl_info *	x;		/* EPIC info about the conn */
 	BIO *		mem;		/* A place to write SSL strings */
 	long		bytes;		/* How big 'mem' is */
@@ -789,7 +802,7 @@ int	ssl_connected (int vfd)
 	/*
 	 * STEP 4c:	The server's certificate's public key's bit-size
 	 */
-	x->md.pkey_bits = EVP_PKEY_bits(X509_get_pubkey(server_cert));
+	x->md.pkey_bits = get_x509_pkey_bits(server_cert);
 
 	/*
 	 * STEP 4h:	The connection's SSL protocol (ie, TLSv1 or SSLv3)
@@ -835,6 +848,7 @@ int	ssl_connected (int vfd)
 	/*
 	 * STEP 6: Clean up after ourselves
 	 */
+	X509_free(server_cert);
 	return 1;
 }
 

@@ -775,3 +775,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make /window logfile behave more like /log filename (see UPDATES)
 * Ooops.  Should have tested that better.
 * EPIC5-1.8 released here (Perlustration) (Commit: 1862)
+* Fix memory leak with closing ssl cnnections (caf)
+* Fix memory leak with servers that never get connected (caf)
+
