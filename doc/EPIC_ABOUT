@@ -61,7 +61,3 @@ cycles.  While these may appear to be conflicting goals, the whole point
 of the EPIC project is to provide the best client that runs as well as 
 can be managed.
 
-The EPIC mailing list is list@epicsol.org.  It is run by MailMan.  The list 
-should be considered *low traffic*, and is used primarily for product release 
-announcements and public bug reports.  Everything else should be taken to 
-private email.
