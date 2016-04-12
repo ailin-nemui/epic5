@@ -4,6 +4,14 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 <none>
 
+EPIC5-3.0 MAJOR PROJECTS
+------------------------
+1. Python support that doesn't suck
+2. Saving and restoring client state across restarts
+3. Robust, no compromises, ZNC support
+4. Reboot of /set load_path, /load, and namespaces
+5. SQLite support
+
 MEDIUM-TERM PROJECTS
 --------------------
 * Need to have a script that implements per-channel FiSH support
@@ -777,4 +785,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * EPIC5-1.8 released here (Perlustration) (Commit: 1862)
 * Fix memory leak with closing ssl cnnections (caf)
 * Fix memory leak with servers that never get connected (caf)
+* EPIC5-2.0 released here (Gamboling) (Commit: 1864)
+* Call setgid() before setuid(), for best practice (caf)
+* Fix off-by-one error with printing OpenSSL strings (caf)
+* Don't output the full SSL certificate for a server (caf)
 

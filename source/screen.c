@@ -3392,9 +3392,9 @@ Window	*create_additional_screen (void)
 
 		case 0:
 		{
-			if (setuid(getuid()))
-				_exit(0);
 			if (setgid(getgid()))
+				_exit(0);
+			if (setuid(getuid()))
 				_exit(0);
 			setsid();
 

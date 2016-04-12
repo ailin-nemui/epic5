@@ -543,9 +543,9 @@ say("Output from process %d (%s) now going to you", i, proc->name);
 			 * Sever all ties we had with the parent ircII process
 			 */
 			setsid();
-			if (setuid(getuid()))
-				_exit(0);
 			if (setgid(getgid()))
+				_exit(0);
+			if (setuid(getuid()))
 				_exit(0);
 			my_signal(SIGINT, SIG_IGN);
 			my_signal(SIGQUIT, SIG_DFL);

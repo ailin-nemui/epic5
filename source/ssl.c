@@ -622,6 +622,48 @@ static int get_x509_pkey_bits(X509 *cert)
 	return pkey_bits;
 }	
 
+static char *get_bio_mem_string(BIO *mem)
+{
+	long bytes;
+	char *p = NULL;
+
+	bytes = BIO_get_mem_data(mem, &p);
+	
+	if (p && bytes >= 0 && bytes < SIZE_MAX)
+	{
+		char *result = new_malloc((size_t)bytes + 1);
+		memcpy(result, p, bytes);
+		result[bytes] = 0;
+		return result;
+	}
+	
+	return NULL;
+}
+
+static char *get_x509_pem(X509 *cert)
+{
+	BIO *mem = BIO_new(BIO_s_mem());
+	char *result;
+
+	PEM_write_bio_X509(mem, cert);
+	result = get_bio_mem_string(mem);
+	BIO_free(mem);
+	return result;
+}
+
+static char *get_x509_name(X509_NAME *nm)
+{
+	BIO *mem = BIO_new(BIO_s_mem());
+	long bytes;
+	char *p = NULL;
+	char *result = NULL;
+
+	X509_NAME_print_ex(mem, nm, 0, XN_FLAG_RFC2253 & ~ASN1_STRFLGS_ESC_MSB);
+	result = get_bio_mem_string(mem);
+	BIO_free(mem);
+	return result;
+}
+
 /*
  * ssl_connected - retrieve the vital statstics about an established SSL
  *			connection
@@ -660,9 +702,6 @@ int	ssl_connected (int vfd)
 {
 	X509 *	 	server_cert;	/* X509 in SSL internal fmt */
 	ssl_info *	x;		/* EPIC info about the conn */
-	BIO *		mem;		/* A place to write SSL strings */
-	long		bytes;		/* How big 'mem' is */
-	char *		p = NULL;	/* A place for C strings from 'mem' */
 	unsigned char 	h[256];		/* A place for X509_digest() to write */
 	unsigned	hlen;		/* How big digest in 'h' is */
 	unsigned char	htext[1024];	/* A human readable version of 'h' */
@@ -684,8 +723,6 @@ int	ssl_connected (int vfd)
 	 * to be blocking when we start reading from them.
 	 */
 	set_blocking(x->channel);
-	say("SSL negotiation using %s", SSL_get_cipher(x->ssl_fd));
-	say("SSL protocol using %s", SSL_get_version(x->ssl_fd));
 
 	/*
 	 * STEP 2: 
@@ -703,7 +740,6 @@ int	ssl_connected (int vfd)
 			(void) 0;
 		return -1;
 	}
-	say("SSL negotiation for channel [%d] complete", x->channel);
 
 
 	/* * */
@@ -717,16 +753,6 @@ int	ssl_connected (int vfd)
 	 * (See SSL_get_verify_results() for more info on that)
 	 */
 	x->md.verify_result = SSL_get_verify_result(x->ssl_fd);
-	if (x->md.verify_result == X509_V_OK)
-		say("SSL Certificate is verifiable (wow!)");
-	else
-	{
-		const char *msg;
-
-		msg = X509_verify_cert_error_string(x->md.verify_result);
-		say("SSL Certificate is not verifiable (big surprise): "
-				"Reason %d (%s)", x->md.verify_result, msg);
-	}
 
 	/* * */
 	/*
@@ -738,13 +764,7 @@ int	ssl_connected (int vfd)
 	/* 
 	 * STEP 4a:	The server's certificate PEM
 	 */
-	mem = BIO_new(BIO_s_mem());
-	PEM_write_bio_X509(mem, server_cert);
-	bytes = BIO_get_mem_data(mem, &p);
-	p[bytes] = 0;
-	malloc_strcpy(&x->md.pem, p);
-	BIO_free(mem);		/* This invalidates 'p' */
-	say("SSL Certificate is: %s", x->md.pem);
+	x->md.pem = get_x509_pem(server_cert);
 
 	/*
 	 * STEP 4b: 	The server's certificate hash
@@ -763,19 +783,12 @@ int	ssl_connected (int vfd)
 			sizeof(htext) - (i * 3), "%02x", h[i]);
 	}
 	x->md.cert_hash = malloc_strdup(htext);
-	say("SSL Certificate Digest: %s", x->md.cert_hash);
 
 	/*
 	 * STEP 4d: 	The server's certificate's "subject" [hostname]
 	 * STEP 4e:	The server's certificate's "subject" (urlified)
 	 */
-	mem = BIO_new(BIO_s_mem());
-	X509_NAME_print_ex(mem, X509_get_subject_name(server_cert), 
-				2, XN_FLAG_RFC2253 & ~ASN1_STRFLGS_ESC_MSB);
-	bytes = BIO_get_mem_data(mem, &p);
-	p[bytes] = 0;
-	x->md.subject = malloc_strdup(p);
-	BIO_free(mem);				/* This invalidates 'p' */
+	x->md.subject = get_x509_name(X509_get_subject_name(server_cert));
 
 	if (!(x->md.u_cert_subject = transform_string_dyn("+URL", 
 							  x->md.subject,
@@ -786,13 +799,7 @@ int	ssl_connected (int vfd)
 	 * STEP 4f:	The server's certificate's "issuer" [CA]
 	 * STEP 4g:	The server's certificate's "issuer" (urlified)
 	 */
-	mem = BIO_new(BIO_s_mem());
-	X509_NAME_print_ex(mem, X509_get_issuer_name(server_cert), 
-				2, XN_FLAG_RFC2253 & ~ASN1_STRFLGS_ESC_MSB);
-	bytes = BIO_get_mem_data(mem, &p);
-	p[bytes] = 0;
-	x->md.issuer = malloc_strdup(p);
-	BIO_free(mem);				/* This invalidates 'p' */
+	x->md.issuer = get_x509_name(X509_get_issuer_name(server_cert));
 
 	if (!(x->md.u_cert_issuer = transform_string_dyn("+URL", 
 							  x->md.issuer,
@@ -834,14 +841,18 @@ int	ssl_connected (int vfd)
 			x->md.pkey_bits, x->md.verify_result, 
 			x->md.ssl_version, x->md.cert_hash))
 	{
+		say("SSL negotiation complete using %s (%s)", 
+			x->md.ssl_version, SSL_get_cipher(x->ssl_fd));
 		say("SSL certificate subject: %s", x->md.subject);
 		say("SSL certificate issuer: %s",  x->md.issuer);
 		say("SSL certificate public key length: %d bits", 
 						   x->md.pkey_bits);
-		say("SSL Certificate was verified: %d (reason: %d)", 
-					x->md.verify_result == X509_V_OK ? 1:0,
-					x->md.verify_result);
-		say("SSL Certificate SHA1 Hash: %s", 
+		say("SSL certificate was verified: %s (%d: %s)", 
+			x->md.verify_result == X509_V_OK ? "YES" : "NO",
+			x->md.verify_result,
+			X509_verify_cert_error_string(x->md.verify_result)
+		);
+		say("SSL certificate digest: %s", 
 						   x->md.cert_hash);
 	}
 

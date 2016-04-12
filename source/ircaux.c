@@ -1722,9 +1722,9 @@ char *	exec_pipe (const char *executable, char *input, size_t *len, char * const
 		close(pipe0[1]);
 		close(pipe1[0]);
 		close(2);	/* we dont want to see errors yet */
-		if (setuid(getuid()))
-			exit(0);
 		if (setgid(getgid()))
+			exit(0);
+		if (setuid(getuid()))
 			exit(0);
 		execvp(executable, args);
 		_exit(0);
@@ -1829,9 +1829,9 @@ static	FILE *	file_pointers[3];
 			close(pipe0[1]);
 			close(pipe1[0]);
 			close(pipe2[0]);
-			if (setuid(getuid()))
-				exit(0);
 			if (setgid(getgid()))
+				exit(0);
+			if (setuid(getuid()))
 				exit(0);
 			execvp(executable, args);
 			_exit(0);
@@ -1911,9 +1911,9 @@ static struct epic_loadfile *	open_compression (char *executable, char *filename
 			dup2(pipes[1], 1);
 			close(pipes[0]);
 			close(2);	/* we dont want to see errors */
-			if (setuid(getuid()))
-				exit(0);
 			if (setgid(getgid()))
+				exit(0);
+			if (setuid(getuid()))
 				exit(0);
 
 			/* 
