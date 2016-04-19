@@ -1541,7 +1541,13 @@ return_from_ssl_detour:
 				set_server_ssl_enabled(i, FALSE);
 				new_open(des, do_server, NEWIO_RECV, 0, i);
 			}
-			register_server(i, s->d_nickname);
+
+			/* Always try to fall back to the nick from the server description */
+			/* This was discussed and agreed to in April 2016 */
+			if (s->info && s->info->nick && *(s->info->nick))
+				register_server(i, s->info->nick);
+			else
+				register_server(i, s->d_nickname);
 		}
 
 #ifdef HAVE_SSL
