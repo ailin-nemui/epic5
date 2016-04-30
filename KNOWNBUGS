@@ -790,3 +790,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix off-by-one error with printing OpenSSL strings (caf)
 * Don't output the full SSL certificate for a server (caf)
 * When (re-)connecting, use the hardcoded server description nick (rb larne)
+* Fix utf8_strnicmp(), which broke $uniq() (robo, caf)
+* Fix null deref when a server has no CA (caf)
+* Remove a couple of unused variables in ssl handling (caf)

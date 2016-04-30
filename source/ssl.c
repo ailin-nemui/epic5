@@ -637,7 +637,7 @@ static char *get_bio_mem_string(BIO *mem)
 		return result;
 	}
 	
-	return NULL;
+	return malloc_strdup(empty_string);
 }
 
 static char *get_x509_pem(X509 *cert)
@@ -654,9 +654,7 @@ static char *get_x509_pem(X509 *cert)
 static char *get_x509_name(X509_NAME *nm)
 {
 	BIO *mem = BIO_new(BIO_s_mem());
-	long bytes;
-	char *p = NULL;
-	char *result = NULL;
+	char *result;
 
 	X509_NAME_print_ex(mem, nm, 0, XN_FLAG_RFC2253 & ~ASN1_STRFLGS_ESC_MSB);
 	result = get_bio_mem_string(mem);

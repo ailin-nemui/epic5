@@ -774,7 +774,7 @@ static int	utf8_strnicmp (const unsigned char *str1, const unsigned char *str2, 
 		u2 = mkupper_l(c2);
 
 		if (u1 != u2)
-			return c1 - c2;
+			return u1 - u2;
 		if (u1 == 0)
 			return 0;
 	}
