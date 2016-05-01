@@ -58,12 +58,70 @@
 
 /************************ SERVERLIST STUFF ***************************/
 
+/* 
+ * The "server_list" is a global list of all of your servers.
+ * This is a dynamically resiable array, and it may contain gaps.
+ * A server refnum is an index into this array!  Ie, server refnum 0
+ * literally means server_list[0].  Server refnums may _never change_
+ * during their lifetime.  If you delete a server, it leaves a gap
+ * (server_list[x] == NULL).
+ */
 	Server **server_list = (Server **) 0;
+
+/*
+ * "number of servers" is the size of server_list.  This is used to 
+ * guard buffer overrun against server_list.
+ */
 	int	number_of_servers = 0;
 
+/*
+ * The "primary_server" is an old ircII concept when multi-servering
+ * was unusual.  Your "Primary Server" is the server of last resort
+ * when the client wants to do something in the context of a server,
+ * but does not have an appropriate one to use.  
+ */
 	int	primary_server = NOSERV;
+
+/*
+ * The "from_server" represents the server on whose behalf we are 
+ * currently working.  If you think of the client as always doing 
+ * one of three things:
+ *   1. Processing a keystrong
+ *   2. Processing something from the server
+ *   3. Resting
+ * Context is commutative.  If you do an /exec in an /on msg, then 
+ * that /exec runs in the context of the /on msg.  If you do a /dcc
+ * in context of a keypress, then that dcc runs in the context of the
+ * server of the window in which you pressed that key.
+ *
+ * In all cases where the language is active, there is a "from_server"
+ * that represents the server from which the action initiated.
+ */
 	int	from_server = NOSERV;
+
+/* 
+ * The "parsing_server_index" is set to the refnum of a server while
+ * we are processing data from it.  It is NOSERV at all other times.
+ * The value is _NOT_ commutative.  If you do an /exec in an /on msg, 
+ * then it will not be set during the /exec (as contrasted to from_server
+ * which will be set during the /exec)
+ *
+ * This value is only used for:
+ *	$S	(if it is set, $S is this value; otherwise it is the
+ *		 server of your current window.  $S does not follow
+ *		 from_server.  Use $serverctl(FROM_SERVER)
+ *	By /TIMER to decide whether this is a server timer or a 
+ *		window timer.
+ */
 	int	parsing_server_index = NOSERV;
+
+/* 
+ * The "last_server" is the last server we processed.  That is, it is
+ * the most recent value of "parsing_server_index".  It never gets 
+ * unset.  But it can be reset at any time to any value.
+ *
+ * It is only used for $serverctl(LAST_SERVER)
+ */
 	int	last_server = NOSERV;
 
 
@@ -78,6 +136,21 @@ static 	void 	remove_from_server_list (int i);
 static	char *	shortname (const char *oname);
 
 
+/*
+ * clear_serverinfo: Initialize/Reset a ServerInfo object
+ *
+ * Parameters:
+ *	s	- A ServerInfo that is brand new or has already
+ *		  been cleansed (see below)
+ *
+ * Return value:
+ *	0	- This function always returns 0.
+ *
+ * Notes:
+ *	If you are resetting an existing serverinfo (ie, one that has
+ *	already been in use), you _MUST_ new_free() freestr and fulldesc.
+ *	Otherwise, this will leak memory.
+ */
 int	clear_serverinfo (ServerInfo *s)
 {
         s->refnum = NOSERV;
@@ -89,9 +162,6 @@ int	clear_serverinfo (ServerInfo *s)
         s->server_type = NULL;
 	s->proto_type = NULL;
 	s->vhost = NULL;
-#if 0
-	s->default_encoding = NULL;
-#endif
 	s->freestr = NULL;		/* XXX ? */
 	s->fulldesc = NULL;		/* XXX ? */
 	s->clean = 1;
@@ -380,7 +450,8 @@ static	int	preserve_serverinfo (ServerInfo *si)
  * free_serverinfo - Destroy a permanent ServerInfo when you're done with it.
  *
  * Arguments:
- *	si	An 'si' that was previously passed to preserve_serverinfo().
+ *	si	A permanent Serverinfo -- an 'si' that was previously 
+ *		passed to preserve_serverinfo().
  */
 static	void	free_serverinfo (ServerInfo *si)
 {
@@ -389,6 +460,23 @@ static	void	free_serverinfo (ServerInfo *si)
 	clear_serverinfo(si);
 }
 
+/*
+ * update_serverinfo - Do a partial update of 'old_si' using 'new_si'
+ *
+ * Arguments:
+ *	old_si	- A ServerInfo that should be updated.  I don't think it
+ *		  matters if it is a temp or permanent ServerInfo. 
+ *		  Old_si _will be updated_.
+ *		  Old_si _will be turned into a permanent ServerInfo_.
+ *	new_si	- A ServerInfo that contains fields that should be updated
+ *		  in old_si.  It does not need to be a proper ServerInfo.
+ *		  New_si will not be changed.
+ *
+ * Because the 'host' field is the PK for a ServerInfo, it will not be
+ * changed, even if it is present in 'new_si'.
+ * "New_si" BELONGS TO YOU -- YOU MUST CLEAN UP AFTER IT.
+ * "Old_si" BECOMES A PERMANENT ServerInfo AND BELONGS TO YOU.
+ */
 static	void	update_serverinfo (ServerInfo *old_si, ServerInfo *new_si)
 {
 	/* You should never update 'host' because it contains the
@@ -1266,10 +1354,24 @@ BUILT_IN_COMMAND(servercmd)
 
 /* SERVER INPUT STUFF */
 /*
- * do_server: check the given fd_set against the currently open servers in
- * the server list.  If one have information available to be read, it is read
- * and and parsed appropriately.  If an EOF is detected from an open server,
- * and we haven't registered, window_check_servers() will restart for us.
+ * do_server: A callback suitable for use with new_open() to handle servers
+ *
+ * When new_open() determines that new data is ready for a file descriptor,
+ * it calls the callback function registered with that file descriptor.
+ * This is the function that should be used for every server fd.
+ *
+ * It will:
+ *  1) Determine what status the file descriptor is in 
+ *  2) De-queue the next chunk of data from the server (which is status 
+ *     dependent -- ie, in DNS, it's a serialized IP address.  In CONNECTED, 
+ *     it's a line of text terminated by \r\n).
+ *  3) Take the appropriate action based on the status and data received.
+ *
+ * It might have been reasonable to have several different callbacks -- one for
+ * each server state, and it might have been reasonable to implement each 
+ * server state as a separate function that gets called from here; but I chose 
+ * to implement it as one monolithic function.  There is nothing special about 
+ * doing it one way or the other.
  */
 void	do_server (int fd)
 {
@@ -1591,6 +1693,17 @@ return_from_ssl_detour:
 		{
 			last_server = i;
 			junk = dgets(des, bufptr, get_server_line_length(i), 1);
+
+			/* 
+			 * If we were to support encapsulating protocols, 
+			 * we would do the extraction here.  In the end, 
+			 * we want 'bufptr' to contain the rfc1459 message,
+			 * and whatever metadata would go into other vars.
+			 *
+			 * XXX TODO - We need to de-couple the protocol
+			 * status (to the server) from the status of the
+			 * socket we use to talk to it.
+			 */
 
 			switch (junk)
 			{
@@ -3318,21 +3431,6 @@ const char	*get_server_itsname (int refnum)
 		return s->info->host;
 }
 
-#if 0
-const char *	get_server_default_encoding (int servref )
-{
-	Server *s;
-
-	if (!(s = get_server(servref)))
-		return "<none>";
-
-	if (s->default_encoding && *s->default_encoding)
-		return s->default_encoding;
-	else
-		return "<none>";
-}
-#endif
-
 int	get_server_protocol_state (int refnum)
 {
 	int	retval;
@@ -3480,11 +3578,42 @@ int	check_server_wait (int refnum, const char *nick)
 }
 
 /****** FUNNY STUFF ******/
+/*
+ * "Funny stuff" is a vestige of ircII that had a file called "funny.c"
+ * which handled LIST and NAMES, (and MODE replies).
+ *
+ * These represent parameters passed to the most recent LIST and NAMES
+ * request.  You can do /LIST -MIN to only show channels with a certain
+ * number of users, and well, i mean, nobody really uses this stuff any
+ * more, but it still works, so it's still here.
+ */
+
+/*
+ * These macro functions allow people to get the funny flags for
+ * a specific server.  They should only be called by the appropriate
+ * numeric reply in numbers.c
+ */
 IACCESSOR(v, funny_min)
 IACCESSOR(v, funny_max)
 IACCESSOR(v, funny_flags)
 SACCESSOR(match, funny_match, NULL)
 
+/*
+ * set_server_funny_stuff -- Record params passed to /LIST and /NAMES
+ *
+ * Parameters:
+ *	refnum	- The server upon which /LIST or /NAMES was run
+ *	min	- Only show channels with at least <min> users
+ *	max	- Only show channels with at most <max> users
+ *	flags	- FUNNY_PUBLIC/FUNNY_PRIVATE/FUNNY_TOPIC
+ *		  Only show public/private/channels with a topic
+ *	stuff	- Only show channels that match this wildcard pattern
+ *
+ * Naturally, if you do multiple /LIST and/or /NAMES at the same time,
+ * you'll clobber the flags from the previous run. oh rats.
+ *
+ * This should only be called from funny_stuff() in commands.c.
+ */
 void	set_server_funny_stuff (int refnum, int min, int max, int flags, const char *stuff)
 {
 	set_server_funny_min(refnum, min);
@@ -3494,6 +3623,30 @@ void	set_server_funny_stuff (int refnum, int min, int max, int flags, const char
 }
 
 /*****************************************************************************/
+/***** ALTNAME STUFF *****/
+
+/*
+ * add_server_altname - Add an alternate name for a refnum
+ * 
+ * Parameters:
+ *	refnum	- A server refnum
+ *	altname	- A new alternate name for 'refnum'
+ *
+ * The purpose of altnames is to give you something to refer to them
+ * by.  Traditionally, you've had to refer to a server either by 
+ * its name, or its refnum.  But then later people asked to be able
+ * to refer to a server by its group, and then eventually by any 
+ * random string. 
+ *
+ * For any value <x>, doing add_server_altname(refnum, <x>)
+ * You may then later use <x> to refer to the server:
+ *	/server <x>
+ *	$serverctl(GET <x> ...stuff...)
+ *	/window server <x>
+ *	(etc)
+ * The first altname (numbered 0) is the "shortname" and is 
+ * auto-populated and used as %S on the status bar.
+ */
 static void	add_server_altname (int refnum, char *altname)
 {
 	Server *s;
@@ -3506,6 +3659,25 @@ static void	add_server_altname (int refnum, char *altname)
 	add_to_bucket(s->altnames, v, NULL);
 }
 
+/*
+ * reset_server_altnames - Replace the altnames list with something new
+ *
+ * Parmeters:
+ *	refnum		- A server refnum
+ *	new_altnames 	- A space-separated list of dwords (altnames that
+ *			  contain spaces must be double-quoted) that 
+ *			  will replace the server's current altnames.
+ *
+ * The first word will be "altname 0" and will  be used by the %S 
+ * status bar expando.
+ *
+ * You cannot modify the altnames in place; you can either append a new
+ * altname (add_server_altname() above), or replace the entire list at once.
+ * The user's script usually does this with:
+ *	@ y = serverctl(GET $ref ALTNAMES)
+ *	[do something to $y]
+ * 	@serverctl(SET $ref ALTNAMES $y)
+ */
 static void	reset_server_altnames (int refnum, char *new_altnames)
 {
 	Server *s;
@@ -3525,6 +3697,19 @@ static void	reset_server_altnames (int refnum, char *new_altnames)
 		add_server_altname(refnum, value);
 }
 
+/*
+ * get_server_altnames - Return all altnames for a server
+ *
+ * Parameter:
+ *	refnum	- A server refnum
+ *
+ * Return value:
+ *	NULL	- "refnum" is not a valid server refnum
+ *	<other>	- A space-separated list of dwords (altnames that contain 
+ *		  spaces are double-quoted, so you have to call new_next_word()
+ *		  to iterate the words)
+ *  THE RETURN VALUE IS YOUR STRING.  YOU MUST NEW_FREE() IT.
+ */
 static char *	get_server_altnames (int refnum)
 {
 	Server *s;
@@ -3541,10 +3726,140 @@ static char *	get_server_altnames (int refnum)
 	return retval;
 }
 
-/*****************************************************************************/
+/*
+ * get_server_altname: Return the 'which'th altname for 'refnum'
+ *
+ * Parameters:
+ *	refnum	- A server refnum
+ *	which	- An integer >= 0, index into the altname list
+ *
+ * Returns:
+ *	NULL	- "refnum" is not a valid server refnum
+ *		  -or- "which" is not a valid altname index for "refnum"
+ *	<other>	- The "which"th altname for "refnum"
+ *		  THIS IS NOT YOUR STRING.  YOU MUST NOT MODIFY IT.
+ *
+ * Since 'altnames' is a bucket, it could technically have NULLs in it,
+ * but it seems there's no way to delete an altname; you have to complete
+ * reset the entire set.  So although it's _possible_, I don't believe it
+ * happens in practice.  
+ *
+ * Thus, you could enumerate all altnames by starting at which=0 and 
+ * stopping when you get a NULL back.
+ */
+const char *	get_server_altname (int refnum, int which)
+{
+	Server	*s;
 
+	if (!(s = get_server(refnum)))
+		return NULL;
+
+	if (which < 0 || which > s->altnames->numitems - 1)
+		return NULL;
+
+	return s->altnames->list[which].name;
+}
+
+/*
+ * which_server_altname: Check if 'name' is an altname for 'refnum'
+ *
+ * Parameters:
+ *	refnum 	-
+ *	name	-
+ *
+ * Returns:
+ *	-2	- "refnum" is not a valid server refnum
+ *	-1	- "name" is not a valid altname for "refnum"
+ * 	>= 0	- An index suitable for passing to get_server_altname().
+ *		  *** Note *** altnames may be changed at any time by
+ *		  the user, so it's not clear how long this index would
+ *		  be valid for.
+ *
+ * XXX This function appears to be unused.
+ */
+int	which_server_altname (int refnum, const char *name)
+{
+	Server *s;
+	int	i;
+
+	if (!(s = get_server(refnum)))
+		return -2;
+
+	for (i = 0; i < s->altnames->numitems; i++)
+		if (!my_stricmp(s->altnames->list[i].name, name))
+			return i;
+
+	return -1;
+}
+
+
+/*
+ * shortname: Convert a server "ourname" into a server "shortname".
+ *
+ * Parameters:
+ *	oname	- The "ourname" -- what you typed to /server or put 
+ *		  in a server description (eg, "irc.efnet.com")
+ *
+ * Return value:
+ *	The Shortname for 'oname':
+ *	  1. If 'oname' starts with "irc", the first segment is removed
+ *	     (this catches "irc.*" and "ircserver.*" and "irc-2.*")
+ *	  2. If after this it is > 60 bytes, it is truncated
+ *	THE RETURN VALUE IS YOUR STRING -- YOU MUST NEW_FREE() IT.
+ * 
+ * The intention is the "shortname" should be a server's default 
+ * zeroth altname.  The zeroth altname is what appears as %S on your
+ * status bar.
+ *
+ * This is used by serverinfo_to_newserver(), the function that creates
+ * new server refnums.
+ */
+static char *	shortname (const char *oname)
+{
+	char *name, *next, *rest;
+	ssize_t	len;
+
+	name = malloc_strdup(oname);
+
+	/* If it's an IP address, just use it. */
+	if (strtoul(name, &next, 10) && *next == '.')
+		return name;
+
+	/* If it doesn't have a dot, just use it. */
+	if (!(rest = strchr(name, '.')))
+		return name;
+
+	/* If it starts with 'irc', skip that. */
+	if (!strncmp(name, "irc", 3))
+	{
+		ov_strcpy(name, rest + 1);
+		if (!(rest = strchr(name + 1, '.')))
+			rest = name + strlen(name);
+	}
+
+	/* Truncate at 60 chars */
+	if ((len = rest - name) > 60)
+		len = 60;
+
+	name[len] = 0;
+	return name;
+}
+
+
+/*****************************************************************************/
 /* 005 STUFF */
 
+/*
+ * make_005 - Initialize the Bucket that will hold a server's 005 settings.
+ *
+ * Parameter:
+ *	refnum	- A server whose 005 Bucket needs initializing
+ *
+ * This function must be called once and only one per refnum,
+ *    and that call must be from servref_to_newserv().
+ * If you call it elsewhere, it will leak memory (s->a005.list).
+ * If you want to clean up/reset an 005 bucket, use destroy_005(refnum)
+ */
 void	make_005 (int refnum)
 {
 	Server *s;
@@ -3559,6 +3874,15 @@ void	make_005 (int refnum)
 	s->a005.hash = HASH_SENSITIVE; /* One way to deal with rfc2812 */
 }
 
+/*
+ * destroy_a_005 - Clean up after an unwanted 005 setting.
+ *
+ * Parameter:
+ *	item	- An 005 item that has been previously removed from the server.
+ *
+ * Once you have called this function, you must not make any reference to the
+ * 'item' parameter you passed in.
+ */
 static void	destroy_a_005 (A005_item *item)
 {
 	if (item) {
@@ -3568,6 +3892,20 @@ static void	destroy_a_005 (A005_item *item)
 	}
 }
 
+/*
+ * destroy_005 - Remove all 005 settings for a server
+ *
+ * Parameters:
+ *	refnum	- A server refnum
+ *
+ * This function releases all of the malloc()ed memory associated with 005
+ * management for a server.  It should therefore be called when the server
+ * gets disconnected or deleted.
+ *
+ * Technically, this may only be called for a server that has previously 
+ * been called make_005(refnum) to set up the server's 005 Bucket.  This
+ * would always be the case, but I'm just saying...
+ */
 void	destroy_005 (int refnum)
 {
 	Server *s;
@@ -3583,11 +3921,21 @@ void	destroy_005 (int refnum)
 	new_free(&s->a005.list);
 }
 
-/* XXX - Clang says that there is a null deref here, but I can't find it. */
-/* So I de-macrofied this so clang could be more specific */
-#if 0
-static GET_ARRAY_NAMES_FUNCTION(get_server_005s, (__FROMSERV->a005))
-#else
+/*
+ * get_server_005s - return all settings passed to set_server_005()
+ *
+ * Parameters:
+ *	refnum	- A server refnum 
+ *	str	- A wildcard pattern.  Use "*" to get everything.
+ *
+ * Return value:
+ *	A space-separated list of zero or more words containing the settings
+ * 	that were previously passed to set_server_005(refnum, setting, ...);
+ *	THIS IS YOUR STRING.  YOU MUST NEW_FREE() IT.
+ *
+ * This was previously a macro, but clang complained there was a NULL deref,
+ * so I de-macrofied it so i could figure it out.
+ */
 static char *	get_server_005s (int refnum, const char *str)
 {
 	int	i;
@@ -3609,9 +3957,22 @@ static char *	get_server_005s (int refnum, const char *str)
 	}
 	return ret ? ret : malloc_strdup(empty_string);
 }
-#endif
 
 
+/*
+ * get_server_005 - Retrieve an 005 variable for a server
+ *
+ * Parameters:
+ *	refnum	- The server that previously sent us an 005 numeric
+ *	setting	- The server setting we want to get the value of
+ *
+ * Return Value:
+ *	NULL	- "refnum" is not a valid server
+ *		  -or- The server did not provide an 005 containing 'setting'
+ *	<other>	- The 'value' value most recently passed to
+ *			set_server_005(refnum, setting, value);
+ *		  THIS IS NOT YOUR STRING.  You must not modify it.
+ */
 const char *	get_server_005 (int refnum, const char *setting)
 {
 	Server *s;
@@ -3627,7 +3988,36 @@ const char *	get_server_005 (int refnum, const char *setting)
 		return NULL;
 }
 
-/* value should be null pointer or empty to clear. */
+/*
+ * set_server_005 - Associate an 005 numeric variable with the server
+ *
+ * Parameters:
+ *	refnum 	- The server that sent us an 005 numeric
+ *	setting - The variable name (the part before =)
+ *	value 	- The value (the part after =)
+ *	          If "value" is NULL or the empty string, it deletes "setting".
+ *
+ * It is a practice in modern IRC for the server to provide the client
+ * some information about its configuration so that the client can 
+ * parse things correctly.  This information is provided via the 005
+ * numeric reply, which usually accompanies the VERSION reply.
+ *
+ * Example:
+ *	:server.com 005 mynick mynick CHANTYPES=&# PREFIX=(ov)@+
+ * Each of these parameters is divided into a "setting" (CHANTYPES, PREFIX) and
+ * a "value".  The exact interpretation of the values is set by convention, and 
+ * there isn't a form RFC that describes or requires them.  The client uses 
+ * these values when they are provided to make better decisions.
+ *
+ * XXX - As a side effect, this function acts as a gatekeeper for flags that 
+ * get set.  For now, we capture the CASEMAPPING setting to determine how we 
+ * should treat lower and uppercase leters (RFC1459 says that {|} and [\] 
+ * are equivalent, but ASCII says they're not.)   In theory, we should be 
+ * handling this someplace else, but for now, we do it here.
+ *
+ * XXX - It is probably a hack to call update_all_status() here, but I'm not 
+ * sure if i care that badly.
+ */
 void	set_server_005 (int refnum, char *setting, const char *value)
 {
 	Server *s;
@@ -3668,6 +4058,17 @@ void	set_server_005 (int refnum, char *setting, const char *value)
 	update_all_status();
 }
 
+/*
+ * get_all_server_groups - Return a list of all "group" fiends used by servers
+ *
+ * Return value:
+ * 	A string containing a space separated list of all values of the "group"
+ *	field in all servers, open or closed.
+ *
+ * THE RETURN VALUE IS YOUR STRING -- YOU MUST EVENTUALLY NEW_FREE() IT.
+ * The order of the groups in the return value is unspecified and may change.
+ * This implementation orders the groups by server refnum.
+ */
 static char *	get_all_server_groups (void)
 {
 	Server *s;
@@ -4048,8 +4449,20 @@ char 	*serverctl 	(char *input)
 }
 
 /*
- * got_my_userhost -- callback function, XXXX doesnt belong here
- * XXX Really does not belong here. 
+ * got_my_userhost: A callback function to userhostbase()
+ *
+ * Parameters:
+ *	refnum	- A server refnum
+ *	item	- The result of a USERHOST request
+ *	nick	- The value passed to 'args' (for here, it is NULL)
+ *	stuff	- The value passed to 'subargs' (for here, it is NULL)
+ *
+ * When you connect to a server, we ask do a USERHOST for ourselves, so we
+ * know what our public IP address is.  This is needed for 
+ * for /SET DCC_USE_GATEWAY_ADDR ON, CTCP FINGER, the $X expando, and 
+ * (in the future) for determining how long protocol messages can be.
+ * 
+ * XXX I suppose this doesn't belong here.  But where else shall it go?
  */
 void 	got_my_userhost (int refnum, UserhostItem *item, const char *nick, const char *stuff)
 {
@@ -4060,6 +4473,27 @@ void 	got_my_userhost (int refnum, UserhostItem *item, const char *nick, const c
 	new_free(&freeme);
 }
 
+
+/*
+ * server_more_addrs: Are there IPs for this server we haven't tried yet?
+ *
+ * Parameters:
+ *	refnum	- A server refnum
+ *
+ * Return value:
+ *	0	- "refnum" is not a valid server refnum
+ *		  -or- There are no untried IPs for "refnum"
+ *	1	- There are untried IPs for "refnum"
+ *
+ * This is used by window_check_servers() which is a failsafe function.
+ * If you're trying to connect to a server and a connection gets 
+ * "stuck" or you lose patience, you might do a /reconnect or /disconnect.
+ * This results in a window connected to a server that is CLOSED; however
+ * window_check_servers() will call here to find out if there are other
+ * IP addresses that can be tried, and if so, it resets the server to 
+ * READY.  This is what allows /reconnect to do the right thing if you 
+ * get hung up during a connection to a firewalled IP address.
+ */
 int	server_more_addrs (int refnum)
 {
 	Server	*s;
@@ -4073,6 +4507,26 @@ int	server_more_addrs (int refnum)
 		return 0;
 }
 
+/*
+ * server_addrs_left: How many DNS entries do we have left to try?
+ *
+ * Parameters:
+ *	refnum	- A server refnum
+ *
+ * Return value:
+ *	0	- "refnum" is not a valid server refnum
+ *	>0	- The number of dns entries still untried.
+ *
+ * When you connect to a server, the client will do a dns lookup
+ * on the "ourname", which will return 0 or more IP addresses.
+ * Each of them are tried in sequence until one of them results 
+ * in a server that accepts us.  During the period of time between
+ * our DNS lookup and our receiving a 001 numeric, we keep the 
+ * addresses around.  This will tell you how many are left to go
+ * before we give up.
+ *
+ * This is used by $serverctl(GET x ADDRSLEFT).
+ */
 int	server_addrs_left (int refnum)
 {
 	Server *s;
@@ -4087,67 +4541,6 @@ int	server_addrs_left (int refnum)
 
 	return count;
 }
-
-/* Returns malloced string */
-static char *	shortname (const char *oname)
-{
-	char *name, *next, *rest;
-	ssize_t	len;
-
-	name = malloc_strdup(oname);
-
-	/* If it's an IP address, just use it. */
-	if (strtoul(name, &next, 10) && *next == '.')
-		return name;
-
-	/* If it doesn't have a dot, just use it. */
-	if (!(rest = strchr(name, '.')))
-		return name;
-
-	/* If it starts with 'irc', skip that. */
-	if (!strncmp(name, "irc", 3))
-	{
-		ov_strcpy(name, rest + 1);
-		if (!(rest = strchr(name + 1, '.')))
-			rest = name + strlen(name);
-	}
-
-	/* Truncate at 60 chars */
-	if ((len = rest - name) > 60)
-		len = 60;
-
-	name[len] = 0;
-	return name;
-}
-
-const char *	get_server_altname (int refnum, int which)
-{
-	Server	*s;
-
-	if (!(s = get_server(refnum)))
-		return NULL;
-
-	if (which < 0 || which > s->altnames->numitems - 1)
-		return NULL;
-
-	return s->altnames->list[which].name;
-}
-
-int	which_server_altname (int refnum, const char *name)
-{
-	Server *s;
-	int	i;
-
-	if (!(s = get_server(refnum)))
-		return -2;
-
-	for (i = 0; i < s->altnames->numitems; i++)
-		if (!my_stricmp(s->altnames->list[i].name, name))
-			return i;
-
-	return -1;
-}
-
 #if 0
 /*
  * This calculates how long a privmsg/notice can be on 'server' that we send
