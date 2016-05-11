@@ -29,6 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+/* Python commit #2 */
 
 #include "irc.h"
 #include "ircaux.h"
@@ -199,6 +200,7 @@ int	python_load (const char *filename)
 		return -1;
 	}
 
+#if 0
 	/* 3. Find the __init__ function */
 	pfunc = PyObject_GetAttrString(pmodule, "__init__");
 	if (!pfunc || !PyCallable_Check(pfunc))
@@ -243,6 +245,7 @@ int	python_load (const char *filename)
 	Py_DECREF(pvalue);
 	Py_XDECREF(pfunc);
 	Py_DECREF(pmodule);
+#endif
 
 	/* This is called at shut-down time, not every time! */
 	/*
