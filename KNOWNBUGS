@@ -793,3 +793,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix utf8_strnicmp(), which broke $uniq() (robo, caf)
 * Fix null deref when a server has no CA (caf)
 * Remove a couple of unused variables in ssl handling (caf)
+* Fix crash when you $close() an fd from $exec() [rb CE]
