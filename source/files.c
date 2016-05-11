@@ -172,7 +172,7 @@ struct  epic_loadfile *elf;
 		int foo;
 		for (foo = 0; foo < 3; foo++) 
 		{
-                        if (!(elf=(struct epic_loadfile *)malloc(sizeof(struct epic_loadfile)))) {
+                        if (!(elf=(struct epic_loadfile *)new_malloc(sizeof(struct epic_loadfile)))) {
                             yell("Not enough memory.");
                             return NULL;
                         }
