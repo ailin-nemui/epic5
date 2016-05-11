@@ -29,7 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-/* Python commit #2 */
+/* Python commit #3 */
 
 #include "irc.h"
 #include "ircaux.h"
@@ -155,7 +155,7 @@ static	PyMethodDef	epicMethods[] = {
 
 static	PyModuleDef	epicModule = {
 	PyModuleDef_HEAD_INIT,	
-	"epic", 	NULL, 		-1,		epicMethods,
+	"_epic", 	NULL, 		-1,		epicMethods,
 	NULL,		NULL,		NULL,		NULL
 };
 
