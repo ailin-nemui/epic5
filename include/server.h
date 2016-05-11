@@ -9,7 +9,6 @@
 #ifndef __server_h__
 #define __server_h__
   
-
 /* To get definition of Who, Ison, and Userhost queues. */
 #include "who.h"
 

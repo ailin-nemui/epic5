@@ -2856,6 +2856,9 @@ BUILT_IN_COMMAND(reconnectcmd)
 	disconnectcmd(command, args, subargs);
 }
 
+/**************************************************************************/
+/* Getters and setters and stuff, oh my! */
+
 /* PORTS */
 static void    set_server_port (int refnum, int port)
 {
@@ -3169,6 +3172,9 @@ int	check_server_redirect (int refnum, const char *who)
 }
 
 /*****************************************************************************/
+/* GETTERS AND SETTERS FOR MORE MUNDANE THINGS */
+
+/* A setter for a mundane integer field */
 #define SET_IATTRIBUTE(param, member) \
 void	set_server_ ## member (int servref, int param )	\
 {							\
@@ -3180,6 +3186,7 @@ void	set_server_ ## member (int servref, int param )	\
 	s-> member = param;				\
 }
 
+/* A getter for a mundane integer field */
 #define GET_IATTRIBUTE(member) \
 int	get_server_ ## member (int servref)		\
 {							\
@@ -3191,6 +3198,7 @@ int	get_server_ ## member (int servref)		\
 	return s-> member ;				\
 }
 
+/* A setter for a mundane string field */
 #define SET_SATTRIBUTE(param, member) \
 void	set_server_ ## member (int servref, const char * param )	\
 {							\
@@ -3202,6 +3210,7 @@ void	set_server_ ## member (int servref, const char * param )	\
 	malloc_strcpy(&s-> member , param);		\
 }
 
+/* A getter for a mundane string field */
 #define GET_SATTRIBUTE(member, default)			\
 const char *	get_server_ ## member (int servref ) \
 {							\
@@ -3216,14 +3225,17 @@ const char *	get_server_ ## member (int servref ) \
 		return default ;			\
 }
 
+/* A getter and a setter for a mundane integer field */
 #define IACCESSOR(param, member)		\
 SET_IATTRIBUTE(param, member)			\
 GET_IATTRIBUTE(member)
 
+/* A getter and a setter for a mundane string field */
 #define SACCESSOR(param, member, default)	\
 SET_SATTRIBUTE(param, member)			\
 GET_SATTRIBUTE(member, default)
 
+/* Various mundane getters and setters */
 IACCESSOR(v, doing_privmsg)
 IACCESSOR(v, doing_notice)
 IACCESSOR(v, doing_ctcp)
@@ -3252,6 +3264,12 @@ SACCESSOR(ver, version_string, NULL)
 SACCESSOR(name, default_realname, get_string_var(DEFAULT_REALNAME_VAR))
 GET_SATTRIBUTE(realname, NULL)
 
+/* * * * */
+/* Getters and setters that require special handling somehow. */
+ 
+/*
+ * Getter and setter for (IRCNet) "Unique ID"
+ */
 GET_SATTRIBUTE(unique_id, NULL)
 void	set_server_unique_id (int servref, const char * id)
 {
@@ -3266,6 +3284,9 @@ void	set_server_unique_id (int servref, const char * id)
 }
 
 
+/*
+ * Getter and setter for Server Status ("server state")
+ */
 GET_IATTRIBUTE(status)
 void	set_server_status (int refnum, int new_status)
 {
@@ -3291,6 +3312,9 @@ void	set_server_status (int refnum, int new_status)
 }
 
 
+/*
+ * Getter and setter for server operatorship
+ */
 GET_IATTRIBUTE(operator)
 void	set_server_operator (int refnum, int flag)
 {
@@ -3303,6 +3327,9 @@ void	set_server_operator (int refnum, int flag)
 	oper_command = 0;		/* No longer doing oper */
 }
 
+/*
+ * Getter for the full server description string (irc.host.com:port:::...)
+ */
 static const char *	get_server_fulldesc (int servref)
 {
 	Server *s;
@@ -3316,7 +3343,9 @@ static const char *	get_server_fulldesc (int servref)
 		return NULL;
 }
 
-/* * */
+/*
+ * Getter and setter for "name" (ie, "ourname")
+ */
 void	set_server_name (int servref, const char * param )
 {
 	Server *s;
@@ -3341,7 +3370,9 @@ const char *	get_server_name (int servref )
 		return "<none>";
 }
 
-/* * */
+/*
+ * Getter and setter for "server_group"
+ */
 void	set_server_group (int servref, const char * param )
 {
 	Server *s;
@@ -3366,7 +3397,9 @@ const char *	get_server_group (int servref)
 		return "<default>";
 }
 
-/* * */
+/*
+ * Getter and setter for "server_type"
+ */
 void	set_server_server_type (int servref, const char * param )
 {
 	Server *s;
@@ -3391,7 +3424,9 @@ const char *	get_server_type (int servref )
 		return "IRC";
 }
 
-/* * */
+/*
+ * Getter and setter for "vhost"
+ */
 void	set_server_vhost (int servref, const char * param )
 {
 	Server *s;
@@ -3417,6 +3452,9 @@ const char *	get_server_vhost (int servref )
 }
 
 
+/* 
+ * Getter and setter for "itsname"
+ */
 SET_SATTRIBUTE(name, itsname)
 const char	*get_server_itsname (int refnum)
 {
@@ -3431,6 +3469,9 @@ const char	*get_server_itsname (int refnum)
 		return s->info->host;
 }
 
+/*
+ * Getter and setter for "protocol_state"
+ */
 int	get_server_protocol_state (int refnum)
 {
 	int	retval;
@@ -3463,6 +3504,9 @@ void	set_server_protocol_state (int refnum, int state)
 	/* state = state >> 8; */
 }
 
+/*
+ * Getter and setter for "ssl_enabled".
+ */
 void	set_server_ssl_enabled (int refnum, int flag)
 {
 	Server *s;
@@ -3483,12 +3527,21 @@ void	set_server_ssl_enabled (int refnum, int flag)
 GET_IATTRIBUTE(ssl_enabled)
 
 
-/*****/
+/***********************************************************************/
 /* WAIT STUFF */
 /*
- * This isnt a command, its used by the wait command.  Since its extern,
- * and it doesnt use anything static in this file, im sure it doesnt
- * belong here.
+ * server_hard_wait -- Do not return until one round trip to the server 
+ *			is completed.
+ *
+ * Arguments:
+ *	i	- A server refnum
+ *
+ * Notes:
+ * 	- This is the /WAIT command.
+ *	- This function does not return until this WAIT _and all 
+ *	  subsequent WAITs launched while this one is pending_ 
+ *	  have completed.  This is an unspecified amount of time.
+ *	- See the comments for check_server_wait() for more info.
  */
 void 	server_hard_wait (int i)
 {
@@ -3516,6 +3569,18 @@ void 	server_hard_wait (int i)
 	from_server = old_from_server;
 }
 
+/*
+ * server_passive_wait - Register a non-recursive callback promise
+ *
+ * Arguments:
+ *	i	- A server refnum
+ *	stuff	- A block of code to run at a later time
+ *
+ * Notes:
+ *	This is the /WAIT -CMD command.
+ * 	'stuff' will be run after one round trip to the server 'i'.
+ *	See the comments for check_server_wait() for more info.
+ */
 void	server_passive_wait (int i, const char *stuff)
 {
 	Server *s;
@@ -3538,12 +3603,50 @@ void	server_passive_wait (int i, const char *stuff)
 }
 
 /*
- * How does this work?  Well, when we issue the /wait command it increments
- * a variable "waiting_out" which is the number of times that wait has been
- * caled so far.  If we get a wait token, we increase the waiting_in level
- * by one, and if the number of inbound waiting tokens is the same as the 
- * number of outbound tokens, then we are free to clear this stack frame
- * which will cause all of the pending waits to just fall out.
+ * check_server_wait - A callback to see if a WAIT has completed
+ *
+ * Arguments:
+ *	refnum	- A server refnum that has sent us a token (see below)
+ *	nick	- The token sent to us
+ *
+ * Return value:
+ *	1	- This token represents a valid WAIT request
+ *	0	- This token does not represent a valid WAIT request.
+ *
+ * - Backstory about hard waits:
+ * The /WAIT command performs a (to your script) blocking synchronization
+ * with the server.  This means it does not return until all of the 
+ * commands you have previously sent to the server have been completed
+ * (and any /ONs have been run).  This is done by recursively calling 
+ * the main loop until one round trip to the server is completed.
+ *
+ * How it does this is in server_hard_wait() [see above].  It will send
+ * an invalid command to the server  (lame_wait_nick) and wait for the
+ * server to send a 421 NOSUCHCOMMAND numeric back to us.  
+ *
+ * Ordinarily, this would be non-controversial, except that you might do
+ * a /WAIT while another /WAIT is already pending.  This can get ugly, 
+ * so how we choose to manage that is, _No WAIT shall return until ALL 
+ * pending WAITs have completed_.  This means a WAIT does not return at 
+ * the first possible convenience; but only when it is guaranteed to be
+ * safe.  This means anything you do after a WAIT (such as cleanup) might
+ * have occurred after several consecutive WAITs have happened.  That's just
+ * a risk you have to take.
+ *
+ * - Backstory about soft waits:
+ * The /WAIT -CMD command implements a "promise" feature, where it will
+ * record a block of code to be run at a later time, after one round trip
+ * to the server has occurred.  Because the client does not implement
+ * closures, this is not as flexible, since you can only converse between
+ * the calling scope and the /WAIT -CMD scope through global variables, and
+ * that means you don't have re-entrancy.  However, you do get the promise
+ * that your commands will be run at the first possible convenience.
+ *
+ * - /WAITs and /WAIT -CMDs play nicely with each other.
+ *
+ * This function should only be called by the 421 Numeric Handler.
+ * If the "invalid command" is a hard wait, we record that
+ * If the "invalid command" is a soft wait, we run the appropriate callback.
  */
 int	check_server_wait (int refnum, const char *nick)
 {
@@ -3552,6 +3655,7 @@ int	check_server_wait (int refnum, const char *nick)
 	if (!(s = get_server(refnum)))
 		return 0;
 
+	/* Hard waits */
 	if ((s->waiting_out > s->waiting_in) && !strcmp(nick, lame_wait_nick))
 	{
 		s->waiting_in++;
@@ -3559,6 +3663,7 @@ int	check_server_wait (int refnum, const char *nick)
 	        return 1;
 	}
 
+	/* Soft waits */
 	if (s->start_wait_list && !strcmp(nick, wait_nick))
 	{
 		WaitCmd *old = s->start_wait_list;
@@ -3574,6 +3679,8 @@ int	check_server_wait (int refnum, const char *nick)
 		new_free((char **)&old);
 		return 1;
 	}
+
+	/* This invalid command is not a wait */
 	return 0;
 }
 
