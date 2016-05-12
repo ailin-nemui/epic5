@@ -29,7 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-/* Python commit #6 */
+/* Python commit #8 */
 
 #include <Python.h>
 #include "irc.h"
@@ -41,6 +41,8 @@
 #include "output.h"
 #include "ifcmd.h"
 #include "extlang.h"
+
+void	output_traceback (void);
 
 static	int	p_initialized = 0;
 static	PyObject *global_vars = NULL;
@@ -246,36 +248,7 @@ char *	python_eval_expression (char *input)
 	/* Convert retval to a string */
 	retval = PyRun_String(input, Py_eval_input, global_vars, global_vars);
 	if (retval == NULL)
-	{
-		PyObject *ptype, *pvalue, *ptraceback;
-		PyObject *ptype_repr, *pvalue_repr, *ptraceback_repr;
-		char *ptype_str, *pvalue_str, *ptraceback_str;
-
-		say("The python evaluation returned NULL. hrm.");
-		PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-		if (ptype != NULL)
-		{
-			ptype_repr = PyObject_Repr(ptype);
-			ptype_str = PyUnicode_AsUTF8(ptype_repr);
-			say("Exception Type: %s", ptype_str);
-		}
-		if (pvalue != NULL)
-		{
-			pvalue_repr = PyObject_Repr(pvalue);
-			pvalue_str = PyUnicode_AsUTF8(pvalue_repr);
-			say("Value: %s", pvalue_str);
-		}
-		if (ptraceback != NULL)
-		{
-			ptraceback_repr = PyObject_Repr(ptraceback);
-			ptraceback_str = PyUnicode_AsUTF8(ptraceback_repr);
-			say("Traceback: %s", ptraceback_str);
-		}
-		Py_XDECREF(ptype);
-		Py_XDECREF(pvalue);
-		Py_XDECREF(ptraceback);
-		RETURN_EMPTY;
-	}
+		output_traceback();
 
 	retval_repr = PyObject_Repr(retval);
 	r = PyUnicode_AsUTF8(retval_repr);
@@ -303,41 +276,12 @@ void	python_eval_statement (char *input)
 	 * I need to figure out how to defeat that.
 	 */
 	if ((retval = PyRun_SimpleString(input)))
-	{
-		PyObject *ptype, *pvalue, *ptraceback;
-		PyObject *ptype_repr, *pvalue_repr, *ptraceback_repr;
-		char *ptype_str, *pvalue_str, *ptraceback_str;
-
-		say("The python evaluation failed. hrm.");
-		PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-		if (ptype != NULL)
-		{
-			ptype_repr = PyObject_Repr(ptype);
-			ptype_str = PyUnicode_AsUTF8(ptype_repr);
-			say("Exception Type: %s", ptype_str);
-		}
-		if (pvalue != NULL)
-		{
-			pvalue_repr = PyObject_Repr(pvalue);
-			pvalue_str = PyUnicode_AsUTF8(pvalue_repr);
-			say("Value: %s", pvalue_str);
-		}
-		if (ptraceback != NULL)
-		{
-			ptraceback_repr = PyObject_Repr(ptraceback);
-			ptraceback_str = PyUnicode_AsUTF8(ptraceback_repr);
-			say("Traceback: %s", ptraceback_str);
-		}
-		Py_XDECREF(ptype);
-		Py_XDECREF(pvalue);
-		Py_XDECREF(ptraceback);
-		return;
-	}
+		output_traceback();
 }
 
 
 /*
- * The /PYTHON function: Evalulate the args as a PYTHON block and ignore the 
+ * The /PYTHON command: Evalulate the args as a PYTHON block and ignore the 
  * return value of the statement.
  */
 BUILT_IN_COMMAND(pythoncmd)
@@ -356,5 +300,141 @@ BUILT_IN_COMMAND(pythoncmd)
                 body = args;
 
         python_eval_statement(body);
+}
+
+/*
+ * The /PYDIRECT command.  Call a python module.method directly without quoting hell
+ *  The return value (if any) is ignored.
+ */
+char *	call_python_directly (char *args)
+{
+	char 	*object, *module, *method;
+	PyObject *mod_py, *meth_py, *args_py;
+	PyObject *pModule, *pFunc, *pArgs, *pRetVal;
+	PyObject *retval_repr;
+	char 	*r, *retvalstr;
+
+	if (!(object = new_next_arg(args, &args)))
+	{
+		my_error("Usage: /PYDIRECT module.method arguments");
+		RETURN_EMPTY;
+	}
+
+	module = object;
+	if (!(method = strchr(module, '.')))
+	{
+		my_error("Usage: /PYDIRECT module.method arguments");
+		RETURN_EMPTY;
+	}
+	*method++ = 0;
+
+	mod_py = Py_BuildValue("s", module);
+	pModule = PyImport_Import(mod_py);
+	Py_XDECREF(mod_py);
+
+	if (pModule == NULL)
+	{
+		my_error("PYDIRECT: Unable to import module %s", module);
+		output_traceback();
+		RETURN_EMPTY;
+	}
+
+	pFunc = PyObject_GetAttrString(pModule, method);
+	if (pFunc == NULL)
+	{
+		my_error("PYDIRECT: The module %s has nothing named %s", module, method);
+		Py_XDECREF(pModule);
+		output_traceback();
+		RETURN_EMPTY;
+	}
+
+	if (!PyCallable_Check(pFunc))
+	{
+		my_error("PYDIRECT: The thing named %s.%s is not a function", module, method);
+		Py_XDECREF(pFunc);
+		Py_XDECREF(pModule);
+		RETURN_EMPTY;
+	}
+
+	if (!(pArgs = PyTuple_New(1)))
+	{
+		output_traceback();
+		Py_XDECREF(pFunc);
+		Py_XDECREF(pModule);
+		RETURN_EMPTY;
+	}
+
+	if (!(args_py = Py_BuildValue("s", args)))
+	{
+		output_traceback();
+		Py_XDECREF(pArgs);
+		Py_XDECREF(pFunc);
+		Py_XDECREF(pModule);
+		RETURN_EMPTY;
+	}
+
+	PyTuple_SetItem(pArgs, 0, args_py);
+
+	if (!(pRetVal = PyObject_CallObject(pFunc, pArgs)))
+	{
+		output_traceback();
+		Py_XDECREF(pArgs);
+		Py_XDECREF(args_py);
+		Py_XDECREF(pFunc);
+		Py_XDECREF(pModule);
+	}
+
+        retval_repr = PyObject_Repr(pRetVal);
+        r = PyUnicode_AsUTF8(retval_repr);
+        retvalstr = malloc_strdup(r);
+
+	Py_XDECREF(pArgs);
+	Py_XDECREF(args_py);
+	Py_XDECREF(pFunc);
+	Py_XDECREF(pModule);
+	Py_XDECREF(pRetVal);
+
+	RETURN_MSTR(retvalstr);
+}
+
+BUILT_IN_COMMAND(pydirect_cmd)
+{
+	char *x;
+
+	x = call_python_directly(args);
+	new_free(&x);
+}
+
+
+void	output_traceback (void)
+{
+	PyObject *ptype, *pvalue, *ptraceback;
+	PyObject *ptype_repr, *pvalue_repr, *ptraceback_repr;
+	char *ptype_str, *pvalue_str, *ptraceback_str;
+
+	say("The python evaluation failed. hrm.");
+	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+	if (ptype != NULL)
+	{
+		ptype_repr = PyObject_Repr(ptype);
+		ptype_str = PyUnicode_AsUTF8(ptype_repr);
+		say("Exception Type: %s", ptype_str);
+	}
+	if (pvalue != NULL)
+	{
+		pvalue_repr = PyObject_Repr(pvalue);
+		pvalue_str = PyUnicode_AsUTF8(pvalue_repr);
+		say("Value: %s", pvalue_str);
+	}
+	if (ptraceback != NULL)
+	{
+		ptraceback_repr = PyObject_Repr(ptraceback);
+		ptraceback_str = PyUnicode_AsUTF8(ptraceback_repr);
+		say("Traceback: %s", ptraceback_str);
+	}
+	Py_XDECREF(ptype);
+	Py_XDECREF(pvalue);
+	Py_XDECREF(ptraceback);
+	return;
 }
 

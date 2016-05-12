@@ -276,7 +276,10 @@ static	IrcCommand irc_command[] =
 	{ "POP",	pop_cmd		},
 	{ "PRETEND",	pretend_cmd	},
 	{ "PUSH",	push_cmd	},
+#ifdef HAVE_PYTHON
+	{ "PYDIRECT",	pydirect_cmd	}, /* python.c */
 	{ "PYTHON",	pythoncmd	}, /* python.c */
+#endif
 	{ "QUERY",	query		},
         { "QUEUE",      queuecmd        }, /* queue.c */
 	{ "QUIT",	e_quit		},

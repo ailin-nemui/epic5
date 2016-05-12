@@ -342,6 +342,7 @@ static	char
 	*function_perlxcall	(char *),
 #endif
 #ifdef HAVE_PYTHON
+	*function_pydirect	(char *),
 	*function_python	(char *),
 #endif
 	*function_prefix	(char *),
@@ -655,6 +656,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "PERLXCALL",		function_perlxcall	},
 #endif
 #ifdef HAVE_PYTHON
+	{ "PYDIRECT",		function_pydirect	},
 	{ "PYTHON",		function_python		},
 #endif
 	{ "PID",		function_pid 		},
@@ -7861,6 +7863,11 @@ BUILT_IN_FUNCTION(function_chankey, input)
 BUILT_IN_FUNCTION(function_python, input)
 {
 	return python_eval_expression ( input );
+}
+
+BUILT_IN_FUNCTION(function_pydirect, input)
+{
+	return call_python_directly (input);
 }
 
 #endif

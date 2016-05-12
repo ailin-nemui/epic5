@@ -54,7 +54,9 @@ BUILT_IN_COMMAND(rubycmd);
 #ifdef HAVE_PYTHON
 extern	char *	python_eval_expression (char *);
 extern	void	python_eval_statement (char *);
+extern	char *  call_python_directly (char *args);
 BUILT_IN_COMMAND(pythoncmd);
+BUILT_IN_COMMAND(pydirect_cmd);
 #endif
 
 #endif
