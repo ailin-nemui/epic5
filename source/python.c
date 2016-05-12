@@ -29,7 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-/* Python commit #5 */
+/* Python commit #6 */
 
 #include <Python.h>
 #include "irc.h"
@@ -46,14 +46,44 @@ static	int	p_initialized = 0;
 static	PyObject *global_vars = NULL;
 
 /*
- * I owe many thanks to https://docs.python.org/3.6/extending/embedding.html
+ * ObRant
+ *
+ * So Python is a language like ircII where there is a distinction made between
+ * "statements" and "expressions".  In both languages, a "statement" is a call
+ * that does not result in a return value, and expression is.  I can't blame 
+ * python for this.  But it is different from Perl, Ruby, and TCL, which treat
+ * everything as a "callable" and then you either get a return value (for an 
+ * expression) or an empty string (for a statement).
+ *
+ * In order to make python support work, though, we have to honor this distinction.
+ * I've chosen to do this through the /PYTHON command and the $python() function
+ *
+ * 	You can only use the /PYTHON command to run statements.
+ *	Using /PYTHON with an expression will result in an exception being thrown.
+ *
+ *	You can only use the $python() function to evaluate expressions
+ *	Using $python() with a statement will result in an exception being thrown.
+ *
+ * How do you know whether what you're doing is an expression or a statement, when
+ * if you just throw everything into one file you don't have to worry about it?
+ * Good question.  I don't know.  Good luck!
+ */
+
+/*
+ * I owe many thanks to 
+ *	https://docs.python.org/3.6/extending/embedding.html
+ *	https://docs.python.org/3.6/c-api/veryhigh.html
+ *	https://docs.python.org/3/c-api/init.html
+ *	https://docs.python.org/3/c-api/exceptions.html
+ *	https://www6.software.ibm.com/developerworks/education/l-pythonscript/l-pythonscript-ltr.pdf
+ *	http://boost.cppll.jp/HEAD/libs/python/doc/tutorial/doc/using_the_interpreter.html
+ *	  (for explaining what the "start" flag is to PyRun_String)
  * for teaching how to embed and extend Python in a C program.
  */
 
 /*
- * Psuedo-code of how to load up a python script and call an init function
- *
- * 1. Call Py_Initialize()
+ * I owe many many thanks to skully for working with me on this
+ * and giving me good advice on how to make this not suck.
  */
 
 /*************************************************************************/
@@ -248,7 +278,10 @@ void	python_eval_statement (char *input)
 		global_vars = PyModule_GetDict(PyImport_AddModule("__main__"));
 	}
 
-	/* Convert retval to a string */
+	/* 
+	 * XXX - This outputs to stdout (yuck) on exception.
+	 * I need to figure out how to defeat that.
+	 */
 	if ((retval = PyRun_SimpleString(input)))
 	{
 		PyObject *ptype, *pvalue, *ptraceback;
