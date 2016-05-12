@@ -29,7 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-/* Python commit #3 */
+/* Python commit #4 */
 
 #include "irc.h"
 #include "ircaux.h"
