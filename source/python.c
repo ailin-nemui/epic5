@@ -154,13 +154,32 @@ static	PyObject *	epic_expr (PyObject *self, PyObject *args)
 {
 	char *	str;
 	char *	exprval;
+	PyObject *retval;
 
 	if (!PyArg_ParseTuple(args, "s", &str)) {
 		return PyLong_FromLong(-1);
 	}
 
 	exprval = parse_inline(str, "");
-	return Py_BuildValue("s", exprval);
+	retval = Py_BuildValue("s", exprval);
+	new_free(&exprval);
+	return retval;
+}
+
+static	PyObject *	epic_expand (PyObject *self, PyObject *args)
+{
+	char *	str;
+	char *	expanded;
+	PyObject *retval;
+
+	if (!PyArg_ParseTuple(args, "s", &str)) {
+		return PyLong_FromLong(-1);
+	}
+
+	expanded = expand_alias(str, "");
+	retval = Py_BuildValue("s", expanded);
+	new_free(&expanded);
+	return retval;
 }
 
 static	PyObject *	epic_call (PyObject *self, PyObject *args)
@@ -183,6 +202,7 @@ static	PyMethodDef	epicMethods[] = {
 	{ "eval", 	epic_eval, 	METH_VARARGS, 	"Run a block statement with expansion (but $* is empty)" },
 	{ "expr", 	epic_expr, 	METH_VARARGS, 	"Return the result of an expression (parse_inline)" },
 	{ "call", 	epic_call, 	METH_VARARGS, 	"Call a function with expansion (but $* is empty) (call_function)" },
+	{ "expand",	epic_expand,	METH_VARARGS,	"Expand some text with $s" },
 	{ NULL,		NULL,		0,		NULL }
 };
 
