@@ -42,6 +42,9 @@
 #include "extlang.h"
 #include <Python.h>
 
+static	int	p_initialized = 0;
+static	PyObject *global_vars = NULL;
+
 /*
  * I owe many thanks to https://docs.python.org/3.6/extending/embedding.html
  * for teaching how to embed and extend Python in a C program.
@@ -161,7 +164,7 @@ static	PyModuleDef	epicModule = {
 
 /* 
  * This is called via
- *	PyImport_AppendInittab("epic", &PyInit_epic);
+ *	PyImport_AppendInittab("_epic", &PyInit_epic);
  * before
  *	PyInitialize();
  * in main().
@@ -172,131 +175,30 @@ static	PyObject *	PyInit_epic (void)
 }
 
 
-
 /***********************************************************/
-/*
- * Embed Python by allowing users to do a /pyload filename
- */
-int	python_load (const char *filename)
-{
-	PyObject *pname, *pmodule, *pdict, *pfunc;
-	PyObject *pargs, *pvalue;
-	int	i;
-
-	/* 1. Convert the filename into a python string */
-	if (!(pname = PyUnicode_DecodeFSDefault(filename)))
-	{
-		yell("Failed to parse input filename: %s", filename);
-		return -1;
-	}
-
-	/* 2. Import the file */
-	pmodule = PyImport_Import(pname);
-	Py_DECREF(pname);
-	if (!pmodule)
-	{
-		PyErr_Print();
-		yell("Failed to import module");
-		return -1;
-	}
-
-#if 0
-	/* 3. Find the __init__ function */
-	pfunc = PyObject_GetAttrString(pmodule, "__init__");
-	if (!pfunc || !PyCallable_Check(pfunc))
-	{
-		if (PyErr_Occurred())
-			PyErr_Print();
-		yell("Cannot find __init__ in this module");
-	}
-
-	/* 4. Create a tuple and put the commit_id in it */
-	/* We use a tuple because maybe in the future we add more stuff. */
-	pargs = PyTuple_New(1);	
-	if (!(pvalue = PyLong_FromLong(commit_id)))
-	{
-		Py_DECREF(pargs);
-		Py_DECREF(pmodule);
-		say("Cannot convert argument to call __init__. Argh.");
-		return -1;
-	}
-	PyTuple_SetItem(pargs, 0, pvalue);
-
-	/* 5. Call the function, with the tuple as the argument */
-	pvalue = PyObject_CallObject(pfunc, pargs);
-	Py_DECREF(pargs);
-	if (!pvalue) 
-	{
-		Py_DECREF(pfunc);
-		Py_DECREF(pmodule);
-		PyErr_Print();
-		yell("Call to __init__ failed. argh.");
-		return -1;
-	}
-
-	/* 6. Interpret the return value as an integer */
-	retval = PyLong_AsLong(pvalue);
-	if (retval == 0) 
-		say("Initialization of module successful.");
-	else
-		say("Module load failed, returning error %ld", retval);
-
-	/* 7. Clean up after ourselves */
-	Py_DECREF(pvalue);
-	Py_XDECREF(pfunc);
-	Py_DECREF(pmodule);
-#endif
-
-	/* This is called at shut-down time, not every time! */
-	/*
-	if (Py_FinalizeEx() < 0) {
-		return -1;
-	*/
-	return 0;
-}
-
-
-/*********************************************************/
 /* 
  * Embed Python by allowing users to call a python function
  */
 char *	python_eval (char *input)
 {
-	char 	*name_part, *module_str, *method_str;
-	PyObject *module, *method;
-	char 	*args_part;
-	char 	*retval = NULL;
+	PyObject *retval;
+	char 	*r, *retvalstr = NULL;
 
-	GET_FUNC_ARG(name_part, input);
-	module_str = name_part;
-	if (!(method_str = strchr(module, '.')))
+	if (p_initialized == 0)
 	{
-		/* Error */
-		RETURN_EMPTY;
-	}
-	if (!(module = PyState_FindModule(module_str)))
-	{
-		/* Error */
-		RETURN_EMPTY;
+		PyImport_AppendInittab("_epic", &PyInit_epic);
+		Py_Initialize();
+		p_initialized = 1;
+		global_vars = PyModule_GetDict(PyImport_AddModule("__main__"));
 	}
 
-	if (input && *input) 
-	{
-		ruby_startstop(1);
-		rubyval = rb_rescue2(internal_rubyeval, (VALUE)input, 
-					eval_failed, 0,
-					rb_eException, 0);
-		if (rubyval == Qnil)
-			retval = NULL;
-		else
-		{
-			VALUE x;
-			x = rb_obj_as_string(rubyval);
-			retval = StringValuePtr(x);
-		}
-	}
+	/* Convert retval to a string */
+	retval = PyRun_String(input, Py_eval_input, global_vars, global_vars);
+	PyArg_ParseTuple(retval, "s", &r);
+	retvalstr = malloc_strdup(r);
 
-	RETURN_STR(retval);	/* XXX Is this malloced or not? */
+	Py_XDECREF(retval);
+	RETURN_MSTR(retvalstr);	
 }
 
 /*
