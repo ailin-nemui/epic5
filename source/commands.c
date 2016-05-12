@@ -276,6 +276,7 @@ static	IrcCommand irc_command[] =
 	{ "POP",	pop_cmd		},
 	{ "PRETEND",	pretend_cmd	},
 	{ "PUSH",	push_cmd	},
+	{ "PYTHON",	pythoncmd	}, /* python.c */
 	{ "QUERY",	query		},
         { "QUEUE",      queuecmd        }, /* queue.c */
 	{ "QUIT",	e_quit		},

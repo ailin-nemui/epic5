@@ -440,3 +440,15 @@
 /* Define this if you have newlocale() */
 #undef HAVE_NEWLOCALE
 
+/* Define this if you have embeddable python */
+#undef HAVE_PYTHON
+
+/* Define this if you have ldflags to link python */
+#undef PYTHON_LDFLAGS
+
+/* Define this if you have cflags to link python */
+#undef PYTHON_CFLAGS
+
+/* Define this if you have python */
+#undef PYTHON_O
+

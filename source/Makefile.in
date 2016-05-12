@@ -15,7 +15,7 @@ OBJECTS = alias.o alist.o array.o clock.o commands.o compat.o crypt.o crypto.o \
         ctcp.o dcc.o debug.o elf.o exec.o files.o flood.o functions.o gailib.o \
 	glob.o hook.o if.o ignore.o input.o irc.o ircaux.o ircsig.o keys.o \
 	lastlog.o levels.o list.o log.o logfiles.o mail.o names.o network.o \
-	newio.o notify.o numbers.o output.o parse.o @PERLDOTOH@ queue.o \
+	newio.o notify.o numbers.o output.o parse.o @PERLDOTOH@ @PYTHON_O@ queue.o \
 	recode.o reg.o @RUBYDOTOH@ screen.o sdbm.o server.o sha2.o ssl.o \
 	status.o @TCLDOTOH@ term.o timer.o vars.o wcwidth.o who.o window.o \
 	words.o @ALLOCA@
@@ -39,7 +39,7 @@ all: epic5
 epic5: $(OBJECTS)
 	sh info.c.sh
 	$(CC) $(CFLAGS) $(INCLUDES) -c info.c
-	$(CC) $(CFLAGS) $(LDFLAGS) -o epic5 $(OBJECTS) info.o @PERLLIBS@ @TCLLIBS@ @RUBYLIBS@ $(LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o epic5 $(OBJECTS) info.o @PERLLIBS@ @TCLLIBS@ @RUBYLIBS@ @PYTHON_LDFLAGS@ $(LIBS)
 	$(RM) info.c info.o
 clean::
 	$(RM) epic5 $(OBJECTS)
@@ -80,6 +80,8 @@ tcl.o: tcl.c Makefile ../Makefile
 ruby.o: ruby.c Makefile ../Makefile
 	$(CC) $(CFLAGS) $(ansiflags) $(INCLUDES) -c @srcdir@/ruby.c @RUBYCFLAGS@
 
+python.o: python.c Makefile ../Makefile
+	$(CC) $(CFLAGS) $(ansiflags) $(INCLUDES) -c @srcdir@/python.c @PYTHON_CFLAGS@
 
 #
 # dependencies

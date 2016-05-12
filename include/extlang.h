@@ -51,4 +51,10 @@ extern	char *	rubyeval (char *);
 BUILT_IN_COMMAND(rubycmd);
 #endif
 
+#ifdef HAVE_PYTHON
+extern	char *	python_eval_expression (char *);
+extern	void	python_eval_statement (char *);
+BUILT_IN_COMMAND(pythoncmd);
+#endif
+
 #endif

@@ -341,6 +341,9 @@ static	char
 	*function_perlcall	(char *),
 	*function_perlxcall	(char *),
 #endif
+#ifdef HAVE_PYTHON
+	*function_python	(char *),
+#endif
 	*function_prefix	(char *),
 	*function_printlen	(char *),
 	*function_querywin	(char *),
@@ -650,6 +653,9 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "PERL",		function_perl		},
 	{ "PERLCALL",		function_perlcall	},
 	{ "PERLXCALL",		function_perlxcall	},
+#endif
+#ifdef HAVE_PYTHON
+	{ "PYTHON",		function_python		},
 #endif
 	{ "PID",		function_pid 		},
 	{ "POP",		function_pop 		},
@@ -7849,4 +7855,14 @@ BUILT_IN_FUNCTION(function_chankey, input)
 	key = get_channel_key(channel, refnum);
 	RETURN_STR(key);
 }
+
+#ifdef HAVE_PYTHON
+
+BUILT_IN_FUNCTION(function_python, input)
+{
+	return python_eval_expression ( input );
+}
+
+#endif
+
 

@@ -1292,6 +1292,102 @@ else
 fi
 
 dnl ----------------------------------------------------------
+dnl
+dnl Python support?
+dnl
+AC_ARG_WITH([python],
+       [AS_HELP_STRING([--with-python[=PATH_TO_PYTHON_CONFIG_EXE]], [Compile with Python support.])],
+       [], [with_python=maybe])
+
+with_python_errormsg="--with-python was specified but I could not locate pythonX.Y-config. Please try specifying --with-path=/path/to/pythonX.Y-config or --without-python."
+AC_MSG_CHECKING([whether to support Python])
+if test "x$with_python" = "xno" ; then
+	AC_MSG_CHECKING(whether to support Python)
+	AC_MSG_RESULT(no)
+else
+	AC_MSG_RESULT(yes)
+	if test "x$with_python" = "xyes" -o "x$with_python" = "xmaybe" ; then
+		python_cfg_exe=python3-config
+	else
+		python_cfg_exe="$with_python"
+	fi
+	dnl Support --with-python being passed a full path instead of just an executable name.
+	if test -x "$python_cfg_exe" ; then
+		PYTHON_CFG_EXE=yes
+	else
+		AC_CHECK_PROG([PYTHON_CFG_EXE], [$python_cfg_exe], [yes], [no])
+	fi
+	if test "x$PYTHON_CFG_EXE" = xno ; then
+		if test "x$with_python" != "xmaybe" ; then
+			AC_MSG_ERROR([$with_python_errormsg])
+		fi
+	else
+	    dnl ---- 
+	    dnl Look first for Python 3
+            PYTHON_CFLAGS=`$python_cfg_exe --cflags`
+            PYTHON_LDFLAGS=`$python_cfg_exe --ldflags`
+	    PYTHON_O="python.o"
+
+	    AC_MSG_CHECKING(whether embedded Python works the way I expect)
+	    have_embedded_python="no"
+	    old_CFLAGS="$CFLAGS"
+	    old_LIBS="$LIBS"
+	    CFLAGS="$CFLAGS $PYTHON_CFLAGS"
+	    LIBS="$LIBS $PYTHON_LDFLAGS"
+	    AC_TRY_LINK([
+#include <Python.h>
+static  PyObject *      epic_null (PyObject *self, PyObject *args)
+{
+        char *  str;
+        if (!PyArg_ParseTuple(args, "s", &str)) {
+                return PyLong_FromLong(-1);
+        }
+        return Py_BuildValue("s", "");
+}
+
+static  PyMethodDef     epicMethods[] = {
+        { "null",       epic_null,      METH_VARARGS,   "null" },
+        { NULL,         NULL,           0,              NULL }
+};
+
+static  PyModuleDef     epicModule = {
+        PyModuleDef_HEAD_INIT,  
+        "_epic",        NULL,           -1,             epicMethods,
+        NULL,           NULL,           NULL,           NULL
+};
+
+static  PyObject *      PyInit_epic (void)
+{
+        return PyModule_Create(&epicModule);
+}
+], [
+        PyImport_AppendInittab("_epic", &PyInit_epic);
+        Py_Initialize();
+], have_embedded_python="yes")
+
+	    if test $have_embedded_python = "yes" ; then
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(PYTHON_O)
+		AC_DEFINE(HAVE_PYTHON)
+		AC_DEFINE(PYTHON_CFLAGS)
+		AC_DEFINE(PYTHON_LDFLAGS)
+            else
+		if test "x$with_python" != "xmaybe" ; then
+			AC_MSG_ERROR([$with_python_errormsg])
+		fi
+	        PYTHON_O=""
+		HAVE_PYTHON=""
+		PYTHON_CFLAGS=""
+		PYTHON_LDFLAGS=""
+		AC_MSG_RESULT(no, sorry)
+            fi
+
+	    CFLAGS="$old_CFLAGS"
+	    LIBS="$old_LIBS"
+	fi
+fi
+
+dnl ----------------------------------------------------------
 dnl ----------------------------------------------------------
 dnl
 dnl closing stuff
@@ -1310,6 +1406,7 @@ if test -z "$LDFLAGS"; then LDFLAGS= ; fi
 if test -z "$PERLDOTOH"; then PERLDOTOH= ; fi
 if test -z "$TCLDOTOH"; then TCLDOTOH= ; fi
 if test -z "$RUBYDOTOH"; then RUBYDOTOH= ; fi
+if test -z "$PYTHON_O"; then PYTHON_OH= ; fi
 if test -z "$WSERV_BIN"; then WSERV_BIN= ; fi
 if test -z "$WSERV_INSTALL"; then WSERV_INSTALL= ; fi
 if test -z "$bindir"; then bindir=\${prefix}/bin; fi
@@ -1390,6 +1487,9 @@ AC_SUBST(TCLLIBS)
 AC_SUBST(PERLDOTOH)
 AC_SUBST(PERLCFLAGS)
 AC_SUBST(PERLLIBS)
+AC_SUBST(PYTHON_O)
+AC_SUBST(PYTHON_CFLAGS)
+AC_SUBST(PYTHON_LDFLAGS)
 AC_SUBST(WSERV_BIN)
 AC_SUBST(WSERV_INSTALL)
 AC_SUBST(bindir)

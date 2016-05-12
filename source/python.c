@@ -29,8 +29,9 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-/* Python commit #4 */
+/* Python commit #5 */
 
+#include <Python.h>
 #include "irc.h"
 #include "ircaux.h"
 #include "array.h"
@@ -40,7 +41,6 @@
 #include "output.h"
 #include "ifcmd.h"
 #include "extlang.h"
-#include <Python.h>
 
 static	int	p_initialized = 0;
 static	PyObject *global_vars = NULL;
@@ -77,11 +77,11 @@ static	PyObject *	epic_echo (PyObject *self, PyObject *args)
 	char *	str;
 
 	if (!PyArg_ParseTuple(args, "s", &str)) {
-		return PyInt_FromLong(-1);
+		return PyLong_FromLong(-1);
 	}
 
 	yell(str);
-	return PyInt_FromLong(0);
+	return PyLong_FromLong(0);
 }
 
 static	PyObject *	epic_say (PyObject *self, PyObject *args)
@@ -89,11 +89,11 @@ static	PyObject *	epic_say (PyObject *self, PyObject *args)
 	char *	str;
 
 	if (!PyArg_ParseTuple(args, "s", &str)) {
-		return PyInt_FromLong(-1);
+		return PyLong_FromLong(-1);
 	}
 
 	say(str);
-	return PyInt_FromLong(0);
+	return PyLong_FromLong(0);
 }
 
 static	PyObject *	epic_cmd (PyObject *self, PyObject *args)
@@ -101,11 +101,11 @@ static	PyObject *	epic_cmd (PyObject *self, PyObject *args)
 	char *	str;
 
 	if (!PyArg_ParseTuple(args, "s", &str)) {
-		return PyInt_FromLong(-1);
+		return PyLong_FromLong(-1);
 	}
 
 	runcmds("$*", str);
-	return PyInt_FromLong(0);
+	return PyLong_FromLong(0);
 }
 
 static	PyObject *	epic_eval (PyObject *self, PyObject *args)
@@ -113,11 +113,11 @@ static	PyObject *	epic_eval (PyObject *self, PyObject *args)
 	char *	str;
 
 	if (!PyArg_ParseTuple(args, "s", &str)) {
-		return PyInt_FromLong(-1);
+		return PyLong_FromLong(-1);
 	}
 
 	runcmds(str, "");
-	return PyInt_FromLong(0);
+	return PyLong_FromLong(0);
 }
 
 static	PyObject *	epic_expr (PyObject *self, PyObject *args)
@@ -126,11 +126,11 @@ static	PyObject *	epic_expr (PyObject *self, PyObject *args)
 	char *	exprval;
 
 	if (!PyArg_ParseTuple(args, "s", &str)) {
-		return PyInt_FromLong(-1);
+		return PyLong_FromLong(-1);
 	}
 
 	exprval = parse_inline(str, "");
-	return PyBuildValue("s", exprval);
+	return Py_BuildValue("s", exprval);
 }
 
 static	PyObject *	epic_call (PyObject *self, PyObject *args)
@@ -139,11 +139,11 @@ static	PyObject *	epic_call (PyObject *self, PyObject *args)
 	char *	funcval;
 
 	if (!PyArg_ParseTuple(args, "s", &str)) {
-		return PyInt_FromLong(-1);
+		return PyLong_FromLong(-1);
 	}
 
 	funcval = call_function(str, "");
-	return PyBuildValue("s", funcval);
+	return Py_BuildValue("s", funcval);
 }
 
 static	PyMethodDef	epicMethods[] = {
@@ -179,9 +179,10 @@ static	PyObject *	PyInit_epic (void)
 /* 
  * Embed Python by allowing users to call a python function
  */
-char *	python_eval (char *input)
+char *	python_eval_expression (char *input)
 {
 	PyObject *retval;
+	PyObject *retval_repr;
 	char 	*r, *retvalstr = NULL;
 
 	if (p_initialized == 0)
@@ -194,12 +195,93 @@ char *	python_eval (char *input)
 
 	/* Convert retval to a string */
 	retval = PyRun_String(input, Py_eval_input, global_vars, global_vars);
-	PyArg_ParseTuple(retval, "s", &r);
+	if (retval == NULL)
+	{
+		PyObject *ptype, *pvalue, *ptraceback;
+		PyObject *ptype_repr, *pvalue_repr, *ptraceback_repr;
+		char *ptype_str, *pvalue_str, *ptraceback_str;
+
+		say("The python evaluation returned NULL. hrm.");
+		PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+		if (ptype != NULL)
+		{
+			ptype_repr = PyObject_Repr(ptype);
+			ptype_str = PyUnicode_AsUTF8(ptype_repr);
+			say("Exception Type: %s", ptype_str);
+		}
+		if (pvalue != NULL)
+		{
+			pvalue_repr = PyObject_Repr(pvalue);
+			pvalue_str = PyUnicode_AsUTF8(pvalue_repr);
+			say("Value: %s", pvalue_str);
+		}
+		if (ptraceback != NULL)
+		{
+			ptraceback_repr = PyObject_Repr(ptraceback);
+			ptraceback_str = PyUnicode_AsUTF8(ptraceback_repr);
+			say("Traceback: %s", ptraceback_str);
+		}
+		Py_XDECREF(ptype);
+		Py_XDECREF(pvalue);
+		Py_XDECREF(ptraceback);
+		RETURN_EMPTY;
+	}
+
+	retval_repr = PyObject_Repr(retval);
+	r = PyUnicode_AsUTF8(retval_repr);
 	retvalstr = malloc_strdup(r);
 
 	Py_XDECREF(retval);
+	Py_XDECREF(retval_repr);
 	RETURN_MSTR(retvalstr);	
 }
+
+void	python_eval_statement (char *input)
+{
+	int	retval;
+
+	if (p_initialized == 0)
+	{
+		PyImport_AppendInittab("_epic", &PyInit_epic);
+		Py_Initialize();
+		p_initialized = 1;
+		global_vars = PyModule_GetDict(PyImport_AddModule("__main__"));
+	}
+
+	/* Convert retval to a string */
+	if ((retval = PyRun_SimpleString(input)))
+	{
+		PyObject *ptype, *pvalue, *ptraceback;
+		PyObject *ptype_repr, *pvalue_repr, *ptraceback_repr;
+		char *ptype_str, *pvalue_str, *ptraceback_str;
+
+		say("The python evaluation failed. hrm.");
+		PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+		if (ptype != NULL)
+		{
+			ptype_repr = PyObject_Repr(ptype);
+			ptype_str = PyUnicode_AsUTF8(ptype_repr);
+			say("Exception Type: %s", ptype_str);
+		}
+		if (pvalue != NULL)
+		{
+			pvalue_repr = PyObject_Repr(pvalue);
+			pvalue_str = PyUnicode_AsUTF8(pvalue_repr);
+			say("Value: %s", pvalue_str);
+		}
+		if (ptraceback != NULL)
+		{
+			ptraceback_repr = PyObject_Repr(ptraceback);
+			ptraceback_str = PyUnicode_AsUTF8(ptraceback_repr);
+			say("Traceback: %s", ptraceback_str);
+		}
+		Py_XDECREF(ptype);
+		Py_XDECREF(pvalue);
+		Py_XDECREF(ptraceback);
+		return;
+	}
+}
+
 
 /*
  * The /PYTHON function: Evalulate the args as a PYTHON block and ignore the 
@@ -207,7 +289,7 @@ char *	python_eval (char *input)
  */
 BUILT_IN_COMMAND(pythoncmd)
 {
-        char *body, *x;
+        char *body;
 
         if (*args == '{')
         {
@@ -220,7 +302,6 @@ BUILT_IN_COMMAND(pythoncmd)
         else
                 body = args;
 
-        x = python_eval(body);
-        new_free(&x);
+        python_eval_statement(body);
 }
 
