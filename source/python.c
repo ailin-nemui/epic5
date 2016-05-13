@@ -29,7 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-/* Python commit #8 */
+/* Python commit #9 */
 
 #include <Python.h>
 #include "irc.h"
@@ -108,48 +108,48 @@ static	PyObject *	epic_echo (PyObject *self, PyObject *args)
 {
 	char *	str;
 
-	if (!PyArg_ParseTuple(args, "s", &str)) {
+	if (!PyArg_ParseTuple(args, "z", &str)) {
 		return PyLong_FromLong(-1);
 	}
 
 	yell(str);
-	return PyLong_FromLong(0);
+	return PyLong_FromLong(0L);
 }
 
 static	PyObject *	epic_say (PyObject *self, PyObject *args)
 {
 	char *	str;
 
-	if (!PyArg_ParseTuple(args, "s", &str)) {
+	if (!PyArg_ParseTuple(args, "z", &str)) {
 		return PyLong_FromLong(-1);
 	}
 
 	say(str);
-	return PyLong_FromLong(0);
+	return PyLong_FromLong(0L);
 }
 
 static	PyObject *	epic_cmd (PyObject *self, PyObject *args)
 {
 	char *	str;
 
-	if (!PyArg_ParseTuple(args, "s", &str)) {
+	if (!PyArg_ParseTuple(args, "z", &str)) {
 		return PyLong_FromLong(-1);
 	}
 
 	runcmds("$*", str);
-	return PyLong_FromLong(0);
+	return PyLong_FromLong(0L);
 }
 
 static	PyObject *	epic_eval (PyObject *self, PyObject *args)
 {
 	char *	str;
 
-	if (!PyArg_ParseTuple(args, "s", &str)) {
+	if (!PyArg_ParseTuple(args, "z", &str)) {
 		return PyLong_FromLong(-1);
 	}
 
 	runcmds(str, "");
-	return PyLong_FromLong(0);
+	return PyLong_FromLong(0L);
 }
 
 static	PyObject *	epic_expr (PyObject *self, PyObject *args)
@@ -158,12 +158,15 @@ static	PyObject *	epic_expr (PyObject *self, PyObject *args)
 	char *	exprval;
 	PyObject *retval;
 
-	if (!PyArg_ParseTuple(args, "s", &str)) {
+	if (!PyArg_ParseTuple(args, "z", &str)) {
 		return PyLong_FromLong(-1);
 	}
 
 	exprval = parse_inline(str, "");
-	retval = Py_BuildValue("s", exprval);
+	if (!(retval = Py_BuildValue("z", exprval))) {
+		yell("epic_expr: Py_BuildValue failed. hrm.");
+		return NULL;
+	}
 	new_free(&exprval);
 	return retval;
 }
@@ -174,12 +177,12 @@ static	PyObject *	epic_expand (PyObject *self, PyObject *args)
 	char *	expanded;
 	PyObject *retval;
 
-	if (!PyArg_ParseTuple(args, "s", &str)) {
+	if (!PyArg_ParseTuple(args, "z", &str)) {
 		return PyLong_FromLong(-1);
 	}
 
 	expanded = expand_alias(str, "");
-	retval = Py_BuildValue("s", expanded);
+	retval = Py_BuildValue("z", expanded);
 	new_free(&expanded);
 	return retval;
 }
@@ -188,13 +191,16 @@ static	PyObject *	epic_call (PyObject *self, PyObject *args)
 {
 	char *	str;
 	char *	funcval;
+	PyObject *retval;
 
-	if (!PyArg_ParseTuple(args, "s", &str)) {
+	if (!PyArg_ParseTuple(args, "z", &str)) {
 		return PyLong_FromLong(-1);
 	}
 
 	funcval = call_function(str, "");
-	return Py_BuildValue("s", funcval);
+	retval = Py_BuildValue("z", funcval);
+	new_free(&funcval);
+	return retval;
 }
 
 static	PyMethodDef	epicMethods[] = {
@@ -308,11 +314,11 @@ BUILT_IN_COMMAND(pythoncmd)
  */
 char *	call_python_directly (char *args)
 {
-	char 	*object, *module, *method;
-	PyObject *mod_py, *meth_py, *args_py;
-	PyObject *pModule, *pFunc, *pArgs, *pRetVal;
-	PyObject *retval_repr;
-	char 	*r, *retvalstr;
+	char 	*object = NULL, *module = NULL, *method = NULL;
+	PyObject *mod_py = NULL, *meth_py = NULL, *args_py = NULL;
+	PyObject *pModule = NULL, *pFunc = NULL, *pArgs = NULL, *pRetVal = NULL;
+	PyObject *retval_repr = NULL;
+	char 	*r = NULL, *retvalstr = NULL;
 
 	if (!(object = new_next_arg(args, &args)))
 	{
@@ -328,68 +334,56 @@ char *	call_python_directly (char *args)
 	}
 	*method++ = 0;
 
-	mod_py = Py_BuildValue("s", module);
+	mod_py = Py_BuildValue("z", module);
 	pModule = PyImport_Import(mod_py);
 	Py_XDECREF(mod_py);
 
 	if (pModule == NULL)
 	{
 		my_error("PYDIRECT: Unable to import module %s", module);
-		output_traceback();
-		RETURN_EMPTY;
+		goto c_p_d_error;
 	}
 
 	pFunc = PyObject_GetAttrString(pModule, method);
 	if (pFunc == NULL)
 	{
 		my_error("PYDIRECT: The module %s has nothing named %s", module, method);
-		Py_XDECREF(pModule);
-		output_traceback();
-		RETURN_EMPTY;
+		goto c_p_d_error;
 	}
 
 	if (!PyCallable_Check(pFunc))
 	{
 		my_error("PYDIRECT: The thing named %s.%s is not a function", module, method);
-		Py_XDECREF(pFunc);
-		Py_XDECREF(pModule);
-		RETURN_EMPTY;
+		goto c_p_d_error;
 	}
 
 	if (!(pArgs = PyTuple_New(1)))
-	{
-		output_traceback();
-		Py_XDECREF(pFunc);
-		Py_XDECREF(pModule);
-		RETURN_EMPTY;
-	}
+		goto c_p_d_error;
 
-	if (!(args_py = Py_BuildValue("s", args)))
-	{
-		output_traceback();
-		Py_XDECREF(pArgs);
-		Py_XDECREF(pFunc);
-		Py_XDECREF(pModule);
-		RETURN_EMPTY;
-	}
+	if (!(args_py = Py_BuildValue("z", args)))
+		goto c_p_d_error;
 
-	PyTuple_SetItem(pArgs, 0, args_py);
+	if ((PyTuple_SetItem(pArgs, 0, args_py))) 
+		goto c_p_d_error;
+	args_py = NULL;			/* args_py now belongs to the tuple! */
 
 	if (!(pRetVal = PyObject_CallObject(pFunc, pArgs)))
-	{
-		output_traceback();
-		Py_XDECREF(pArgs);
-		Py_XDECREF(args_py);
-		Py_XDECREF(pFunc);
-		Py_XDECREF(pModule);
-	}
+		goto c_p_d_error;
 
-        retval_repr = PyObject_Repr(pRetVal);
-        r = PyUnicode_AsUTF8(retval_repr);
+        if (!(retval_repr = PyObject_Repr(pRetVal)))
+		goto c_p_d_error;
+
+        if (!(r = PyUnicode_AsUTF8(retval_repr)))
+		goto c_p_d_error;
+
         retvalstr = malloc_strdup(r);
+	goto c_p_d_cleanup;
 
+c_p_d_error:
+	output_traceback();
+
+c_p_d_cleanup:
 	Py_XDECREF(pArgs);
-	Py_XDECREF(args_py);
 	Py_XDECREF(pFunc);
 	Py_XDECREF(pModule);
 	Py_XDECREF(pRetVal);
