@@ -29,7 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-/* Python commit #9 */
+/* Python commit #10 */
 
 #include <Python.h>
 #include "irc.h"
@@ -95,15 +95,35 @@ static	PyObject *global_vars = NULL;
 /*
  * Psuedo-code of how to create a python module that points at your C funcs
  *
+ * These functions provide the basic facilities of ircII.  
  * All of these functions take one string argument.
- *  epic.echo	- yell() -- Like /echo, unconditionally output to screen
- *  epic.say	- say()	 -- Like /xecho -s, output if not suppressed with ^
- *  epic.cmd	- runcmds() -- Run a block of code, but don't expand $'s (like from the input line)
- *  epic.eval	- runcmds() -- Run a block of code, expand $'s, but $* is []  (this is lame)
- *  epic.expr	- parse_inline() -- Evaluate an expression string and return the result 
- *  epic.call	- call_function() -- Evaluate a "funcname(argument list)" string and return the result
+ *   epic.echo	- yell() -- Like /echo, unconditionally output to screen
+ *   epic.say	- say()	 -- Like /xecho -s, output if not suppressed with ^
+ *   epic.cmd	- runcmds() -- Run a block of code, but don't expand $'s (like from the input line)
+ *   epic.eval	- runcmds() -- Run a block of code, expand $'s, but $* is []  (this is lame)
+ *   epic.expr	- parse_inline() -- Evaluate an expression string and return the result 
+ *   epic.call	- call_function() -- Evaluate a "funcname(argument list)" string and return the result
+ *
+ * These functions provide a route-around of ircII, if that's what you want.
+ * All of these functions take a symbol name ("name") and a string containing the arguments (if appropriate)
+ * NONE OF THESE FUNCTIONS UNDERGO $-EXPANSION!  (If you need that, use the stuff ^^^ above)
+ *
+ *   epic.run_command - run an alias (preferentially) or a builtin command.
+ *        Example: epic.run_command("xecho", "-w 0 hi there!  This does not get expanded")
+ *   epic.call_function - call an alias (preferentially) or a builtin function
+ *        Example: epic.call_function("windowctl", "refnums")
+ *   epic.get_set - get a /SET value (only)
+ *        Example: epic.get_set("mail")
+ *   epic.get_assign - get an /ASSIGN value (only)
+ *        Example: epic.get_set("myvar")
+ *   epic.get_var - get an /ASSIGN value (preferentially) or a /SET 
+ *   epic.set_set - set a /SET value (only)
+ *        Example: epic.set_set("mail", "ON")
+ *   epic.set_assign - set a /ASSIGN value
+ *        Example: epic.set_assign("myvar", "5")
  */
 
+/* Higher level interface to things */
 static	PyObject *	epic_echo (PyObject *self, PyObject *args)
 {
 	char *	str;
@@ -203,14 +223,166 @@ static	PyObject *	epic_call (PyObject *self, PyObject *args)
 	return retval;
 }
 
+/* Lower level interfaces to things */
+static	PyObject *	epic_run_command (PyObject *self, PyObject *args)
+{
+	char *	symbol;
+	char *	my_args;
+	PyObject *retval;
+	void    (*builtin) (const char *, char *, const char *) = NULL;
+const 	char *	alias = NULL;
+	void *	arglist = NULL;
+
+	if (!PyArg_ParseTuple(args, "zz", &symbol, &my_args)) {
+		return PyLong_FromLong(-1);
+	}
+
+	upper(symbol);
+	alias = get_cmd_alias(symbol, &arglist, &builtin);
+	if (alias) 
+		call_user_command(symbol, alias, my_args, arglist);
+	else if (builtin)
+		builtin(symbol, my_args, empty_string);
+
+	/* Call /symbol args */
+	return PyLong_FromLong(0L);
+}
+
+
+static	PyObject *	epic_call_function (PyObject *self, PyObject *args)
+{
+	char *	symbol;
+	char *	my_args;
+	PyObject *retval;
+	const char *alias;
+	void *	arglist;
+	char * (*builtin) (char *) = NULL;
+	char *	funcval = NULL;
+
+	if (!PyArg_ParseTuple(args, "zz", &symbol, &my_args)) {
+		return PyLong_FromLong(-1);
+	}
+
+	upper(symbol);
+        alias = get_func_alias(symbol, &arglist, &builtin);
+        if (alias)
+                funcval = call_user_function(symbol, alias, my_args, arglist);
+	else if (builtin)
+                funcval = builtin(my_args);
+	else
+		funcval = malloc_strdup(empty_string);
+
+	retval = Py_BuildValue("z", funcval);
+	new_free(&funcval);
+	return retval;
+}
+
+static	PyObject *	epic_get_set (PyObject *self, PyObject *args)
+{
+	char *	symbol;
+	PyObject *retval;
+	char *	funcval = NULL;
+
+	if (!PyArg_ParseTuple(args, "z", &symbol)) {
+		return PyLong_FromLong(-1);
+	}
+ 
+	upper(symbol);
+	funcval = make_string_var(symbol);
+	retval = Py_BuildValue("z", funcval);
+	new_free(&funcval);
+	return retval;
+}
+
+static	PyObject *	epic_get_assign (PyObject *self, PyObject *args)
+{
+	char *	symbol;
+	PyObject *retval;
+	char *	funcval = NULL;
+        char *		(*efunc) (void) = NULL;
+        IrcVariable *	sfunc = NULL;
+	const char *	assign = NULL;
+
+	if (!PyArg_ParseTuple(args, "z", &symbol)) {
+		return PyLong_FromLong(-1);
+	}
+
+	upper(symbol);
+        assign = get_var_alias(symbol, &efunc, &sfunc);
+	retval = Py_BuildValue("z", assign);
+	/* _DO NOT_ FREE 'assign'! */
+	return retval;
+}
+
+/*  
+ * XXX Because of how this is implemented, this supports ":local" and "::global", although 
+ * I'm not sure it will stay this way forever.
+ */
+static	PyObject *	epic_get_var (PyObject *self, PyObject *args)
+{
+	char *	symbol;
+	PyObject *retval;
+	char *	funcval = NULL;
+
+	if (!PyArg_ParseTuple(args, "z", &symbol)) {
+		return PyLong_FromLong(-1);
+	}
+
+	upper(symbol);
+	funcval = get_variable(symbol); 
+	retval = Py_BuildValue("z", funcval);
+	new_free(&funcval);
+	return retval;
+}
+
+static	PyObject *	epic_set_set (PyObject *self, PyObject *args)
+{
+	char *	symbol;
+	char *	value;
+	PyObject *retval;
+
+	if (!PyArg_ParseTuple(args, "zz", &symbol, &value)) {
+		return PyLong_FromLong(-1);
+	}
+
+	/* /SET symbol value */
+	return PyLong_FromLong(0);
+}
+
+static	PyObject *	epic_set_assign (PyObject *self, PyObject *args)
+{
+	char *	symbol;
+	char *	value;
+	PyObject *retval;
+
+	if (!PyArg_ParseTuple(args, "zz", &symbol, &value)) {
+		return PyLong_FromLong(-1);
+	}
+
+	/* /ASSIGN symbol value */
+	return PyLong_FromLong(0);
+}
+
+
 static	PyMethodDef	epicMethods[] = {
-	{ "echo", 	epic_echo, 	METH_VARARGS, 	"Unconditionally output to screen (yell)" },
-	{ "say", 	epic_say, 	METH_VARARGS, 	"Output to screen unless suppressed (say)" },
-	{ "cmd", 	epic_cmd, 	METH_VARARGS, 	"Run a block statement without expansion (runcmds)" },
-	{ "eval", 	epic_eval, 	METH_VARARGS, 	"Run a block statement with expansion (but $* is empty)" },
-	{ "expr", 	epic_expr, 	METH_VARARGS, 	"Return the result of an expression (parse_inline)" },
-	{ "call", 	epic_call, 	METH_VARARGS, 	"Call a function with expansion (but $* is empty) (call_function)" },
-	{ "expand",	epic_expand,	METH_VARARGS,	"Expand some text with $s" },
+      /* Higher level facilities  - $-expansion supported */
+	{ "echo", 	   epic_echo, 	METH_VARARGS, 	"Unconditionally output to screen (yell)" },
+	{ "say", 	   epic_say, 	METH_VARARGS, 	"Output to screen unless suppressed (say)" },
+	{ "cmd", 	   epic_cmd, 	METH_VARARGS, 	"Run a block statement without expansion (runcmds)" },
+	{ "eval", 	   epic_eval, 	METH_VARARGS, 	"Run a block statement with expansion (but $* is empty)" },
+	{ "expr", 	   epic_expr, 	METH_VARARGS, 	"Return the result of an expression (parse_inline)" },
+	{ "call", 	   epic_call, 	METH_VARARGS, 	"Call a function with expansion (but $* is empty) (call_function)" },
+	{ "expand",	   epic_expand,	METH_VARARGS,	"Expand some text with $s" },
+
+      /* Lower level facilities - $-expansion NOT supported */
+	{ "run_command",   epic_run_command,	METH_VARARGS,	"Run an alias or builtin command" },
+	{ "call_function", epic_call_function,	METH_VARARGS,	"Call an alias or builtin function" },
+	{ "get_set",       epic_get_set,	METH_VARARGS,	"Get a /SET value (only)" },
+	{ "get_assign",    epic_get_assign,	METH_VARARGS,	"Get a /ASSIGN value (only)" },
+	{ "get_var",       epic_get_assign,	METH_VARARGS,	"Get a variable (either /ASSIGN or /SET)" },
+	{ "set_set",       epic_set_set,	METH_VARARGS,	"Set a /SET value (only)" },
+	{ "set_assign",    epic_set_assign,	METH_VARARGS,	"Set a /ASSIGN value (only)" },
+
 	{ NULL,		NULL,		0,		NULL }
 };
 
