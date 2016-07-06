@@ -1,0 +1,114 @@
+Documentation for (built-in) Python support
+
+EPIC supports bi-directional support with Python.
+1. EPIC calling to Python
+2. Python calling to EPIC
+3. Python foundation script for calling to EPIC
+
+
+1. EPIC calling to Python
+==========================
+a. Executing a Python Statement
+	/PYTHON { <python code> }
+   The <python code> is passed to PyRun_SimpleString()
+   The <python code> must not be an expression!
+
+b. Executing a Python Expression
+	$python(<python code>)
+   The <python code> is passed to PyRun_String()
+   The return code of <python code> Is repr()d as UTF-8 string
+
+c. Calling a Python function (Low level)
+	$pydirect(module.method arguments)
+	/PYDIRECT module.method arguments
+   The module.method function is called with a single string argument "arguments"
+   The module.method function is passed to PyObject_CallObject().
+   If called as $pydirect()...
+      ... The return value of module.method is repr()d as a UTF-8 String.
+
+
+2. Python calling to EPIC
+=========================
+First,
+    /python import _epic
+Then, you can use any of these python functions:
+
+(Higher level ircII interfaces)
+    _epic.echo(string)
+	Argument: 	string -- text to be output to the epic window, literally
+	What it does:	yell(string) -- which is an /echo.  Not suppressed by ^
+
+    _epic.say(string)
+	Argument:	string -- text to be output to theh epic window preceded by $BANNER
+	What it does:	say(string) -- output stuff like builtin features.  Suppressed by ^
+
+    _epic.cmd(string)
+	Argument:	string -- ircII code to be run without $-expansion
+	What it does:	runcmds("$*", string) -- like typing at the input line
+
+    _epic.eval(string)
+	Argument:	string - ircII code to be run with $-expansion
+	What it does:	runcmds(string, "") -- like running an alias ($* is "")
+
+    _epic.expr(string)
+	Argument:	string - an ircII expression to be evaluated with $-expansion
+	What it does:	parse_inline(string, "") -- evaluating an expression ($* is "")
+	Return val:	a utf8-encoded string (even if the result is a number -- everything in ircII is a string)
+
+    _epic.call(string, string)
+	Arguments:	string -- the name of a function (either an alias or a builtin) to be called directly
+			string -- the arguments to pass to the function -- will be $-expanded ($* is "")
+	Return val:	A utf8-encoded string (even if the result is a number -- everything in ircII is a string)
+
+    _epic.expand(string)
+	Argument:	string -- a string to be expanded with $-expansion
+	Internal Op:	expand_alias -- ($* is "")
+        Return val:	A utf8-encoded string
+
+(Lower level direct interfaces)
+    _epic.run_command(string, string)
+	Argument:	string -- The name of an alias or builtin command
+			string -- The argument list to pass to the command, with no $-expansion
+	Internal Op:	Directly call the alias (preferentially) or builtin command with the literal argument list.
+			You must pass in a single space-separated string as the argument list.
+	Return val:	-1 if the command does not exist; 0 if it does exist.
+
+    _epic.call_function(string, string)
+	Argument:	string -- The name of an alias or builtin function
+			string -- The argument list to pass to the function, with no $-expansion
+	Internal Op:	Directly call the alias (preferentially) or builtin function with the literal argument list.
+			You must pass in a single space-separated string as the argument list.
+	Return val:	A utf8-encoded string of the return value of the function (even if the result is a number)
+
+    _epic.get_set(string)
+	Argument:	string -- The name of a /SET
+	Internal Op:	Return the value of a /SET variable
+	Return val:	A utf8-encoded string
+
+    _epic.get_assign(string)
+	Argument:	string -- The name of an /ASSIGN
+	Internal Op:	Return the value of a /ASSIGN variable
+	Return val:	A utf8-encoded string
+
+    _epic.get_var(string)
+	Argument:	string -- The name of simple $-expando (ie, to get the value of $foo, pass in 'foo')
+	Internal Op:	Return the value of a variable (either an assign, set, or inline expando)
+	Return val:	A utf8-encoded string
+
+    _epic.set_set(string, string)
+	Argument:	string - The name of a /SET (must exist)
+			string - The new value to give the /SET
+	Internal Op:	Nothing - just a stub for now - does not do anything
+	Return Val:	0 (for now)
+
+    _epic.set_assign(string, string)
+	Argument:	string - The name of an /ASSIGN (does not need to exist)
+			string - The new value to give the /ASSIGN
+	Internal Op:	Nothing - just a stub for now - does not do anything
+	Return Val:	0 (for now)
+
+
+3. Python foundation script for calling to EPIC
+==================================================
+TBD with skully
+
