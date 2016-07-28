@@ -29,7 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-/* Python commit #11 */
+/* Python commit #12 */
 
 #include <Python.h>
 #include "irc.h"
@@ -134,15 +134,22 @@ static	PyObject *global_vars = NULL;
  *		1. A string containing stuff to output
  *
  * Return value:
- *	-1 - The tuple did not contain a single string
- *	 0 - The stuff was displayed successfully.
+ *	NULL - PyArg_ParseTuple() didn't like your tuple
+ *	   0 - The stuff was displayed successfully.
  */
 static	PyObject *	epic_echo (PyObject *self, PyObject *args)
 {
 	char *	str;
 
+	/*
+	 * https://docs.python.org/3/extending/extending.html
+	 * tells me that if PyArg_ParseTuple() doesn't like the
+	 * argument list, it will set an exception and return
+	 * NULL.  And all i should do is return NULL.
+	 * So that is why i do that here (and everywhere)
+	 */
 	if (!PyArg_ParseTuple(args, "z", &str)) {
-		return PyLong_FromLong(-1);
+		return NULL;
 	}
 
 	yell(str);
@@ -162,7 +169,7 @@ static	PyObject *	epic_echo (PyObject *self, PyObject *args)
  *	The banner is (of course) /SET BANNER.
  *
  * Return value:
- *	-1 - The tuple did not contain a single string
+ *	NULL - PyArg_ParseTuple() didn't like your tuple (and threw exception)
  *	 0 - The stuff was displayed successfully.
  */
 static	PyObject *	epic_say (PyObject *self, PyObject *args)
@@ -170,7 +177,7 @@ static	PyObject *	epic_say (PyObject *self, PyObject *args)
 	char *	str;
 
 	if (!PyArg_ParseTuple(args, "z", &str)) {
-		return PyLong_FromLong(-1);
+		return NULL;
 	}
 
 	say(str);
@@ -192,7 +199,7 @@ static	PyObject *	epic_say (PyObject *self, PyObject *args)
  *	meaning.
  *
  * Return value:
- *	-1 - The tuple did not contain a single string
+ *	NULL - PyArg_ParseTuple() didn't like your tuple (and threw exception)
  *	 0 - The stuff was run successfully.
  */
 static	PyObject *	epic_cmd (PyObject *self, PyObject *args)
@@ -200,7 +207,7 @@ static	PyObject *	epic_cmd (PyObject *self, PyObject *args)
 	char *	str;
 
 	if (!PyArg_ParseTuple(args, "z", &str)) {
-		return PyLong_FromLong(-1);
+		return NULL;
 	}
 
 	runcmds("$*", str);
@@ -221,7 +228,7 @@ static	PyObject *	epic_cmd (PyObject *self, PyObject *args)
  *	change in the future, and you'll be permitted to pass in $*.
  *
  * Return value:
- *	-1 - The tuple did not contain a single string
+ *	NULL - PyArg_ParseTuple() didn't like your tuple (and threw exception)
  *	 0 - The stuff ran successfully.
  */
 static	PyObject *	epic_eval (PyObject *self, PyObject *args)
@@ -229,7 +236,7 @@ static	PyObject *	epic_eval (PyObject *self, PyObject *args)
 	char *	str;
 
 	if (!PyArg_ParseTuple(args, "z", &str)) {
-		return PyLong_FromLong(-1);
+		return NULL;
 	}
 
 	runcmds(str, "");
@@ -250,10 +257,9 @@ static	PyObject *	epic_eval (PyObject *self, PyObject *args)
  *	change in the future, and you'll be permitted to pass in $*.
  *
  * Return value:
- *	-1 - The tuple did not contain a single string 
- *		This is returned as a Long (normal values returned as Strings)
- *	NULL - XXX WRONG XXX (not permitted to return NULL?)
- *	     - I had trouple building a return value (impossible?)
+ *	NULL - PyArg_ParseTuple() didn't like your tuple (and threw exception)
+ *	NULL - Py_BuildValue() threw an exception converting the expr 
+ *		result (a string) into a python string.
  *	A string - The result of the expression
  *		- All ircII expressions result in a string, even if that
  *		  string contains an integer or whatever.
@@ -266,12 +272,11 @@ static	PyObject *	epic_expr (PyObject *self, PyObject *args)
 	PyObject *retval;
 
 	if (!PyArg_ParseTuple(args, "z", &str)) {
-		return PyLong_FromLong(-1);
+		return NULL;
 	}
 
 	exprval = parse_inline(str, "");
 	if (!(retval = Py_BuildValue("z", exprval))) {
-		yell("epic_expr: Py_BuildValue failed. hrm.");
 		return NULL;
 	}
 	new_free(&exprval);
@@ -292,8 +297,8 @@ static	PyObject *	epic_expr (PyObject *self, PyObject *args)
  *	change in the future, and you'll be permitted to pass in $*.
  *
  * Return value:
- *	-1 - The tuple did not contain a single string
- *		This is returneed as a Long (normal values are returned as Strings)
+ *	NULL - PyArg_ParseTuple() didn't like your tuple (and threw exception)
+ *	NULL - Py_BuildValue() couldn't convert the retval to python string (throws exception)
  *	A string - The result of the expansion
  */
 static	PyObject *	epic_expand (PyObject *self, PyObject *args)
@@ -303,7 +308,7 @@ static	PyObject *	epic_expand (PyObject *self, PyObject *args)
 	PyObject *retval;
 
 	if (!PyArg_ParseTuple(args, "z", &str)) {
-		return PyLong_FromLong(-1);
+		return NULL;
 	}
 
 	expanded = expand_alias(str, "");
@@ -325,8 +330,8 @@ static	PyObject *	epic_expand (PyObject *self, PyObject *args)
  *	$* will be treated as the empty string (see the caveats above)
  *
  * Return value:
- *	-1 - The tuple did not contain a single string
- *		This is returned as a Long
+ *	NULL - PyArg_ParseTuple() didn't like your tuple (and threw exception)
+ *	NULL - Py_BuildValue() couldn't convert the retval to python string (throws exception)
  *	A string - The return value of the function call
  *		All function calls return exactly one string, even if
  *		that string contains a number or a list of words.
@@ -339,7 +344,7 @@ static	PyObject *	epic_call (PyObject *self, PyObject *args)
 	PyObject *retval;
 
 	if (!PyArg_ParseTuple(args, "z", &str)) {
-		return PyLong_FromLong(-1);
+		return NULL;
 	}
 
 	funcval = call_function(str, "");
@@ -372,8 +377,10 @@ static	PyObject *	epic_call (PyObject *self, PyObject *args)
  * Note: Aliases are prefered to builtin commands, just like ircII does it.
  * 
  * Return Value:
- *	-1 	- The tuple did not contain exactly two strings
- *	 0	- The command was run successfully
+ *	NULL             - PyArg_ParseTuple() didn't like your tuple 
+ *					(and threw exception)
+ *	NULL / NameError - The command you tried to run doesn't exist.
+ *	None		 - The command was run successfully
  */
 static	PyObject *	epic_run_command (PyObject *self, PyObject *args)
 {
@@ -385,7 +392,7 @@ const 	char *	alias = NULL;
 	void *	arglist = NULL;
 
 	if (!PyArg_ParseTuple(args, "zz", &symbol, &my_args)) {
-		return PyLong_FromLong(-1);
+		return NULL;
 	}
 
 	upper(symbol);
@@ -394,9 +401,15 @@ const 	char *	alias = NULL;
 		call_user_command(symbol, alias, my_args, arglist);
 	else if (builtin)
 		builtin(symbol, my_args, empty_string);
+	else
+	{
+		PyErr_Format(PyExc_NameError, "%s : Command does not exist", symbol);
+		return NULL;
+	}
 
-	/* Call /symbol args */
-	return PyLong_FromLong(0L);
+	/* Success! */
+	Py_INCREF(Py_None);
+	return Py_None;
 }
 
 
@@ -421,9 +434,9 @@ const 	char *	alias = NULL;
  * Note: Aliases are preferred to builtins, just like ircII.
  * 
  * Return Value:
- *	-1 - (Long) The args tuple did not contain two strings
- *	A zero-length string - You called a function that does not exist.
- *		XXX This is probably wrong -- it probably should return None.
+ *	NULL             - PyArg_ParseTuple() didn't like your tuple 
+ *					(and threw exception)
+ *	NULL / NameError - The function you tried to run doesn't exist.
  *	A string - the return value of the function (which may be zero-length for its own reasons)
  */
 static	PyObject *	epic_call_function (PyObject *self, PyObject *args)
@@ -447,7 +460,10 @@ static	PyObject *	epic_call_function (PyObject *self, PyObject *args)
 	else if (builtin)
                 funcval = builtin(my_args);
 	else
-		funcval = malloc_strdup(empty_string);
+	{
+		PyErr_Format(PyExc_NameError, "%s : Function does not exist", symbol);
+		return NULL;
+	}
 
 	retval = Py_BuildValue("z", funcval);
 	new_free(&funcval);
@@ -466,10 +482,10 @@ static	PyObject *	epic_call_function (PyObject *self, PyObject *args)
  *	value of a SET is always a string.
  *
  * Return value:
- *	-1 - The 'args' tuple did not contain 1 string
- *	A string - the value of /SET SETNAME (or empty string if it does not exist)
- *		XXX - This is probably wrong. asking for an unknown set
- *			should probably return None or throw an exception
+ *	NULL             - PyArg_ParseTuple() didn't like your tuple 
+ *					(and threw exception)
+ *	NULL / NameError - The set you tried to fetch doesn't exist.
+ *	A string - the value of /SET SETNAME 
  */
 static	PyObject *	epic_get_set (PyObject *self, PyObject *args)
 {
@@ -478,11 +494,16 @@ static	PyObject *	epic_get_set (PyObject *self, PyObject *args)
 	char *	funcval = NULL;
 
 	if (!PyArg_ParseTuple(args, "z", &symbol)) {
-		return PyLong_FromLong(-1);
+		return NULL;
 	}
  
 	upper(symbol);
-	funcval = make_string_var(symbol);
+	if (make_string_var2(symbol, &funcval) < 0)
+	{
+		PyErr_Format(PyExc_NameError, "%s : SET variable does not exist", symbol);
+		return NULL;
+	}
+
 	retval = Py_BuildValue("z", funcval);
 	new_free(&funcval);
 	return retval;
@@ -499,7 +520,9 @@ static	PyObject *	epic_get_set (PyObject *self, PyObject *args)
  * Note: Variables are always strings, even if they contain a number.
  *
  * Return value:
- *	-1 - The 'args' tuple did not contain 1 string
+ *	NULL             - PyArg_ParseTuple() didn't like your tuple 
+ *					(and threw exception)
+ *	NULL / NameError - The set you tried to fetch doesn't exist.
  *	A string - the value of /ASSIGN VARNAME (or empty if it does not exist)
  *		XXX - This is probably wrong, asking for an unknown 
  *			assign should probably return None or throw an 
@@ -515,11 +538,16 @@ static	PyObject *	epic_get_assign (PyObject *self, PyObject *args)
 	const char *	assign = NULL;
 
 	if (!PyArg_ParseTuple(args, "z", &symbol)) {
-		return PyLong_FromLong(-1);
+		return NULL;
 	}
 
 	upper(symbol);
-        assign = get_var_alias(symbol, &efunc, &sfunc);
+        if (!(assign = get_var_alias(symbol, &efunc, &sfunc)))
+	{
+		PyErr_Format(PyExc_NameError, "%s : ASSIGN variable does not exist", symbol);
+		return NULL;
+	}
+
 	retval = Py_BuildValue("z", assign);
 	/* _DO NOT_ FREE 'assign'! */
 	return retval;
@@ -539,11 +567,15 @@ static	PyObject *	epic_get_assign (PyObject *self, PyObject *args)
  *	"::global", although I'm not sure it will stay this way forever.
  *
  * Return value:
- *	-1 - The 'args' tuple did not contain 1 string
+ *	NULL             - PyArg_ParseTuple() didn't like your tuple 
+ *					(and threw exception)
  *	A string - The value of $<NAME>
  *		The zero-length string if $<NAME> does not exist.
- *		XXX - this is probably wrong. it should probably 
- *		return None or throw an exception or something.
+ *
+ * Note: Because of how ircII does this, it is not possible to differentiate
+ *	between a variable that does not exist and a variable that is unset.
+ *	If you need that level of granularity (which should be unusual)
+ *	you should use epic.get_var(), epic.get_assign(), etc.
  */
 static	PyObject *	epic_get_var (PyObject *self, PyObject *args)
 {
@@ -552,7 +584,7 @@ static	PyObject *	epic_get_var (PyObject *self, PyObject *args)
 	char *	funcval = NULL;
 
 	if (!PyArg_ParseTuple(args, "z", &symbol)) {
-		return PyLong_FromLong(-1);
+		return NULL;
 	}
 
 	upper(symbol);
@@ -580,8 +612,9 @@ static	PyObject *	epic_get_var (PyObject *self, PyObject *args)
  * 	Who knows -- this may improve in the future.
  *
  * Return value:
- *	-1 - Your tuple did not contain two strings
- *	 0 - The SET was successfully set.
+ *	NULL             - PyArg_ParseTuple() didn't like your tuple 
+ *					(and threw exception)
+ *	NULL / NotImplelmentedError	- This function is not implemented yet
  */
 static	PyObject *	epic_set_set (PyObject *self, PyObject *args)
 {
@@ -590,10 +623,12 @@ static	PyObject *	epic_set_set (PyObject *self, PyObject *args)
 	PyObject *retval;
 
 	if (!PyArg_ParseTuple(args, "zz", &symbol, &value)) {
-		return PyLong_FromLong(-1);
+		return NULL;
 	}
 
 	/* XXX - TODO - /SET symbol value */
+	PyErr_Format(PyExc_NotImplementedError, "Not Implemented Yet");
+	return NULL;
 
 	return PyLong_FromLong(0);
 }
@@ -609,8 +644,9 @@ static	PyObject *	epic_set_set (PyObject *self, PyObject *args)
  *		2. A string -- the value to be /ASSIGNED
  *
  * Return value:
- *	-1 - Your tuple did not contain two strings
- *	 0 - The variable was successfully assigned
+ *	NULL             - PyArg_ParseTuple() didn't like your tuple 
+ *					(and threw exception)
+ *	NULL / NotImplelmentedError	- This function is not implemented yet
  */
 static	PyObject *	epic_set_assign (PyObject *self, PyObject *args)
 {
@@ -619,12 +655,13 @@ static	PyObject *	epic_set_assign (PyObject *self, PyObject *args)
 	PyObject *retval;
 
 	if (!PyArg_ParseTuple(args, "zz", &symbol, &value)) {
-		return PyLong_FromLong(-1);
+		return NULL;
 	}
 
 	/* XXX - TODO - /ASSIGN symbol value */
+	PyErr_Format(PyExc_NotImplementedError, "Not Implemented Yet");
+	return NULL;
 
-	return PyLong_FromLong(0);
 }
 
 /*
@@ -659,21 +696,25 @@ BUILT_IN_COMMAND(pyshim)
  *			This will become /MODULE.METHOD in ircII.
  *
  * Return value:
- *	-1 - Your tuple did not contain a string
- *	 0 - The command was registered successfully
+ *	NULL     - PyArg_ParseTuple() didn't like your tuple 
+ *				(and threw exception)
+ *	 None 	- The command was registered successfully
  */
 static	PyObject *	epic_builtin_cmd (PyObject *self, PyObject *args)
 {
 	char *	symbol;
 
 	if (!PyArg_ParseTuple(args, "z", &symbol)) {
-		return PyLong_FromLong(-1);
+		return NULL;
 	}
 
+	/* XXX TODO - Test this -- does 'symbol' need to be strdup()d?  XXX TODO */
 	add_builtin_cmd_alias(symbol, pyshim);
-	return PyLong_FromLong(0);
-}
 
+	/* Success! */
+	Py_INCREF(Py_None);
+	return Py_None;
+}
 
 
 static	PyMethodDef	epicMethods[] = {
@@ -719,7 +760,23 @@ static	PyObject *	PyInit_epic (void)
 
 /***********************************************************/
 /* 
- * Embed Python by allowing users to call a python function
+ * python_eval_expression - Call a Python Expression -- the $python() function
+ *
+ * Note: This can only be used to call a Python Expression.
+ * 	It cannot be used to call a python statement.
+ *
+ * See at the top of the file -- Python makes a distinction between
+ * statements and expressions (like ircII does) and has different 
+ * API calls for each (PyRun_String() and PyRun_SimpleString()).
+ * 
+ * Arguments:
+ *	input - A string to pass to the Python interpreter.  
+ *		It must be a python expression, or python will throw exception.
+ *
+ * Return Value:
+ *	The return value of the python expression, as a new_malloc()ed string.
+ * 	YOU are responsible for new_free()ing the value later (if you call this
+ *	other than as the $python() function, of course)
  */
 char *	python_eval_expression (char *input)
 {
@@ -735,11 +792,15 @@ char *	python_eval_expression (char *input)
 		global_vars = PyModule_GetDict(PyImport_AddModule("__main__"));
 	}
 
-	/* Convert retval to a string */
-	retval = PyRun_String(input, Py_eval_input, global_vars, global_vars);
-	if (retval == NULL)
+	/*
+	 * https://docs.python.org/3/c-api/veryhigh.html
+ 	 * says that this returns NULL if an exception is raised.
+	 * So in that case, we try to handle/format the exception.
+	 */
+	if (!(retval = PyRun_String(input, Py_eval_input, global_vars, global_vars)))
 		output_traceback();
 
+	/* Convert retval to a string */
 	retval_repr = PyObject_Repr(retval);
 	r = PyUnicode_AsUTF8(retval_repr);
 	retvalstr = malloc_strdup(r);
@@ -749,10 +810,25 @@ char *	python_eval_expression (char *input)
 	RETURN_MSTR(retvalstr);	
 }
 
+/*
+ * python_eval_statement -- Call a Python Statement -- The /PYTHON function
+ * 
+ * Note: This can only be used to call a Python Statement.
+ *	It cannot be used to call a python expression.
+ *
+ * See at the top of the file -- Python makes a distinction between
+ * statements and expressions (like ircII does) and has different 
+ * API calls for each (PyRun_String() and PyRun_SimpleString()).
+ * 
+ * Arguments:
+ *	input - A string to pass to the Python interpreter.  
+ *		It must be a python statement, or python will throw exception
+ *
+ * Note: It's not clear if the statement throws an exception whether or not
+ *	we can catch and format it.  We'll see!
+ */
 void	python_eval_statement (char *input)
 {
-	int	retval;
-
 	if (p_initialized == 0)
 	{
 		PyImport_AppendInittab("_epic", &PyInit_epic);
@@ -762,10 +838,16 @@ void	python_eval_statement (char *input)
 	}
 
 	/* 
-	 * XXX - This outputs to stdout (yuck) on exception.
-	 * I need to figure out how to defeat that.
+	 * https://docs.python.org/3/c-api/veryhigh.html
+	 * says that "returns 0 on success or -1 if an exception is raised.
+	 * If there was an error, there is no way to get the exception
+	 * information;"  That's not 100% clear.  So I decided to assume 
+	 * that if -1 is returned, we should see if there is exception 
+	 * information and output it if we can.  There is the possibility
+	 * that python has just dumped the exception to stdout and that
+	 * we are out of luck for reformatting it.
 	 */
-	if ((retval = PyRun_SimpleString(input)))
+	if (PyRun_SimpleString(input))
 		output_traceback();
 }
 
@@ -794,8 +876,16 @@ BUILT_IN_COMMAND(pythoncmd)
 
 /*
  * 
- * The /PYDIRECT command.  Call a python module.method directly without quoting hell
+ * Call a python module.method directly without quoting hell
  *  The return value (if any) is ignored.
+ *
+ * Arguments:
+ *	orig_object - a string containing "module.method", the name of a python method
+ *	args - a string containing the argument that will be passed to "module.method"
+ *
+ * Return value:
+ *	A new_malloc()ed string containing the repr()d return value of the method (success)
+ *	A new_malloc()ed zero length string, if something went wrong (failure)
  */
 char *	call_python_directly (const char *orig_object, char *args)
 {
@@ -806,14 +896,6 @@ char *	call_python_directly (const char *orig_object, char *args)
 	char 	*r = NULL, *retvalstr = NULL;
 
 	object = LOCAL_COPY(orig_object);
-#if 0
-	if (!(object = new_next_arg(args, &args)))
-	{
-		my_error("Usage: /PYDIRECT module.method arguments");
-		RETURN_EMPTY;
-	}
-#endif
-
 	module = object;
 	if (!(method = strchr(module, '.')))
 	{
@@ -888,7 +970,7 @@ c_p_d_cleanup:
  *
  * You can only call "module.method" python functions that accept exactly
  * one string as its input parameters.  If you need to call anything more 
- * sophisticated than that, you need ot use /PYTHON or $python() to handle
+ * sophisticated than that, you need to use /PYTHON or $python() to handle
  * the parsing.
  */
 BUILT_IN_COMMAND(pydirect_cmd)
@@ -917,7 +999,7 @@ void	output_traceback (void)
 	PyObject *ptype_repr, *pvalue_repr, *ptraceback_repr;
 	char *ptype_str, *pvalue_str, *ptraceback_str;
 
-	say("The python evaluation failed. hrm.");
+	say("The python evaluation threw an exception:");
 	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
 	if (ptype != NULL)
 	{

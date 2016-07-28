@@ -235,6 +235,7 @@ typedef struct
 	void	init_variables_stage1	(void);
 	void	init_variables_stage2	(void);
 	char*	make_string_var 	(const char *);
+	int     make_string_var2 	(const char *, char **);
 	int	charset_size 		(void);
 	void	save_variables 		(FILE *, int);
 	void	do_stack_set		(int, char *);

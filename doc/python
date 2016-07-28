@@ -33,6 +33,10 @@ First,
     /python import _epic
 Then, you can use any of these python functions:
 
+---- NOTE ---- 
+    All of these functions will throw an exception if you don't pass in the required params 
+---- NOTE ---- 
+
 (Higher level ircII interfaces)
     _epic.echo(string)
 	Argument: 	string -- text to be output to the epic window, literally
@@ -71,7 +75,8 @@ Then, you can use any of these python functions:
 			string -- The argument list to pass to the command, with no $-expansion
 	Internal Op:	Directly call the alias (preferentially) or builtin command with the literal argument list.
 			You must pass in a single space-separated string as the argument list.
-	Return val:	-1 if the command does not exist; 0 if it does exist.
+	Return val:	The None object
+	Exception:	NameError - If the name of the command is not found
 
     _epic.call_function(string, string)
 	Argument:	string -- The name of an alias or builtin function
@@ -79,34 +84,42 @@ Then, you can use any of these python functions:
 	Internal Op:	Directly call the alias (preferentially) or builtin function with the literal argument list.
 			You must pass in a single space-separated string as the argument list.
 	Return val:	A utf8-encoded string of the return value of the function (even if the result is a number)
+	Exception:	NameError - If the name of the function is not found
 
     _epic.get_set(string)
 	Argument:	string -- The name of a /SET
 	Internal Op:	Return the value of a /SET variable
 	Return val:	A utf8-encoded string
+	Exception:	NameError - If the name of the /SET is not found
 
     _epic.get_assign(string)
 	Argument:	string -- The name of an /ASSIGN
 	Internal Op:	Return the value of a /ASSIGN variable
 	Return val:	A utf8-encoded string
+	Exception:	NameError - If the name of the /ASSIGN is not found
 
     _epic.get_var(string)
 	Argument:	string -- The name of simple $-expando (ie, to get the value of $foo, pass in 'foo')
 	Internal Op:	Return the value of a variable (either an assign, set, or inline expando)
 	Return val:	A utf8-encoded string
+	Exception:	No -- if name is not found, you get zero-length string back.
 
     _epic.set_set(string, string)
 	Argument:	string - The name of a /SET (must exist)
 			string - The new value to give the /SET
 	Internal Op:	Nothing - just a stub for now - does not do anything
-	Return Val:	0 (for now)
+	Exception:	NotImplementedError (for now)
 
     _epic.set_assign(string, string)
 	Argument:	string - The name of an /ASSIGN (does not need to exist)
 			string - The new value to give the /ASSIGN
 	Internal Op:	Nothing - just a stub for now - does not do anything
-	Return Val:	0 (for now)
+	Exception:	NotImplementedError (for now)
 
+   _epic.builtin_command(string)
+	Argument:	string - The name of a python "module.method".
+	Internal Op:	/MODULE.METHOD becomes a builtin command that calls python
+	Return Val:	The None object
 
 3. Python foundation script for calling to EPIC
 ==================================================

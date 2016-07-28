@@ -867,6 +867,26 @@ char 	*make_string_var (const char *var_name)
 	return make_string_var_bydata(thevar->type, thevar->data);
 }
 
+/*
+ * Like 'make_string_var' but returns -1 if 'var_name' does not exist.
+ * It returns 0 if 'var_name' does exist, and sets *retval.
+ */
+int	make_string_var2 (const char *var_name, char **retval)
+{
+	char *	(*dummy) (void);
+	IrcVariable *thevar = NULL;
+	char	*copy;
+
+	copy = LOCAL_COPY(var_name);
+	upper(copy);
+
+	get_var_alias(copy, &dummy, &thevar);
+	if (thevar == NULL)
+		return -1;
+
+	*retval = make_string_var_bydata(thevar->type, thevar->data);
+	return 0;
+}
 char 	*make_string_var_bydata (int type, void *vp)
 {
 	char	*ret = (char *) 0;
