@@ -7867,7 +7867,10 @@ BUILT_IN_FUNCTION(function_python, input)
 
 BUILT_IN_FUNCTION(function_pydirect, input)
 {
-	return call_python_directly (input);
+	const char *	py_funcname;
+
+	GET_FUNC_ARG(py_funcname, input)
+	return call_python_directly(py_funcname, input);
 }
 
 #endif

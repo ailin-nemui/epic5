@@ -29,7 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-/* Python commit #10 */
+/* Python commit #11 */
 
 #include <Python.h>
 #include "irc.h"
@@ -115,7 +115,7 @@ static	PyObject *global_vars = NULL;
  *   epic.get_set - get a /SET value (only)
  *        Example: epic.get_set("mail")
  *   epic.get_assign - get an /ASSIGN value (only)
- *        Example: epic.get_set("myvar")
+ *        Example: epic.get_assign("myvar")
  *   epic.get_var - get an /ASSIGN value (preferentially) or a /SET 
  *   epic.set_set - set a /SET value (only)
  *        Example: epic.set_set("mail", "ON")
@@ -124,6 +124,19 @@ static	PyObject *global_vars = NULL;
  */
 
 /* Higher level interface to things */
+
+/*
+ * epic.echo("hello, world") -- Output something without a banner (like /echo)
+ *
+ * Arguments:
+ *	self - ignored (the "epic" module)
+ *	args - A tuple containing
+ *		1. A string containing stuff to output
+ *
+ * Return value:
+ *	-1 - The tuple did not contain a single string
+ *	 0 - The stuff was displayed successfully.
+ */
 static	PyObject *	epic_echo (PyObject *self, PyObject *args)
 {
 	char *	str;
@@ -136,6 +149,22 @@ static	PyObject *	epic_echo (PyObject *self, PyObject *args)
 	return PyLong_FromLong(0L);
 }
 
+/*
+ * epic.say("Warning, WIll Robinson") -- Output something with a banner
+ *					(like internal commands do)
+ *
+ * Arguments:
+ *	self - ignored (the "epic" module)
+ *	args - A tuple containing
+ *		1. A string containing stuff to output
+ *
+ * Notes: 
+ *	The banner is (of course) /SET BANNER.
+ *
+ * Return value:
+ *	-1 - The tuple did not contain a single string
+ *	 0 - The stuff was displayed successfully.
+ */
 static	PyObject *	epic_say (PyObject *self, PyObject *args)
 {
 	char *	str;
@@ -148,6 +177,24 @@ static	PyObject *	epic_say (PyObject *self, PyObject *args)
 	return PyLong_FromLong(0L);
 }
 
+/*
+ * epic.cmd("join #epic") -- Run an ircII command like at the input line
+ *
+ * Arguments:
+ *	self - ignored (the "epic" module)
+ *	args - A tuple containing
+ *		1. A string containing an ircII command statement
+ *
+ * Notes:
+ *	'args' is run as a single ircII statement (as if you had typed
+ *	it at the command line).  $'s are not expanded; semicolons are
+ *	not treated as statement separates, and braces have no special 
+ *	meaning.
+ *
+ * Return value:
+ *	-1 - The tuple did not contain a single string
+ *	 0 - The stuff was run successfully.
+ */
 static	PyObject *	epic_cmd (PyObject *self, PyObject *args)
 {
 	char *	str;
@@ -160,6 +207,23 @@ static	PyObject *	epic_cmd (PyObject *self, PyObject *args)
 	return PyLong_FromLong(0L);
 }
 
+/*
+ * epic.eval("echo My nick is $N") -- Run an ircII command line in an alias
+ *
+ * Arguments:
+ *	self - ignored (the "epic" module)
+ *	args - A tuple containing
+ *		1. A string containing an ircII statement
+ *
+ * Notes: 
+ * 	$* is treated as the empty string ([]) and so any $0, $1 type 
+ *	expansions will expand to the empty string.  Maybe this will
+ *	change in the future, and you'll be permitted to pass in $*.
+ *
+ * Return value:
+ *	-1 - The tuple did not contain a single string
+ *	 0 - The stuff ran successfully.
+ */
 static	PyObject *	epic_eval (PyObject *self, PyObject *args)
 {
 	char *	str;
@@ -172,6 +236,29 @@ static	PyObject *	epic_eval (PyObject *self, PyObject *args)
 	return PyLong_FromLong(0L);
 }
 
+/*
+ * epic.expr("var + 2 * numonchannel()") -- Return the result of an expression
+ *
+ * Arguments:
+ *	self - ignored (the "epic" module)
+ *	args - A tuple containing
+ *		1. A string containing an ircII expression
+ *
+ * Notes:
+ *	$* is treated as the empty string ([]) and so any $0, $1 type
+ *	expansions will expand to the empty string.  Maybe this will
+ *	change in the future, and you'll be permitted to pass in $*.
+ *
+ * Return value:
+ *	-1 - The tuple did not contain a single string 
+ *		This is returned as a Long (normal values returned as Strings)
+ *	NULL - XXX WRONG XXX (not permitted to return NULL?)
+ *	     - I had trouple building a return value (impossible?)
+ *	A string - The result of the expression
+ *		- All ircII expressions result in a string, even if that
+ *		  string contains an integer or whatever.
+ *		  ie, "2 + 2" is "4" == a string containing the number 4.
+ */
 static	PyObject *	epic_expr (PyObject *self, PyObject *args)
 {
 	char *	str;
@@ -191,6 +278,24 @@ static	PyObject *	epic_expr (PyObject *self, PyObject *args)
 	return retval;
 }
 
+/*
+ * epic.expand("text with ${2+2} $vars in it") -- Expand a string and return it
+ *
+ * Arguments: 
+ *	self - ignored (the "epic" module)
+ *	args - A tuple containing
+ *		1. A string containing an ircII string
+ *
+ * Notes:
+ *	$* is treated as the empty string ([]) and so any $0, $1 type 
+ * 	expansions will expand to the empty string.  Maybe this will 
+ *	change in the future, and you'll be permitted to pass in $*.
+ *
+ * Return value:
+ *	-1 - The tuple did not contain a single string
+ *		This is returneed as a Long (normal values are returned as Strings)
+ *	A string - The result of the expansion
+ */
 static	PyObject *	epic_expand (PyObject *self, PyObject *args)
 {
 	char *	str;
@@ -207,6 +312,26 @@ static	PyObject *	epic_expand (PyObject *self, PyObject *args)
 	return retval;
 }
 
+/*
+ * epic.call("function(arglist)") -- Call a function directly (with $-expansion)
+ *
+ * Arguments:
+ *	self - ignored (the "epic" module)
+ *	args - A tuple containing
+ *		1. A string containing a function call, with parenthesis
+ *
+ * Notes:
+ *	The 'arglist' will be expanded ($-expandos will be honored)
+ *	$* will be treated as the empty string (see the caveats above)
+ *
+ * Return value:
+ *	-1 - The tuple did not contain a single string
+ *		This is returned as a Long
+ *	A string - The return value of the function call
+ *		All function calls return exactly one string, even if
+ *		that string contains a number or a list of words.
+ *		You may need to process the string in python.
+ */
 static	PyObject *	epic_call (PyObject *self, PyObject *args)
 {
 	char *	str;
@@ -224,6 +349,32 @@ static	PyObject *	epic_call (PyObject *self, PyObject *args)
 }
 
 /* Lower level interfaces to things */
+
+
+/*
+ * epic.run_command("COMMAND", "arglist") - Call a command (alias or builtin) 
+ *					directly WITHOUT expansion
+ *
+ * Arguments:
+ * 	self - ignored (the "epic" module)
+ *	args - A tuple containing:
+ *		1. A string containing an alias name or a built in command name
+ *		2. A string representing the argument list
+ *
+ * Note: All ircII commands take one string as the argument, even if that string
+ * 	contains some serialization of a collection.  Technically each command
+ *	is permitted to do whatever it wants with its arguments; but the convention 
+ *	is to accept a space separated list of words.  Again, this is not a 
+ *	requirement, justthe way most things work.
+ *
+ * Note: The argument list is _NOT_ expanded; it is passed literally in to the cmd.
+ * Note: XXX - The $* that is passed in is NULL; I'm not sure if this is correct or not.
+ * Note: Aliases are prefered to builtin commands, just like ircII does it.
+ * 
+ * Return Value:
+ *	-1 	- The tuple did not contain exactly two strings
+ *	 0	- The command was run successfully
+ */
 static	PyObject *	epic_run_command (PyObject *self, PyObject *args)
 {
 	char *	symbol;
@@ -249,6 +400,32 @@ const 	char *	alias = NULL;
 }
 
 
+/*
+ * epic.call_function("FUNCTION", "arglist") -- Call a function (alias or builtin)
+ *					directly WITHOUT expansion
+ *
+ * Arguments:
+ *	self - ignored (the "epic" module)
+ *	args - A tuple containing:
+ *		1. A string containing an alias name or built in function name
+ *		2. A string representing the argument list
+ *
+ * Note: All ircII functions take one string as their argument, even if that 
+ *	string contains some representation of a collection.  Technically each
+ *	function is permitted to do whatever it wants with its arguments; but 
+ *	the convention is to accept a space separated list of words.  Again, 
+ * 	this is not a requirement, just the way most things work.
+ * 
+ * Note: The argument list is _NOT_ expanded; it is passed literally to the fn.
+ * Note: XXX - The $* that is passed in is NULL; I'm not sure if this is correct or not.
+ * Note: Aliases are preferred to builtins, just like ircII.
+ * 
+ * Return Value:
+ *	-1 - (Long) The args tuple did not contain two strings
+ *	A zero-length string - You called a function that does not exist.
+ *		XXX This is probably wrong -- it probably should return None.
+ *	A string - the return value of the function (which may be zero-length for its own reasons)
+ */
 static	PyObject *	epic_call_function (PyObject *self, PyObject *args)
 {
 	char *	symbol;
@@ -277,6 +454,23 @@ static	PyObject *	epic_call_function (PyObject *self, PyObject *args)
 	return retval;
 }
 
+/*
+ * epic.get_set("SETNAME") - Return the value of /SET SETNAME
+ *
+ * Arguments:
+ * 	self - ignored (the "epic" module)
+ *	args - A tuple containing:
+ *		1. A /SET name (ie, "AUTO_REJOIN")
+ *
+ * Note: Although /SETs have types (integer, boolean, string), the 
+ *	value of a SET is always a string.
+ *
+ * Return value:
+ *	-1 - The 'args' tuple did not contain 1 string
+ *	A string - the value of /SET SETNAME (or empty string if it does not exist)
+ *		XXX - This is probably wrong. asking for an unknown set
+ *			should probably return None or throw an exception
+ */
 static	PyObject *	epic_get_set (PyObject *self, PyObject *args)
 {
 	char *	symbol;
@@ -294,6 +488,23 @@ static	PyObject *	epic_get_set (PyObject *self, PyObject *args)
 	return retval;
 }
 
+/*
+ * epic.get_assign("VARNAME") - Return the value of /ASSIGN VARNAME
+ * 
+ * Arguments:
+ *	self - ignored (the "epic" module)
+ *	args - A tuple containing:
+ *		1. A /ASSIGN name (ie, "MYVAR")
+ *
+ * Note: Variables are always strings, even if they contain a number.
+ *
+ * Return value:
+ *	-1 - The 'args' tuple did not contain 1 string
+ *	A string - the value of /ASSIGN VARNAME (or empty if it does not exist)
+ *		XXX - This is probably wrong, asking for an unknown 
+ *			assign should probably return None or throw an 
+ *			exception or something.
+ */
 static	PyObject *	epic_get_assign (PyObject *self, PyObject *args)
 {
 	char *	symbol;
@@ -315,8 +526,24 @@ static	PyObject *	epic_get_assign (PyObject *self, PyObject *args)
 }
 
 /*  
- * XXX Because of how this is implemented, this supports ":local" and "::global", although 
- * I'm not sure it will stay this way forever.
+ * epic.get_var("NAME") - Return the value of a variable [see notes]
+ *
+ * Arguments: 
+ *	self - ignored (the "epic" module)
+ *	args - A tuple containing:
+ *		1. A variable symbol name of some sort
+ *
+ * Note:  A variable name can be a local variable, a global variable, or a set 
+ *	variable. The return value is what you would get if you did $<NAME>.
+ * Note:  XXX - Because of how this is implemented, this supports ":local" and 
+ *	"::global", although I'm not sure it will stay this way forever.
+ *
+ * Return value:
+ *	-1 - The 'args' tuple did not contain 1 string
+ *	A string - The value of $<NAME>
+ *		The zero-length string if $<NAME> does not exist.
+ *		XXX - this is probably wrong. it should probably 
+ *		return None or throw an exception or something.
  */
 static	PyObject *	epic_get_var (PyObject *self, PyObject *args)
 {
@@ -335,6 +562,27 @@ static	PyObject *	epic_get_var (PyObject *self, PyObject *args)
 	return retval;
 }
 
+/*
+ * epic.set_set("setname", "value") -- do a /SET
+ * XXX - TODO - XXX
+ *
+ * Arguments:
+ *	self - ignored (the "epic" module)
+ *	args - A tuple containing
+ *		1. A string - the SET to be set
+ *		2. A string - the value to be SET
+ * Note:
+ *	SETs have types, which are not currently exposed through this
+ *	interface.  You need to pass in a string that contains a value
+ *	of the correct type (ie, if the SET is an integer, you need to
+ *	pass in a string containing an integer.  If the SET is a boolean,
+ *	you need to pass in a string containing "TRUE" or "FALSE".)  
+ * 	Who knows -- this may improve in the future.
+ *
+ * Return value:
+ *	-1 - Your tuple did not contain two strings
+ *	 0 - The SET was successfully set.
+ */
 static	PyObject *	epic_set_set (PyObject *self, PyObject *args)
 {
 	char *	symbol;
@@ -345,10 +593,25 @@ static	PyObject *	epic_set_set (PyObject *self, PyObject *args)
 		return PyLong_FromLong(-1);
 	}
 
-	/* /SET symbol value */
+	/* XXX - TODO - /SET symbol value */
+
 	return PyLong_FromLong(0);
 }
 
+/*
+ * epic.set_assign("varname", "value") -- do an /ASSIGN
+ * XXX - TODO - XXX
+ *
+ * Arguments: 
+ *	self - ignored (the "epic" module)
+ *	args - A tuple containing
+ *		1. A string -- the variable to be /ASSIGNed
+ *		2. A string -- the value to be /ASSIGNED
+ *
+ * Return value:
+ *	-1 - Your tuple did not contain two strings
+ *	 0 - The variable was successfully assigned
+ */
 static	PyObject *	epic_set_assign (PyObject *self, PyObject *args)
 {
 	char *	symbol;
@@ -359,9 +622,58 @@ static	PyObject *	epic_set_assign (PyObject *self, PyObject *args)
 		return PyLong_FromLong(-1);
 	}
 
-	/* /ASSIGN symbol value */
+	/* XXX - TODO - /ASSIGN symbol value */
+
 	return PyLong_FromLong(0);
 }
+
+/*
+ * INTERNAL USE ONLY --
+ * When you want to register a python module.method as a hardcoded
+ * builtin ircII command, you need a BUILT_IN_COMMAND() to be registered
+ * as the callback.  Because of how ircII works, the /COMMAND that you 
+ * run ends up in 'command', so this shim just does the glue:
+ *
+ * In python:
+ *   epic.builtin_cmd("module.method") 
+ * In ircII:
+ *   /MODULE.METHOD ...args...
+ *
+ * XXX - It's not clear if 'subargs' should be passed to the python function.
+ */
+BUILT_IN_COMMAND(pyshim)
+{
+	char *	retval = NULL;
+
+	retval = call_python_directly(command, args);
+	new_free(&retval);
+}
+
+/*
+ * epic.builtin_cmd("module.method") -- Register a python module.method 
+ *					as a builtin ircII cmd
+ * Arguments:
+ *	self - ignored (the "epic" object)
+ *	args - A tuple containing
+ *		1. A string - the name of "module.method")
+ *			This will become /MODULE.METHOD in ircII.
+ *
+ * Return value:
+ *	-1 - Your tuple did not contain a string
+ *	 0 - The command was registered successfully
+ */
+static	PyObject *	epic_builtin_cmd (PyObject *self, PyObject *args)
+{
+	char *	symbol;
+
+	if (!PyArg_ParseTuple(args, "z", &symbol)) {
+		return PyLong_FromLong(-1);
+	}
+
+	add_builtin_cmd_alias(symbol, pyshim);
+	return PyLong_FromLong(0);
+}
+
 
 
 static	PyMethodDef	epicMethods[] = {
@@ -382,7 +694,7 @@ static	PyMethodDef	epicMethods[] = {
 	{ "get_var",       epic_get_assign,	METH_VARARGS,	"Get a variable (either /ASSIGN or /SET)" },
 	{ "set_set",       epic_set_set,	METH_VARARGS,	"Set a /SET value (only)" },
 	{ "set_assign",    epic_set_assign,	METH_VARARGS,	"Set a /ASSIGN value (only)" },
-
+	{ "builtin_cmd",   epic_builtin_cmd,	METH_VARARGS,	"Make a Python function an EPIC builtin command" },
 	{ NULL,		NULL,		0,		NULL }
 };
 
@@ -481,10 +793,11 @@ BUILT_IN_COMMAND(pythoncmd)
 }
 
 /*
+ * 
  * The /PYDIRECT command.  Call a python module.method directly without quoting hell
  *  The return value (if any) is ignored.
  */
-char *	call_python_directly (char *args)
+char *	call_python_directly (const char *orig_object, char *args)
 {
 	char 	*object = NULL, *module = NULL, *method = NULL;
 	PyObject *mod_py = NULL, *meth_py = NULL, *args_py = NULL;
@@ -492,11 +805,14 @@ char *	call_python_directly (char *args)
 	PyObject *retval_repr = NULL;
 	char 	*r = NULL, *retvalstr = NULL;
 
+	object = LOCAL_COPY(orig_object);
+#if 0
 	if (!(object = new_next_arg(args, &args)))
 	{
 		my_error("Usage: /PYDIRECT module.method arguments");
 		RETURN_EMPTY;
 	}
+#endif
 
 	module = object;
 	if (!(method = strchr(module, '.')))
@@ -563,15 +879,38 @@ c_p_d_cleanup:
 	RETURN_MSTR(retvalstr);
 }
 
+/*
+ * /PYDIRECT -- Call a python module.method directly, without using 
+ *		PyRun[Simple]String() [which handles syntax parsing]
+ *
+ * Usage:
+ *	/PYDIRECT module.method arguments
+ *
+ * You can only call "module.method" python functions that accept exactly
+ * one string as its input parameters.  If you need to call anything more 
+ * sophisticated than that, you need ot use /PYTHON or $python() to handle
+ * the parsing.
+ */
 BUILT_IN_COMMAND(pydirect_cmd)
 {
+	char *pyfuncname;
 	char *x;
 
-	x = call_python_directly(args);
+	pyfuncname = new_next_arg(args, &args);
+	x = call_python_directly(pyfuncname, args);
 	new_free(&x);
 }
 
 
+/*
+ * output_traceback - output a python exception in an epic-friendly way
+ *
+ * Certain things may cause Python Exceptions. When we detect that an
+ * exception has occurred, we call this function to handle it.
+ * 
+ * Arguments: None
+ * Return value : None
+ */
 void	output_traceback (void)
 {
 	PyObject *ptype, *pvalue, *ptraceback;
