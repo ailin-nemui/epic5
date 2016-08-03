@@ -16,5 +16,6 @@ load help;
 load 2.8script;
 load ambig;
 load newnick;
+load python;
 #load find_ssl_root_certs;
 if (which(local) != '') {load local};

@@ -1,0 +1,23 @@
+# Setup the IRC client for python
+# Usage: /load python
+
+if (python(1) == 1) 
+{
+	# Make sure we can import local modules
+	python import sys
+	python if '.' not in sys.path: sys.path.append('.')
+	@ dir = before(-1 / $word(1 $loadinfo()))
+	python if '$dir' not in sys.path: sys.path.append\('$dir'\)
+
+	# Setup some helpful aliases
+	alias pyecho {echo $python($*)}
+	alias pyload {python import $*}
+	alias pyreload {python epic.reload\($*\)}
+
+	# Import the high-level epic module
+	pyload epic
+	echo -s python loaded
+}
+
+# skully'2k16
+
