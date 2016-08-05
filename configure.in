@@ -1299,7 +1299,7 @@ AC_ARG_WITH([python],
        [AS_HELP_STRING([--with-python[=PATH_TO_PYTHON_CONFIG_EXE]], [Compile with Python support.])],
        [], [with_python=maybe])
 
-with_python_errormsg="--with-python was specified but I could not locate pythonX.Y-config. Please try specifying --with-path=/path/to/pythonX.Y-config or --without-python."
+with_python_errormsg="--with-python was specified but I could not locate python3-config. Please try specifying --with-path=/path/to/python3-config or --without-python."
 AC_MSG_CHECKING([whether to support Python])
 if test "x$with_python" = "xno" ; then
 	AC_MSG_CHECKING(whether to support Python)
