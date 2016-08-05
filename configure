@@ -12,39 +12,39 @@ ac_help=
 ac_default_prefix=/usr/local
 # Any additions from configure.in:
 ac_help="$ac_help
-  --with-localdir=/usr/local An extra directory to look for stuff."
+  --with-localdir=/usr/local        An extra directory to look for stuff."
 ac_help="$ac_help
-  --with-threaded-stdout[=yes] Threaded stdout so the client doesn't block when gnu screen malfunctions."
+  --with-threaded-stdout[=yes]      Threaded stdout so the client doesn't block when gnu screen malfunctions."
 ac_help="$ac_help
-  --with-multiplex[=TYPE] Multiplexer type (select,poll,freebsd-kqueue,pthread,solaris-ports)"
+  --with-multiplex[=TYPE]           Multiplexer type (select,poll,freebsd-kqueue,pthread,solaris-ports)"
 ac_help="$ac_help
-AS_HELP_STRING([--without-libarchive], [Disable libarchive support.])"
+  --without-libarchive              Disable libarchive support."
 ac_help="$ac_help
-  --with-ssl[=PATH]       Include SSL support (DIR is OpenSSL's install dir)."
+  --with-ssl[=PATH]                 Help me find your SSL installation (DIR is OpenSSL's install dir)."
 ac_help="$ac_help
-  --with-termcap          Forcibly refuse to use terminfo/ncurses "
+  --with-termcap                    Force use of termcap even if terminfo/ncurses is available "
 ac_help="$ac_help
-  --with-ipv6             Include IPv6 support"
+  --without-ipv6                    Refuse to support IPv6"
 ac_help="$ac_help
-  --with-socks[=PATH]     Compile with SOCKS (libsocks without socks.h) firewall traversal support."
+  --with-socks[=PATH]               Compile with SOCKS (libsocks without socks.h) firewall traversal support."
 ac_help="$ac_help
-  --with-socks5[=PATH]    Compile with SOCKS5 (libsocks with socks.h) firewall traversal support."
+  --with-socks5[=PATH]              Compile with SOCKS5 (libsocks with socks.h) firewall traversal support."
 ac_help="$ac_help
-  --with-iconv[=PATH]       Include iconv support (DIR is eg /usr/local)."
+  --with-iconv[=PATH]               Include iconv support (PATH is (eg) /usr/local)."
 ac_help="$ac_help
-  --with-wserv       Include Wserv support for multiple screens"
+  --without-wserv                   Refuse to support wserv (for multiple screens)"
 ac_help="$ac_help
-  --with-valgrind         Include support for Valgrind Memcheck "
+  --with-valgrind                   Include support for Valgrind Memcheck "
 ac_help="$ac_help
-AS_HELP_STRING([--with-perl=[PATH_TO_PERL_EXE]], [Compile with perl support.])"
+  --with-perl=[PATH_TO_PERL_EXE]    Compile with perl support."
 ac_help="$ac_help
-AS_HELP_STRING([--with-tcl[=PATH_TO_tclConfig.sh]], [Compile with tcl support.])"
+  --with-tcl[=PATH_TO_tclConfig.sh] Compile with tcl support."
 ac_help="$ac_help
-AS_HELP_STRING([--with-ruby[=PATH_TO_RUBY_EXE]], [Compile with ruby support.])"
+  --with-ruby[=PATH_TO_RUBY_EXE]    Compile with ruby support."
 ac_help="$ac_help
-  --with-bc[=PATH_TO_GCC] You have bounds checking gcc and want to use it."
+  --with-bc[=PATH_TO_GCC]           You have bounds checking gcc and want to use it."
 ac_help="$ac_help
-  --with-warns            You wish to use FreeBSD WARNS-like compiler warnings."
+  --with-warns                      You wish to use FreeBSD WARNS-like compiler warnings."
 
 # Initialize some variables set by options.
 # The variables have the same names as the options, with
@@ -1854,8 +1854,8 @@ fi
 
 termcap=0;
 warn_again=0;
-echo $ac_n "checking whether you want to use termcap""... $ac_c" 1>&6
-echo "configure:1859: checking whether you want to use termcap" >&5
+echo $ac_n "checking whether you want to use termcap instead of terminfo/ncurses""... $ac_c" 1>&6
+echo "configure:1859: checking whether you want to use termcap instead of terminfo/ncurses" >&5
 # Check whether --with-termcap or --without-termcap was given.
 if test "${with_termcap+set}" = set; then
   withval="$with_termcap"
