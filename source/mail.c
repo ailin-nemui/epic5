@@ -299,8 +299,11 @@ static void	update_mail_level3_mbox (void)
 /************************************************************************/
 /*			MAILDIR SUPPORT					*/
 /************************************************************************/
-static	char *	maildir_path = (char *) 0;
-static	time_t	maildir_last_changed = 0;
+static	char *	maildir_new_path = (char *) 0;
+static	char *	maildir_cur_path = (char *) 0;
+static	char *	mail_flags = (char *) 0;
+static	time_t	maildir_new_last_changed = 0;
+static	time_t	maildir_cur_last_changed = 0;
 
 
 /*
@@ -312,7 +315,8 @@ static	time_t	maildir_last_changed = 0;
  */
 static int	init_maildir_checking (void)
 {
-	Filename 	tmp_maildir_path;
+	Filename 	tmp_maildir_new_path;
+	Filename	tmp_maildir_cur_path;
 	const char *	maildir;
 	const char *	envvar;
 
@@ -342,9 +346,9 @@ static int	init_maildir_checking (void)
 		return 0;
 	}
 
-	strlcpy(tmp_maildir_path, maildir, sizeof(Filename));
-	strlcat(tmp_maildir_path, "/new", sizeof(Filename));
-	if (!file_exists(tmp_maildir_path) || !isdir(tmp_maildir_path))
+	strlcpy(tmp_maildir_new_path, maildir, sizeof(Filename));
+	strlcat(tmp_maildir_new_path, "/new", sizeof(Filename));
+	if (!file_exists(tmp_maildir_new_path) || !isdir(tmp_maildir_new_path))
 	{
 		say("The directory in your %s environment variable "
 			"does not contain a sub-directory called 'new'", 
@@ -352,15 +356,30 @@ static int	init_maildir_checking (void)
 		return 0;
 	}
 
-	maildir_path = malloc_strdup(tmp_maildir_path);
-	maildir_last_changed = -1;
+	strlcpy(tmp_maildir_cur_path, maildir, sizeof(Filename));
+	strlcat(tmp_maildir_cur_path, "/cur", sizeof(Filename));
+	if (!file_exists(tmp_maildir_cur_path) || !isdir(tmp_maildir_cur_path))
+	{
+		say("The directory in your %s environment variable "
+			"does not contain a sub-directory called 'cur'", 
+				envvar);
+		return 0;
+	}
+
+	maildir_new_path = malloc_strdup(tmp_maildir_new_path);
+	maildir_new_last_changed = -1;
+	maildir_cur_path = malloc_strdup(tmp_maildir_cur_path);
+	maildir_cur_last_changed = -1;
 	return 1;
 }
 
 static int	deinit_maildir_checking (void)
 {
-	new_free(&maildir_path);
-	maildir_last_changed = -1;
+	new_free(&maildir_new_path);
+	new_free(&maildir_cur_path);
+	
+	maildir_new_last_changed = -1;
+	maildir_cur_last_changed = -1;
 	return 0;
 }
 
@@ -375,17 +394,46 @@ static int	maildir_count (void)
 	int	count = 0;
 	DIR *	dir;
 	struct dirent *	d;
+	char *	last_comma;
 
-	if ((dir = opendir(maildir_path)))
+
+	if ((dir = opendir(maildir_new_path)))
 	{
 	    while ((d = readdir(dir)) != NULL)
 	    {
 		/* Count the non-directories */
 		/* Zlonix pointed out that there can be subdirs here */
-		if (!isdir2(maildir_path, d->d_name))
-			count++;
+			if (!isdir2(maildir_new_path, d->d_name))
+			{
+				count++;
+			}
 	    }
 	    closedir(dir);
+	}
+
+	/*
+	 * scan the 'cur' maildir for all mails without the 'S' flag in the last token
+	 *
+	 */
+
+	if ((dir = opendir(maildir_cur_path)))
+	{
+		while ((d = readdir(dir)) != NULL)
+		{
+			if (!isdir2(maildir_cur_path, d->d_name))
+			{
+				mail_flags = malloc_strdup(d->d_name);
+				if ((last_comma = strrchr(mail_flags, ',')))
+				{
+					if (!strchr(last_comma, 'S'))
+					{
+						count++;
+					}
+				}
+				new_free(&mail_flags);
+			}
+		}
+		closedir(dir);
 	}
 
 	return count;
@@ -398,41 +446,63 @@ static int	maildir_count (void)
  * Returns 1 if there is mail but the maildir hasn't changed.
  * Returns 2 if there is mail and the maildir has changed (need to recount)
  */
-static int	poll_maildir_status (void *ptr)
+static int	poll_maildir_status (void *new_ptr, void *cur_ptr)
 {
-	Stat	sb;
-	Stat *	stat_buf;
+	Stat	new_sb;
+	Stat	cur_sb;
+	Stat *	new_stat_buf;
+	Stat *	cur_stat_buf;
+	int	new_ret_val, cur_ret_val;
 
-	if (ptr)
-		stat_buf = (Stat *)ptr;
+	if (new_ptr)
+		new_stat_buf = (Stat *)new_ptr;
 	else
-		stat_buf = &sb;
+		new_stat_buf = &new_sb;
 
-	if (!maildir_path)
+	if (cur_ptr)
+		cur_stat_buf = (Stat *)cur_ptr;
+	else
+		cur_stat_buf = &cur_sb;
+
+	if ((!maildir_new_path) || (!maildir_cur_path))
 		if (!init_maildir_checking())
 			return 0;		/* Can't find maildir */
 
-	/* If there is no mailbox, there is no mail! */
-	if (stat(maildir_path, stat_buf) == -1)
-		return 0;
+	/* If there is no mail in new mailbox, there is no mail! */
+	if (stat(maildir_new_path, new_stat_buf) == -1)
+		new_ret_val = 0;
+	else
+		/* 
+		 * If the mailbox has been written to (either because new
+		 * mail has been appended or old mail has been disposed of)
+		 */
+		if (new_stat_buf->st_ctime > maildir_new_last_changed)
+			new_ret_val = 2;
+		else
+		/* There is mail, but it's not new (in the new dir). */	
+			new_ret_val = 1;
 
-	/* 
-	 * If the mailbox has been written to (either because new
-	 * mail has been appended or old mail has been disposed of
-	 */
-	if (stat_buf->st_ctime > maildir_last_changed)
-		return 2;
+	if (stat(maildir_cur_path, cur_stat_buf) == -1)
+		cur_ret_val = 0;
+	else
+		if (cur_stat_buf->st_ctime > maildir_cur_last_changed)
+			cur_ret_val = 2;
+		else
+			cur_ret_val = 1;
 
-	/* There is mail, but it's not new. */
-	return 1;
+	if (new_ret_val >= cur_ret_val)
+		return new_ret_val;
+	else
+		return cur_ret_val;
 }
 
 static void	update_mail_level1_maildir (void)
 {
 	int	status;
-	Stat	stat_buf;
+	Stat	new_stat_buf;
+	Stat	cur_stat_buf;
 
-	status = poll_maildir_status(&stat_buf);
+	status = poll_maildir_status(&new_stat_buf, &cur_stat_buf);
 
 	/* There is no mail */
 	if (status == 0)
@@ -475,18 +545,20 @@ static void	update_mail_level1_maildir (void)
 		 * Mark the last time we checked mail, and revoke the
 		 * "count", so it must be regened by /set mail 2.
 		 */
-		maildir_last_changed = stat_buf.st_ctime;
+		maildir_new_last_changed = new_stat_buf.st_ctime;
+		maildir_cur_last_changed = cur_stat_buf.st_ctime;
 		mail_last_count = count_new;
 	}
 }
 
 static void	update_mail_level2_maildir (void)
 {
-	Stat	stat_buf;
+	Stat	new_stat_buf;
+	Stat	cur_stat_buf;
 	int	status;
 	int	count;
 
-	status = poll_maildir_status(&stat_buf);
+	status = poll_maildir_status(&new_stat_buf, &cur_stat_buf);
 
 	/* There is no mail */
 	if (status == 0)
@@ -532,7 +604,8 @@ static void	update_mail_level2_maildir (void)
 		    }
 		}
 
-		maildir_last_changed = stat_buf.st_ctime;
+		maildir_new_last_changed = new_stat_buf.st_ctime;
+		maildir_cur_last_changed = cur_stat_buf.st_ctime;
 		mail_last_count = count;
 	    }
 	}
@@ -540,19 +613,26 @@ static void	update_mail_level2_maildir (void)
 
 static void	update_mail_level3_maildir (void)
 {
-	struct utimbuf	ts;
-	Stat	stat_buf;
+	struct utimbuf	new_ts;
+	struct utimbuf	cur_ts;
+	Stat	new_stat_buf;
+	Stat	cur_stat_buf;
 	int	status;
 
-	status = poll_maildir_status(&stat_buf);
+	status = poll_maildir_status(&new_stat_buf, &cur_stat_buf);
 
 	update_mail_level2_maildir();
 	if (status == 2)
 	{
 		/* XXX Ew.  Evil. Gross. */
-		ts.actime = stat_buf.st_atime;
-		ts.modtime = stat_buf.st_mtime;
-		utime(maildir_path, &ts);	/* XXX Ick. Gross */
+		new_ts.actime = new_stat_buf.st_atime;
+		new_ts.modtime = new_stat_buf.st_mtime;
+		utime(maildir_new_path, &new_ts);	/* XXX Ick. Gross */
+
+		/* XXX Ew.  Evil. Gross. */
+		cur_ts.actime = cur_stat_buf.st_atime;
+		cur_ts.modtime = cur_stat_buf.st_mtime;
+		utime(maildir_cur_path, &cur_ts);	/* XXX Ick. Gross */
 	}
 }
 
