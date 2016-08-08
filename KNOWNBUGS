@@ -796,3 +796,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix crash when you $close() an fd from $exec() [rb CE]
 * Reformat all the ./configure --help outputs [rb skered]
 * EPIC5-2.0.1 released here (Indolence) (Commit: 1869)
+* Revamped maildir support to count both 'new' and 'cur' (wcarson)
