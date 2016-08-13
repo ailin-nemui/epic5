@@ -132,7 +132,7 @@ char *	malloc_dupchar 		(int);
 off_t	file_size		(const char *);
 int	file_exists		(const char *);
 int	isdir			(const char *);
-int	isdir2			(const char *, const char *);
+int	isdir2			(const char *, const void * const);
 int	is_root			(const char *, const char *, int);
 size_t	streq			(const char *, const char *);
 char *	malloc_strndup		(const char *, size_t);

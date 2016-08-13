@@ -403,7 +403,7 @@ static int	maildir_count (void)
 	    {
 		/* Count the non-directories */
 		/* Zlonix pointed out that there can be subdirs here */
-			if (!isdir2(maildir_new_path, d->d_name))
+			if (!isdir2(maildir_new_path, d))
 			{
 				count++;
 			}
@@ -420,17 +420,15 @@ static int	maildir_count (void)
 	{
 		while ((d = readdir(dir)) != NULL)
 		{
-			if (!isdir2(maildir_cur_path, d->d_name))
+			if (!isdir2(maildir_cur_path, d))
 			{
-				mail_flags = malloc_strdup(d->d_name);
-				if ((last_comma = strrchr(mail_flags, ',')))
+				if ((last_comma = strrchr(d->d_name, ',')))
 				{
 					if (!strchr(last_comma, 'S'))
 					{
 						count++;
 					}
 				}
-				new_free(&mail_flags);
 			}
 		}
 		closedir(dir);

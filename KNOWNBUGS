@@ -797,3 +797,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Reformat all the ./configure --help outputs [rb skered]
 * EPIC5-2.0.1 released here (Indolence) (Commit: 1869)
 * Revamped maildir support to count both 'new' and 'cur' (wcarson)
+* Optimize maildir support so it's as fast as possible (wcarson)

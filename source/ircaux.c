@@ -2317,16 +2317,25 @@ int	isdir (const char *filename)
 	if (!stat(filename, &statbuf))
 	{
 	    if (S_ISDIR(statbuf.st_mode))
-		return 1;
+			return 1;
 	}
 	return 0;
 }
 
-int	isdir2 (const char *directory, const char *filename)
+int	isdir2 (const char *directory, const void * const ent)
 {
 	Filename	f;
+	const struct dirent * const d = (struct dirent *)ent;
 
-	snprintf(f, sizeof f, "%s/%s", directory, filename);
+#if defined(DT_DIR)
+	/* if dirent.h supports d_type and it is a directory or regular file, return */
+	if (d->d_type == DT_DIR)
+		return 1;
+	if (d->d_type == DT_REG) 
+		return 0;
+#endif
+
+	snprintf(f, sizeof f, "%s/%s", directory, d->d_name);
 	return isdir(f);
 }
 
