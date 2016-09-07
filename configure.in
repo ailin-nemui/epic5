@@ -458,6 +458,39 @@ AC_EGREP_HEADER(isfinite, math.h,
 AC_CHECK_FUNC(tparm, AC_DEFINE(HAVE_TPARM),)
 AC_CHECK_FUNC(newlocale, AC_DEFINE(HAVE_NEWLOCALE),)
 
+
+dnl -- Because someone is trying to use CentOS 5.11...
+AC_MSG_CHECKING(whether you are using a gnu libc that is so old it needs a hack to use newlocale)
+AC_TRY_RUN([
+#include <locale.h>
+
+main()
+{
+	locale_t utf8_locale;
+	utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
+	exit(0);
+}
+],
+   AC_MSG_RESULT(no, good),
+   AC_MSG_RESULT(yes, ugh.)
+   AC_MSG_CHECKING(whether we can fix that with _GNU_SOURCE)
+   AC_TRY_RUN([
+#define _GNU_SOURCE
+#include <locale.h>
+
+main()
+{
+	locale_t utf8_locale;
+	utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
+	exit(0);
+}
+   ],
+   AC_MSG_RESULT(yes),
+   AC_DEFINE(NEWLOCALE_REQUIRES__GNU_SOURCE)
+   AC_MSG_RESULT(no.  bummer for you)
+   AC_DEFINE(NEWLOCALE_DOESNT_WORK), :), :)
+
+
 dnl -- Oh why does this have to be so painful? --
 AC_MSG_CHECKING(whether term.h works by itself)
 AC_TRY_RUN([

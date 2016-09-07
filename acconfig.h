@@ -440,3 +440,9 @@
 /* Define this if you have newlocale() */
 #undef HAVE_NEWLOCALE
 
+/* Define this if newlocale() requires #define _GNU_SOURCE to work */
+#undef NEWLOCALE_REQUIRES__GNU_SOURCE
+
+/* Define this if newlocale() doesn't appear to work properly */
+#undef NEWLOCALE_DOESNT_WORK
+

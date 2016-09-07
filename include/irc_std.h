@@ -496,4 +496,8 @@ typedef struct stat		Stat;
 #define CUC_PP (const unsigned char **)
 #define CC_PP (const char **)
 
+#ifdef NEWLOCALE_DOESNT_WORK
+#undef HAVE_NEWLOCALE
+#endif
+
 #endif /* __irc_std_h */
