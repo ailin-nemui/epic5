@@ -40,8 +40,8 @@
 #include <langinfo.h>
 #ifdef NEWLOCALE_REQUIRES__GNU_SOURCE
 #define _GNU_SOURCE
-#include <locale.h>
 #endif
+#include <locale.h>
 #include <wctype.h>
 #ifdef HAVE_XLOCALE_H
 #include <xlocale.h>
