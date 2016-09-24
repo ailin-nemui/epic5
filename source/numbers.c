@@ -68,7 +68,7 @@ const char *	banner (void)
 	char *str;
 
 	if (current_numeric > 0 && get_int_var(SHOW_NUMERICS_VAR))
-		snprintf(thing, sizeof thing, "%3.3u", current_numeric);
+		snprintf(thing, sizeof thing, "%3.3d", current_numeric);
 	else if ((str = get_string_var(BANNER_VAR)))
 	{
 		if (get_int_var(BANNER_EXPAND_VAR))
