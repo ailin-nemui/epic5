@@ -398,7 +398,7 @@ static Timer *	new_timer (void)
 	ntimer->interval.tv_sec = 0;
 	ntimer->interval.tv_usec = 0;
 	ntimer->domain = GENERAL_TIMER;
-	ntimer->domain = -1;
+	ntimer->domref = -1;
 	ntimer->cancelable = 0;
 	ntimer->fires = 0;
 	return ntimer;
