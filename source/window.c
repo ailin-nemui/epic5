@@ -2189,6 +2189,7 @@ void 	hide_window (Window *window)
 			say("Window %d is already hidden", window->refnum);
 		return;
 	}
+
 	if (!window->swappable)
 	{
 		if (window->name)
@@ -2197,14 +2198,15 @@ void 	hide_window (Window *window)
 			say("Window %d can't be hidden", window->refnum);
 		return;
 	}
+
 	if (window->screen->visible_windows - 
 			count_fixed_windows(window->screen) <= 1)
 	{
 		say("You can't hide the last window.");
 		return;
 	}
-	if (window->screen)
-		remove_window_from_screen(window, 1, 1);
+
+	remove_window_from_screen(window, 1, 1);
 }
 
 /*
