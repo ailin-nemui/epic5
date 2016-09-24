@@ -433,8 +433,6 @@ static const char *	check_recoding_iconv (RecodeRule *r, iconv_t *inbound, iconv
 
 		if (r->outbound_handle == (iconv_t)-1)
 			say("The outbound encoding %s is not valid", str);
-		else
-			*outbound = r->outbound_handle;
 		new_free(&str);
 	    }
 	    *outbound = r->outbound_handle;
