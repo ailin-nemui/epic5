@@ -70,23 +70,23 @@ __inline__ static void term_flush (void) {
 #define TERM_SGR_ITALIC_OFF	17
 #define TERM_SGR_MAXVAL		18
 
-#define TERM_CAN_CUP		1 << 0
-#define TERM_CAN_CLEAR		1 << 1
-#define TERM_CAN_CLREOL		1 << 2
-#define TERM_CAN_RIGHT		1 << 3
-#define TERM_CAN_LEFT		1 << 4
-#define TERM_CAN_SCROLL		1 << 5
-#define TERM_CAN_DELETE		1 << 6
-#define TERM_CAN_INSERT		1 << 7
-#define TERM_CAN_DELLINES	1 << 8
-#define TERM_CAN_INSLINES	1 << 9
-#define TERM_CAN_REPEAT		1 << 10
-#define TERM_CAN_BOLD		1 << 11
-#define TERM_CAN_BLINK		1 << 12
-#define TERM_CAN_UNDL		1 << 13
-#define TERM_CAN_REVERSE	1 << 14
-#define TERM_CAN_COLOR		1 << 15
-#define TERM_CAN_GCHAR		1 << 16
+#define TERM_CAN_CUP		(1 << 0)
+#define TERM_CAN_CLEAR		(1 << 1)
+#define TERM_CAN_CLREOL		(1 << 2)
+#define TERM_CAN_RIGHT		(1 << 3)
+#define TERM_CAN_LEFT		(1 << 4)
+#define TERM_CAN_SCROLL		(1 << 5)
+#define TERM_CAN_DELETE		(1 << 6)
+#define TERM_CAN_INSERT		(1 << 7)
+#define TERM_CAN_DELLINES	(1 << 8)
+#define TERM_CAN_INSLINES	(1 << 9)
+#define TERM_CAN_REPEAT		(1 << 10)
+#define TERM_CAN_BOLD		(1 << 11)
+#define TERM_CAN_BLINK		(1 << 12)
+#define TERM_CAN_UNDL		(1 << 13)
+#define TERM_CAN_REVERSE	(1 << 14)
+#define TERM_CAN_COLOR		(1 << 15)
+#define TERM_CAN_GCHAR		(1 << 16)
 
 extern	int	termfeatures;
 extern	struct	my_term	*current_term;

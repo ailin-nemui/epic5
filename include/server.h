@@ -188,11 +188,11 @@ static __inline__ Server *	get_server (int server)
 #define FROMSERV	-1
 
 /* Funny stuff */
-#define FUNNY_PUBLIC            1 << 0
-#define FUNNY_PRIVATE           1 << 1
-#define FUNNY_TOPIC             1 << 2
-#define FUNNY_USERS             1 << 4
-#define FUNNY_NAME              1 << 5
+#define FUNNY_PUBLIC	(1 << 0)
+#define FUNNY_PRIVATE	(1 << 1)
+#define FUNNY_TOPIC	(1 << 2)
+#define FUNNY_USERS	(1 << 4)
+#define FUNNY_NAME	(1 << 5)
 
 #define SERVER_CREATED		0
 #define SERVER_RECONNECT	1

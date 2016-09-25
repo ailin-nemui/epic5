@@ -17,7 +17,7 @@ typedef struct {
 extern 	protocol_command rfc1459[];
 extern	int		 num_protocol_cmds;
 
-#define PROTO_QUOTEBAD 	1 << 0
+#define PROTO_QUOTEBAD 	(1 << 0)
 
 
 	void    rfc1459_odd 	(const char *, const char *, const char **);
