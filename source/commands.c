@@ -2865,14 +2865,11 @@ BUILT_IN_COMMAND(unshift_cmd)
 BUILT_IN_COMMAND(usleepcmd)
 {
 	char *	arg;
-	time_t	nms;
 	double	interval;
 
 	if ((arg = next_arg(args, &args)))
 	{
-		nms = (time_t)my_atol(arg);
-		interval = nms / 1000000;
-		interval += (nms % 1000000) / 1000000;
+		interval = my_atol(arg) / 1000000.0;
 		my_sleep(interval);
 	}
 	else
