@@ -2184,12 +2184,7 @@ char *hookctl (char *input)
 		/*
 		 * serial, package, stuff, nick, list
 		 */
-		if (!*input || !input)
-			RETURN_EMPTY;
-		else
-		{
-			RETURN_EMPTY;
-		}
+		RETURN_EMPTY;
 
 	/* go-switch */
 	case HOOKCTL_GET:
@@ -2292,7 +2287,7 @@ char *hookctl (char *input)
 				)
 				{
 					if (!strcmp(tmp_hook->nick, str)
-						&& tmp_hook->sernum == tmp_hook->sernum)
+						&& tmp_hook->sernum == hook->sernum)
 					{
 						new_free (&str);
 						RETURN_INT(0);
@@ -2360,7 +2355,7 @@ char *hookctl (char *input)
 					tmp_hook = tmp_hook->next
 				)
 				{
-					if (!strcmp(tmp_hook->nick, tmp_hook->nick)
+					if (!strcmp(tmp_hook->nick, hook->nick)
 						&& tmp_hook->sernum == tmp_int
 					)
 						RETURN_INT(0);
