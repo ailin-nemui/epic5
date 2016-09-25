@@ -6627,7 +6627,8 @@ char *	transform_string_dyn (const char *type, const char *orig_str, size_t orig
 		     "an invalid destination size of [%ld].  Refusing to "
 		     " transform.  Sorry!", 
 			type, (long)orig_str_len, (long)dest_str_len);
-		*my_dest_str_len = orig_str_len;
+		if (my_dest_str_len)
+			*my_dest_str_len = orig_str_len;
 		return malloc_strdup(orig_str);
 	}
 
