@@ -5795,7 +5795,7 @@ static ssize_t	fish64_encoder (const char *orig, size_t orig_len, const void *me
 	 * Convert each 8 byte packet into 12 radix64 chars, and then
 	 * advance to the next packet.  
 	 */
-	for (ib = 0; ib < orig_len && dest_len - ob > 0; )
+	for (ib = 0; ib < orig_len && dest_len > ob; )
 	{
 		if (eight_bytes_to_fish64(orig + ib, orig_len - ib, 
 					   dest + ob, dest_len - ob) < 0)
@@ -5945,7 +5945,7 @@ static ssize_t	fish64_decoder (const char *orig, size_t orig_len, const void *me
 	 * Convert each 12 byte packet into 8 output bytes, and then
 	 * advance to the next packet.  
 	 */
-	for (ib = 0; ib < orig_len && dest_len - ob > 0; )
+	for (ib = 0; ib < orig_len && dest_len > ob; )
 	{
 		if (fish64_to_eight_bytes(orig + ib, orig_len - ib, 
 					   dest + ob, dest_len - ob) < 0)
