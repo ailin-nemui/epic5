@@ -166,7 +166,6 @@ char *	urldecode		(char *, size_t *);
 char *	enquote_it		(const char *str, size_t len);
 char *	dequote_it		(const char *str, size_t *len);
 #endif
-int	slurp_file		(char **buffer, char *filename);
 char *	endstr			(char *);
 ssize_t searchbuf		(const unsigned char *, size_t, size_t, int);
 int	remove_from_comma_list	(char *str, const char *what);
