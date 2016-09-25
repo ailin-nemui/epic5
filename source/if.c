@@ -596,7 +596,6 @@ BUILT_IN_COMMAND(fe)
 	add_var_alias(mapvar, map, 0);
 	new_free(&map);
 
-	window_display = 0;
 	window_display = old_display;
 	new_free(&placeholder);
 }
