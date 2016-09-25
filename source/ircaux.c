@@ -7305,9 +7305,6 @@ void	init_signal_names (void)
 #ifdef SIGALRM
 		else SIGH(SIGALRM)
 #endif
-#ifdef SIGABRT
-		else SIGH(SIGABRT)
-#endif
 #ifdef SIGBUS
 		else SIGH(SIGBUS)
 #endif
