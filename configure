@@ -6464,12 +6464,13 @@ fi
 		fi
 	else
 	    	    	    incdir=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG["rubyhdrdir"]'`
+	    archincdir=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG["rubyarchhdrdir"]'`
 	    	    if test "x$incdir" = "xnil" ; then
 	       incdir=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG["archdir"]'`
 	       RUBYCFLAGS="-I$incdir"
 	    	    else
 	       arch=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG["arch"]'`
-	       RUBYCFLAGS="-I$incdir -I$incdir/$arch/"
+	       RUBYCFLAGS="-I$incdir -I$incdir/$arch/ -I$archincdir"
 	    fi
 
 	    rubylibs=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG["LIBRUBYARG"]'`
@@ -6478,14 +6479,14 @@ fi
 	    RUBYDOTOH="ruby.o"
 
 	    echo $ac_n "checking whether embedded ruby works the way I expect""... $ac_c" 1>&6
-echo "configure:6482: checking whether embedded ruby works the way I expect" >&5
+echo "configure:6483: checking whether embedded ruby works the way I expect" >&5
 	    have_embedded_ruby="no"
 	    old_CFLAGS="$CFLAGS"
 	    old_LIBS="$LIBS"
 	    CFLAGS="$CFLAGS $RUBYCFLAGS"
 	    LIBS="$LIBS $RUBYLIBS"
 	    cat > conftest.$ac_ext <<EOF
-#line 6489 "configure"
+#line 6490 "configure"
 #include "confdefs.h"
 
 #include <ruby.h>
@@ -6510,7 +6511,7 @@ int main() {
 
 ; return 0; }
 EOF
-if { (eval echo configure:6514: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:6515: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   have_embedded_ruby="yes"
 else
@@ -6522,14 +6523,14 @@ rm -f conftest*
 	    if ! test $have_embedded_ruby = "yes" ; then
 		echo "$ac_t""no" 1>&6
 		echo $ac_n "checking whether ruby requires -pthread to link""... $ac_c" 1>&6
-echo "configure:6526: checking whether ruby requires -pthread to link" >&5
+echo "configure:6527: checking whether ruby requires -pthread to link" >&5
 		RUBYCFLAGS="$RUBYCFLAGS -pthread"
 		RUBYLIBS="$RUBYLIBS -pthread"
 		CFLAGS="$old_CFLAGS $RUBYCFLAGS"
 		LIBS="$old_LIBS $RUBYLIBS"
 
 	        cat > conftest.$ac_ext <<EOF
-#line 6533 "configure"
+#line 6534 "configure"
 #include "confdefs.h"
 
 #include <ruby.h>
@@ -6554,7 +6555,7 @@ int main() {
 
 ; return 0; }
 EOF
-if { (eval echo configure:6558: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:6559: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   have_embedded_ruby="yes"
 else
@@ -6615,7 +6616,7 @@ if test "$program_prefix" = "NONE" ; then
 fi
 
 echo $ac_n "checking whether to support bounds checking gcc""... $ac_c" 1>&6
-echo "configure:6619: checking whether to support bounds checking gcc" >&5
+echo "configure:6620: checking whether to support bounds checking gcc" >&5
 # Check whether --with-bc or --without-bc was given.
 if test "${with_bc+set}" = set; then
   withval="$with_bc"
@@ -6640,7 +6641,7 @@ fi
 
 
 echo $ac_n "checking whether to turn on FreeBSD WARNS-like compiler warnings""... $ac_c" 1>&6
-echo "configure:6644: checking whether to turn on FreeBSD WARNS-like compiler warnings" >&5
+echo "configure:6645: checking whether to turn on FreeBSD WARNS-like compiler warnings" >&5
 # Check whether --with-warns or --without-warns was given.
 if test "${with_warns+set}" = set; then
   withval="$with_warns"
@@ -6664,18 +6665,18 @@ fi
 
 
 echo $ac_n "checking whether your compiler supports -Wno-pointer-sign""... $ac_c" 1>&6
-echo "configure:6668: checking whether your compiler supports -Wno-pointer-sign" >&5
+echo "configure:6669: checking whether your compiler supports -Wno-pointer-sign" >&5
 old_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -Wno-pointer-sign"
 cat > conftest.$ac_ext <<EOF
-#line 6672 "configure"
+#line 6673 "configure"
 #include "confdefs.h"
 
 int main() {
 exit(0);
 ; return 0; }
 EOF
-if { (eval echo configure:6679: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:6680: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   echo "$ac_t""yes" 1>&6
 else
@@ -6689,18 +6690,18 @@ fi
 rm -f conftest*
 
 echo $ac_n "checking whether your compiler supports -fno-strict-aliasing""... $ac_c" 1>&6
-echo "configure:6693: checking whether your compiler supports -fno-strict-aliasing" >&5
+echo "configure:6694: checking whether your compiler supports -fno-strict-aliasing" >&5
 old_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -fno-strict-aliasing"
 cat > conftest.$ac_ext <<EOF
-#line 6697 "configure"
+#line 6698 "configure"
 #include "confdefs.h"
 
 int main() {
 exit(0);
 ; return 0; }
 EOF
-if { (eval echo configure:6704: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:6705: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   echo "$ac_t""yes" 1>&6
 else
