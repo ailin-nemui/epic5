@@ -389,11 +389,11 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 
 	while ((arg = next_arg(args, &args)) != NULL)
 	{
-	    lower(arg);
 	    no_args = 0;
 
 	    if (*arg == '-' || *arg == '/')
 	    {
+		lower(arg);
 		arg++;
 		if ((len = strlen(arg)) == 0)
 		{
