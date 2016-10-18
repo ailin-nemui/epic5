@@ -816,3 +816,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /USLEEP for fractional second delays (caf)
 * Add ( ) around constants declared as macros using shift operator (caf)
 * Include output.h in compat.c for yell() (caf)
+* Don't lower-case the channel name passed to whobase() (caf, rb white)
+
