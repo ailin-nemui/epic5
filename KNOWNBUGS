@@ -796,3 +796,25 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix crash when you $close() an fd from $exec() [rb CE]
 * Reformat all the ./configure --help outputs [rb skered]
 * EPIC5-2.0.1 released here (Indolence) (Commit: 1869)
+* Revamped maildir support to count both 'new' and 'cur' (wcarson)
+* Optimize maildir support so it's as fast as possible (wcarson)
+* Fix uninitialized pointer of window->log_rewrite (rb Q)
+* Fix handling of <locale.h> for CentOS 5.11.
+* new_timer() should initialise ->domref (caf)
+* Remove unnecessary window->screen check in hide_window() (caf)
+* Remove double-setting of *outbound in check_recoding_iconv() (caf)
+* banner() should use %d for printing current_numeric (caf)
+* inet_vhostsockaddr() should use %d to print port (caf)
+* Simplify expression in show_key() (caf)
+* Remove doubled-up SIGABRT from init_signal_names() (caf)
+* In transform_string_dyn() don't use my_dest_str_len without testing for NULL (caf)
+* Make output size check more robust in fish64_encode() / fish64_decode() (caf)
+* Remove unused function slurp_file() (caf)
+* Fix $ignorectl(WITH_TYPES ...) when only exceptive ignores are supplied (caf)
+* Remove unnecessary double-setting of window_display (caf)
+* Loosen overly-tight restrictions from $hookctl(SET .. SERIAL) and $hookctl(SET .. NICK) (caf)
+* Fix /USLEEP for fractional second delays (caf)
+* Add ( ) around constants declared as macros using shift operator (caf)
+* Include output.h in compat.c for yell() (caf)
+* Don't lower-case the channel name passed to whobase() (caf, rb white)
+

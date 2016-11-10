@@ -947,7 +947,7 @@ char	*get_ignore_patterns_by_type (char *ctype)
 	 * just punt right here.
 	 */
 	change_ignore_mask_by_desc(ctype, &do_mask, &dont_mask, NULL, NULL);
-	if (mask_isnone(&do_mask) && mask_isnone(&do_mask))
+	if (mask_isnone(&do_mask) && mask_isnone(&dont_mask))
 		return malloc_strdup(empty_string);
 
 	for (tmp = ignored_nicks; tmp; tmp = tmp->next)

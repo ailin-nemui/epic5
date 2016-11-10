@@ -1762,7 +1762,7 @@ static void	show_key (Key *key, const char *str, int slen, int recurse)
 	}
 
 	bp = key->bound;
-	if (!bp && ((recurse && !key->map) || !recurse))
+	if (!bp && (!recurse || !key->map))
 		say("[*] \"%s\" is bound to NOTHING",
 		(slen ? bind_string_decompress(clean, str, slen) : str));
 	else 

@@ -2146,88 +2146,6 @@ error_cleanup:
 }
 
 
-/*
- * slurp_file opens up a file and puts the contents into 'buffer'.
- * The size of 'buffer' is returned.
- *
- * This does no recoding!  You have to recode the result!
- */ 
-int	slurp_file (char **buffer, char *filename)
-{
-	char *	local_buffer;
-	size_t	offset;
-	off_t	local_buffer_size;
-	off_t	filesize;
-	Stat	s;
-	/* FILE *	file; */
-        struct epic_loadfile * elf;
-        size_t	count;
-
-	elf = uzfopen(&filename, get_string_var(LOAD_PATH_VAR), 1, &s);
-	if (!filename)
-	{
-		yell("slurp_file: uzfopen failed -- help!");
-		return -1;
-	}
-
-#if 0
-	if (stat(filename, &s) < 0)
-	{
-		fclose(file);
-		new_free(&filename);
-		return -1;
-	} 
-
-	if (s.st_mode & 0111)
-	{
-		int do_error;
-		do_error = 1;
-		if (do_error)
-			yell("Cannot open %s -- executable file", filename);
-		fclose(elf->fp);
-		new_free(&filename);
-		return -1; /* Whatever */
-	}
-#endif
-
-	/*
- 	 * There should probably be some sort of errortrapping function here, 
-	 * but I am not sure how to implement it, without running stat twice - 
-	 * that is.
-	 */
-	filesize = s.st_size;
-	if (!end_strcmp(filename, ".gz", 3))
-		filesize *= 7;
-	else if (!end_strcmp(filename, ".bz2", 4))
-		filesize *= 10;
-	else if (!end_strcmp(filename, ".Z", 2))
-		filesize *= 5;
-
-	local_buffer = new_malloc(filesize);
-	local_buffer_size = filesize;
-	offset = 0;
-
-	do
-	{
-		count = fread(local_buffer + offset, 
-			      local_buffer_size - offset, 1, elf->fp);
-		offset += count;
-
-		if (!feof(elf->fp))
-		{
-			local_buffer_size += (filesize * 3);
-			new_realloc((void **)&local_buffer, local_buffer_size);
-			continue;
-		}
-	}
-	while (0);
-
-	*buffer = local_buffer;
-	return offset;
-}
-
-
-
 int 	fw_strcmp (comp_len_func *compar, char *v1, char *v2)
 {
 	int len = 0;
@@ -2317,16 +2235,25 @@ int	isdir (const char *filename)
 	if (!stat(filename, &statbuf))
 	{
 	    if (S_ISDIR(statbuf.st_mode))
-		return 1;
+			return 1;
 	}
 	return 0;
 }
 
-int	isdir2 (const char *directory, const char *filename)
+int	isdir2 (const char *directory, const void * const ent)
 {
 	Filename	f;
+	const struct dirent * const d = (struct dirent *)ent;
 
-	snprintf(f, sizeof f, "%s/%s", directory, filename);
+#if defined(DT_DIR)
+	/* if dirent.h supports d_type and it is a directory or regular file, return */
+	if (d->d_type == DT_DIR)
+		return 1;
+	if (d->d_type == DT_REG) 
+		return 0;
+#endif
+
+	snprintf(f, sizeof f, "%s/%s", directory, d->d_name);
 	return isdir(f);
 }
 
@@ -5786,7 +5713,7 @@ static ssize_t	fish64_encoder (const char *orig, size_t orig_len, const void *me
 	 * Convert each 8 byte packet into 12 radix64 chars, and then
 	 * advance to the next packet.  
 	 */
-	for (ib = 0; ib < orig_len && dest_len - ob > 0; )
+	for (ib = 0; ib < orig_len && dest_len > ob; )
 	{
 		if (eight_bytes_to_fish64(orig + ib, orig_len - ib, 
 					   dest + ob, dest_len - ob) < 0)
@@ -5936,7 +5863,7 @@ static ssize_t	fish64_decoder (const char *orig, size_t orig_len, const void *me
 	 * Convert each 12 byte packet into 8 output bytes, and then
 	 * advance to the next packet.  
 	 */
-	for (ib = 0; ib < orig_len && dest_len - ob > 0; )
+	for (ib = 0; ib < orig_len && dest_len > ob; )
 	{
 		if (fish64_to_eight_bytes(orig + ib, orig_len - ib, 
 					   dest + ob, dest_len - ob) < 0)
@@ -6618,7 +6545,8 @@ char *	transform_string_dyn (const char *type, const char *orig_str, size_t orig
 		     "an invalid destination size of [%ld].  Refusing to "
 		     " transform.  Sorry!", 
 			type, (long)orig_str_len, (long)dest_str_len);
-		*my_dest_str_len = orig_str_len;
+		if (my_dest_str_len)
+			*my_dest_str_len = orig_str_len;
 		return malloc_strdup(orig_str);
 	}
 
@@ -7295,9 +7223,6 @@ void	init_signal_names (void)
 #endif
 #ifdef SIGALRM
 		else SIGH(SIGALRM)
-#endif
-#ifdef SIGABRT
-		else SIGH(SIGABRT)
 #endif
 #ifdef SIGBUS
 		else SIGH(SIGBUS)

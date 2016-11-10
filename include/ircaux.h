@@ -132,7 +132,7 @@ char *	malloc_dupchar 		(int);
 off_t	file_size		(const char *);
 int	file_exists		(const char *);
 int	isdir			(const char *);
-int	isdir2			(const char *, const char *);
+int	isdir2			(const char *, const void * const);
 int	is_root			(const char *, const char *, int);
 size_t	streq			(const char *, const char *);
 char *	malloc_strndup		(const char *, size_t);
@@ -166,7 +166,6 @@ char *	urldecode		(char *, size_t *);
 char *	enquote_it		(const char *str, size_t len);
 char *	dequote_it		(const char *str, size_t *len);
 #endif
-int	slurp_file		(char **buffer, char *filename);
 char *	endstr			(char *);
 ssize_t searchbuf		(const unsigned char *, size_t, size_t, int);
 int	remove_from_comma_list	(char *str, const char *what);
@@ -228,19 +227,19 @@ char *	substitute_string	(const char *, const char *, const char *, int, int);
 
 /* ---------------- */
 /* Used for the inbound mangling stuff */
-#define MANGLE_ESCAPES		1 << 0
-#define NORMALIZE		1 << 1
-#define STRIP_COLOR		1 << 2
-#define STRIP_REVERSE		1 << 3
-#define STRIP_UNDERLINE		1 << 4
-#define STRIP_BOLD		1 << 5
-#define STRIP_BLINK		1 << 6
-#define STRIP_ND_SPACE		1 << 7
-#define STRIP_ALT_CHAR		1 << 8
-#define STRIP_ALL_OFF		1 << 9
-#define STRIP_UNPRINTABLE	1 << 10
-#define STRIP_OTHER		1 << 11
-#define STRIP_ITALIC		1 << 12
+#define MANGLE_ESCAPES		(1 << 0)
+#define NORMALIZE		(1 << 1)
+#define STRIP_COLOR		(1 << 2)
+#define STRIP_REVERSE		(1 << 3)
+#define STRIP_UNDERLINE		(1 << 4)
+#define STRIP_BOLD		(1 << 5)
+#define STRIP_BLINK		(1 << 6)
+#define STRIP_ND_SPACE		(1 << 7)
+#define STRIP_ALT_CHAR		(1 << 8)
+#define STRIP_ALL_OFF		(1 << 9)
+#define STRIP_UNPRINTABLE	(1 << 10)
+#define STRIP_OTHER		(1 << 11)
+#define STRIP_ITALIC		(1 << 12)
 
 extern	int	outbound_line_mangler;
 extern	int	inbound_line_mangler;

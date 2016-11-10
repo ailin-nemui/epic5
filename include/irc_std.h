@@ -50,7 +50,7 @@
 #endif
 #include <errno.h>
 #include <sys/stat.h>
-#include <locale.h>
+/* I used to #include <locale.h>, but centos 5.11 required special handling */
 
 /*
  * Everybody needs these INET headers...
@@ -495,5 +495,9 @@ typedef struct stat		Stat;
  */
 #define CUC_PP (const unsigned char **)
 #define CC_PP (const char **)
+
+#ifdef NEWLOCALE_DOESNT_WORK
+#undef HAVE_NEWLOCALE
+#endif
 
 #endif /* __irc_std_h */

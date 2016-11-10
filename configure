@@ -4209,8 +4209,8 @@ else
 main()
 {
 	locale_t utf8_locale;
-        utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
-        exit(0);
+	utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
+	exit(0);
 }
 
 EOF
@@ -4237,8 +4237,8 @@ else
 main()
 {
 	locale_t utf8_locale;
-        utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
-        exit(0);
+	utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
+	exit(0);
 }
    
 EOF
@@ -6465,12 +6465,13 @@ fi
 		fi
 	else
 	    	    	    incdir=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG["rubyhdrdir"]'`
+	    archincdir=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG["rubyarchhdrdir"]'`
 	    	    if test "x$incdir" = "xnil" ; then
 	       incdir=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG["archdir"]'`
 	       RUBYCFLAGS="-I$incdir"
 	    	    else
 	       arch=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG["arch"]'`
-	       RUBYCFLAGS="-I$incdir -I$incdir/$arch/"
+	       RUBYCFLAGS="-I$incdir -I$incdir/$arch/ -I$archincdir"
 	    fi
 
 	    rubylibs=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG["LIBRUBYARG"]'`
@@ -6479,14 +6480,14 @@ fi
 	    RUBYDOTOH="ruby.o"
 
 	    echo $ac_n "checking whether embedded ruby works the way I expect""... $ac_c" 1>&6
-echo "configure:6483: checking whether embedded ruby works the way I expect" >&5
+echo "configure:6484: checking whether embedded ruby works the way I expect" >&5
 	    have_embedded_ruby="no"
 	    old_CFLAGS="$CFLAGS"
 	    old_LIBS="$LIBS"
 	    CFLAGS="$CFLAGS $RUBYCFLAGS"
 	    LIBS="$LIBS $RUBYLIBS"
 	    cat > conftest.$ac_ext <<EOF
-#line 6490 "configure"
+#line 6491 "configure"
 #include "confdefs.h"
 
 #include <ruby.h>
@@ -6511,7 +6512,7 @@ int main() {
 
 ; return 0; }
 EOF
-if { (eval echo configure:6515: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:6516: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   have_embedded_ruby="yes"
 else
@@ -6523,14 +6524,14 @@ rm -f conftest*
 	    if ! test $have_embedded_ruby = "yes" ; then
 		echo "$ac_t""no" 1>&6
 		echo $ac_n "checking whether ruby requires -pthread to link""... $ac_c" 1>&6
-echo "configure:6527: checking whether ruby requires -pthread to link" >&5
+echo "configure:6528: checking whether ruby requires -pthread to link" >&5
 		RUBYCFLAGS="$RUBYCFLAGS -pthread"
 		RUBYLIBS="$RUBYLIBS -pthread"
 		CFLAGS="$old_CFLAGS $RUBYCFLAGS"
 		LIBS="$old_LIBS $RUBYLIBS"
 
 	        cat > conftest.$ac_ext <<EOF
-#line 6534 "configure"
+#line 6535 "configure"
 #include "confdefs.h"
 
 #include <ruby.h>
@@ -6555,7 +6556,7 @@ int main() {
 
 ; return 0; }
 EOF
-if { (eval echo configure:6559: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:6560: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   have_embedded_ruby="yes"
 else
@@ -6606,10 +6607,10 @@ fi
 
 with_python_errormsg="--with-python was specified but I could not locate python3-config. Please try specifying --with-path=/path/to/python3-config or --without-python."
 echo $ac_n "checking whether to support Python""... $ac_c" 1>&6
-echo "configure:6610: checking whether to support Python" >&5
+echo "configure:6611: checking whether to support Python" >&5
 if test "x$with_python" = "xno" ; then
 	echo $ac_n "checking whether to support Python""... $ac_c" 1>&6
-echo "configure:6613: checking whether to support Python" >&5
+echo "configure:6614: checking whether to support Python" >&5
 	echo "$ac_t""no" 1>&6
 else
 	echo "$ac_t""yes" 1>&6
@@ -6624,7 +6625,7 @@ else
 		# Extract the first word of "$python_cfg_exe", so it can be a program name with args.
 set dummy $python_cfg_exe; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:6628: checking for $ac_word" >&5
+echo "configure:6629: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_PYTHON_CFG_EXE'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6662,14 +6663,14 @@ fi
 	    PYTHON_O="python.o"
 
 	    echo $ac_n "checking whether embedded Python works the way I expect""... $ac_c" 1>&6
-echo "configure:6666: checking whether embedded Python works the way I expect" >&5
+echo "configure:6667: checking whether embedded Python works the way I expect" >&5
 	    have_embedded_python="no"
 	    old_CFLAGS="$CFLAGS"
 	    old_LIBS="$LIBS"
 	    CFLAGS="$CFLAGS $PYTHON_CFLAGS"
 	    LIBS="$LIBS $PYTHON_LDFLAGS"
 	    cat > conftest.$ac_ext <<EOF
-#line 6673 "configure"
+#line 6674 "configure"
 #include "confdefs.h"
 
 #include <Python.h>
@@ -6705,7 +6706,7 @@ int main() {
 
 ; return 0; }
 EOF
-if { (eval echo configure:6709: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:6710: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   have_embedded_python="yes"
 else
@@ -6770,7 +6771,7 @@ if test "$program_prefix" = "NONE" ; then
 fi
 
 echo $ac_n "checking whether to support bounds checking gcc""... $ac_c" 1>&6
-echo "configure:6774: checking whether to support bounds checking gcc" >&5
+echo "configure:6775: checking whether to support bounds checking gcc" >&5
 # Check whether --with-bc or --without-bc was given.
 if test "${with_bc+set}" = set; then
   withval="$with_bc"
@@ -6795,7 +6796,7 @@ fi
 
 
 echo $ac_n "checking whether to turn on FreeBSD WARNS-like compiler warnings""... $ac_c" 1>&6
-echo "configure:6799: checking whether to turn on FreeBSD WARNS-like compiler warnings" >&5
+echo "configure:6800: checking whether to turn on FreeBSD WARNS-like compiler warnings" >&5
 # Check whether --with-warns or --without-warns was given.
 if test "${with_warns+set}" = set; then
   withval="$with_warns"
@@ -6819,18 +6820,18 @@ fi
 
 
 echo $ac_n "checking whether your compiler supports -Wno-pointer-sign""... $ac_c" 1>&6
-echo "configure:6823: checking whether your compiler supports -Wno-pointer-sign" >&5
+echo "configure:6824: checking whether your compiler supports -Wno-pointer-sign" >&5
 old_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -Wno-pointer-sign"
 cat > conftest.$ac_ext <<EOF
-#line 6827 "configure"
+#line 6828 "configure"
 #include "confdefs.h"
 
 int main() {
 exit(0);
 ; return 0; }
 EOF
-if { (eval echo configure:6834: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:6835: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   echo "$ac_t""yes" 1>&6
 else
@@ -6844,18 +6845,18 @@ fi
 rm -f conftest*
 
 echo $ac_n "checking whether your compiler supports -fno-strict-aliasing""... $ac_c" 1>&6
-echo "configure:6848: checking whether your compiler supports -fno-strict-aliasing" >&5
+echo "configure:6849: checking whether your compiler supports -fno-strict-aliasing" >&5
 old_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -fno-strict-aliasing"
 cat > conftest.$ac_ext <<EOF
-#line 6852 "configure"
+#line 6853 "configure"
 #include "confdefs.h"
 
 int main() {
 exit(0);
 ; return 0; }
 EOF
-if { (eval echo configure:6859: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:6860: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   echo "$ac_t""yes" 1>&6
 else

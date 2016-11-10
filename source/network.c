@@ -336,7 +336,7 @@ int	inet_vhostsockaddr (int family, int port, const char *wanthost, SS *storage,
 	if (port != -1) 
 	{
 		hints.ai_flags = AI_PASSIVE;
-		snprintf(p_port, 12, "%u", port);
+		snprintf(p_port, 12, "%d", port);
 		p = p_port;
 	}
 

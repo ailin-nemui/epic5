@@ -466,8 +466,8 @@ AC_TRY_RUN([
 main()
 {
 	locale_t utf8_locale;
-        utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
-        exit(0);
+	utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
+	exit(0);
 }
 ],
    AC_MSG_RESULT(no, good),
@@ -480,8 +480,8 @@ main()
 main()
 {
 	locale_t utf8_locale;
-        utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
-        exit(0);
+	utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
+	exit(0);
 }
    ],
    AC_MSG_RESULT(yes),
@@ -1234,6 +1234,7 @@ else
 	    dnl ---- 
 	    dnl Look first for Ruby 1.9
 	    incdir=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG[["rubyhdrdir"]]'`
+	    archincdir=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG[["rubyarchhdrdir"]]'`
 	    dnl -- Ruby 1.8
 	    if test "x$incdir" = "xnil" ; then
 	       incdir=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG[["archdir"]]'`
@@ -1241,7 +1242,7 @@ else
 	    dnl -- Ruby 1.9 and 2.0
 	    else
 	       arch=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG[["arch"]]'`
-	       RUBYCFLAGS="-I$incdir -I$incdir/$arch/"
+	       RUBYCFLAGS="-I$incdir -I$incdir/$arch/ -I$archincdir"
 	    fi
 
 	    rubylibs=`$rubyexe -rrbconfig -e 'puts RbConfig::CONFIG[["LIBRUBYARG"]]'`

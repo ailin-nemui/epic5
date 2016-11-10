@@ -67,10 +67,10 @@ static const char *onoff[] = { "OFF", "ON" };
 #define RESIZE_ABS 2
 
 /* used by the update flag to determine what needs updating */
-#define REDRAW_DISPLAY     1 << 0
-#define UPDATE_STATUS      1 << 1
-#define REDRAW_STATUS      1 << 2
-#define FORCE_STATUS	   1 << 3
+#define REDRAW_DISPLAY     (1 << 0)
+#define UPDATE_STATUS      (1 << 1)
+#define REDRAW_STATUS      (1 << 2)
+#define FORCE_STATUS	   (1 << 3)
 
 /*
  * The current window.  This replaces the old notion of "curr_scr_win" 
@@ -300,6 +300,9 @@ Window	*new_window (Screen *screen)
 	new_w->log = 0;
 	new_w->logfile = NULL;
 	new_w->log_fp = NULL;
+	new_w->log_rewrite = NULL;
+	new_w->log_mangle = 0;
+	new_w->log_mangle_str = NULL;
 
 	/* TOPLINE stuff */
 	new_w->toplines_wanted = 0;		/* Filled in later? */
@@ -2186,6 +2189,7 @@ void 	hide_window (Window *window)
 			say("Window %d is already hidden", window->refnum);
 		return;
 	}
+
 	if (!window->swappable)
 	{
 		if (window->name)
@@ -2194,14 +2198,15 @@ void 	hide_window (Window *window)
 			say("Window %d can't be hidden", window->refnum);
 		return;
 	}
+
 	if (window->screen->visible_windows - 
 			count_fixed_windows(window->screen) <= 1)
 	{
 		say("You can't hide the last window.");
 		return;
 	}
-	if (window->screen)
-		remove_window_from_screen(window, 1, 1);
+
+	remove_window_from_screen(window, 1, 1);
 }
 
 /*
