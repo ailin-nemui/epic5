@@ -57,18 +57,19 @@ static	PyObject *global_vars = NULL;
  * everything as a "callable" and then you either get a return value (for an 
  * expression) or an empty string (for a statement).
  *
- * In order to make python support work, though, we have to honor this distinction.
- * I've chosen to do this through the /PYTHON command and the $python() function
+ * In order to make python support work, though, we have to honor this 
+ * distinction.  I've chosen to do this through the /PYTHON command and the 
+ * $python() function
  *
  * 	You can only use the /PYTHON command to run statements.
- *	Using /PYTHON with an expression will result in an exception being thrown.
+ *	Using /PYTHON with an expression results in an exception being thrown.
  *
  *	You can only use the $python() function to evaluate expressions
- *	Using $python() with a statement will result in an exception being thrown.
+ *	Using $python() with a statement results in an exception being thrown.
  *
- * How do you know whether what you're doing is an expression or a statement, when
- * if you just throw everything into one file you don't have to worry about it?
- * Good question.  I don't know.  Good luck!
+ * How do you know whether what you're doing is an expression or a statement, 
+ * when if you just throw everything into one file you don't have to worry 
+ * about it? Good question.  I don't know.  Good luck!
  */
 
 /*
@@ -99,14 +100,20 @@ static	PyObject *global_vars = NULL;
  * All of these functions take one string argument.
  *   epic.echo	- yell() -- Like /echo, unconditionally output to screen
  *   epic.say	- say()	 -- Like /xecho -s, output if not suppressed with ^
- *   epic.cmd	- runcmds() -- Run a block of code, but don't expand $'s (like from the input line)
- *   epic.eval	- runcmds() -- Run a block of code, expand $'s, but $* is []  (this is lame)
- *   epic.expr	- parse_inline() -- Evaluate an expression string and return the result 
- *   epic.call	- call_function() -- Evaluate a "funcname(argument list)" string and return the result
+ *   epic.cmd	- runcmds() -- Run a block of code, 
+ * 			but don't expand $'s (like from the input line)
+ *   epic.eval	- runcmds() -- Run a block of code, 
+ *			expand $'s, but $* is []  (this is lame)
+ *   epic.expr	- parse_inline() -- Evaluate an expression string 
+ *			and return the result 
+ *   epic.call	- call_function() -- Evaluate a "funcname(argument list)" 
+ *			string and return the result
  *
  * These functions provide a route-around of ircII, if that's what you want.
- * All of these functions take a symbol name ("name") and a string containing the arguments (if appropriate)
- * NONE OF THESE FUNCTIONS UNDERGO $-EXPANSION!  (If you need that, use the stuff ^^^ above)
+ * All of these functions take a symbol name ("name") and a string containing 
+ *	the arguments (if appropriate)
+ * NONE OF THESE FUNCTIONS UNDERGO $-EXPANSION!  
+ *	(If you need that, use the stuff ^^^ above)
  *
  *   epic.run_command - run an alias (preferentially) or a builtin command.
  *        Example: epic.run_command("xecho", "-w 0 hi there!  This does not get expanded")
@@ -121,9 +128,18 @@ static	PyObject *global_vars = NULL;
  *        Example: epic.set_set("mail", "ON")
  *   epic.set_assign - set a /ASSIGN value
  *        Example: epic.set_assign("myvar", "5")
+ *
+ * These functions allow you to register file descriptors (like socket) 
+ * with epic, which will call back your method when they're interesting.
+ *
+ *   epic.callback_when_readable(python_file, python_function, python_object)
+ *   epic.callback_when_writable(python_file, python_function, python_object)
+ *	When 'python_function' is None, it cancels the callback.
+ *	The 'python_function' needs to be a static function (?)
+ *	The 'python_object' can be anything, i guess.
  */
 
-/* Higher level interface to things */
+/********************** Higher level interface to things *********************/
 
 /*
  * epic.echo("hello, world") -- Output something without a banner (like /echo)
@@ -331,7 +347,8 @@ static	PyObject *	epic_expand (PyObject *self, PyObject *args)
  *
  * Return value:
  *	NULL - PyArg_ParseTuple() didn't like your tuple (and threw exception)
- *	NULL - Py_BuildValue() couldn't convert the retval to python string (throws exception)
+ *	NULL - Py_BuildValue() couldn't convert the retval to python string 
+ *		(throws exception)
  *	A string - The return value of the function call
  *		All function calls return exactly one string, even if
  *		that string contains a number or a list of words.
@@ -368,12 +385,14 @@ static	PyObject *	epic_call (PyObject *self, PyObject *args)
  *
  * Note: All ircII commands take one string as the argument, even if that string
  * 	contains some serialization of a collection.  Technically each command
- *	is permitted to do whatever it wants with its arguments; but the convention 
- *	is to accept a space separated list of words.  Again, this is not a 
- *	requirement, justthe way most things work.
+ *	is permitted to do whatever it wants with its arguments; but the 
+ *	convention is to accept a space separated list of words.  Again, this 
+ *	is not a requirement, justthe way most things work.
  *
- * Note: The argument list is _NOT_ expanded; it is passed literally in to the cmd.
- * Note: XXX - The $* that is passed in is NULL; I'm not sure if this is correct or not.
+ * Note: The argument list is _NOT_ expanded; it is passed literally in to 
+ * 		the cmd.
+ * Note: XXX - The $* that is passed in is NULL; I'm not sure if this is 
+ *		correct or not.
  * Note: Aliases are prefered to builtin commands, just like ircII does it.
  * 
  * Return Value:
@@ -414,8 +433,8 @@ const 	char *	alias = NULL;
 
 
 /*
- * epic.call_function("FUNCTION", "arglist") -- Call a function (alias or builtin)
- *					directly WITHOUT expansion
+ * epic.call_function("FUNCTION", "arglist") -- Call a function 
+ *				(alias or builtin) directly WITHOUT expansion
  *
  * Arguments:
  *	self - ignored (the "epic" module)
@@ -430,7 +449,8 @@ const 	char *	alias = NULL;
  * 	this is not a requirement, just the way most things work.
  * 
  * Note: The argument list is _NOT_ expanded; it is passed literally to the fn.
- * Note: XXX - The $* that is passed in is NULL; I'm not sure if this is correct or not.
+ * Note: XXX - The $* that is passed in is NULL; 
+ *		I'm not sure if this is correct or not.
  * Note: Aliases are preferred to builtins, just like ircII.
  * 
  * Return Value:
