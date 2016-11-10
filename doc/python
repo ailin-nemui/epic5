@@ -121,7 +121,49 @@ Then, you can use any of these python functions:
 	Internal Op:	/MODULE.METHOD becomes a builtin command that calls python
 	Return Val:	The None object
 
+(Low-level IO operations -- I haven't implemented these yet.)
+    _epic.callback_when_readable(int, CallableObject, CallableObject, int)
+	Argument:	int - a file descriptor to watch
+			CallableObject - A python method that takes one integer argument.
+					 It will be called each time the fd is readable
+					 You must "handle" the fd, or it will busy-loop.
+					 If you block while handling the fd, epic will block
+			CallableObject - A python method that takes one integer argument.
+					 It will be called if the fd is found to be invalid.
+					 (ie, select(2) returns EBADF).  This would be 
+					 caused by something close()ing the fd, but 
+					 _epic.cancel_callback() [see below] didn't get called.
+			int - Flags -- None have been defined yet; pass in a 0.
+	Internal Op:	Cause Python to be called when a read from an fd would not block
+			listen() sockets are readable when someone connects to them.
+			sockets are readable when they have an error
+			files are readable until you reach EOF.
+
+    _epic.callback_when_writable(int, CallableObject, CallableObject, int)
+	Argument:	int - a file descriptor to watch
+			CallableObject - A python method that takes one integer argument.
+					 It will be called each time the fd is writable.
+					 You must "handle" the fd, or it will busy-loop.
+					 This is a particular risk with writable callbacks.
+					 (most sockets are writable at all times, unless 
+					 their buffers are saturated).  If you block while
+					 handling the fd, epic will block.
+			CallableObject - A python method that takes one integer argument.
+					 It will be called if the fd is found to be invalid.
+					 (ie, select(2) returns EBADF).  This would be 
+					 caused by something close()ing the fd, but 
+					 _epic.cancel_callback() [see below] didn't get called.
+			int - Flags -- None have been defined yet; pass in a 0.
+	Internal Op:	Cause Python to be called when a write to an fd would not block
+			nonblocking connect()s are writable when the connection completes
+
+    _epic.cancel_callback(int)
+	Argument:	int - a file descriptor to watch
+	Internal Op:	Cancel any callbacks registered with the file descriptor.
+			Call this when you close a fd, or you'll be sorry!
+
 3. Python foundation script for calling to EPIC
 ==================================================
 TBD with skully
+
 
