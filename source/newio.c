@@ -656,6 +656,10 @@ int	new_close (int vfd)
 	{
 		if (ioe->io_callback == ssl_read)	/* XXX */
 			ssl_shutdown(ioe->channel);
+		/*
+		if (ioe->io_callback == python_read)		XXX
+			....
+		*/
 		knoread(vfd);
 		knowrite(vfd);
 
@@ -881,6 +885,21 @@ static void	new_io_event (int vfd)
 		yell("VFD [%d], did [%d]", vfd, c);
 }
 
+static	int	is_fd_valid (int fd)
+{
+	int	retval;
+
+	/* 
+	 * This may be too conservative -- 
+	 * if F_GETFL fails, maybe it's just bad 
+	 */
+	retval = fcntl(fd, F_GETFL);
+	if (retval == -1 && errno == EBADF)
+		return 0;
+	else
+		return 1;
+}
+
 
 /************************************************************************/
 /************************************************************************/
@@ -919,32 +938,31 @@ static	int	kdoit (Timeval *timeout)
 	{
 	    if (errno == EBADF)
 	    {
-		struct timeval t = {0, 0};
 	        int foundit = 0;
 
 		for (channel = 0; channel <= global_max_channel; channel++)
 		{
-		    /* Skip fd's that weren't in the original set */
-		    if (!FD_ISSET(channel, &readables) &&
-			!FD_ISSET(channel, &writables))
+			/* Skip fd's that weren't in the original set */
+			if (!FD_ISSET(channel, &readables) &&
+			    !FD_ISSET(channel, &writables))
 				continue;
 
-		    FD_ZERO(&working_rd);
-		    FD_SET(channel, &working_rd);
-		    errno = 0;
-		    retval = select(channel + 1, &working_rd, NULL, NULL, &t);
-		    if (retval < 0)
-		    {
-			syserr(-1, "kdoit(select): "
-					"Closing channel %d because: %s", 
-					channel, strerror(errno));
-			FD_CLR(channel, &readables);
-			FD_CLR(channel, &writables);
-			new_close(channel);
-			foundit = 1;
-		    }
+			if (!is_fd_valid(channel))
+			{
+				syserr(-1, "kdoit(select): "
+						"Closing channel %d because: %s", 
+						channel, strerror(errno));
+				FD_CLR(channel, &readables);
+				FD_CLR(channel, &writables);
+				new_close(channel);
+
+				/* If this is a python fd, we need to callback */
+				foundit = 1;
+			}
 		}
 
+		/* XXX -- This is bogus -- we should do something better */
+		/* Like, maybe have everything enumerate its fd's, and start over */
 		if (!foundit)
 			panic(1, "kdoit(select): Select says I have a bad file "
 				"descriptor but I can't find it!");
