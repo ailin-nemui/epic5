@@ -97,6 +97,8 @@ const	AI	*next_addr;		/* The next one to try upon failure */
 	SS	local_sockname; 	/* sockname of this connection */
 	SS	remote_sockname; 	/* sockname of this connection */
 	SS	uh_addr;		/* ip address the server sees */
+	int	uh_addr_set;		/* 0 or 1, if set_uh_addr() has been called */
+					/* Used to guard an annoying error message */
 	NotifyList	notify_list;	/* Notify list for this server */
 	char 	*cookie;		/* Erf/TS4 "cookie" value */
 	int	line_length;		/* How long a protocol command may be */

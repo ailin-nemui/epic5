@@ -134,6 +134,7 @@ static	int	serverinfo_to_servref (ServerInfo *s);
 static	int	serverinfo_to_newserv (ServerInfo *s);
 static 	void 	remove_from_server_list (int i);
 static	char *	shortname (const char *oname);
+static void	set_server_uh_addr (int refnum);
 
 
 /*
@@ -747,6 +748,7 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	s->userhost_max = 1;
 	s->userhost_queue = NULL;
 	s->userhost_wait = NULL;
+	s->uh_addr_set = 0;
 	memset(&s->uh_addr, 0, sizeof(s->uh_addr));
 	memset(&s->local_sockname, 0, sizeof(s->local_sockname));
 	memset(&s->remote_sockname, 0, sizeof(s->remote_sockname));
@@ -2306,6 +2308,7 @@ void	close_server (int refnum, const char *message)
 	new_free(&s->ssl_certificate_hash);
 	new_free(&s->addrs);
 	s->next_addr = NULL;
+	s->uh_addr_set = 0;
 
 	if (s->des == -1)
 		return;		/* Nothing to do here */
@@ -2929,6 +2932,12 @@ SS	get_server_uh_addr (int refnum)
 	if (!(s = get_server(refnum)))
 		panic(1, "Refnum %d isn't valid in get_server_uh_addr", refnum);
 
+	if (s->uh_addr_set == 0)
+	{
+		set_server_uh_addr(refnum);
+		s->uh_addr_set = 1;
+	}
+
 	return s->uh_addr;
 }
 
@@ -2936,10 +2945,23 @@ SS	get_server_uh_addr (int refnum)
 static void	set_server_userhost (int refnum, const char *uh)
 {
 	Server *s;
-	char *host;
 
 	if (!(s = get_server(refnum)))
 		return;
+
+	malloc_strcpy(&s->userhost, uh);
+}
+
+static void	set_server_uh_addr (int refnum)
+{
+	Server *s;
+	char *host;
+	const char *uh;
+
+	if (!(s = get_server(refnum)))
+		return;
+
+	uh = s->userhost;
 
 	if (!(host = strchr(uh, '@')))
 	{
@@ -2948,12 +2970,10 @@ static void	set_server_userhost (int refnum, const char *uh)
 		return;
 	}
 
-	malloc_strcpy(&s->userhost, uh);
-
 	/* Ack!  Oh well, it's for DCC. */
 	FAMILY(s->uh_addr) = AF_INET;
 	if (inet_strton(host + 1, zero, (SA *)&s->uh_addr, AI_ADDRCONFIG))
-#if 0
+        {
 		/* 
 		 * Once upon a time this warning was relevant to people
 		 * who put their machines in the DMZ of their router and
@@ -2967,13 +2987,10 @@ static void	set_server_userhost (int refnum, const char *uh)
 		 */
 		yell("Ack.  The server says your userhost is [%s] and "
 		     "I can't figure out the IPv4 address of that host! "
-		     "This usually breaks DCC.  If you use "
-		     "/SET DCC_USE_GATEWAY_ADDR ON because you're behind "
-		     "a NAT firewall, DCC won't work with this server "
-		     "connection!", host + 1);
-#else
-		(void) 0;
-#endif
+		     "If you use /SET DCC_USE_GATEWAY_ADDR ON (because "
+                     "you're in the DMZ behind a NAT firewall), DCC won't "
+                     "work with this server connection!", host + 1);
+	}
 }
 
 /*
