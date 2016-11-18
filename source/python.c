@@ -29,7 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-/* Python commit #13 */
+/* Python commit #14 */
 
 #include <Python.h>
 #include "irc.h"
@@ -684,6 +684,154 @@ static	PyObject *	epic_set_assign (PyObject *self, PyObject *args)
 
 }
 
+
+/*
+ * epic.callback_when_readable(fd, read_callback, except_function, flags)
+ * 
+ * Arguments:
+ *	self - ignored (the "epic" module)
+ *	args - A tuple containing
+ *		1. fd - An integer - a unix file descriptor (from python)
+ *		2. read_callback - A CallableObject (ie, a method) - A python
+ *				method that takes one integer argument. It will
+ *				be called each time the 'fd' is readable.
+ *				You must "handle" the fd, or it will busy-loop.
+ *				If you block while handling the fd, epic 
+ *				will block.
+ *		3. except_callback - A CallableObject (ie, a method) - A python
+ *				method that takes one integer argument. It will
+ *				be called if the 'fd' becomes invalid.  This 
+ *				would happen if somneone close()d the FD, but
+ *				didn't call _epic.cancel_callback().
+ *				You should call _epic.cancel_callbacks(), or 
+ *				it will busy-loop.  If you block while handling
+ *				the fd, epic will block.
+ *		4. flags - Reserved for future expansion.  Pass in 0 for now.
+ *
+ * Return value:
+ *	NULL 		- PyArg_ParseTuple() didn't like your tuple
+ *					(and threw exception)
+ *	0		- The command succeeded
+ */
+static	PyObject *	epic_callback_when_readable (PyObject *self, PyObject *args)
+{
+	long	fd, flags;
+	PyObject *read_callback, *except_callback;
+
+	/*
+	 * https://docs.python.org/3/extending/extending.html
+	 * tells me that if PyArg_ParseTuple() doesn't like the
+	 * argument list, it will set an exception and return
+	 * NULL.  And all i should do is return NULL.
+	 * So that is why i do that here (and everywhere)
+	 */
+	if (!PyArg_ParseTuple(args, "lOOl", &fd, &read_callback, &except_callback, &flags)) {
+		return NULL;
+	}
+
+	/*
+	 * 1. Look up python fd record, create if necessary
+	 * 2. Set read_callback in the python fd record
+	 * 3. Call new_open() if necessary
+	 */
+
+	/* XXX TODO XXX */
+	return PyLong_FromLong(0L);
+}
+
+/*
+ * epic.callback_when_writable(fd, write_callback, except_function, flags)
+ * 
+ * Arguments:
+ *	self - ignored (the "epic" module)
+ *	args - A tuple containing
+ *		1. fd - An integer - a unix file descriptor (from python)
+ *		2. read_callback - A CallableObject (ie, a method) - A python
+ *				method that takes one integer argument. It will
+ *				be called each time the 'fd' is writable.
+ *				You must "handle" the fd, or it will busy-loop.
+ *				If you block while handling the fd, epic 
+ *				will block.
+ *		3. except_callback - A CallableObject (ie, a method) - A python
+ *				method that takes one integer argument. It will
+ *				be called if the 'fd' becomes invalid.  This 
+ *				would happen if somneone close()d the FD, but
+ *				didn't call _epic.cancel_callback().
+ *				You should call _epic.cancel_callbacks(), or 
+ *				it will busy-loop.  If you block while handling
+ *				the fd, epic will block.
+ *		4. flags - Reserved for future expansion.  Pass in 0 for now.
+ *
+ * Return value:
+ *	NULL 		- PyArg_ParseTuple() didn't like your tuple
+ *					(and threw exception)
+ *	0		- The command succeeded
+ */
+static	PyObject *	epic_callback_when_writable (PyObject *self, PyObject *args)
+{
+	long	fd, flags;
+	PyObject *write_callback, *except_callback;
+
+	/*
+	 * https://docs.python.org/3/extending/extending.html
+	 * tells me that if PyArg_ParseTuple() doesn't like the
+	 * argument list, it will set an exception and return
+	 * NULL.  And all i should do is return NULL.
+	 * So that is why i do that here (and everywhere)
+	 */
+	if (!PyArg_ParseTuple(args, "lOOl", &fd, &write_callback, &except_callback, &flags)) {
+		return NULL;
+	}
+
+	/*
+	 * 1. Look up python fd record, create if necessary
+	 * 2. Set write_callback in the python fd record
+	 * 3. Call new_open() if necessary.
+	 */
+
+	/* XXX TODO XXX */
+	return PyLong_FromLong(0L);
+}
+
+/*
+ * epic.cancel_callback(fd)
+ * 
+ * Arguments:
+ *	self - ignored (the "epic" module)
+ *	args - A tuple containing
+ *		1. fd - An integer - a unix file descriptor (from python)
+ *
+ * Return value:
+ *	NULL 		- PyArg_ParseTuple() didn't like your tuple
+ *					(and threw exception)
+ *	0		- The command succeeded
+ */
+static	PyObject *	epic_cancel_callback (PyObject *self, PyObject *args)
+{
+	long	fd;
+
+	/*
+	 * https://docs.python.org/3/extending/extending.html
+	 * tells me that if PyArg_ParseTuple() doesn't like the
+	 * argument list, it will set an exception and return
+	 * NULL.  And all i should do is return NULL.
+	 * So that is why i do that here (and everywhere)
+	 */
+	if (!PyArg_ParseTuple(args, "l", &fd)) {
+		return NULL;
+	}
+
+	/*
+	 * 1. Look up python fd record (bail if does not exist)
+	 * 2. Call new_close_with_option()
+	 * 3. Clear the python fd record
+	 * (4. The python script has to close the fd...)
+	 */
+
+	/* XXX TODO XXX */
+	return PyLong_FromLong(0L);
+}
+
 /*
  * INTERNAL USE ONLY --
  * When you want to register a python module.method as a hardcoded
@@ -756,6 +904,12 @@ static	PyMethodDef	epicMethods[] = {
 	{ "set_set",       epic_set_set,	METH_VARARGS,	"Set a /SET value (only)" },
 	{ "set_assign",    epic_set_assign,	METH_VARARGS,	"Set a /ASSIGN value (only)" },
 	{ "builtin_cmd",   epic_builtin_cmd,	METH_VARARGS,	"Make a Python function an EPIC builtin command" },
+
+      /* Lower level IO facilities */
+	{ "callback_when_readable",  epic_callback_when_readable, METH_VARARGS,	"Register a python function for FD event callbacks" },
+	{ "callback_when_writable",  epic_callback_when_writable, METH_VARARGS,	"Register a python function for FD event callbacks" },
+	{ "cancel_callback",         epic_cancel_callback,        METH_VARARGS,	"Unregister FD event callbacks" },
+
 	{ NULL,		NULL,		0,		NULL }
 };
 

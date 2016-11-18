@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* There should be a registerable callback for fd's gone bad. (newio)
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -818,3 +818,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Include output.h in compat.c for yell() (caf)
 * Don't lower-case the channel name passed to whobase() (caf, rb white)
 * Only populate server->uh_addr when it's needed, to avoid spurious warning
+* Extend new_close() to new_close_with_option() allowing callers to manage fd
+* This is used for python fd handling.
+* Make new_io_event() actually support NEWIO_NULL (no io callback)

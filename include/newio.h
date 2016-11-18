@@ -40,12 +40,15 @@
  *	- NOTE:	   Calling new_open() shall cancel and override a previous
  *		   new_open().
  *
- *	int	new_close (int fd);
+ *	#define new_close(fd) new_close_with_option(fd, 0)
+ *	int	new_close_with_option (int fd, int virtual);
  *	- PURPOSE: To irreversibly cease operations on 'fd'.  The fd shall no
  *		   longer be watched, and shall generate no more events, and
  *		   any pending data shall be discarded.  The fd shall be 
- *		   close(2)d [returned to the operationg system]
+ *		   close(2)d [returned to the operating system] if virtual == 0
  *	- INPUT:   fd - The file descriptor to release
+ *		   virtual - The file descriptor is managed by the caller,
+ *			     so it must not be close(2)d.
  *	- OUTPUT:  -1 shall be returned.
  *
  *	int	do_filedesc (void);
@@ -84,7 +87,8 @@
 	int	new_open		(int, void (*) (int), int, int, int);
 	int	new_hold_fd		(int);
 	int	new_unhold_fd		(int);
-	int 	new_close 		(int);
+	int 	new_close_with_option	(int, int);
+#define new_close(fd) new_close_with_option(fd, 0)
 
 	int	my_sleep		(double);
 	int	my_isreadable		(int, double);

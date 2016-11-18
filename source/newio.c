@@ -645,7 +645,7 @@ int	new_unhold_fd (int vfd)
  * Unregister a filedesc for readable events 
  * and close it down and free its input buffer
  */
-int	new_close (int vfd)
+int	new_close_with_option (int vfd, int virtual)
 {
 	MyIO *	ioe;
 
@@ -656,14 +656,17 @@ int	new_close (int vfd)
 	{
 		if (ioe->io_callback == ssl_read)	/* XXX */
 			ssl_shutdown(ioe->channel);
-		/*
-		if (ioe->io_callback == python_read)		XXX
-			....
-		*/
+
 		knoread(vfd);
 		knowrite(vfd);
 
-		unix_close(ioe->channel, ioe->quiet);
+		/* 
+		 * If virtual == 1, then the caller is managing the 
+		 * fd and must close(2) it themselves.
+		 * (ie, fd's from external languages)
+		 */
+		if (virtual == 0)
+			unix_close(ioe->channel, ioe->quiet);
 
 		new_free(&ioe->buffer); 
 		new_free((char **)&(io_rec[vfd]));
@@ -677,7 +680,7 @@ int	new_close (int vfd)
 		    while (global_max_vfd >= 0 && !io_rec[global_max_vfd])
 			global_max_vfd--;
 	}
-	else
+	else if (virtual == 0)
 		unix_close(vfd, 0);
 
 	return -1;
@@ -853,9 +856,19 @@ static int	unix_connect (int channel, int quiet)
 
 
 /*
- * Perform a synchronous i/o operation on a file descriptor.  This should
- * result in a call to dgets_buffer() (c > 0) or some sort of error condition
- * (c <= 0).
+ * Perform a synchronous i/o operation on a file descriptor.  
+ * This function is called by kdoit(), which is called by do_wait().
+ *
+ * The way I/O works in EPIC:
+ *	+ main loop calls do_wait()
+ *	  + do_wait() calls kdoit() [there are several of these]
+ *	  + If kdoit() decides an fd is ready, it looks at all fd's
+ *		and for any fd's that are "ready", calls new_io_event().
+ *	    + new_io_event() [us] does an I/O operation and queues up some
+ *		data using dgets_buffer(), and marks the fd as "dirty"
+ *	+ main loop calls do_filedesc() is called, and that calls the 
+ *		user's callback, which uses dgets() to return 
+ *		whatever was queued up here, and marks the fd as "clean".
  */
 static void	new_io_event (int vfd)
 {
@@ -869,20 +882,39 @@ static void	new_io_event (int vfd)
 	if (!ioe->clean)
 		panic(1, "new_io_event: vfd [%d] hasn't been cleaned yet", vfd);
 
-	if ((c = ioe->io_callback(vfd, ioe->quiet)) <= 0)
+	if (ioe->io_callback)
 	{
-		ioe->error = -1;
-		ioe->clean = 0;
-		if (!ioe->quiet)
-		   syserr(SRV(vfd), "new_io_event: fd %d must be closed", vfd);
+		/* 
+		 * We may expect ioe->io_callback() to either call dgets_buffer
+		 * (which sets ioe->clean = 0) or to return an error (in which
+		 * case we do it ourselves right here)
+		 */
+		if ((c = ioe->io_callback(vfd, ioe->quiet)) <= 0)
+		{
+			ioe->error = -1;
+			ioe->clean = 0;
+			if (!ioe->quiet)
+			   syserr(SRV(vfd), "new_io_event: fd %d must be closed", vfd);
+
+			if (x_debug & DEBUG_INBOUND) 
+				yell("VFD [%d] FAILED [%d]", vfd, c);
+			return;
+		}
 
 		if (x_debug & DEBUG_INBOUND) 
-			yell("VFD [%d] FAILED [%d]", vfd, c);
-		return;
+			yell("VFD [%d], did [%d]", vfd, c);
 	}
-
-	if (x_debug & DEBUG_INBOUND) 
-		yell("VFD [%d], did [%d]", vfd, c);
+	else
+	{
+		/* 
+		 * XXX It might have been more elegant to create a passthrough
+		 * callback that just sets ioe->clean instead of having special
+		 * handling here.  Oh well.
+		 */
+		ioe->clean = 0;
+		if (x_debug & DEBUG_INBOUND) 
+			yell("VFD [%d], did pass-through", vfd);
+	}
 }
 
 static	int	is_fd_valid (int fd)
