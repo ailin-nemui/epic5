@@ -1,0 +1,194 @@
+IF (WORD(2 $LOADINFO()) != [pf]) { LOAD -pf $WORD(1 $LOADINFO()); RETURN;
+
+# Copyright (c) 1999-2016 Upi Tamminen <desaster at gmail>
+# See the COPYRIGHT file for more information
+
+#
+# Adapted by EPIC Software Labs, 2016
+#  Desaster graciously donated this script to the EPIC5 project.
+#  It is a module from the script "hienoa", https://github.com/desaster/hienoa.
+#  All copyright in the modifications are assigned to Upi, who has licensed them
+#  under the EPIC copyright.
+#
+
+package shorturl;
+
+#
+# XXXX TODO XXXX Create these as /set's
+#
+addset shorturl bool {hook shorturl};
+addset shorturl_number int {hook shorturl};
+addset shorturl_always bool {hook shorturl};
+
+set shorturl on;
+set shorturl_number 100;
+set shorturl_always off;
+
+#
+# Get a serial number
+# (XXX This is a hack.  There should be $hookctl(GET_FREE_SERIAL)
+#
+# 1. Create an on hook 
+# 2. Get the refnum of the dummy hook
+# 3. Get the serial number that was assigned to it
+# 4. Save that serial number for later.  We own it!
+#
+on #-hook - "shorturl" {
+    if (getset(shorturl) == 0) {
+        h.shorturl.server_stop
+    } else {
+        h.shorturl.server_start
+    };
+
+    if (getset(shorturl_number) == 0) {
+       set shorturl off
+    };
+};
+@:refnum = hookctl(LAST_CREATED_HOOK);
+@:h.myhash = hookctl(GET $refnum SERIAL);
+
+
+
+alias h.shorturl.mock_url (url) {
+    ^local url1,url2;
+
+    @ url1 = [];
+    fec ($url) c {
+        @ url1 #= isalpha($c) || isdigit($c) ? c : [ ]
+    };
+    @ url2 = [];
+    fe ($url1) w {
+        if (findw($w http https www) != -1) {
+            continue
+        };
+        @ push(url2 $w)
+    };
+    return $url2
+};
+
+alias h.shorturl.process_line (sender, target, line) {
+    if (!h.cfg.shorturl_enabled) return;
+    
+    fe ($stripcrap(ALL,ALL_OFF $line)) word {
+        if (!rmatch("$word" *://*)) {
+            continue
+        };
+        # the crude definition of a 'long' url:
+        if (!h.cfg.shorturl_always && \
+                (strlen($word) < (word(0 $geom()) - 10))) {
+            continue
+        };
+        @ h.shorturl.last_urlid++;
+        if (h.shorturl.last_urlid > h.cfg.shorturl_maxnum) {
+            @ :h.remid = (h.shorturl.last_urlid - h.cfg.shorturl_maxnum);
+            ^assign -h.shorturl.urls[$h.remid]
+        };
+        @ h.shorturl.urls[$h.shorturl.last_urlid] = word;
+
+        @ :murl = h.shorturl.mock_url($word);
+
+        @ :shorturl = [http://$h.cfg.shorturl_host:$h.shorturl.port/$h.shorturl.last_urlid];
+        @ :used = (strlen($stripcrap(ALL,ALL_OFF $getset(BANNER))) + strlen($shorturl) + 8);
+        @ :avail = (word(0 $geom()) - used);
+        @ :str = [$shorturl \($left($avail $murl)...\)];
+        xecho -b $str
+    }
+};
+
+alias h.shorturl.server_start {
+    @ :port = listen($h.cfg.shorturl_port);
+    if (port != h.cfg.shorturl_port) {
+        xecho -b The URL shortener web server failed to bind to port $h.cfg.shorturl_port;
+        return
+    };
+    @ h.shorturl.port = port;
+    ^on ^dcc_raw "% % % $h.cfg.shorturl_port" {
+        # Handle each line of input from the user
+        ^on ^dcc_raw "$0 % D *" {
+            h.shorturl.handle_request $0 $3-
+        };
+        # cleanup -- if the client doesn't close the socket
+        timer -ref web_$0 20 {
+            ^dcc close raw $0;
+            h.shorturl.connection_cleanup $0
+        };
+        # cleanup -- if the client does close the socket
+        ^on ^dcc_raw "$0 % C" {
+            h.shorturl.connection_cleanup $0
+        }
+    };
+    ^on ^dcc_lost "$h.cfg.shorturl_port RAW_LISTEN raw_listen *" #;
+
+    # We will intercept and rewrite all PRIVMSGs and NOTICEs
+    on #-general_privmsg $h.myhash "% % *://*" { h.shorturl.process_line $* };
+    @privmsg_refnum = hookctl(LAST_CREATED_HOOK);
+    on #-general_notice $h.myhash "% % *://*" { h.shorturl.process_line $* };
+    @notice_refnum = hookctl(LAST_CREATED_HOOK);
+
+    xecho -b URL shortener web server running on port $h.shorturl.port
+};
+
+alias h.shorturl.server_stop {
+    if (h.shorturl.port) {
+        ^dcc close raw_listen $h.shorturl.port;
+        ^on ^dcc_lost -"$h.shorturl.port RAW_LISTEN raw_listen *";
+        ^on ^dcc_raw -"% % % $h.shorturl.port";
+        xecho -b URL shortener web server stopped
+    } else {
+        # Try anyway
+        ^dcc close raw_listen $h.cfg.shorturl_port
+    };
+    ^assign -h.shorturl.port
+};
+
+alias h.shorturl.handle_request (fd, data) {
+    if (word(0 $data) == [GET]) {
+        @ :path = word(1 $data);
+        @ :urlid = pass(1234567890 $path);
+        if (strlen($h.shorturl.urls[$urlid])) {
+            h.shorturl.send_url $fd $h.shorturl.urls[$urlid]
+        } else {
+            h.shorturl.send_404 $fd $word(1 $data)
+        };
+        ^dcc close raw $fd;
+        h.shorturl.connection_cleanup $fd
+    }
+};
+
+alias h.shorturl.send_404 (fd, request) {
+
+    # the headers
+    msg =$fd HTTP/1.1 404 Not Found;
+    msg =$fd Date: $strftime(%z);
+    msg =$fd Server: Hienoa;
+    msg =$fd Connection: close;
+    msg =$fd Content-Type: text/html\; charset=US-ASCII$chr(10);
+
+    # the content
+    msg =$fd <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">;
+    msg =$fd <HTML><HEAD>;
+    msg =$fd <TITLE>404 Not Found</TITLE>;
+    msg =$fd </HEAD><BODY>;
+    msg =$fd <H1>Not Found</H1>;
+    msg =$fd The requested URL $request was not found on this server.<P>;
+    msg =$fd <HR>;
+    msg =$fd <ADDRESS>Hienoa/$h.version at Server $h.cfg.shorturl_host Port $h.shorturl.port</ADDRESS>;
+    msg =$fd </BODY></HTML>;
+};
+
+alias h.shorturl.send_url (fd, url) {
+    msg =$fd HTTP/1.1 302 Found;
+    msg =$fd Date: $strftime(%z);
+    msg =$fd Server: Hienoa;
+    msg =$fd Location: $url$chr(10);
+};
+
+alias h.shorturl.connection_cleanup (fd) {
+    on dcc_raw -"$fd % C";
+    on dcc_raw -"$fd % D *";
+    timer -d web_$fd;
+};
+
+#desaster 2k14
+#hop 2k16
+

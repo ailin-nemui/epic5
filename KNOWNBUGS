@@ -3,6 +3,8 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * There should be a registerable callback for fd's gone bad. (newio)
+* What about rotate-able logfiles? (skered)
+* What about /query-ing an exec process, going to proper window? (skered)
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
