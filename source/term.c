@@ -169,7 +169,7 @@ typedef struct cap2info
 
 struct	my_term	TI;
 
-cap2info tcaps[] =
+static const cap2info tcaps[] =
 {
 	{ "auto_left_margin",		"bw",		"bw",	CAP_TYPE_BOOL,	(void *)&TI.TI_bw },
 	{ "auto_right_margin",		"am",		"am",	CAP_TYPE_BOOL,	(void *)&TI.TI_am },
@@ -672,7 +672,7 @@ cap2info tcaps[] =
 
 
 struct my_term *current_term = &TI;
-static	int	numcaps = sizeof(tcaps) / sizeof(cap2info);
+static const	int	numcaps = sizeof tcaps / sizeof tcaps[0];
 static	int	term_echo_flag = 1;
 static	int	li;
 static	int	co;
@@ -1726,7 +1726,7 @@ const char *	get_term_capability (const char *name, int querytype, int mangle)
 static	char		retval[128];
 	const char *	compare = empty_string;
 	int 		x;
-	cap2info *	t;
+	const cap2info *t;
 
 	for (x = 0; x < numcaps; x++) 
 	{
