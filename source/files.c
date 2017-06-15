@@ -283,33 +283,54 @@ static int	file_write (int logtype, int fd, const char *stuff)
  * This function is nothing but a bald wrapper to file_write which does
  * all of the heavy lifting.
  */
-int 	target_file_write (const char *fd, const char *stuff)
+int 	target_file_write (const char *fdstr, const char *stuff)
 {
-	if (*fd != '@')
-		return -1;
+	char 	type;
+	int	fd;
 
-	fd++;
-	if (*fd == 'W' || *fd == 'w' || *fd == 'L' || *fd == 'l')
-		fd++;
-
-	if (!is_number(fd))
+	/* All targets must start with '@' (which means "file target") */
+	if (*fdstr != '@')
 		return -1;
+	fdstr++;
 
 	/* 
-	 * We specifically do not rewrite the UTF8 string.
+	 * File targets may have domains
+	 *   @W<number>   -> The logfile for Window <number>
+	 *   @L<number>   -> The logfile for /LOG <number>
+	 *   @<number>	  -> (ie, no domain) The $open() file that 
+	 *		     returned <number>
+	 */
+	if (toupper(*fdstr) == 'W' || toupper(*fdstr) == 'L')
+	{
+		type = toupper(*fdstr);
+		fdstr++;
+	}
+	else
+		type = 'O';
+
+	/* 
+	 * All file targets must be numbers.
+	 * If you want to write to a window logfile using its 
+	 * name, use $windowctl(REFNUM <name>) to convert it.
+	 */
+	if (!is_number(fdstr))
+		return -1;
+
+	fd = my_atol(fdstr);
+
+	/* 
+	 * We specifically do not recode the UTF8 string.
 	 * All writes to files are done in UTF8 only.
 	 */
 
 	/* XXX Really we should call add_to_log() here */
 	/* XXX file_write() should not know or care about logfiles */
-	if (toupper(*fd) == 'W' && is_number(fd + 1))
-		return file_write(1, my_atol(fd + 1), stuff);
-	else if (toupper(*fd) == 'L' && is_number(fd + 1))
-		return file_write(2, my_atol(fd + 1), stuff);
-	else if (is_number(fd))
-		return file_write(0, my_atol(fd), stuff);
-	else
-		return -1;
+	if (toupper(type) == 'W')
+		return file_write(1, fd, stuff);
+	else if (toupper(type) == 'L')
+		return file_write(2, fd, stuff);
+	else 
+		return file_write(0, fd, stuff);
 }
 
 
