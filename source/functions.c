@@ -80,6 +80,7 @@
 #include "levels.h"
 #include "extlang.h"
 #include "ctcp.h"
+#include "cJSON.h"
 
 #ifdef NEED_GLOB
 # include "glob.h"
@@ -302,6 +303,9 @@ static	char
 	*function_jn		(char *),
 	*function_joinstr	(char *),
 	*function_jot 		(char *),
+	*function_json_error	(char *),
+	*function_json_explode	(char *),
+	*function_json_implode	(char *),
 	*function_key 		(char *),
 	*function_killpid	(char *),
 	*function_leftpc	(char *),
@@ -604,6 +608,9 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "JN",			function_jn		},
 	{ "JOINSTR",		function_joinstr	},
 	{ "JOT",                function_jot 		},
+	{ "JSON_ERROR",         function_json_error 	},
+	{ "JSON_EXPLODE",       function_json_explode 	},
+	{ "JSON_IMPLODE",       function_json_implode 	},
 	{ "KEY",                function_key 		},
 	{ "KILLPID",		function_killpid	},
 	{ "LASTLOG",		function_lastlog	}, /* lastlog.h */
@@ -7875,4 +7882,207 @@ BUILT_IN_FUNCTION(function_pydirect, input)
 
 #endif
 
+/*
+ * $json_error() - show the parse error the from the last json_explode()
+ *
+ * Returns the parse error from the last $json_explode() call, or an empty
+ * string if the last $json_explode() call succeeded.
+ */
+static char *json_last_error;
+
+BUILT_IN_FUNCTION(function_json_error, input)
+{
+	RETURN_STR(json_last_error);
+}
+
+/*
+ * $json_explode(var json) - deserialise a JSON string into an assign var
+ *
+ * Arguments:
+ *  $0 - var - An assign variable
+ *  $1 - json - A valid JSON string
+ *
+ * Returns an empty string on failure or 1 on success.
+ */
+static void explode_json_object(const char *var, cJSON *item)
+{
+	int n;
+	cJSON *subitem;
+	char *subvar = NULL;
+	char *subitem_name = NULL;
+
+	switch (item->type)
+	{
+		case cJSON_False:
+		add_var_alias(var, "0", 0);
+		break;
+
+		case cJSON_True:
+		add_var_alias(var, "1", 0);
+		break;
+
+		case cJSON_NULL:
+		add_var_alias(var, NULL, 0);
+		break;
+
+		case cJSON_Number:
+		add_var_alias(var, ftoa(item->valuedouble), 0);
+		break;
+
+		case cJSON_String:
+		add_var_alias(var, item->valuestring, 0);
+		break;
+
+		case cJSON_Array:
+		case cJSON_Object:
+		for (subitem = item->child, n = 0; subitem; subitem = subitem->next, n++)
+		{
+			if (subitem->string)
+			{
+				char *ptr = malloc_strcpy(&subitem_name, subitem->string);
+		
+				/* The name must be mangled to be suitable as an ASSIGN */
+				while (*ptr)
+				{
+					if (!isalnum(*ptr))
+						*ptr = '_';
+
+					ptr++;
+				}
+
+				malloc_sprintf(&subvar, "%s.%s", var, subitem_name);
+			}
+			else
+				malloc_sprintf(&subvar, "%s.%d", var, n);
+
+
+			explode_json_object(subvar, subitem);
+		}
+		break;
+
+		default:
+		yell("Odd cJSON type in $json_explode");
+	}
+	new_free(&subitem_name);
+	new_free(&subvar);
+}	
+
+BUILT_IN_FUNCTION(function_json_explode, input)
+{
+	const char *var;
+	cJSON *root;
+
+	GET_FUNC_ARG(var, input);
+	root = cJSON_Parse(input);
+
+	if (!root)
+	{
+		malloc_sprintf(&json_last_error, "JSON parse error at position %u", (unsigned)(cJSON_GetErrorPtr() - input));
+		RETURN_EMPTY;
+	}
+
+	new_free(&json_last_error);
+	explode_json_object(var, root);
+	cJSON_Delete(root);
+	RETURN_INT(1);
+}
+
+/*
+ * $json_implode(var) - serialise a Structure assign var into a JSON string
+ *
+ * Arguments:
+ *  $0 - var - An assign variable
+ *
+ * Returns an empty string on failure or a valid JSON string on success.
+ */
+static int implode_struct_var(char *var, cJSON *parent)
+{
+	char **sublist;
+	int count;
+	int i;
+	const char *name = strrchr(var, '.');
+	int err = 0;
+
+	if (name)
+		name++;
+	else
+		name = var;
+
+	sublist = get_subarray_elements(var, &count, VAR_ALIAS);
+
+	if (count == 0)
+	{
+		char *var_text = get_variable(var);
+		cJSON_AddStringToObject(parent, name, var_text);
+		new_free(&var_text);
+	}
+	else
+	{
+		cJSON *child = cJSON_CreateObject();
+
+		if (child)
+		{
+			cJSON_AddItemToObject(parent, name, child);
+
+			for (i = 0; i < count && err == 0; i++)
+				err = implode_struct_var(sublist[i], child);
+		}
+		else
+		{
+			yell("cJSON_CreateObject() returned NULL");
+			err = ENOMEM;
+		}
+	}
+
+	for (i = 0; i < count; i++)
+		new_free(&sublist[i]);
+	new_free(&sublist);
+	return err;
+}
+
+BUILT_IN_FUNCTION(function_json_implode, input)
+{
+	const char *var;
+	const char *canon_var;
+	cJSON *root;
+	char **sublist;
+	int count;
+	int i;
+	char *json = NULL;
+	char *retval;
+	int err = 0;
+
+	GET_FUNC_ARG(var, input);
+	canon_var = remove_brackets(var, NULL);
+
+	sublist = get_subarray_elements(canon_var, &count, VAR_ALIAS);
+	new_free(&canon_var);
+	
+	if (count == 0)
+		RETURN_EMPTY;
+
+	root = cJSON_CreateObject();
+
+	if (root)
+	{
+		for (i = 0; i < count && err == 0; i++)
+			err = implode_struct_var(sublist[i], root);
+
+		if (err == 0)
+			json = cJSON_Print(root);
+
+		cJSON_Delete(root);
+	}
+
+	for (i = 0; i < count; i++)
+		new_free(&sublist[i]);
+	new_free(&sublist);
+
+	retval = malloc_strdup(json);
+
+	if (json)
+		cJSON_free(json);
+
+	return retval;
+}
 
