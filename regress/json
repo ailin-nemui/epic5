@@ -1,0 +1,198 @@
+if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
+
+@ misses = 0;
+
+alias assert {
+        eval @ foo = $*;
+        if (foo == 1) { echo [  OK   ] $* }
+                      { echo [FAILED!] $*;@misses++ }
+};
+
+@ test_input = [
+{"web-app": {
+  "servlet": [   
+    {
+      "servlet-name": "cofaxCDS",
+      "servlet-class": "org.cofax.cds.CDSServlet",
+      "init-param": {
+        "configGlossary:installationAt": "Philadelphia, PA",
+        "configGlossary:adminEmail": "ksm@pobox.com",
+        "configGlossary:poweredBy": "Cofax",
+        "configGlossary:poweredByIcon": "/images/cofax.gif",
+        "configGlossary:staticPath": "/content/static",
+        "templateProcessorClass": "org.cofax.WysiwygTemplate",
+        "templateLoaderClass": "org.cofax.FilesTemplateLoader",
+        "templatePath": "templates",
+        "templateOverridePath": "",
+        "defaultListTemplate": "listTemplate.htm",
+        "defaultFileTemplate": "articleTemplate.htm",
+        "useJSP": false,
+        "jspListTemplate": "listTemplate.jsp",
+        "jspFileTemplate": "articleTemplate.jsp",
+        "cachePackageTagsTrack": 200,
+        "cachePackageTagsStore": 200,
+        "cachePackageTagsRefresh": 60,
+        "cacheTemplatesTrack": 100,
+        "cacheTemplatesStore": 50,
+        "cacheTemplatesRefresh": 15,
+        "cachePagesTrack": 200,
+        "cachePagesStore": 100,
+        "cachePagesRefresh": 10,
+        "cachePagesDirtyRead": 10,
+        "searchEngineListTemplate": "forSearchEnginesList.htm",
+        "searchEngineFileTemplate": "forSearchEngines.htm",
+        "searchEngineRobotsDb": "WEB-INF/robots.db",
+        "useDataStore": true,
+        "dataStoreClass": "org.cofax.SqlDataStore",
+        "redirectionClass": "org.cofax.SqlRedirection",
+        "dataStoreName": "cofax",
+        "dataStoreDriver": "com.microsoft.jdbc.sqlserver.SQLServerDriver",
+        "dataStoreUrl": "jdbc:microsoft:sqlserver://LOCALHOST:1433;DatabaseName=goon",
+        "dataStoreUser": "sa",
+        "dataStorePassword": "dataStoreTestQuery",
+        "dataStoreTestQuery": "SET NOCOUNT ON;select test='test';",
+        "dataStoreLogFile": "/usr/local/tomcat/logs/datastore.log",
+        "dataStoreInitConns": 10,
+        "dataStoreMaxConns": 100,
+        "dataStoreConnUsageLimit": 100,
+        "dataStoreLogLevel": "debug",
+        "maxUrlLength": 500}},
+    {
+      "servlet-name": "cofaxEmail",
+      "servlet-class": "org.cofax.cds.EmailServlet",
+      "init-param": {
+      "mailHost": "mail1",
+      "mailHostOverride": "mail2"}},
+    {
+      "servlet-name": "cofaxAdmin",
+      "servlet-class": "org.cofax.cds.AdminServlet"},
+ 
+    {
+      "servlet-name": "fileServlet",
+      "servlet-class": "org.cofax.cds.FileServlet"},
+    {
+      "servlet-name": "cofaxTools",
+      "servlet-class": "org.cofax.cms.CofaxToolsServlet",
+      "init-param": {
+        "templatePath": "toolstemplates/",
+        "log": 1,
+        "logLocation": "/usr/local/tomcat/logs/CofaxTools.log",
+        "logMaxSize": "",
+        "dataLog": 1,
+        "dataLogLocation": "/usr/local/tomcat/logs/dataLog.log",
+        "dataLogMaxSize": "",
+        "removePageCache": "/content/admin/remove?cache=pages&id=",
+        "removeTemplateCache": "/content/admin/remove?cache=templates&id=",
+        "fileTransferFolder": "/usr/local/tomcat/webapps/content/fileTransferFolder",
+        "lookInContext": 1,
+        "adminGroupID": 4,
+        "betaServer": true}}],
+  "servlet-mapping": {
+    "cofaxCDS": "/",
+    "cofaxEmail": "/cofaxutil/aemail/*",
+    "cofaxAdmin": "/admin/*",
+    "fileServlet": "/static/*",
+    "cofaxTools": "/tools/*"},
+ 
+  "taglib": {
+    "taglib-uri": "cofax.tld",
+    "taglib-location": "/WEB-INF/tlds/cofax.tld"}}}
+];
+
+assert json_explode(test_var $[50]test_input) == [];
+assert json_error() != [];
+assert json_explode(test_var $test_input) == 1;
+assert json_error() == [];
+
+assert test_var[web_app][servlet][0][servlet_name] == [cofaxCDS];
+assert test_var[web_app][servlet][0][servlet_class] == [org.cofax.cds.CDSServlet];
+assert test_var[web_app][servlet][0][init_param][configGlossary_installationAt] == [Philadelphia, PA];
+assert test_var[web_app][servlet][0][init_param][configGlossary_adminEmail] == [ksm@pobox.com];
+assert test_var[web_app][servlet][0][init_param][configGlossary_poweredBy] == [Cofax];
+assert test_var[web_app][servlet][0][init_param][configGlossary_poweredByIcon] == [/images/cofax.gif];
+assert test_var[web_app][servlet][0][init_param][configGlossary_staticPath] == [/content/static];
+assert test_var[web_app][servlet][0][init_param][templateProcessorClass] == [org.cofax.WysiwygTemplate];
+assert test_var[web_app][servlet][0][init_param][templateLoaderClass] == [org.cofax.FilesTemplateLoader];
+assert test_var[web_app][servlet][0][init_param][templatePath] == [templates];
+assert test_var[web_app][servlet][0][init_param][templateOverridePath] == [];
+assert test_var[web_app][servlet][0][init_param][defaultListTemplate] == [listTemplate.htm];
+assert test_var[web_app][servlet][0][init_param][defaultFileTemplate] == [articleTemplate.htm];
+assert test_var[web_app][servlet][0][init_param][useJSP] == 0;
+assert test_var[web_app][servlet][0][init_param][jspListTemplate] == [listTemplate.jsp];
+assert test_var[web_app][servlet][0][init_param][jspFileTemplate] == [articleTemplate.jsp];
+assert test_var[web_app][servlet][0][init_param][cachePackageTagsTrack] == 200;
+assert test_var[web_app][servlet][0][init_param][cachePackageTagsStore] == 200;
+assert test_var[web_app][servlet][0][init_param][cachePackageTagsRefresh] == 60;
+assert test_var[web_app][servlet][0][init_param][cacheTemplatesTrack] == 100;
+assert test_var[web_app][servlet][0][init_param][cacheTemplatesStore] == 50;
+assert test_var[web_app][servlet][0][init_param][cacheTemplatesRefresh] == 15;
+assert test_var[web_app][servlet][0][init_param][cachePagesTrack] == 200;
+assert test_var[web_app][servlet][0][init_param][cachePagesStore] == 100;
+assert test_var[web_app][servlet][0][init_param][cachePagesRefresh] == 10;
+assert test_var[web_app][servlet][0][init_param][cachePagesDirtyRead] == 10;
+assert test_var[web_app][servlet][0][init_param][searchEngineListTemplate] == [forSearchEnginesList.htm];
+assert test_var[web_app][servlet][0][init_param][searchEngineFileTemplate] == [forSearchEngines.htm];
+assert test_var[web_app][servlet][0][init_param][searchEngineRobotsDb] == [WEB-INF/robots.db];
+assert test_var[web_app][servlet][0][init_param][useDataStore] == 1;
+assert test_var[web_app][servlet][0][init_param][dataStoreClass] == [org.cofax.SqlDataStore];
+assert test_var[web_app][servlet][0][init_param][redirectionClass] == [org.cofax.SqlRedirection];
+assert test_var[web_app][servlet][0][init_param][dataStoreName] == [cofax];
+assert test_var[web_app][servlet][0][init_param][dataStoreDriver] == [com.microsoft.jdbc.sqlserver.SQLServerDriver];
+assert test_var[web_app][servlet][0][init_param][dataStoreUrl] == ([jdbc:microsoft:sqlserver://LOCALHOST:1433;DatabaseName=goon]);
+assert test_var[web_app][servlet][0][init_param][dataStoreUser] == [sa];
+assert test_var[web_app][servlet][0][init_param][dataStorePassword] == [dataStoreTestQuery];
+assert test_var[web_app][servlet][0][init_param][dataStoreTestQuery] == ([SET NOCOUNT ON;select test='test';]);
+assert test_var[web_app][servlet][0][init_param][dataStoreLogFile] == [/usr/local/tomcat/logs/datastore.log];
+assert test_var[web_app][servlet][0][init_param][dataStoreInitConns] == 10;
+assert test_var[web_app][servlet][0][init_param][dataStoreMaxConns] == 100;
+assert test_var[web_app][servlet][0][init_param][dataStoreConnUsageLimit] == 100;
+assert test_var[web_app][servlet][0][init_param][dataStoreLogLevel] == [debug];
+assert test_var[web_app][servlet][0][init_param][maxUrlLength] == 500;
+assert test_var[web_app][servlet][1][servlet_name] == [cofaxEmail];
+assert test_var[web_app][servlet][1][servlet_class] == [org.cofax.cds.EmailServlet];
+assert test_var[web_app][servlet][1][init_param][mailHost] == [mail1];
+assert test_var[web_app][servlet][1][init_param][mailHostOverride] == [mail2];
+assert test_var[web_app][servlet][2][servlet_name] == [cofaxAdmin];
+assert test_var[web_app][servlet][2][servlet_class] == [org.cofax.cds.AdminServlet];
+assert test_var[web_app][servlet][3][servlet_name] == [fileServlet];
+assert test_var[web_app][servlet][3][servlet_class] == [org.cofax.cds.FileServlet];
+assert test_var[web_app][servlet][4][servlet_name] == [cofaxTools];
+assert test_var[web_app][servlet][4][servlet_class] == [org.cofax.cms.CofaxToolsServlet];
+assert test_var[web_app][servlet][4][init_param][templatePath] == [toolstemplates/];
+assert test_var[web_app][servlet][4][init_param][log] == 1;
+assert test_var[web_app][servlet][4][init_param][logLocation] == [/usr/local/tomcat/logs/CofaxTools.log];
+assert test_var[web_app][servlet][4][init_param][logMaxSize] == [];
+assert test_var[web_app][servlet][4][init_param][dataLog] == 1;
+assert test_var[web_app][servlet][4][init_param][dataLogLocation] == [/usr/local/tomcat/logs/dataLog.log];
+assert test_var[web_app][servlet][4][init_param][dataLogMaxSize] == [];
+assert test_var[web_app][servlet][4][init_param][removePageCache] == [/content/admin/remove?cache=pages&id=];
+assert test_var[web_app][servlet][4][init_param][removeTemplateCache] == [/content/admin/remove?cache=templates&id=];
+assert test_var[web_app][servlet][4][init_param][fileTransferFolder] == [/usr/local/tomcat/webapps/content/fileTransferFolder];
+assert test_var[web_app][servlet][4][init_param][lookInContext] == 1;
+assert test_var[web_app][servlet][4][init_param][adminGroupID] == 4;
+assert test_var[web_app][servlet][4][init_param][betaServer] == 1;
+assert test_var[web_app][servlet_mapping][cofaxCDS] == [/];
+assert test_var[web_app][servlet_mapping][cofaxEmail] == [/cofaxutil/aemail/*];
+assert test_var[web_app][servlet_mapping][cofaxAdmin] == [/admin/*];
+assert test_var[web_app][servlet_mapping][fileServlet] == [/static/*];
+assert test_var[web_app][servlet_mapping][cofaxTools] == [/tools/*];
+assert test_var[web_app][taglib][taglib_uri] == [cofax.tld];
+assert test_var[web_app][taglib][taglib_location] == [/WEB-INF/tlds/cofax.tld];
+
+@ test_json = json_implode(test_var);
+
+assert test_json != [];
+assert json_explode(test_var2 $test_json) == 1;
+assert json_error() == [];
+
+alias compare_structs (struct_a, struct_b, path)
+{
+	foreach $(struct_a)$(path) ext {
+		assert $(struct_a)$(path).$(ext) == $(struct_b)$(path).$(ext);
+		if ([$(struct_a)$(path).$(ext)] != []) { compare_structs $struct_a $struct_b $(path).$(ext) };
+	};
+};
+
+compare_structs test_var test_var2;
+
+xecho -banner Tests complete.  Failed tests: $misses
