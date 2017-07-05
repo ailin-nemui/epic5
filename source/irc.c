@@ -842,8 +842,10 @@ static void	do_signals(void)
 	{
 		while (signals_caught[sig_no])
 		{
-			do_hook(SIGNAL_LIST, "%d %d", sig_no, 
-					signals_caught[sig_no]);
+			do_hook(SIGNAL_LIST, "%d %d", sig_no,
+				signals_caught[sig_no]);
+			do_hook(SIGNAL_LIST, "%s %d", get_signal_name(sig_no),
+				signals_caught[sig_no]);
 			signals_caught[sig_no]--;
 		}
 	}
