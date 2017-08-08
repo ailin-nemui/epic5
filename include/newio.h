@@ -85,6 +85,7 @@
 #define SRV(vfd) get_server_by_vfd(vfd)
 
 	int	new_open		(int, void (*) (int), int, int, int);
+	int     new_open_failure_callback (int vfd, void (*) (int, int));
 	int	new_hold_fd		(int);
 	int	new_unhold_fd		(int);
 	int 	new_close_with_option	(int, int);
