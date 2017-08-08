@@ -269,10 +269,21 @@ intmax_t	add_to_lastlog (Window *window, const char *line)
  */
 void 	trim_lastlog (Window *window)
 {
-	Lastlog *item = oldest_lastlog_for_window(window);
+	Lastlog *item;
+
+	if (window->lastlog_size <= window->lastlog_max)
+		return;
+
+	debuglog("trim_lastlog: Preparing to trim lastlog for window %d -- "
+		 "(current size: %d, maximum allowable size %d", 
+			window->refnum, window->lastlog_size, window->lastlog_max);
+	debuglog("trim_lastlog: Will remove %d entr(y/ies) from window %d",
+			window->lastlog_size - window->lastlog_max,
+			window->refnum);
 
 	/* This must eventually terminate, because it will reach the end
 	 * of the linked-list of lastlog items. */
+	item = oldest_lastlog_for_window(window);
 	while (item && window->lastlog_size > window->lastlog_max)
 	{
 		Lastlog *next_item = newer_lastlog_entry(item, window);
@@ -288,8 +299,14 @@ void 	trim_lastlog (Window *window)
  */
 void 	truncate_lastlog (Window *window)
 {
-	Lastlog *item = oldest_lastlog_for_window(window);
+	Lastlog *item;
 
+	debuglog("truncate_lastlog: Preparing to truncate lastlog for window %d.",
+			window->refnum);
+	debuglog("truncate_lastlog: Will remove %d entr(y/ies) from window %d",
+			window->lastlog_size, window->refnum);
+
+	item = oldest_lastlog_for_window(window);
 	while (item)
 	{
 		Lastlog *next_item = newer_lastlog_entry(item, window);
@@ -1572,6 +1589,9 @@ static void	remove_lastlog_item (Lastlog *item)
 {
 	if (item->dead)
 		panic(1, "Lastlog item is already dead.");
+
+	debuglog("remove_lastlog_item: Item %ld from window %d [%s]",
+		(long)item->refnum, item->window, item->msg);
 
 	if (item == lastlog_oldest)
 	{
