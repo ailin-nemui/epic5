@@ -60,7 +60,11 @@
 
 typedef	struct	myio_struct
 {
-	int	channel;		/* XXX Future expansion XXX */
+	/* 
+	 * On Unix, "Channel" means "fd".
+	 * On VMS, "Channel" is a random 32 bit int.
+	 */
+	int	channel;	
 	char *	buffer;
 	size_t	buffer_size,
 		read_pos,
@@ -71,6 +75,7 @@ typedef	struct	myio_struct
 		held;
 	void	(*callback) (int vfd);
 	int	(*io_callback) (int vfd, int quiet);
+	int	(*failure_callback) (int channel, int error);
 	int	quiet;
 	int	server;			/* For message routing */
 }           MyIO;
@@ -580,6 +585,7 @@ int 	new_open (int channel, void (*callback) (int), int io_type, int quiet, int 
 		panic(1, "New_open doesn't recognize io type %d", io_type);
 
 	ioe->callback = callback;
+	ioe->failure_callback = NULL;
 
 	if (io_type == NEWIO_CONNECT)
 	{
@@ -605,6 +611,32 @@ int 	new_open (int channel, void (*callback) (int), int io_type, int quiet, int 
 
 	return vfd;
 }
+
+/*
+ * On a VFD registered with new_open(), you may want a callback when the
+ * fd has gone bad, so you can do your own cleanup.
+ * This is intended for the Python support.
+ * 
+ * The callback provides two arguments:
+ *	1 - channel - the channel (fd) passed to new_open()
+ *	2 - error - this is reserved for future expansion
+ */
+int 	new_open_failure_callback (int channel, void (*failure_callback) (int, int))
+{
+	MyIO *	ioe;
+	int	vfd;
+
+	vfd = VFD(channel);
+	if (vfd >= 0 && vfd <= global_max_vfd && (ioe = io_rec[vfd]))
+	{
+		ioe->failure_callback = failure_callback;
+		return 0;
+	}
+
+	syserr(-1, "new_open_failure_callback: Called for Channel %d that is not set up", channel);
+	return -1;		/* Oh well. */
+}
+
 
 /*
  * This isn't really new, but what the hey..
@@ -684,6 +716,31 @@ int	new_close_with_option (int vfd, int virtual)
 		unix_close(vfd, 0);
 
 	return -1;
+}
+
+/* 
+ * The lower level IO functions call us when an channel (fd) is found dead,
+ * and has been untracked (FD_CLR) and unregistered (new_close()), so we
+ * may tell any owner of this.
+ */
+static	void	fd_is_invalid (int channel)
+{
+	int	vfd;
+	MyIO *	ioe;
+
+	vfd = VFD(channel);
+	if (vfd >= 0 && vfd <= global_max_vfd && (ioe = io_rec[vfd]))
+	{
+		if (ioe->failure_callback)
+			ioe->failure_callback(channel, 0);
+	}
+	else
+	{
+		syserr(-1, "fd_is_invalid called on unsetup channel %d", channel);
+		return;
+	}
+
+
 }
 
 
@@ -989,6 +1046,7 @@ static	int	kdoit (Timeval *timeout)
 				new_close(channel);
 
 				/* If this is a python fd, we need to callback */
+				fd_is_invalid(channel);
 				foundit = 1;
 			}
 		}
