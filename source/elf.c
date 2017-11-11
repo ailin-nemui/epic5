@@ -33,10 +33,7 @@
  * This code was contributed to EPIC Software Labs by Alexander Grotewohl,
  * used with permission.
  */
-#include "irc.h"
-#include "ircaux.h"
-#include "elf.h"
-#include "output.h"
+#include "all.h"
 
 #ifdef HAVE_LIBARCHIVE
 static int archive_fopen(struct epic_loadfile *elf, char *filename, const char *ext, int do_error);

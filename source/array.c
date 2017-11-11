@@ -193,13 +193,7 @@ Karll on IRC
  * DATE:       Sat Nov 27 23:00:20 MST 1993
  */
 
-#include "irc.h"
-#include "array.h"
-#include "ircaux.h"
-#include "output.h"
-#include "functions.h"
-#include "words.h"
-#include "reg.h"
+#include "all.h"
 #undef BUILT_IN_FUNCTION
 #define BUILT_IN_FUNCTION(x, y) char * x (char * y)
 #undef index			/* doh! */

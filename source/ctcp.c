@@ -36,25 +36,7 @@
  * Serious cleanup by jfn (August 1996)
  */
 
-#include "irc.h"
-#include "sedcrypt.h"
-#include "ctcp.h"
-#include "dcc.h"
-#include "commands.h"
-#include "hook.h"
-#include "ignore.h"
-#include "ircaux.h"
-#include "lastlog.h"
-#include "names.h"
-#include "output.h"
-#include "parse.h"
-#include "server.h"
-#include "status.h"
-#include "vars.h"
-#include "window.h"
-#include "ifcmd.h"
-#include "flood.h"
-#include "words.h"
+#include "all.h"
 
 #include <pwd.h>
 #ifdef HAVE_UNAME

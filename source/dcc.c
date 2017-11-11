@@ -32,25 +32,7 @@
  * SUCH DAMAGE.
  */
 
-#include "irc.h"
-#include "sedcrypt.h"
-#include "ctcp.h"
-#include "dcc.h"
-#include "functions.h"
-#include "hook.h"
-#include "ircaux.h"
-#include "lastlog.h"
-#include "newio.h"
-#include "output.h"
-#include "parse.h"
-#include "server.h"
-#include "status.h"
-#include "vars.h"
-#include "window.h"
-#include "termx.h"
-#include "reg.h"
-#include "alias.h"
-#include "timer.h"
+#include "all.h"
 
 #define DCC_BLOCK_SIZE (1<<11)
 

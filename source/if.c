@@ -32,16 +32,7 @@
  * SUCH DAMAGE.
  */
 
-#include "irc.h"
-#include "alias.h"
-#include "ifcmd.h"
-#include "ircaux.h"
-#include "output.h"
-#include "parse.h"
-#include "vars.h"
-#include "commands.h"
-#include "window.h"
-#include "reg.h"
+#include "all.h"
 
 /*
  * next_expr finds the next expression delimited by brackets. The type

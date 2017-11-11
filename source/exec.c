@@ -33,22 +33,7 @@
  * SUCH DAMAGE.
  */
 
-#include "irc.h"
-#include "dcc.h"
-#include "exec.h"
-#include "vars.h"
-#include "ircaux.h"
-#include "commands.h"
-#include "window.h"
-#include "screen.h"
-#include "hook.h"
-#include "input.h"
-#include "list.h"
-#include "server.h"
-#include "output.h"
-#include "parse.h"
-#include "newio.h"
-#include "ifcmd.h"
+#include "all.h"
 
 #ifdef NO_JOB_CONTROL
 BUILT_IN_COMMAND(execcmd)

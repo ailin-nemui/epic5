@@ -33,27 +33,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
-#include "irc.h"
-#include "server.h"
-#include "names.h"
-#include "vars.h"
-#include "ctcp.h"
-#include "hook.h"
-#include "commands.h"
-#include "ignore.h"
-#include "lastlog.h"
-#include "ircaux.h"
-#include "sedcrypt.h"
-#include "termx.h"
-#include "flood.h"
-#include "window.h"
-#include "screen.h"
-#include "output.h"
-#include "numbers.h"
-#include "parse.h"
-#include "notify.h"
-#include "timer.h"
+#include "all.h"
 
 #define STRING_CHANNEL 	'+'
 #define MULTI_CHANNEL 	'#'

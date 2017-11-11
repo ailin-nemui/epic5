@@ -31,12 +31,7 @@
  */
 
 #define NEED_SERVER_LIST
-#include "irc.h"
-#include "functions.h"
-#include "ircaux.h"
-#include "output.h"
-#include "parse.h"
-#include "server.h"
+#include "all.h"
 #include <langinfo.h>
 #ifdef NEWLOCALE_REQUIRES__GNU_SOURCE
 #define _GNU_SOURCE

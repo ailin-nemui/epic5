@@ -34,27 +34,7 @@
  */
 
 #define __need_cs_alist_hash__
-#include "irc.h"
-#define __need_ArgList_t__
-#include "alias.h"
-#include "alist.h"
-#include "array.h"
-#include "commands.h"
-#include "files.h"
-#include "hook.h"
-#include "input.h"
-#include "ircaux.h"
-#include "output.h"
-#include "screen.h"
-#include "stack.h"
-#include "status.h"
-#include "vars.h"
-#include "window.h"
-#include "keys.h"
-#include "functions.h"
-#include "words.h"
-#include "reg.h"
-#include "vars.h"
+#include "all.h"
 
 #define LEFT_BRACE '{'
 #define RIGHT_BRACE '}'
@@ -64,112 +44,24 @@
 #define RIGHT_PAREN ')'
 #define DOUBLE_QUOTE '"'
 
-/**************************** INTERMEDIATE INTERFACE *********************/
-/* Just doing some changes for hooks */
-/*
-enum ARG_TYPES {
-	WORD,
-	UWORD,
-	DWORD,
-	QWORD
-};
-*/
-/* Ugh. XXX Bag on the side */
-/*
-struct ArgListT {
-	char *	vars[32];
-	char *	defaults[32];
-	int	words[32];
-	enum	ARG_TYPES types[32];
-	int	void_flag;
-	int	dot_flag;
-};
-typedef struct ArgListT ArgList;
-ArgList	*parse_arglist (char *arglist);
-void	destroy_arglist (ArgList **);
-*/
-
-/*
- * This is the description of an alias entry
- * This is an ``array_item'' structure
- */
-typedef	struct	SymbolStru
-{
-	char	*name;			/* name of alias */
-	u_32int_t hash;			/* Hash of the name */
-
-	char *	user_variable;
-	int	user_variable_stub;
-	char *	user_variable_package;
-
-	char *	user_command;
-	int	user_command_stub;
-	char *	user_command_package;
-	ArgList *arglist;		/* List of arguments to alias */
-
-        void    (*builtin_command) (const char *, char *, const char *);
-	char *	(*builtin_function) (char *);
-	char *	(*builtin_expando) (void);
-	IrcVariable *	builtin_variable;
-
-struct SymbolStru *	saved;		/* For stacks */
-	int	saved_hint;
-}	Symbol;
-
-#define SAVED_VAR		 1
-#define SAVED_CMD		 2
-#define SAVED_BUILTIN_CMD	 4
-#define SAVED_BUILTIN_FUNCTION	 8
-#define SAVED_BUILTIN_EXPANDO	16
-#define SAVED_BUILTIN_VAR	32
-
 const char *symbol_types[] = {
-	"ASSIGN",		"ALIAS",		"BUILTIN_COMMAND",
-	"BUILTIN_FUNCTION",	"BUILTIN_EXPANDO",	"BUILTIN_VARIABLE",
-	NULL
+        "ASSIGN",               "ALIAS",                "BUILTIN_COMMAND",
+        "BUILTIN_FUNCTION",     "BUILTIN_EXPANDO",      "BUILTIN_VARIABLE",
+        NULL
 };
 
-/*
- * This is the description for a list of aliases
- * This is an ``array_set'' structure
- */
-#define ALIAS_CACHE_SIZE 4
-
-typedef struct	SymbolSetStru
-{
-	Symbol **	list;
-	int		max;
-	int		max_alloc;
-	alist_func 	func;
-	hash_type	hash;
-}	SymbolSet;
-
-static SymbolSet globals = 	{ NULL, 0, 0, strncmp, HASH_INSENSITIVE };
-
-static	Symbol *lookup_symbol (const char *name);
-static	Symbol *find_local_alias   (const char *name, SymbolSet **list);
 
 /*
- * This is the ``stack frame''.  Each frame has a ``name'' which is
- * the name of the alias or on of the frame, or is NULL if the frame
- * is not an ``enclosing'' frame.  Each frame also has a ``current command''
- * that is being executed, which is used to help us when the client crashes.
- * Each stack also contains a list of local variables.
+ * The Global Symbol Table.  The whole kit and kaboodle
  */
-typedef struct RuntimeStackStru
-{
-	const char *name;	/* Name of the stack */
-	char 	*current;	/* Current cmd being executed */
-	SymbolSet alias;	/* Local variables */
-	int	locked;		/* Are we locked in a wait? */
-	int	parent;		/* Our parent stack frame */
-}	RuntimeStack;
+	SymbolSet globals =      { NULL, 0, 0, strncmp, HASH_INSENSITIVE };
 
 /*
  * This is the master stack frame.  Its size is saved in ``max_wind''
  * and the current frame being used is stored in ``wind_index''.
+ * Each (RuntimeStack) has a (SymbolSet) for local variables.
  */
-static 	RuntimeStack *call_stack = NULL;
+	RuntimeStack *call_stack = NULL;
 	int 	max_wind = -1;
 	int 	wind_index = -1;
 
@@ -183,60 +75,7 @@ static 	RuntimeStack *call_stack = NULL;
  */
 	int	last_function_call_level = -1;
 
-/*
- * The following actions are supported:  add, delete, find, list
- * On the following types of data:	 var_alias, cmd_alias, local_alias
- * Except you cannot list or delete local_aliases.
- *
- * To fetch a variable, use ``get_variable''
- * To fetch an alias, use ``get_cmd_alias''
- * To fetch an ambiguous alias, use ``glob_cmd_alias''
- * To recurse an array structure, use ``get_subarray_elements''
- */
 
-/*
- * These are general purpose interface functions.
- * However, the static ones should **always** be static!  If you are tempted
- * to use them outside of alias.c, please rethink what youre trying to do.
- * Using these functions violates the encapsulation of the interface.
- * Specifically, if you create a global variable and then want to delete it,
- * try using a local variable so it is reaped automatically.
- */
-extern	void    add_var_alias      (Char *name, Char *stuff, int noisy);
-extern  void    add_local_alias    (Char *name, Char *stuff, int noisy);
-extern  void    add_cmd_alias      (Char *name, ArgList *arglist, Char *stuff);
-extern  void    add_var_stub_alias (Char *name, Char *stuff);
-extern  void    add_cmd_stub_alias (Char *name, Char *stuff);
-extern	void	add_builtin_cmd_alias  (Char *, void (*)(Char *, char *, Char *));
-extern	void	add_builtin_func_alias (Char *, char *(*)(char *));
-extern	void	add_builtin_expando    (Char *, char *(*)(void));
-
-static	void	delete_var_alias   (Char *name, int noisy);
-static	void	delete_cmd_alias   (Char *name, int noisy);
-/*	void	delete_local_alias (Char *name); 		*/
-
-static	void	unload_cmd_alias   (Char *fn);
-static	void	unload_var_alias   (Char *fn);
-static	void	list_cmd_alias     (Char *name);
-static	void	list_var_alias     (Char *name);
-static	void	list_local_alias   (Char *name);
-static	void 	destroy_cmd_aliases    (SymbolSet *);
-static	void 	destroy_var_aliases    (SymbolSet *);
-static	void 	destroy_builtin_commands    (SymbolSet *);
-static	void 	destroy_builtin_functions    (SymbolSet *);
-static	void 	destroy_builtin_variables    (SymbolSet *);
-static	void 	destroy_builtin_expandos    (SymbolSet *);
-
-extern	char *  get_variable       (Char *name);
-extern	char ** glob_cmd_alias          (Char *name, int *howmany, int maxret, int start, int rev);
-extern	char ** glob_assign_alias	(Char *name, int *howmany, int maxret, int start, int rev);
-extern	const char *  get_cmd_alias     (Char *name, void **args, 
-					 void (**func) (const char *, char *, 
-					                const char *));
-extern	char ** get_subarray_elements   (Char *root, int *howmany, int type);
-
-
-static	char *	get_variable_with_args (Char *str, Char *args);
 
 void	flush_all_symbols (void)
 {
@@ -1432,7 +1271,7 @@ static Symbol *unstub_command (Symbol *item)
 /*
  * 'name' is expected to already be in canonical form (uppercase, dot notation)
  */
-static Symbol *	lookup_symbol (const char *name)
+Symbol *	lookup_symbol (const char *name)
 {
 	Symbol *	item = NULL;
 	int 	loc;
@@ -1460,7 +1299,7 @@ static Symbol *	lookup_symbol (const char *name)
  * is an exact leading subset of ``name'' and that variable ends in a
  * period (a dot).
  */
-static Symbol *	find_local_alias (const char *orig_name, SymbolSet **list)
+Symbol *	find_local_alias (const char *orig_name, SymbolSet **list)
 {
 	Symbol 	*alias = NULL;
 	int 	c;
@@ -1580,7 +1419,7 @@ static Symbol *	find_local_alias (const char *orig_name, SymbolSet **list)
 
 
 /* * */
-static void	delete_var_alias (const char *orig_name, int noisy)
+void	delete_var_alias (const char *orig_name, int noisy)
 {
 	Symbol *item;
 	char *	name;
@@ -1603,7 +1442,7 @@ static void	delete_var_alias (const char *orig_name, int noisy)
 	new_free(&name);
 }
 
-static void	delete_cmd_alias (const char *orig_name, int noisy)
+void	delete_cmd_alias (const char *orig_name, int noisy)
 {
 	Symbol *item;
 	char *	name;
@@ -1727,7 +1566,7 @@ BUCKET_FUNCTION(builtin_expandos, builtin_expando)
 BUCKET_FUNCTION(builtin_variables, builtin_variable)
 
 /* * * */
-static void	list_local_alias (const char *orig_name)
+void	list_local_alias (const char *orig_name)
 {
 	size_t len = 0;
 	int cnt;
@@ -1776,7 +1615,7 @@ static void	list_local_alias (const char *orig_name)
 /*
  * This function is strictly O(N).  Its possible to address this.
  */
-static void	list_var_alias (const char *orig_name)
+void	list_var_alias (const char *orig_name)
 {
 	size_t	len = 0;
 	int	DotLoc,
@@ -1840,7 +1679,7 @@ static void	list_var_alias (const char *orig_name)
 /*
  * This function is strictly O(N).  Its possible to address this.
  */
-static void	list_cmd_alias (const char *orig_name)
+void	list_cmd_alias (const char *orig_name)
 {
 	size_t	len = 0;
 	int	DotLoc,
@@ -1928,7 +1767,7 @@ static void	list_builtin_variables (const char *orig_name)
 }
 
 /************************* UNLOADING SCRIPTS ************************/
-static void	unload_cmd_alias (const char *package)
+void	unload_cmd_alias (const char *package)
 {
 	int 	cnt;
 	Symbol *item;
@@ -1947,7 +1786,7 @@ static void	unload_cmd_alias (const char *package)
 	}
 }
 
-static void	unload_var_alias (const char *package)
+void	unload_var_alias (const char *package)
 {
 	int 	cnt;
 	Symbol	*item;
@@ -2221,7 +2060,7 @@ char **	get_subarray_elements (const char *orig_root, int *howmany, int type)
 
 
 /***************************************************************************/
-static	void	destroy_cmd_aliases (SymbolSet *my_array)
+void	destroy_cmd_aliases (SymbolSet *my_array)
 {
 	int cnt = 0;
 	Symbol *item;
@@ -2247,7 +2086,7 @@ static	void	destroy_cmd_aliases (SymbolSet *my_array)
 	}
 }
 
-static	void	destroy_var_aliases (SymbolSet *my_array)
+void	destroy_var_aliases (SymbolSet *my_array)
 {
 	int cnt = 0;
 	Symbol *item;
@@ -2271,7 +2110,7 @@ static	void	destroy_var_aliases (SymbolSet *my_array)
 	}
 }
 
-static	void	destroy_builtin_commands (SymbolSet *my_array)
+void	destroy_builtin_commands (SymbolSet *my_array)
 {
 	int cnt = 0;
 	Symbol *item;
@@ -2292,7 +2131,7 @@ static	void	destroy_builtin_commands (SymbolSet *my_array)
 	}
 }
 
-static	void	destroy_builtin_functions (SymbolSet *my_array)
+void	destroy_builtin_functions (SymbolSet *my_array)
 {
 	int cnt = 0;
 	Symbol *item;
@@ -2313,7 +2152,7 @@ static	void	destroy_builtin_functions (SymbolSet *my_array)
 	}
 }
 
-static	void	destroy_builtin_expandos (SymbolSet *my_array)
+void	destroy_builtin_expandos (SymbolSet *my_array)
 {
 	int cnt = 0;
 	Symbol *item;
@@ -2334,7 +2173,7 @@ static	void	destroy_builtin_expandos (SymbolSet *my_array)
 	}
 }
 
-static	void	destroy_builtin_variables (SymbolSet *my_array)
+void	destroy_builtin_variables (SymbolSet *my_array)
 {
 	int cnt = 0;
 	Symbol *item;
@@ -2510,7 +2349,7 @@ char 	*get_variable 	(const char *str)
 }
 
 
-static char *	get_variable_with_args (const char *str, const char *args)
+char *	get_variable_with_args (const char *str, const char *args)
 {
 	Symbol	*alias = NULL;
 	char	*ret = NULL;

@@ -33,26 +33,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
-#include "irc.h"
-#include "input.h"
-#include "ircaux.h"
-#include "vars.h"
-#include "lastlog.h"
-#include "hook.h"
-#include "server.h"
-#include "numbers.h"
-#include "window.h"
-#include "screen.h"
-#include "output.h"
-#include "names.h"
-#include "parse.h"
-#include "commands.h"
-#include "notify.h"
-#include "vars.h"
-#include "who.h"
-#include "alias.h"
-#include "reg.h"
+#include "all.h"
 
 static void	add_user_who (int refnum, const char *from, const char *comm, const char **ArgList);
 static void	add_user_end (int refnum, const char *from, const char *comm, const char **ArgList);

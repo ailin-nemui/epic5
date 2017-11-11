@@ -30,11 +30,7 @@
  * SUCH DAMAGE.
  */
 
-#include "irc.h"
-#include "ircaux.h"
-#include "output.h"
-#include "reg.h"
-#include "commands.h"
+#include "all.h"
 
 #if 0
 unsigned long x_debug = DEBUG_SERVER_CONNECT;

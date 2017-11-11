@@ -29,16 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
-#include "irc.h"
-#include "ircaux.h"
-#include "array.h"
-#include "alias.h"
-#include "commands.h"
-#include "functions.h"
-#include "output.h"
-#include "ifcmd.h"
-#include "extlang.h"
+#include "all.h"
 #include <tcl.h>
 #ifdef TK
 #include <tk.h>

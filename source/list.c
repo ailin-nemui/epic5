@@ -31,11 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
-#include "irc.h"
-#include "list.h"
-#include "ircaux.h"
-#include "reg.h"
+#include "all.h"
 
 static __inline__ int	add_list_strcmp (List *item1, List *item2)
 {

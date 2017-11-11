@@ -33,20 +33,7 @@
  * SUCH DAMAGE.
  */
 
-#include "irc.h"
-#include "ircaux.h"
-#include "clock.h"
-#include "hook.h"
-#include "vars.h"
-#include "server.h"
-#include "status.h"
-#include "screen.h"
-#include "termx.h"
-#include "timer.h"
-#include "input.h"
-#include "mail.h"
-#include "notify.h"
-#include "output.h"
+#include "all.h"
 
 /************************************************************************/
 /*			SYSTEM CLOCK					*/

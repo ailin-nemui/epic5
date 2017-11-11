@@ -30,18 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
-#include "irc.h"
-#include "mail.h"
-#include "lastlog.h"
-#include "hook.h"
-#include "vars.h"
-#include "ircaux.h"
-#include "output.h"
-#include "clock.h"
-#include "timer.h"
-#include "window.h"
-#include "input.h"
+#include "all.h"
 #ifndef _POSIX_SOURCE
 # define _POSIX_SOURCE
 #endif

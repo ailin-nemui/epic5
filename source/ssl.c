@@ -33,11 +33,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
-#include "irc.h"
-#include "ircaux.h"
-#include "ssl.h"
-#include "vars.h"
+#include "all.h"
 
 #ifdef HAVE_SSL
 

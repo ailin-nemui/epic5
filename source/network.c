@@ -29,12 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
-#include "irc.h"
-#include "ircaux.h"
-#include "vars.h"
-#include "newio.h"
-#include "output.h"
+#include "all.h"
 #include <sys/ioctl.h>
 
 /* This will eventually become a configurable */

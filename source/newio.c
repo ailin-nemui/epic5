@@ -32,13 +32,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
-#include "irc.h"
-#include "ircaux.h"
-#include "output.h"
-#include "newio.h"
-#include "ssl.h"
-#include "timer.h"
+#include "all.h"
 #ifdef USE_PTHREAD
 #include <pthread.h>
 #endif
@@ -75,7 +69,7 @@ typedef	struct	myio_struct
 		held;
 	void	(*callback) (int vfd);
 	int	(*io_callback) (int vfd, int quiet);
-	int	(*failure_callback) (int channel, int error);
+	void	(*failure_callback) (int channel, int error);
 	int	quiet;
 	int	server;			/* For message routing */
 }           MyIO;

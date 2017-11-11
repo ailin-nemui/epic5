@@ -32,19 +32,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
-#include "irc.h"
-#include "ircaux.h"
-#include "alist.h"
-#include "names.h"
-#include "output.h"
-#include "screen.h"
-#include "window.h"
-#include "vars.h"
-#include "server.h"
-#include "list.h"
-#include "hook.h"
-#include "parse.h"
+#include "all.h"
 
 typedef struct nick_stru
 {

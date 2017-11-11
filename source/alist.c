@@ -42,10 +42,7 @@
 
 #define __need_cs_alist_hash__
 #define __need_ci_alist_hash__
-#include "irc.h"
-#include "alist.h"
-#include "ircaux.h"
-#include "output.h"
+#include "all.h"
 
 u_32int_t	bin_ints;
 u_32int_t	lin_ints;

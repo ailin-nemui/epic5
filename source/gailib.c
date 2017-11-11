@@ -26,9 +26,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#include "irc_std.h"
-#include "gailib.h"
-#include "compat.h"
+#include "all.h"
 
 #undef INET6
 #ifndef INET6

@@ -40,21 +40,7 @@
  */
 
 #define NEED_SERVER_LIST
-#include "irc.h"
-#include "alist.h"
-#include "notify.h"
-#include "ircaux.h"
-#include "hook.h"
-#include "ssl.h"
-#include "server.h"
-#include "output.h"
-#include "parse.h"
-#include "vars.h"
-#include "who.h"
-#include "clock.h"
-#include "timer.h"
-#include "window.h"
-#include "input.h"
+#include "all.h"
 
 void 	batch_notify_userhost		(const char *nick);
 void 	dispatch_notify_userhosts	(int);

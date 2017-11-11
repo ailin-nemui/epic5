@@ -4,6 +4,9 @@
  * author: oz@nexus.yorku.ca
  * status: public domain. 
  */
+#ifndef HAVE_SDBM
+#define HAVE_SDBM
+
 struct SDBM;
 typedef struct SDBM SDBM;
 
@@ -30,3 +33,4 @@ extern Datum 	sdbm_firstkey (SDBM *);
 extern Datum 	sdbm_nextkey (SDBM *);
 extern int	sdbm_error (SDBM *);
 
+#endif

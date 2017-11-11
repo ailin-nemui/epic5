@@ -43,22 +43,7 @@
  */
 
 #define __need_term_flush__
-#include "irc.h"
-#include "alias.h"
-#include "clock.h"
-#include "commands.h"
-#include "exec.h"
-#include "hook.h"
-#include "input.h"
-#include "ircaux.h"
-#include "keys.h"
-#include "screen.h"
-#include "server.h"
-#include "status.h"
-#include "termx.h"
-#include "vars.h"
-#include "window.h"
-#include "output.h"
+#include "all.h"
 #include <sys/ioctl.h>		/* XXX ugh */
 
 /* used with input_move_cursor */

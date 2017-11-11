@@ -39,27 +39,7 @@
  */
 
 #define __need_putchar_x__
-#include "irc.h"
-#include "alias.h"
-#include "clock.h"
-#include "exec.h"
-#include "screen.h"
-#include "window.h"
-#include "output.h"
-#include "vars.h"
-#include "server.h"
-#include "list.h"
-#include "termx.h"
-#include "names.h"
-#include "ircaux.h"
-#include "input.h"
-#include "log.h"
-#include "hook.h"
-#include "dcc.h"
-#include "status.h"
-#include "commands.h"
-#include "parse.h"
-#include "newio.h"
+#include "all.h"
 #include <sys/ioctl.h>
 
 #define CURRENT_WSERV_VERSION	4

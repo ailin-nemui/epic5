@@ -30,12 +30,7 @@
  * SUCH DAMAGE.
  */
 
-#include "irc.h"
-#include "ircaux.h"
-#include "files.h"
-#include "window.h"
-#include "output.h"
-#include "elf.h"
+#include "all.h"
 
 /* 
  * Here's the plan...

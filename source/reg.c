@@ -49,10 +49,7 @@
  * It's a lot more complicated, but it's also a lot faster.  (jfn)
  */
 
-#include "irc.h"
-#include "ircaux.h"
-#include "output.h"
-#include "reg.h"
+#include "all.h"
 
 static	int	total_explicit;
 

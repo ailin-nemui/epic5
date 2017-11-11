@@ -33,23 +33,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
-#include "irc.h"
-#include "output.h"
-#include "vars.h"
-#include "input.h"
-#include "termx.h"
-#include "lastlog.h"
-#include "window.h"
-#include "screen.h"
-#include "hook.h"
-#include "ctcp.h"
-#include "log.h"
-#include "ircaux.h"
-#include "alias.h"
-#include "commands.h"
-#include "server.h"
-#include "levels.h"
+#include "all.h"
 
 /* make this buffer *much* bigger than needed */
 #define OBNOXIOUS_BUFFER_SIZE BIG_BUFFER_SIZE * 10

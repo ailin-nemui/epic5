@@ -63,9 +63,7 @@
  * Any changes I made are donated to the public domain.
  */
 
-#include "irc.h"
-#include "ircaux.h"
-#include "output.h"
+#include "all.h"
 
 struct interval {
   int first;

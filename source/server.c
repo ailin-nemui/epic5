@@ -34,27 +34,7 @@
  */
 
 #define NEED_SERVER_LIST
-#include "irc.h"
-#include "commands.h"
-#include "functions.h"
-#include "alias.h"
-#include "parse.h"
-#include "ssl.h"
-#include "server.h"
-#include "ircaux.h"
-#include "lastlog.h"
-#include "exec.h"
-#include "window.h"
-#include "output.h"
-#include "names.h"
-#include "hook.h"
-#include "notify.h"
-#include "alist.h"
-#include "screen.h"
-#include "status.h"
-#include "vars.h"
-#include "newio.h"
-#include "reg.h"
+#include "all.h"
 
 /************************ SERVERLIST STUFF ***************************/
 

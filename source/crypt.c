@@ -30,15 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#include "irc.h"
-#include "sedcrypt.h"
-#include "ctcp.h"
-#include "ircaux.h"
-#include "list.h"
-#include "output.h"
-#include "vars.h"
-#include "words.h"
-#include "server.h"
+#include "all.h"
 
 /*
  * Here's the plan

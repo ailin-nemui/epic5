@@ -31,25 +31,7 @@
  */
 
 #define NEED_SERVER_LIST
-#include "irc.h"
-#include "commands.h"
-#include "ircaux.h"
-#include "who.h"
-#include "ssl.h"
-#include "server.h"
-#include "window.h"
-#include "vars.h"
-#include "hook.h"
-#include "output.h"
-#include "numbers.h"
-#include "parse.h"
-#include "ifcmd.h"
-#include "names.h"
-#include "words.h"
-#include "reg.h"
-#include "log.h"
-#include "timer.h"
-#include "alias.h"
+#include "all.h"
 
 /* XXXX - only debugging stuff for adm.  Remove later */
 static	FILE *	who_log = NULL;

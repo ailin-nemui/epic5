@@ -75,8 +75,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "irc.h"
-#include "compat.h"
+#include "all.h"
 #ifndef PATH_MAX
 # ifndef MAXPATHLEN
 #  ifndef PATHSIZE

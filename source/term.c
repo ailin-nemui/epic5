@@ -39,14 +39,7 @@
  */
 #define __need_putchar_x__
 #define __need_term_flush__
-#include "irc.h"
-#include "ircaux.h"
-#include "vars.h"
-#include "termx.h"
-#include "window.h"
-#include "screen.h"
-#include "output.h"
-#include "newio.h"
+#include "all.h"
 
 /*
  * If "HAVE_TERMINFO" is #define'd then we will use terminfo type function

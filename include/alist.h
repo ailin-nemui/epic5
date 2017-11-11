@@ -8,7 +8,6 @@
 #include "irc.h"
 #include "ircaux.h"
 
-#ifdef __need_cs_alist_hash__
 /* 
  * This hash routine is for case sensitive keys.  Specifically keys that
  * have been prefolded to an apppropriate case.
@@ -33,9 +32,7 @@ static __inline u_32int_t  cs_alist_hash (const char *s, u_32int_t *mask)
 		*mask = 0;
 	return x;
 }
-#endif
 
-#ifdef __need_ci_alist_hash__
 extern unsigned char *stricmp_tables[2];
 /*
  * This hash routine is for case insensitive keys.  Specifically keys that
@@ -66,7 +63,6 @@ static __inline u_32int_t  ci_alist_hash (const char *s, u_32int_t *mask)
 
 	return x;
 }
-#endif
 
 /*
  * Everything that is to be filed with this system should have an

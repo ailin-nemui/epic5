@@ -34,8 +34,7 @@
  * in the unix environment' -mrg
  */
 
-#include "irc.h"
-#include "irc_std.h"
+#include "all.h"
 
 int	block_signal (int sig_no)
 {

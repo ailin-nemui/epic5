@@ -33,18 +33,8 @@
  * SUCH DAMAGE.
  */
 
-#include "irc.h"
-#include "hook.h"
-#include "ircaux.h"
 #define __need_ArgList_t__
-#include "alias.h"
-#include "window.h"
-#include "output.h"
-#include "commands.h"
-#include "ifcmd.h"
-#include "stack.h"
-#include "reg.h"
-#include "functions.h"
+#include "all.h"
 
 /*
  * The various ON levels: SILENT means the DISPLAY will be OFF and it will
@@ -262,8 +252,8 @@ static	int 			default_noise;
 static	const char *		current_implied_on_hook = NULL;
 
 extern char *	    function_cparse	(char *);
-static void 	    add_to_list 	(Hook **list, Hook *item);
-static Hook *	    remove_from_list 	(Hook **list, char *item, int sernum);
+static void 	    hook_add_to_list 	(Hook **list, Hook *item);
+static Hook *	    hook_remove_from_list 	(Hook **list, char *item, int sernum);
 
 static void	initialize_hook_functions (void)
 {
@@ -464,7 +454,7 @@ static int	add_hook (int which, char *nick, ArgList *arglist, char *stuff, int n
 {
 	Hook	*new_h;
 	
-	if (!(new_h = remove_from_list(&hook_functions[which].list, nick, sernum)))
+	if (!(new_h = hook_remove_from_list(&hook_functions[which].list, nick, sernum)))
 	{
 		new_h = (Hook *)new_malloc(sizeof(Hook));
 		new_h->nick = NULL;
@@ -491,7 +481,7 @@ static int	add_hook (int which, char *nick, ArgList *arglist, char *stuff, int n
 	upper(new_h->nick);
 
 	hooklist[new_h->userial] = new_h;
-	add_to_list(&hook_functions[which].list, new_h);
+	hook_add_to_list(&hook_functions[which].list, new_h);
 
 	last_created_hook = new_h->userial;
 
@@ -511,7 +501,7 @@ static void remove_hook (int which, char *nick, int sernum, int quiet)
 
 	if (nick)
 	{
-		if ((tmp = remove_from_list(&hook_functions[which].list, nick, sernum)))
+		if ((tmp = hook_remove_from_list(&hook_functions[which].list, nick, sernum)))
 		{
 			if (!quiet)
 				say("%c%s%c removed from %s list", 
@@ -1517,7 +1507,7 @@ void	do_stack_on (int type, char *args)
 
 
 /* List manips especially for on's. */
-static void 	add_to_list (Hook **list, Hook *item)
+static void 	hook_add_to_list (Hook **list, Hook *item)
 {
 	Hook *tmp, *last = NULL;
 
@@ -1544,7 +1534,7 @@ static void 	add_to_list (Hook **list, Hook *item)
 }
 
 
-static Hook *remove_from_list (Hook **list, char *item, int sernum)
+static Hook *hook_remove_from_list (Hook **list, char *item, int sernum)
 {
 	Hook *tmp, *last = NULL;
 
@@ -2293,14 +2283,14 @@ char *hookctl (char *input)
 						RETURN_INT(0);
 					}
 				}
-				remove_from_list(
+				hook_remove_from_list(
 					&hook_functions[hook->type].list,
 					hook->nick,
 					hook->sernum
 				);
 				new_free(&hook->nick);
 				hook->nick = str;
-				add_to_list(
+				hook_add_to_list(
 					&hook_functions[hook->type].list,
 					hook
 				);
@@ -2360,14 +2350,14 @@ char *hookctl (char *input)
 					)
 						RETURN_INT(0);
 				}
-				remove_from_list(
+				hook_remove_from_list(
 					&hook_functions[hook->type].list,
 					hook->nick,
 					hook->sernum
 				);
 				
 				hook->sernum = tmp_int;
-				add_to_list(
+				hook_add_to_list(
 					&hook_functions[hook->type].list,
 					hook
 				);

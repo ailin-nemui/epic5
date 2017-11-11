@@ -30,25 +30,7 @@
  * SUCH DAMAGE.
  */
 
-#include "irc.h"
-#include "config.h"
-#include "commands.h"
-#include "functions.h"
-#include "hook.h"
-#include "ircaux.h"
-#include "input.h"
-#include "keys.h"
-#include "list.h"
-#include "names.h"
-#include "output.h"
-#include "screen.h"
-#include "stack.h"
-#include "termx.h"
-#include "vars.h"
-#include "window.h"
-#include "timer.h"
-#include "reg.h"
-#include "server.h"
+#include "all.h"
 
 /* 
  * This typedef must match the definition of "BUILT_IN_KEYBINDING" 

@@ -32,15 +32,7 @@
 /* Python commit #14 */
 
 #include <Python.h>
-#include "irc.h"
-#include "ircaux.h"
-#include "array.h"
-#include "alias.h"
-#include "commands.h"
-#include "functions.h"
-#include "output.h"
-#include "ifcmd.h"
-#include "extlang.h"
+#include "all.h"
 
 void	output_traceback (void);
 

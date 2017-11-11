@@ -34,8 +34,9 @@
  * SUCH DAMAGE.
  */
 
-#include "irc.h"
-#include "screen.h"
+#include "all.h"
+
+/* These should move to irc_std.h. */
 #include <pwd.h>
 #include <sys/wait.h>
 #include <math.h>
@@ -44,17 +45,6 @@
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
 #endif
-#include "ircaux.h"
-#include "output.h"
-#include "termx.h"
-#include "vars.h"
-#include "alias.h"
-#include "ifcmd.h"
-#include "words.h"
-#include "ctcp.h"
-#include "server.h"
-#include "sedcrypt.h"
-#include "elf.h"
 
 /*
  * This is the basic overhead for every malloc allocation (8 bytes).

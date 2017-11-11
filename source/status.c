@@ -33,26 +33,8 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
 #define __need_putchar_x__
-#include "irc.h"
-#include "dcc.h"
-#include "termx.h"
-#include "status.h"
-#include "server.h"
-#include "vars.h"
-#include "hook.h"
-#include "input.h"
-#include "commands.h"
-#include "window.h"
-#include "screen.h"
-#include "mail.h"
-#include "output.h"
-#include "names.h"
-#include "ircaux.h"
-#include "alias.h"
-#include "clock.h"
-#include "functions.h"
+#include "all.h"
 
 #ifdef Char
 #undef Char

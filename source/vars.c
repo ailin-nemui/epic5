@@ -34,32 +34,7 @@
  */
 
 #define VARS_C
-
-#include "irc.h"
-#include "alist.h"
-#include "alias.h"
-#include "status.h"
-#include "window.h"
-#include "lastlog.h"
-#include "log.h"
-#include "hook.h"
-#include "sedcrypt.h"
-#include "notify.h"
-#include "vars.h"
-#include "input.h"
-#include "ircaux.h"
-#include "termx.h"
-#include "output.h"
-#include "stack.h"
-#include "dcc.h"
-#include "keys.h"
-#include "timer.h"
-#include "clock.h"
-#include "mail.h"
-#include "reg.h"
-#include "commands.h"
-#include "ifcmd.h"
-#include "ssl.h"
+#include "all.h"
 
 /*
  * The VIF_* macros stand for "(V)ariable.(i)nt_(f)lags", and have been

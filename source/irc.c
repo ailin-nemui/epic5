@@ -33,8 +33,9 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#include "irc.h"
-
+#define __need_putchar_x__
+#include "all.h"
+#include <pwd.h>
 
 /*
  * irc_version is what $J returns, its the common-name for the version.
@@ -61,35 +62,6 @@ const unsigned long	commit_id = 1884;
  */
 const char ridiculous_version_name[] = "Indolence";
 
-#define __need_putchar_x__
-#include "status.h"
-#include "clock.h"
-#include "dcc.h"
-#include "names.h"
-#include "vars.h"
-#include "input.h"
-#include "alias.h"
-#include "output.h"
-#include "termx.h"
-#include "exec.h"
-#include "screen.h"
-#include "log.h"
-#include "server.h"
-#include "hook.h"
-#include "keys.h"
-#include "ircaux.h"
-#include "commands.h"
-#include "window.h"
-#include "exec.h"
-#include "notify.h"
-#include "mail.h"
-#include "timer.h"
-#include "newio.h"
-#include "parse.h"
-#include "levels.h"
-#include "extlang.h"
-#include "files.h"
-#include <pwd.h>
 #ifdef NEWLOCALE_REQUIRES__GNU_SOURCE
 #define _GNU_SOURCE
 #endif

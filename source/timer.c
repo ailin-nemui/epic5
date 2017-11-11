@@ -38,17 +38,7 @@
  * any function to be called, so i pulled it all together into
  * this file and called it timer.c
  */
-
-#include "irc.h"
-#include "ircaux.h"
-#include "window.h"
-#include "timer.h"
-#include "hook.h"
-#include "output.h"
-#include "commands.h"
-#include "server.h"
-#include "screen.h"
-#include "functions.h"
+#include "all.h"
 
 	int 	timer_exists (const char *ref);
 	int 	remove_timer (const char *ref);

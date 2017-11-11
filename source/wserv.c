@@ -40,9 +40,7 @@
 #define WSERV_C
 #define CURRENT_WSERV_VERSION 	4
 
-#include "defs.h"
-#include "config.h"
-#include "irc_std.h"
+#include "all.h"
 #include <sys/ioctl.h>
 #ifdef HAVE_TERMIOS_H
 # include <termios.h>
@@ -61,10 +59,8 @@ static	int	tty_des;
 static	struct termios	oldb, newb;
 
 static	void 	my_exit(int);
-static	void 	ignore (int);
+static	void 	wserv_ignore (int);
 static	void	sigwinch_func (int);
-static	int 	term_init (void);
-static	void 	term_resize (void);
 	void	yell (const char *format, ...);
 static	int	connectory (const char *, const char *);
 
@@ -80,7 +76,7 @@ int	main (int argc, char **argv)
 
 	my_signal(SIGHUP, SIG_IGN);
 	my_signal(SIGQUIT, SIG_IGN);
-	my_signal(SIGINT, ignore);
+	my_signal(SIGINT, wserv_ignore);
 	my_signal(SIGWINCH, sigwinch_func);
 
 	if (argc != 3)    		/* no socket is passed */
@@ -188,7 +184,7 @@ int	main (int argc, char **argv)
 	my_exit(8);
 }
 
-static void 	ignore (int value)
+static void 	wserv_ignore (int value)
 {
 	/* send a ^C */
 	char foo = 3;
@@ -246,7 +242,7 @@ static int	connectory (const char *host, const char *port)
  * term_init: does all terminal initialization... sets the terminal to 
  * CBREAK, no ECHO mode.    (Maybe should set RAW mode?)
  */
-static int 	term_init (void)
+int 	term_init (void)
 {
 	/* Set up the terminal discipline */
 	tty_des = 0;			/* Has to be. */
@@ -284,7 +280,7 @@ static int 	term_init (void)
  * from the tty driver about size, if it can't... it punts.  If the size
  * has changed, it tells the parent client about the change.
  */
-static void 	term_resize (void)
+int	term_resize (void)
 {
 	static	int	old_li = -1,
 			old_co = -1;
@@ -295,10 +291,10 @@ static void 	term_resize (void)
 #endif
 
 	if (ioctl(tty_des, TIOCGWINSZ, &window) < 0)
-		return;		/* *Shrug* What can we do? */
+		return -1;		/* *Shrug* What can we do? */
 
 	if (window.ws_row == 0 || window.ws_col == 0)
-		return;		/* Ugh.  Bummer. */
+		return -1;		/* Ugh.  Bummer. */
 
 	window.ws_col--;
 
@@ -314,6 +310,8 @@ static void 	term_resize (void)
 		if (!write(cmd, buffer, strlen(buffer))) 
 			(void) 0;
 	}
+
+	return 0;
 }
 
 void	yell (const char *format, ...)

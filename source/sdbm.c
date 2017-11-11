@@ -13,9 +13,7 @@
  *       perl and apache.  The files are probably not compatable with ndbm.
  */
 #include <fcntl.h>
-#include "irc.h"
-#include "ircaux.h"
-#include "sdbm.h"
+#include "all.h"
 
 #define DBLKSIZ 4096
 #define PBLKSIZ 1024

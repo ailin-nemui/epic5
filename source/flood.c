@@ -37,19 +37,7 @@
  * second, this is considered flooding.  It then activates the ON FLOOD with
  * the nickname and type (appropriate for use with IGNORE).
  */
-
-#include "irc.h"
-#include "flood.h"
-#include "hook.h"
-#include "ignore.h"
-#include "ircaux.h"
-#include "output.h"
-#include "server.h"
-#include "vars.h"
-#include "functions.h"
-#include "lastlog.h"
-#include "window.h"
-#include "reg.h"
+#include "all.h"
 
 typedef struct flood_stru
 {

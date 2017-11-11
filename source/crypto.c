@@ -148,14 +148,7 @@
  */
 
 
-#include "irc.h"
-#include "sedcrypt.h"
-#include "ctcp.h"
-#include "ircaux.h"
-#include "list.h"
-#include "output.h"
-#include "vars.h"
-#include "words.h"
+#include "all.h"
 #ifdef HAVE_SSL
 #include <openssl/evp.h>
 #include <openssl/err.h>

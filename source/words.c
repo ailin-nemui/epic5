@@ -32,11 +32,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
-#include "irc.h"
-#include "ircaux.h"
-#include "words.h"
-#include "output.h"
+#include "all.h"
 
 /* 
  * If "extended" is 1, then honor /xdebug extractw.

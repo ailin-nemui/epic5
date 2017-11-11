@@ -32,19 +32,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#include "irc.h"
-#include "levels.h"
-#include "lastlog.h"
-#include "window.h"
-#include "screen.h"
-#include "vars.h"
-#include "ircaux.h"
-#include "output.h"
-#include "numbers.h"
-#include "functions.h"
-#include "reg.h"
-#include "alias.h"
-#include "timer.h"
+#include "all.h"
 
 typedef struct	lastlog_stru
 {

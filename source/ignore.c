@@ -87,17 +87,7 @@
  * If an ignore does not declare a disposition for a level, it "passes" on 
  * that message and further ignore rules will be checked.
  */
-#include "irc.h"
-#include "ignore.h"
-#include "ircaux.h"
-#include "list.h"
-#include "vars.h"
-#include "output.h"
-#include "parse.h"
-#include "timer.h"
-#include "functions.h"
-#include "window.h"
-#include "reg.h"
+#include "all.h"
 
 #define IGNORE_REMOVE 	-1
 #define IGNORE_SUPPRESS  0

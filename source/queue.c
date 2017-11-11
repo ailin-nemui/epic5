@@ -36,13 +36,7 @@
  * SUCH DAMAGE.
  */
 
-#include "irc.h"
-#include "alias.h"
-#include "commands.h"
-#include "ifcmd.h"
-#include "ircaux.h"
-#include "queue.h"
-#include "output.h"
+#include "all.h"
 
 typedef struct  CmdListT {
         struct CmdListT *next;

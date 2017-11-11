@@ -34,16 +34,7 @@
 #include <perl.h>
 #include <XSUB.h>
 #define __no_timeval_stuff__
-#include "irc.h"
-#include "extlang.h"
-#include "ircaux.h"
-#include "array.h"
-#include "alias.h"
-#include "commands.h"
-#include "functions.h"
-#include "output.h"
-#include "ifcmd.h"
-#include "extlang.h"
+#include "all.h"
 
 int	isperlrunning=0, perlcalldepth=0;
 PerlInterpreter	*my_perl;

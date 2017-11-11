@@ -37,27 +37,7 @@
 
 /* Sigh */
 #define __need_putchar_x__
-
-#include "irc.h"
-#include "screen.h"
-#include "window.h"
-#include "vars.h"
-#include "server.h"
-#include "list.h"
-#include "termx.h"
-#include "names.h"
-#include "ircaux.h"
-#include "input.h"
-#include "status.h"
-#include "output.h"
-#include "log.h"
-#include "hook.h"
-#include "parse.h"
-#include "commands.h"
-#include "exec.h"
-#include "functions.h"
-#include "reg.h"
-#include "timer.h"
+#include "all.h"
 #include <math.h>
 
 static const char *onoff[] = { "OFF", "ON" };

@@ -32,15 +32,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
-#include "irc.h"
-#include "levels.h"
-#include "log.h"
-#include "vars.h"
-#include "output.h"
-#include "ircaux.h"
-#include "alias.h"
-#include "screen.h"
+#include "all.h"
 
 	FILE	*irclog_fp;
 	int	logfile_line_mangler;

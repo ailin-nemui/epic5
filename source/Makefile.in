@@ -97,495 +97,1352 @@ depend:
 	(cd ..;./config.status)
 
 # Dont even THINK of deleting this line
-alias.o: alias.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/alias.h ../include/ircaux.h ../include/compat.h \
-  ../include/network.h ../include/words.h ../include/vars.h \
-  ../include/alist.h ../include/irc.h ../include/array.h \
-  ../include/commands.h ../include/files.h ../include/hook.h \
-  ../include/input.h ../include/ircaux.h ../include/output.h \
-  ../include/screen.h ../include/window.h ../include/lastlog.h \
-  ../include/levels.h ../include/status.h ../include/tio.h \
-  ../include/stack.h ../include/status.h ../include/vars.h \
-  ../include/window.h ../include/keys.h ../include/functions.h \
-  ../include/words.h ../include/reg.h expr2.c expr.c
-alist.o: alist.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/alist.h ../include/irc.h ../include/ircaux.h \
-  ../include/compat.h ../include/network.h ../include/words.h \
-  ../include/ircaux.h ../include/output.h
-alloca.o: alloca.c
-array.o: array.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/array.h ../include/ircaux.h ../include/compat.h \
-  ../include/network.h ../include/words.h ../include/output.h \
-  ../include/functions.h ../include/words.h ../include/reg.h
-clock.o: clock.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/clock.h ../include/keys.h \
-  ../include/hook.h ../include/vars.h ../include/server.h \
-  ../include/who.h ../include/status.h ../include/screen.h \
-  ../include/window.h ../include/lastlog.h ../include/levels.h \
-  ../include/status.h ../include/tio.h ../include/termx.h \
-  ../include/screen.h ../include/timer.h ../include/input.h \
-  ../include/mail.h ../include/notify.h ../include/alist.h \
-  ../include/irc.h ../include/ircaux.h ../include/output.h
-commands.o: commands.c ../include/irc.h ../include/defs.h \
-  ../include/config.h ../include/irc_std.h \
-  ../include/debug.h ../include/alias.h ../include/ircaux.h \
-  ../include/compat.h ../include/network.h ../include/words.h \
-  ../include/vars.h ../include/alist.h ../include/irc.h \
-  ../include/sedcrypt.h ../include/ctcp.h ../include/dcc.h \
-  ../include/commands.h ../include/exec.h ../include/files.h \
-  ../include/hook.h ../include/server.h ../include/who.h \
-  ../include/ifcmd.h ../include/ignore.h ../include/levels.h \
-  ../include/input.h ../include/ircaux.h ../include/keys.h \
-  ../include/lastlog.h ../include/log.h ../include/names.h \
-  ../include/notify.h ../include/alist.h ../include/numbers.h \
-  ../include/output.h ../include/parse.h ../include/queue.h \
-  ../include/screen.h ../include/window.h ../include/lastlog.h \
-  ../include/status.h ../include/tio.h ../include/status.h \
-  ../include/stack.h ../include/termx.h ../include/screen.h \
-  ../include/timer.h ../include/vars.h ../include/window.h \
-  ../include/who.h ../include/newio.h ../include/words.h ../include/reg.h \
-  ../include/extlang.h ../include/elf.h debuglog.c
-compat.o: compat.c ../include/defs.h ../include/irc_std.h \
-  ../include/defs.h ../include/ircaux.h \
-  ../include/compat.h ../include/network.h ../include/words.h
-crypt.o: crypt.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/sedcrypt.h ../include/ctcp.h ../include/ircaux.h \
-  ../include/compat.h ../include/network.h ../include/words.h \
-  ../include/list.h ../include/output.h ../include/vars.h \
-  ../include/words.h ../include/server.h ../include/who.h
-crypto.o: crypto.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/sedcrypt.h ../include/ctcp.h ../include/ircaux.h \
-  ../include/compat.h ../include/network.h ../include/words.h \
-  ../include/list.h ../include/output.h ../include/vars.h \
-  ../include/words.h
-ctcp.o: ctcp.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/sedcrypt.h ../include/ctcp.h ../include/dcc.h \
-  ../include/commands.h ../include/hook.h ../include/ignore.h \
-  ../include/levels.h ../include/ircaux.h ../include/compat.h \
-  ../include/network.h ../include/words.h ../include/lastlog.h \
-  ../include/names.h ../include/output.h ../include/parse.h \
-  ../include/server.h ../include/who.h ../include/status.h \
-  ../include/vars.h ../include/window.h ../include/lastlog.h \
-  ../include/status.h ../include/ifcmd.h ../include/flood.h \
-  ../include/words.h
-dcc.o: dcc.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/sedcrypt.h ../include/ctcp.h ../include/dcc.h \
-  ../include/functions.h ../include/hook.h ../include/ircaux.h \
-  ../include/compat.h ../include/network.h ../include/words.h \
-  ../include/lastlog.h ../include/levels.h ../include/newio.h \
-  ../include/output.h ../include/parse.h ../include/server.h \
-  ../include/who.h ../include/status.h ../include/vars.h \
-  ../include/window.h ../include/lastlog.h ../include/status.h \
-  ../include/termx.h ../include/screen.h ../include/window.h \
-  ../include/tio.h ../include/reg.h ../include/alias.h \
-  ../include/ircaux.h ../include/vars.h ../include/timer.h
-debug.o: debug.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/output.h ../include/reg.h \
-  ../include/commands.h
-elf.o: elf.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/elf.h ../include/irc.h \
-  ../include/output.h
-exec.o: exec.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/dcc.h ../include/exec.h ../include/vars.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/commands.h ../include/window.h \
-  ../include/lastlog.h ../include/levels.h ../include/status.h \
-  ../include/screen.h ../include/window.h ../include/tio.h \
-  ../include/hook.h ../include/input.h ../include/list.h \
-  ../include/server.h ../include/who.h ../include/output.h \
-  ../include/parse.h ../include/newio.h ../include/ifcmd.h
-files.o: files.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/files.h ../include/window.h \
-  ../include/lastlog.h ../include/levels.h ../include/status.h \
-  ../include/output.h ../include/elf.h ../include/irc.h \
-  ../include/functions.h ../include/sdbm.h
-flood.o: flood.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/flood.h ../include/levels.h ../include/hook.h \
-  ../include/ignore.h ../include/ircaux.h ../include/compat.h \
-  ../include/network.h ../include/words.h ../include/output.h \
-  ../include/server.h ../include/who.h ../include/vars.h \
-  ../include/functions.h ../include/lastlog.h ../include/window.h \
-  ../include/lastlog.h ../include/status.h ../include/reg.h
-functions.o: functions.c ../include/irc.h ../include/defs.h \
-  ../include/config.h ../include/irc_std.h \
-  ../include/debug.h ../include/alias.h ../include/ircaux.h \
-  ../include/compat.h ../include/network.h ../include/words.h \
-  ../include/vars.h ../include/alist.h ../include/irc.h \
-  ../include/array.h ../include/clock.h ../include/keys.h \
-  ../include/dcc.h ../include/debug.h ../include/commands.h \
-  ../include/files.h ../include/flood.h ../include/levels.h \
-  ../include/ignore.h ../include/input.h ../include/ircaux.h \
-  ../include/keys.h ../include/log.h ../include/names.h \
-  ../include/output.h ../include/parse.h ../include/screen.h \
-  ../include/window.h ../include/lastlog.h ../include/status.h \
-  ../include/tio.h ../include/server.h ../include/who.h \
-  ../include/status.h ../include/vars.h ../include/window.h \
-  ../include/termx.h ../include/screen.h ../include/notify.h \
-  ../include/alist.h ../include/numbers.h ../include/sedcrypt.h \
-  ../include/timer.h ../include/functions.h ../include/options.h \
-  ../include/words.h ../include/reg.h ../include/ifcmd.h ../include/ssl.h \
-  ../include/levels.h ../include/extlang.h ../include/ctcp.h \
-  ../include/glob.h ../include/hook.h
-gailib.o: gailib.c ../include/irc_std.h ../include/defs.h \
-  ../include/gailib.h ../include/compat.h
-glob.o: glob.c ../include/config.h ../include/glob.h ../include/irc.h \
-  ../include/defs.h ../include/config.h ../include/irc_std.h \
-  ../include/debug.h ../include/compat.h
-hook.o: hook.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/hook.h ../include/ircaux.h ../include/compat.h \
-  ../include/network.h ../include/words.h ../include/alias.h \
-  ../include/ircaux.h ../include/vars.h ../include/window.h \
-  ../include/lastlog.h ../include/levels.h ../include/status.h \
-  ../include/output.h ../include/commands.h ../include/ifcmd.h \
-  ../include/stack.h ../include/reg.h ../include/functions.h
-if.o: if.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/alias.h ../include/ircaux.h ../include/compat.h \
-  ../include/network.h ../include/words.h ../include/vars.h \
-  ../include/ifcmd.h ../include/ircaux.h ../include/output.h \
-  ../include/parse.h ../include/vars.h ../include/commands.h \
-  ../include/window.h ../include/lastlog.h ../include/levels.h \
-  ../include/status.h ../include/reg.h
-ignore.o: ignore.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/ignore.h ../include/levels.h ../include/ircaux.h \
-  ../include/compat.h ../include/network.h ../include/words.h \
-  ../include/list.h ../include/vars.h ../include/output.h \
-  ../include/parse.h ../include/timer.h ../include/functions.h \
-  ../include/window.h ../include/lastlog.h ../include/status.h \
-  ../include/reg.h
-input.o: input.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/alias.h ../include/ircaux.h ../include/compat.h \
-  ../include/network.h ../include/words.h ../include/vars.h \
-  ../include/clock.h ../include/keys.h ../include/commands.h \
-  ../include/exec.h ../include/hook.h ../include/input.h \
-  ../include/ircaux.h ../include/keys.h ../include/screen.h \
-  ../include/window.h ../include/lastlog.h ../include/levels.h \
-  ../include/status.h ../include/tio.h ../include/server.h \
-  ../include/who.h ../include/status.h ../include/termx.h \
-  ../include/screen.h ../include/vars.h ../include/window.h \
-  ../include/output.h
-irc.o: irc.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/status.h ../include/clock.h ../include/keys.h \
-  ../include/dcc.h ../include/names.h ../include/vars.h \
-  ../include/input.h ../include/alias.h ../include/ircaux.h \
-  ../include/compat.h ../include/network.h ../include/words.h \
-  ../include/vars.h ../include/output.h ../include/termx.h \
-  ../include/screen.h ../include/window.h ../include/lastlog.h \
-  ../include/levels.h ../include/status.h ../include/tio.h \
-  ../include/exec.h ../include/screen.h ../include/log.h \
-  ../include/server.h ../include/who.h ../include/hook.h \
-  ../include/keys.h ../include/ircaux.h ../include/commands.h \
-  ../include/window.h ../include/notify.h ../include/alist.h \
-  ../include/irc.h ../include/mail.h ../include/timer.h \
-  ../include/newio.h ../include/parse.h ../include/levels.h \
-  ../include/extlang.h ../include/files.h
-ircaux.o: ircaux.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/screen.h ../include/window.h ../include/lastlog.h \
-  ../include/levels.h ../include/status.h ../include/tio.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/output.h ../include/termx.h \
-  ../include/screen.h ../include/vars.h ../include/alias.h \
-  ../include/ircaux.h ../include/vars.h ../include/ifcmd.h \
-  ../include/words.h ../include/ctcp.h ../include/server.h \
-  ../include/who.h ../include/sedcrypt.h ../include/elf.h \
-  ../include/irc.h 
-ircsig.o: ircsig.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/irc_std.h
-keys.o: keys.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/config.h ../include/commands.h ../include/functions.h \
-  ../include/hook.h ../include/ircaux.h ../include/compat.h \
-  ../include/network.h ../include/words.h ../include/input.h \
-  ../include/keys.h ../include/list.h ../include/names.h \
-  ../include/output.h ../include/screen.h ../include/window.h \
-  ../include/lastlog.h ../include/levels.h ../include/status.h \
-  ../include/tio.h ../include/stack.h ../include/termx.h \
-  ../include/screen.h ../include/vars.h ../include/window.h \
-  ../include/timer.h ../include/reg.h ../include/server.h \
-  ../include/who.h
-lastlog.o: lastlog.c ../include/irc.h ../include/defs.h \
-  ../include/config.h ../include/irc_std.h \
-  ../include/debug.h ../include/levels.h ../include/lastlog.h \
-  ../include/levels.h ../include/window.h ../include/lastlog.h \
-  ../include/status.h ../include/screen.h ../include/window.h \
-  ../include/tio.h ../include/vars.h ../include/ircaux.h \
-  ../include/compat.h ../include/network.h ../include/words.h \
-  ../include/output.h ../include/numbers.h ../include/functions.h \
-  ../include/reg.h ../include/alias.h ../include/ircaux.h \
-  ../include/vars.h ../include/timer.h
-levels.o: levels.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/levels.h ../include/ircaux.h ../include/compat.h \
-  ../include/network.h ../include/words.h ../include/functions.h \
-  ../include/output.h
-list.o: list.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/list.h ../include/ircaux.h ../include/compat.h \
-  ../include/network.h ../include/words.h ../include/reg.h
-log.o: log.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/levels.h ../include/log.h ../include/vars.h \
-  ../include/output.h ../include/ircaux.h ../include/compat.h \
-  ../include/network.h ../include/words.h ../include/alias.h \
-  ../include/ircaux.h ../include/vars.h ../include/screen.h \
-  ../include/window.h ../include/lastlog.h ../include/levels.h \
-  ../include/status.h ../include/tio.h
-logfiles.o: logfiles.c ../include/irc.h ../include/defs.h \
-  ../include/config.h ../include/irc_std.h \
-  ../include/debug.h ../include/levels.h ../include/log.h \
-  ../include/vars.h ../include/output.h ../include/ircaux.h \
-  ../include/compat.h ../include/network.h ../include/words.h \
-  ../include/alias.h ../include/ircaux.h ../include/vars.h \
-  ../include/list.h ../include/server.h ../include/who.h \
-  ../include/window.h ../include/lastlog.h ../include/levels.h \
-  ../include/status.h ../include/functions.h
-mail.o: mail.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/mail.h ../include/lastlog.h ../include/levels.h \
-  ../include/hook.h ../include/vars.h ../include/ircaux.h \
-  ../include/compat.h ../include/network.h ../include/words.h \
-  ../include/output.h ../include/clock.h ../include/keys.h \
-  ../include/timer.h ../include/window.h ../include/lastlog.h \
-  ../include/status.h ../include/input.h
-names.o: names.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/alist.h ../include/irc.h \
-  ../include/ircaux.h ../include/names.h ../include/output.h \
-  ../include/screen.h ../include/window.h ../include/lastlog.h \
-  ../include/levels.h ../include/status.h ../include/tio.h \
-  ../include/window.h ../include/vars.h ../include/server.h \
-  ../include/who.h ../include/list.h ../include/hook.h ../include/parse.h
-network.o: network.c ../include/irc.h ../include/defs.h \
-  ../include/config.h ../include/irc_std.h \
+alias.o: alias.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
   ../include/debug.h ../include/ircaux.h ../include/compat.h \
-  ../include/network.h ../include/words.h ../include/vars.h \
-  ../include/newio.h ../include/output.h
-newio.o: newio.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/output.h ../include/newio.h \
-  ../include/ssl.h ../include/timer.h
-notify.o: notify.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/alist.h ../include/irc.h ../include/ircaux.h \
-  ../include/compat.h ../include/network.h ../include/words.h \
-  ../include/notify.h ../include/alist.h ../include/ircaux.h \
-  ../include/hook.h ../include/ssl.h ../include/server.h ../include/who.h \
-  ../include/notify.h ../include/output.h ../include/parse.h \
-  ../include/vars.h ../include/who.h ../include/clock.h ../include/keys.h \
-  ../include/timer.h ../include/window.h ../include/lastlog.h \
-  ../include/levels.h ../include/status.h ../include/input.h
-numbers.o: numbers.c ../include/irc.h ../include/defs.h \
-  ../include/config.h ../include/irc_std.h \
-  ../include/debug.h ../include/input.h ../include/ircaux.h \
-  ../include/compat.h ../include/network.h ../include/words.h \
-  ../include/vars.h ../include/lastlog.h ../include/levels.h \
-  ../include/hook.h ../include/server.h ../include/who.h \
-  ../include/numbers.h ../include/window.h ../include/lastlog.h \
-  ../include/status.h ../include/screen.h ../include/window.h \
-  ../include/tio.h ../include/output.h ../include/names.h \
-  ../include/parse.h ../include/commands.h ../include/notify.h \
-  ../include/alist.h ../include/irc.h ../include/ircaux.h \
-  ../include/who.h ../include/alias.h ../include/vars.h ../include/reg.h
-output.o: output.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/output.h ../include/vars.h ../include/input.h \
-  ../include/termx.h ../include/screen.h ../include/window.h \
-  ../include/lastlog.h ../include/levels.h ../include/status.h \
-  ../include/tio.h ../include/lastlog.h ../include/window.h \
-  ../include/screen.h ../include/hook.h ../include/ctcp.h \
-  ../include/log.h ../include/ircaux.h ../include/compat.h \
   ../include/network.h ../include/words.h ../include/alias.h \
-  ../include/ircaux.h ../include/vars.h ../include/commands.h \
-  ../include/server.h ../include/who.h ../include/levels.h
-parse.o: parse.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/server.h ../include/who.h ../include/names.h \
-  ../include/vars.h ../include/ctcp.h ../include/hook.h \
-  ../include/commands.h ../include/ignore.h ../include/levels.h \
-  ../include/lastlog.h ../include/ircaux.h ../include/compat.h \
-  ../include/network.h ../include/words.h ../include/sedcrypt.h \
-  ../include/termx.h ../include/screen.h ../include/window.h \
-  ../include/lastlog.h ../include/status.h ../include/tio.h \
-  ../include/flood.h ../include/window.h ../include/screen.h \
-  ../include/output.h ../include/numbers.h ../include/parse.h \
-  ../include/notify.h ../include/alist.h ../include/irc.h \
-  ../include/ircaux.h ../include/timer.h
-perl.o: perl.c ../include/irc.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h expr2.c expr.c
+alist.o: alist.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+alloca.o: alloca.c
+array.o: array.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+cJSON.o: cJSON.c ../include/cJSON.h
+clock.o: clock.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+commands.o: commands.c ../include/all.h ../include/irc.h \
   ../include/defs.h ../include/config.h ../include/irc_std.h \
-  ../include/debug.h ../include/extlang.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/array.h ../include/alias.h \
-  ../include/ircaux.h ../include/vars.h ../include/commands.h \
-  ../include/functions.h ../include/output.h ../include/ifcmd.h
-queue.o: queue.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/alias.h ../include/ircaux.h ../include/compat.h \
-  ../include/network.h ../include/words.h ../include/vars.h \
-  ../include/commands.h ../include/ifcmd.h ../include/ircaux.h \
-  ../include/queue.h ../include/output.h
-recode.o: recode.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/functions.h ../include/ircaux.h ../include/compat.h \
-  ../include/network.h ../include/words.h ../include/output.h \
-  ../include/parse.h ../include/server.h ../include/who.h \
-  ../include/notify.h ../include/alist.h ../include/irc.h \
-  ../include/ircaux.h
-reg.o: reg.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/output.h ../include/reg.h
-ruby.o: ruby.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/array.h ../include/alias.h \
-  ../include/ircaux.h ../include/vars.h ../include/commands.h \
-  ../include/functions.h ../include/output.h ../include/ifcmd.h \
-  ../include/extlang.h
-screen.o: screen.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/alias.h ../include/ircaux.h ../include/compat.h \
-  ../include/network.h ../include/words.h ../include/vars.h \
-  ../include/clock.h ../include/keys.h ../include/exec.h \
-  ../include/screen.h ../include/window.h ../include/lastlog.h \
-  ../include/levels.h ../include/status.h ../include/tio.h \
-  ../include/window.h ../include/output.h ../include/vars.h \
-  ../include/server.h ../include/who.h ../include/list.h \
-  ../include/termx.h ../include/screen.h ../include/names.h \
-  ../include/ircaux.h ../include/input.h ../include/log.h \
-  ../include/hook.h ../include/dcc.h ../include/status.h \
-  ../include/commands.h ../include/parse.h ../include/newio.h
-sdbm.o: sdbm.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/sdbm.h
-server.o: server.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/commands.h ../include/functions.h ../include/alias.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/vars.h ../include/parse.h \
-  ../include/ssl.h ../include/server.h ../include/who.h \
-  ../include/notify.h ../include/alist.h ../include/irc.h \
-  ../include/ircaux.h ../include/lastlog.h ../include/levels.h \
-  ../include/exec.h ../include/window.h ../include/lastlog.h \
-  ../include/status.h ../include/output.h ../include/names.h \
-  ../include/hook.h ../include/notify.h ../include/alist.h \
-  ../include/screen.h ../include/window.h ../include/tio.h \
-  ../include/status.h ../include/vars.h ../include/newio.h \
-  ../include/reg.h
-sha2.o: sha2.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/sedcrypt.h
-ssl.o: ssl.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/ssl.h ../include/output.h \
-  ../include/hook.h ../include/newio.h
-status.o: status.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/dcc.h ../include/termx.h ../include/screen.h \
-  ../include/window.h ../include/lastlog.h ../include/levels.h \
-  ../include/status.h ../include/tio.h ../include/status.h \
-  ../include/server.h ../include/who.h ../include/vars.h \
-  ../include/hook.h ../include/input.h ../include/commands.h \
-  ../include/window.h ../include/screen.h ../include/mail.h \
-  ../include/output.h ../include/names.h ../include/ircaux.h \
+  /usr/local/include/iconv.h ../include/debug.h ../include/ircaux.h \
   ../include/compat.h ../include/network.h ../include/words.h \
-  ../include/alias.h ../include/ircaux.h ../include/vars.h \
-  ../include/clock.h ../include/keys.h ../include/functions.h
-tcl.o: tcl.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/array.h ../include/alias.h \
-  ../include/ircaux.h ../include/vars.h ../include/commands.h \
-  ../include/functions.h ../include/output.h ../include/ifcmd.h \
-  ../include/extlang.h
-term.o: term.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/vars.h ../include/termx.h \
-  ../include/screen.h ../include/window.h ../include/lastlog.h \
-  ../include/levels.h ../include/status.h ../include/tio.h \
-  ../include/window.h ../include/screen.h ../include/output.h \
-  ../include/newio.h
-timer.o: timer.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/window.h ../include/lastlog.h \
-  ../include/levels.h ../include/status.h ../include/timer.h \
-  ../include/hook.h ../include/output.h ../include/commands.h \
-  ../include/server.h ../include/who.h ../include/screen.h \
-  ../include/window.h ../include/tio.h ../include/functions.h
-vars.o: vars.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/alist.h ../include/irc.h ../include/ircaux.h \
+  ../include/alias.h ../include/alist.h ../include/vars.h \
+  ../include/array.h ../include/cJSON.h ../include/clock.h \
+  ../include/keys.h ../include/commands.h ../include/ctcp.h \
+  ../include/dcc.h ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h debuglog.c
+compat.o: compat.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+crypt.o: crypt.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+crypto.o: crypto.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h /usr/local/include/openssl/evp.h \
+  /usr/local/include/openssl/opensslconf.h \
+  /usr/local/include/openssl/ossl_typ.h \
+  /usr/local/include/openssl/e_os2.h \
+  /usr/local/include/openssl/symhacks.h /usr/local/include/openssl/bio.h \
+  /usr/local/include/openssl/crypto.h /usr/local/include/openssl/stack.h \
+  /usr/local/include/openssl/safestack.h \
+  /usr/local/include/openssl/opensslv.h \
+  /usr/local/include/openssl/objects.h \
+  /usr/local/include/openssl/obj_mac.h /usr/local/include/openssl/asn1.h \
+  /usr/local/include/openssl/bn.h /usr/local/include/openssl/err.h \
+  /usr/local/include/openssl/lhash.h
+ctcp.o: ctcp.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+dcc.o: dcc.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+debug.o: debug.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+debuglog.o: debuglog.c
+elf.o: elf.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+exec.o: exec.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+expr.o: expr.c
+expr2.o: expr2.c
+files.o: files.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h ../include/functions.h \
+  ../include/sdbm.h
+flood.o: flood.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+functions.o: functions.c ../include/all.h ../include/irc.h \
+  ../include/defs.h ../include/config.h ../include/irc_std.h \
+  /usr/local/include/iconv.h ../include/debug.h ../include/ircaux.h \
   ../include/compat.h ../include/network.h ../include/words.h \
-  ../include/alias.h ../include/vars.h ../include/status.h \
-  ../include/window.h ../include/lastlog.h ../include/levels.h \
-  ../include/status.h ../include/lastlog.h ../include/log.h \
-  ../include/hook.h ../include/sedcrypt.h ../include/notify.h \
-  ../include/alist.h ../include/vars.h ../include/input.h \
-  ../include/ircaux.h ../include/termx.h ../include/screen.h \
-  ../include/window.h ../include/tio.h ../include/output.h \
-  ../include/stack.h ../include/dcc.h ../include/keys.h \
-  ../include/timer.h ../include/clock.h ../include/keys.h \
-  ../include/mail.h ../include/reg.h ../include/commands.h \
-  ../include/ifcmd.h
-wcwidth.o: wcwidth.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h ../include/output.h
-who.o: who.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/commands.h ../include/ircaux.h ../include/compat.h \
-  ../include/network.h ../include/words.h ../include/who.h \
-  ../include/ssl.h ../include/server.h ../include/who.h \
-  ../include/notify.h ../include/alist.h ../include/irc.h \
-  ../include/ircaux.h ../include/window.h ../include/lastlog.h \
-  ../include/levels.h ../include/status.h ../include/vars.h \
-  ../include/hook.h ../include/output.h ../include/numbers.h \
-  ../include/parse.h ../include/ifcmd.h ../include/names.h \
-  ../include/words.h ../include/reg.h ../include/log.h ../include/timer.h \
-  ../include/alias.h ../include/vars.h
-window.o: window.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/screen.h ../include/window.h ../include/lastlog.h \
-  ../include/levels.h ../include/status.h ../include/tio.h \
-  ../include/window.h ../include/vars.h ../include/server.h \
-  ../include/who.h ../include/list.h ../include/termx.h \
-  ../include/screen.h ../include/names.h ../include/ircaux.h \
-  ../include/compat.h ../include/network.h ../include/words.h \
-  ../include/input.h ../include/status.h ../include/output.h \
-  ../include/log.h ../include/hook.h ../include/parse.h \
-  ../include/commands.h ../include/exec.h ../include/functions.h \
-  ../include/reg.h ../include/timer.h
-words.o: words.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
+  ../include/alias.h ../include/alist.h ../include/vars.h \
+  ../include/array.h ../include/cJSON.h ../include/clock.h \
+  ../include/keys.h ../include/commands.h ../include/ctcp.h \
+  ../include/dcc.h ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h ../include/options.h \
+  ../include/glob.h ../include/hook.h
+gailib.o: gailib.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+glob.o: glob.c ../include/config.h ../include/glob.h ../include/all.h \
+  ../include/irc.h ../include/defs.h ../include/config.h \
+  ../include/irc_std.h /usr/local/include/iconv.h ../include/debug.h \
   ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/words.h ../include/output.h
-wserv.o: wserv.c ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/defs.h 
-
+  ../include/words.h ../include/alias.h ../include/alist.h \
+  ../include/vars.h ../include/array.h ../include/cJSON.h \
+  ../include/clock.h ../include/keys.h ../include/commands.h \
+  ../include/ctcp.h ../include/dcc.h ../include/elf.h \
+  /usr/local/include/archive.h /usr/local/include/archive_entry.h \
+  ../include/exec.h ../include/extlang.h ../include/files.h \
+  ../include/flood.h ../include/levels.h ../include/functions.h \
+  ../include/gailib.h ../include/glob.h ../include/hook.h \
+  ../include/ifcmd.h ../include/ignore.h ../include/input.h \
+  ../include/lastlog.h ../include/list.h ../include/log.h \
+  ../include/mail.h ../include/names.h ../include/newio.h \
+  ../include/notify.h ../include/numbers.h ../include/output.h \
+  ../include/parse.h ../include/queue.h ../include/reg.h \
+  ../include/screen.h ../include/window.h ../include/status.h \
+  ../include/tio.h ../include/sdbm.h ../include/sedcrypt.h \
+  ../include/server.h ../include/who.h ../include/socks5p.h \
+  ../include/ssl.h ../include/stack.h ../include/termx.h \
+  ../include/timer.h
+hook.o: hook.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+if.o: if.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+ignore.o: ignore.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+input.o: input.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+irc.o: irc.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+ircaux.o: ircaux.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+ircsig.o: ircsig.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+keys.o: keys.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+lastlog.o: lastlog.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+levels.o: levels.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+list.o: list.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+log.o: log.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+logfiles.o: logfiles.c ../include/all.h ../include/irc.h \
+  ../include/defs.h ../include/config.h ../include/irc_std.h \
+  /usr/local/include/iconv.h ../include/debug.h ../include/ircaux.h \
+  ../include/compat.h ../include/network.h ../include/words.h \
+  ../include/alias.h ../include/alist.h ../include/vars.h \
+  ../include/array.h ../include/cJSON.h ../include/clock.h \
+  ../include/keys.h ../include/commands.h ../include/ctcp.h \
+  ../include/dcc.h ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+mail.o: mail.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+names.o: names.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+network.o: network.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+newio.o: newio.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+notify.o: notify.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+numbers.o: numbers.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+output.o: output.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+parse.o: parse.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+perl.o: perl.c /usr/local/lib/perl5/5.20/mach/CORE/EXTERN.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/perl.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/config.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/handy.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/unixish.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/iperlsys.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/perlio.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/perly.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/sv.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/regexp.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/utf8.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/regcharclass.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/unicode_constants.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/op_reg_common.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/util.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/form.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/gv.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/pad.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/cv.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/opnames.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/op.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/reentr.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/hv.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/hv_func.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/cop.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/mydtrace.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/av.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/mg.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/scope.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/warnings.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/parser.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/patchlevel.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/intrpvar.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/thread.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/pp.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/proto.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/opcode.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/embedvar.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/embed.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/perlvars.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/mg_vtable.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/inline.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/overload.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/XSUB.h \
+  /usr/local/lib/perl5/5.20/mach/CORE/perlapi.h ../include/all.h \
+  ../include/irc.h ../include/defs.h ../include/config.h \
+  ../include/irc_std.h /usr/local/include/iconv.h ../include/debug.h \
+  ../include/ircaux.h ../include/compat.h ../include/network.h \
+  ../include/words.h ../include/alias.h ../include/alist.h \
+  ../include/vars.h ../include/array.h ../include/cJSON.h \
+  ../include/clock.h ../include/keys.h ../include/commands.h \
+  ../include/ctcp.h ../include/dcc.h ../include/elf.h \
+  /usr/local/include/archive.h /usr/local/include/archive_entry.h \
+  ../include/exec.h ../include/extlang.h ../include/files.h \
+  ../include/flood.h ../include/levels.h ../include/functions.h \
+  ../include/gailib.h ../include/glob.h ../include/hook.h \
+  ../include/ifcmd.h ../include/ignore.h ../include/input.h \
+  ../include/lastlog.h ../include/list.h ../include/log.h \
+  ../include/mail.h ../include/names.h ../include/newio.h \
+  ../include/notify.h ../include/numbers.h ../include/output.h \
+  ../include/parse.h ../include/queue.h ../include/reg.h \
+  ../include/screen.h ../include/window.h ../include/status.h \
+  ../include/tio.h ../include/sdbm.h ../include/sedcrypt.h \
+  ../include/server.h ../include/who.h ../include/socks5p.h \
+  ../include/ssl.h ../include/stack.h ../include/termx.h \
+  ../include/timer.h
+python.o: python.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+queue.o: queue.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+recode.o: recode.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+reg.o: reg.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+ruby.o: ruby.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+screen.o: screen.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+sdbm.o: sdbm.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+server.o: server.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+sha2.o: sha2.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+ssl.o: ssl.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h \
+  /usr/local/include/openssl/crypto.h /usr/local/include/openssl/e_os2.h \
+  /usr/local/include/openssl/opensslconf.h \
+  /usr/local/include/openssl/stack.h \
+  /usr/local/include/openssl/safestack.h \
+  /usr/local/include/openssl/opensslv.h \
+  /usr/local/include/openssl/ossl_typ.h \
+  /usr/local/include/openssl/symhacks.h /usr/local/include/openssl/x509.h \
+  /usr/local/include/openssl/buffer.h /usr/local/include/openssl/evp.h \
+  /usr/local/include/openssl/bio.h /usr/local/include/openssl/objects.h \
+  /usr/local/include/openssl/obj_mac.h /usr/local/include/openssl/asn1.h \
+  /usr/local/include/openssl/bn.h /usr/local/include/openssl/ec.h \
+  /usr/local/include/openssl/ecdsa.h /usr/local/include/openssl/ecdh.h \
+  /usr/local/include/openssl/rsa.h /usr/local/include/openssl/dsa.h \
+  /usr/local/include/openssl/dh.h /usr/local/include/openssl/sha.h \
+  /usr/local/include/openssl/x509_vfy.h \
+  /usr/local/include/openssl/lhash.h /usr/local/include/openssl/pkcs7.h \
+  /usr/local/include/openssl/pem.h /usr/local/include/openssl/pem2.h \
+  /usr/local/include/openssl/ssl.h /usr/local/include/openssl/comp.h \
+  /usr/local/include/openssl/hmac.h /usr/local/include/openssl/kssl.h \
+  /usr/local/include/openssl/ssl2.h /usr/local/include/openssl/ssl3.h \
+  /usr/local/include/openssl/tls1.h /usr/local/include/openssl/dtls1.h \
+  /usr/local/include/openssl/pqueue.h /usr/local/include/openssl/ssl23.h \
+  /usr/local/include/openssl/srtp.h /usr/local/include/openssl/err.h \
+  ../include/output.h ../include/hook.h ../include/newio.h \
+  ../include/vars.h
+status.o: status.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+tcl.o: tcl.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+term.o: term.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+timer.o: timer.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+vars.o: vars.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+wcwidth.o: wcwidth.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+who.o: who.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+window.o: window.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+words.o: words.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h
+wserv.o: wserv.c ../include/all.h ../include/irc.h ../include/defs.h \
+  ../include/config.h ../include/irc_std.h /usr/local/include/iconv.h \
+  ../include/debug.h ../include/ircaux.h ../include/compat.h \
+  ../include/network.h ../include/words.h ../include/alias.h \
+  ../include/alist.h ../include/vars.h ../include/array.h \
+  ../include/cJSON.h ../include/clock.h ../include/keys.h \
+  ../include/commands.h ../include/ctcp.h ../include/dcc.h \
+  ../include/elf.h /usr/local/include/archive.h \
+  /usr/local/include/archive_entry.h ../include/exec.h \
+  ../include/extlang.h ../include/files.h ../include/flood.h \
+  ../include/levels.h ../include/functions.h ../include/gailib.h \
+  ../include/glob.h ../include/hook.h ../include/ifcmd.h \
+  ../include/ignore.h ../include/input.h ../include/lastlog.h \
+  ../include/list.h ../include/log.h ../include/mail.h ../include/names.h \
+  ../include/newio.h ../include/notify.h ../include/numbers.h \
+  ../include/output.h ../include/parse.h ../include/queue.h \
+  ../include/reg.h ../include/screen.h ../include/window.h \
+  ../include/status.h ../include/tio.h ../include/sdbm.h \
+  ../include/sedcrypt.h ../include/server.h ../include/who.h \
+  ../include/socks5p.h ../include/ssl.h ../include/stack.h \
+  ../include/termx.h ../include/timer.h

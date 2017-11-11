@@ -32,11 +32,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  */
-#include "irc.h"
-#include "levels.h"
-#include "ircaux.h"
-#include "functions.h"
-#include "output.h"
+#include "all.h"
 
 int	LEVEL_NONE,	LEVEL_CURRENT,	LEVEL_OTHER;
 int	LEVEL_PUBLIC,	LEVEL_MSG,	LEVEL_NOTICE,	LEVEL_WALL;
