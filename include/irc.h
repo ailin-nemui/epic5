@@ -131,9 +131,7 @@ extern		char *	highlight_char;
 extern		int	do_window_notifies;
 
 extern 		char *	LocalIPv4HostName;
-#ifdef INET6
 extern 		char *	LocalIPv6HostName;
-#endif
 extern		fd_set  readables, held_readables;
 extern		fd_set  writables, held_writables;
 extern struct timeval 	start_time;
