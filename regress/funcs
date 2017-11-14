@@ -645,6 +645,8 @@ assert split(#) == []
 assert split(# one) == [one]
 assert split(# one##two) == [one  two]
 assert split(# one##two##) == [one  two  ]
+assert split(abc XXbXXcXXaXX) == [XX XX XX XX]
+assert split(^abc XXbXXcXXaXX) == [  b  c  a  ]
 
 # testing $srand() -- cant be tested right now
 

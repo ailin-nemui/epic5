@@ -3037,7 +3037,7 @@ const	unsigned char	*p, *s;
 		s = search;
 		while ((d = next_code_point(&s, 1)))
 		{
-			if ((c == d) + inverted == 1)
+			if (c == d)
 			{
 				found = 1;
 				break;
@@ -3045,7 +3045,7 @@ const	unsigned char	*p, *s;
 		}
 
 		/* If we found a match, put a space here. */
-		if (found)
+		if (found != inverted)
 			*r++ = ' ';
 		/* Otherwise, copy the code point over */
 		else
