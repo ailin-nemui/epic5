@@ -215,9 +215,11 @@ typedef struct  SymbolSetStru
         hash_type       hash;
 }       SymbolSet;
 
+#if 0	/* Moved to all-globals.h */
 /* This is it, right here; the global symbol table. */
 extern	SymbolSet globals;
 /* SymbolSet globals =      { NULL, 0, 0, strncmp, HASH_INSENSITIVE }; */
+#endif
 
 /* Use this to look up a global symbol. */
 	Symbol *lookup_symbol	   	(const char *name);
@@ -254,6 +256,7 @@ typedef struct RuntimeStackStru
         int     parent;         /* Our parent stack frame */
 }       RuntimeStack;
 
+#if 0	/* Moved to all-globals.h */
 /* This is it, right here; the stack frames where all local vars are stored */
 extern	RuntimeStack *	call_stack;
 
@@ -278,6 +281,7 @@ extern	int		wind_index;
  *   s = find_local_alias("FUNCTION_RETURN", call_stack[last_function_call_level])
  */
 extern	int		last_function_call_level;
+#endif
 
 
 /*

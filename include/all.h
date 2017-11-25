@@ -66,3 +66,5 @@
 #include "options.h"
 #endif
 
+#include "all-globals.h"
+
