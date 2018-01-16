@@ -1,3 +1,28 @@
+EPIC5-2.2
+
+*** News 01/16/2018 -- New status expando %{1}P ("status prefix") and variables
+	The %{1}P value will expand to a "when window current" or "when window
+	not current" value.  The idea is to put this at the start of your 
+	/set status_format or /window status_format type variables.
+
+	When a window is current, %{1}P will expand to either
+		/window status_prefix_when_current
+	or
+		/set status_prefix_when_current
+
+	When a window is not current, %{1}P will expand to either
+		/window status_prefix_when_not_current
+	or
+		/set status_prefix_when_not_current
+
+	You can use this all in your ~/.epicrc, like so:
+		set status_format %{1}P%T [%R] %*%=%@%N%#%S%{1}H%H%B%Q%A%C%+%I%O%M%F%L %D %U %W
+		set status_prefix_when_current ^C37,40
+		set status_prefix_when_not_current ^C37,44
+	which will make your status bar white-on-black when current,
+	and white-on-blue when not current.
+
+
 EPIC5-2.0
 EPIC5-1.8
 

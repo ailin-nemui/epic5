@@ -5747,6 +5747,29 @@ static Window *window_status_format2 (Window *window, char **args)
 	return window;
 }
 
+static Window *window_status_prefix_when_current (Window *window, char **args)
+{
+	char *arg;
+
+	arg = new_next_arg(*args, args);
+	malloc_strcpy(&window->status.prefix_when_current, arg);
+	window_statusbar_needs_redraw(window);
+
+	return window;
+}
+
+static Window *window_status_prefix_when_not_current (Window *window, char **args)
+{
+	char *arg;
+
+	arg = new_next_arg(*args, args);
+	malloc_strcpy(&window->status.prefix_when_not_current, arg);
+	window_statusbar_needs_redraw(window);
+
+	return window;
+}
+
+
 static Window *window_status_special (Window *window, char **args)
 {
 	char *arg;
@@ -5945,6 +5968,8 @@ static const window_ops options [] = {
 	{ "STATUS_FORMAT",	window_status_format	},
 	{ "STATUS_FORMAT1",	window_status_format1	},
 	{ "STATUS_FORMAT2",	window_status_format2	},
+	{ "STATUS_PREFIX_WHEN_CURRENT",		window_status_prefix_when_current	},
+	{ "STATUS_PREFIX_WHEN_NOT_CURRENT",	window_status_prefix_when_not_current	},
 	{ "STATUS_SPECIAL",	window_status_special	},
 	{ "SWAP",		window_swap 		},
 	{ "SWAPPABLE",		window_swappable	},

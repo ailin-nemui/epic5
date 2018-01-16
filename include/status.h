@@ -28,6 +28,8 @@ typedef struct  status_stuff {
         short           double_status;
         short           number;
         char *		special;
+        char *		prefix_when_current;
+        char *		prefix_when_not_current;
 } Status;
 
 extern	Status	main_status;

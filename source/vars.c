@@ -397,6 +397,8 @@ void 	init_variables_stage1 (void)
 	VAR(STATUS_NO_REPEAT, BOOL, build_status);
 	VAR(STATUS_OPER, STR,  build_status);
 	VAR(STATUS_OVERWRITE, STR,  build_status);
+	VAR(STATUS_PREFIX_WHEN_CURRENT, STR,  build_status);
+	VAR(STATUS_PREFIX_WHEN_NOT_CURRENT, STR,  build_status);
 	VAR(STATUS_QUERY, STR,  build_status);
 	VAR(STATUS_SCROLLBACK, STR,  build_status);
 	VAR(STATUS_SERVER, STR,  build_status);

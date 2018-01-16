@@ -105,6 +105,7 @@ STATUS_FUNCTION(status_percent);
 STATUS_FUNCTION(status_test);
 STATUS_FUNCTION(status_swappable);
 STATUS_FUNCTION(status_activity);
+STATUS_FUNCTION(status_window_prefix);
 
 /* These are used as placeholders for some expandos */
 static	char	*mode_format 		= (char *) 0;
@@ -201,6 +202,7 @@ struct status_formats status_expandos[] = {
 { 1, 'F', status_notify_windows,&notify_format,		&STATUS_NOTIFY_VAR },
 { 1, 'H', status_holdmode,	NULL,			NULL },
 { 1, 'K', status_scroll_info,	NULL,			NULL },
+{ 1, 'P', status_window_prefix, NULL,			NULL },
 { 1, 'R', status_refnum_real,   NULL, 			NULL },
 { 1, 'S', status_server,        &server_format,     	&STATUS_SERVER_VAR },
 { 1, 'T', status_test,		NULL,			NULL },
@@ -856,6 +858,8 @@ static	void	initialize_status (Status *s)
 
 	s->number = 1;
 	s->special = NULL;
+	s->prefix_when_current = NULL;
+	s->prefix_when_not_current = NULL;
 	for (i = 0; i < 3; i++)
 	{
 		s->line[i].raw = NULL;
@@ -891,6 +895,8 @@ static void	destroy_status (Status **s)
 
 	(*s)->number = -1;
 	new_free(&((*s)->special));
+	new_free(&((*s)->prefix_when_current));
+	new_free(&((*s)->prefix_when_not_current));
 	for (i = 0; i < 3; i++)
 	{
 		new_free(&((*s)->line[i].raw));
@@ -1761,6 +1767,28 @@ STATUS_FUNCTION(status_windowspec)
 		return window->status.special;
 	else
 		return empty_string;
+}
+
+STATUS_FUNCTION(status_window_prefix)
+{
+	if (IS_CURRENT_WINDOW)
+	{
+		if (window->status.prefix_when_current)
+			return window->status.prefix_when_current;
+		else if (get_string_var(STATUS_PREFIX_WHEN_CURRENT_VAR))
+			return get_string_var(STATUS_PREFIX_WHEN_CURRENT_VAR);
+		else
+			return empty_string;
+	}
+	else
+	{
+		if (window->status.prefix_when_not_current)
+			return window->status.prefix_when_not_current;
+		else if (get_string_var(STATUS_PREFIX_WHEN_NOT_CURRENT_VAR))
+			return get_string_var(STATUS_PREFIX_WHEN_NOT_CURRENT_VAR);
+		else
+			return empty_string;
+	}
 }
 
 STATUS_FUNCTION(status_percent)
