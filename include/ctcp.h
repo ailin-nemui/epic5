@@ -39,8 +39,10 @@
 #define CTCP_QUOTE_STR          "\\"
 #define CTCP_QUOTE_EM           "\r\n\001\\"
 
+#if 0
 extern	int	sed;
 extern	int	in_ctcp_flag;
+#endif
 
 	char *	do_ctcp 	(const char *, const char *, char *);
 	char *	do_notice_ctcp 	(const char *, const char *, char *);

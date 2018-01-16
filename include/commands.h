@@ -10,6 +10,7 @@
 #ifndef __commands_h__
 #define __commands_h__
 
+#if 0	/* moved to "all-globals.h" */
 extern	int	will_catch_break_exceptions;
 extern	int	will_catch_continue_exceptions;
 extern	int	will_catch_return_exceptions;
@@ -18,8 +19,8 @@ extern	int	continue_exception;
 extern	int	return_exception;
 extern	int	system_exception;
 extern	const char *	current_command;
-
 extern	int	need_defered_commands;
+#endif
 
 	void	init_commands		(void);
 

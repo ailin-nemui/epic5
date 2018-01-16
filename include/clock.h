@@ -38,8 +38,10 @@
 
 #include "keys.h"
 
+#if 0	/* moved to "all-globals.h" */
 extern char *	time_format;
 extern char	clock_timeref[];
+#endif
 
 	void	reset_clock		(void *);
 	const char *	get_clock	(void);
@@ -48,7 +50,9 @@ extern char	clock_timeref[];
 	void	set_clock_format	(void *);
 	void	my_set_clock		(void *);
 
+#if 0	/* moved to "all-globals.h" */
 extern int	cpu_saver;
+#endif
 
 	int	cpu_saver_timer		(void *);
 	void	set_cpu_saver_after	(void *);

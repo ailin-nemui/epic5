@@ -25,6 +25,8 @@
 
 	char	*dccctl			(char *input);
 
+#if 0		/* moved to all-globals.h */
 extern	time_t	dcc_timeout;
+#endif
 
 #endif /* _DCC_H_ */

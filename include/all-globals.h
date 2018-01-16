@@ -5,6 +5,9 @@
  * We will serialize and deserialize thie struct to save client state
  */
 
+#ifndef __all_globals_h__
+#define __all_globals_h__
+
 /* alias.h */
 
 	/* This is it, right here; the global symbol table. */
@@ -36,3 +39,33 @@
 	extern  int             last_function_call_level;
 
 
+/* alist.h */
+	/* None */
+
+/* array.h */
+	/* None */
+
+/* clock.h */
+	extern	char *   	time_format;
+	extern	char     	clock_timeref[];
+	extern	int      	cpu_saver;
+
+/* commands.h */
+	extern  int     	will_catch_break_exceptions;
+	extern  int     	will_catch_continue_exceptions;
+	extern  int     	will_catch_return_exceptions;
+	extern  int     	break_exception;
+	extern  int     	continue_exception;
+	extern  int     	return_exception;
+	extern  int     	system_exception;
+	extern  const char *    current_command;
+	extern  int     	need_defered_commands;
+
+/* ctcp.h */
+	extern	int		sed;
+	extern	int		in_ctcp_flag;
+
+/* dcc.h */
+	extern	time_t		dcc_timeout;
+
+#endif

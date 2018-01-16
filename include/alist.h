@@ -33,7 +33,9 @@ static __inline u_32int_t  cs_alist_hash (const char *s, u_32int_t *mask)
 	return x;
 }
 
+/* Although this is a global variable, it is not controllable by the user */
 extern unsigned char *stricmp_tables[2];
+
 /*
  * This hash routine is for case insensitive keys.  Specifically keys that
  * cannot be prefolded to an appropriate case but are still insensitive
