@@ -73,22 +73,22 @@ static	Crypt	*crypt_list = (Crypt *) 0;
 
 struct ciphertypes {
 	int	sed_type;
-	int	ctcp_type;
+	int *	ctcp_type;
 	const char *flagname;
 	const char *username;
 	const char *ctcpname;
 };
 
 struct ciphertypes ciphers[] = {
-   { PROGCRYPT,      -1,	      NULL,       "Program",  "SED"	      },
-   { SEDCRYPT,       CTCP_SED,	     "-SED",      "SED",      "SED"	      },
-   { SEDSHACRYPT,    CTCP_SEDSHA,    "-SEDSHA",   "SED+SHA",  "SEDSHA"        },
-   { CAST5CRYPT,     CTCP_CAST5,     "-CAST",     "CAST5",    "CAST128ED-CBC" },
-   { BLOWFISHCRYPT,  CTCP_BLOWFISH,  "-BLOWFISH", "BLOWFISH", "BLOWFISH-CBC"  },
-   { AES256CRYPT,    CTCP_AES256,    "-AES",	  "AES",      "AES256-CBC"    },
-   { AESSHA256CRYPT, CTCP_AESSHA256, "-AESSHA",   "AES+SHA",  "AESSHA256-CBC" },
-   { FISHCRYPT,	     -1,	     NULL,	  "FiSH",     "BLOWFISH-EBC"  },
-   { NOCRYPT,        -1,	       NULL,       NULL,       NULL           }
+   { PROGCRYPT,      NULL,	      NULL,       "Program",  "SED"	      },
+   { SEDCRYPT,       &CTCP_SED,	     "-SED",      "SED",      "SED"	      },
+   { SEDSHACRYPT,    &CTCP_SEDSHA,    "-SEDSHA",   "SED+SHA",  "SEDSHA"        },
+   { CAST5CRYPT,     &CTCP_CAST5,     "-CAST",     "CAST5",    "CAST128ED-CBC" },
+   { BLOWFISHCRYPT,  &CTCP_BLOWFISH,  "-BLOWFISH", "BLOWFISH", "BLOWFISH-CBC"  },
+   { AES256CRYPT,    &CTCP_AES256,    "-AES",	  "AES",      "AES256-CBC"    },
+   { AESSHA256CRYPT, &CTCP_AESSHA256, "-AESSHA",   "AES+SHA",  "AESSHA256-CBC" },
+   { FISHCRYPT,	     NULL,	      NULL,	  "FiSH",     "BLOWFISH-EBC"  },
+   { NOCRYPT,        NULL,	      NULL,       NULL,       NULL           }
 };
 
 /* XXX sigh XXX */
@@ -299,7 +299,7 @@ Crypt *	is_crypted (Char *nick, int serv, int ctcp_type)
 	if (ctcp_type != ANYCRYPT)
 	{
 		for (i = 0; ciphers[i].username; i++)
-			if (ciphers[i].ctcp_type == ctcp_type)
+			if (ciphers[i].ctcp_type && (ctcp_type == *ciphers[i].ctcp_type))
 				sed_type = ciphers[i].sed_type;
 
 		if (sed_type == NOCRYPT)

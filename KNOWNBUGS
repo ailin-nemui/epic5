@@ -6,16 +6,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * What about rotate-able logfiles? (skered)
 * What about /query-ing an exec process, going to proper window? (skered)
 * You should be able to do /on ctcp_requests that do inline replacement (like CTCP UTC)
-* per-window statusbar colors...
-[11:45AM] -> (#epic) (1) /set status_prefix_when_current   and /set status_prefix_when_not_current
-[11:45AM] -> (#epic) (2) /window status_prefix_when_current and /window status_prefix_when_not_current
-[11:46AM] -> (#epic) these more or less follow the model of /window status_special
-[11:47AM] -> (#epic) then a new expando  %{1}P  that will show the appropriate /set or per-window value
-[11:47AM] -> (#epic) which will (presumably) sit at the front of the /set status_format
-[11:47AM] -> (#epic) naturally i wouldn't change any of the out-of-the-box status formats, but we could write a script that would do the job.
-[11:48AM] *** Current value of STATUS_FORMAT is %T [%R] %*%=%@%N%#%S%{1}H%H%B%Q%A%C%+%I%O%M%F%L %D %U %W
-[11:48AM] -> (#epic)   /set status_format %{1}P%T [%R] %*%=.....%W
-[11:48AM] -> (#epic) so then you could   /set status_prefix_when_current ^C1,56   /set status_prefix_when_not_current ^C0,55
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -839,4 +829,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add %{1}P status bar variable, "prefix when (not) current" (see UPDATES)
 * Add /set status_prefix_when(_not)_current variables, default to empty string
 * Add /window status_prefix_when(_not)_current operations, default to nothing
-
+* Convert CTCP data structures from static arrays to a bucket
+* Initialize hardcoded CTCPs at boot time

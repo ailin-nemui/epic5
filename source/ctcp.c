@@ -79,19 +79,49 @@ static	int 	split_CTCP (char *, char *, char *);
  */
 
 struct _CtcpEntry;
-typedef char *(*CTCP_Handler) (struct _CtcpEntry *, const char *, const char *, char *);
+typedef char *(*CTCP_Handler) (int, const char *, const char *, char *);
 typedef	struct _CtcpEntry
 {
-	const char	*name;  /* name of ctcp datatag */
-	int		id;	/* index of this ctcp command */
+	/* const char	*name;  */ /* name of ctcp datatag */
+	/* int		id;     */ /* index of this ctcp command */
 	int		flag;	/* Action modifiers */
 	const char	*desc;  /* description returned by ctcp clientinfo */
 	CTCP_Handler 	func;	/* function that does the dirty deed */
 	CTCP_Handler 	repl;	/* Function that is called for reply */
+	char 		*user_func;	/* Block of code to handle requests */
+	char		*user_repl;	/* Block of code to handle responses */
 }	CtcpEntry;
 
 #define CTCP_HANDLER(x) \
-static char * x (CtcpEntry *ctcp, Char *from, Char *to, char *cmd)
+static char * x (int ctcp_id, Char *from, Char *to, char *cmd)
+
+static	Bucket	*ctcp_bucket = NULL;
+
+#define CTCP_NAME(i) ctcp_bucket->list[i].name
+#define CTCP(i) ((CtcpEntry *)ctcp_bucket->list[i].stuff)
+
+int
+        CTCP_ACTION,
+        CTCP_DCC,
+        CTCP_VERSION,
+        CTCP_AESSHA256,
+        CTCP_AES256,
+        CTCP_CAST5,
+        CTCP_BLOWFISH,
+        CTCP_FISH,
+        CTCP_SED,
+        CTCP_SEDSHA,
+        CTCP_PING,
+        CTCP_ECHO,
+        CTCP_UTC,
+        CTCP_CLIENTINFO ,
+        CTCP_USERINFO,
+        CTCP_ERRMSG,
+        CTCP_FINGER,
+        CTCP_TIME,
+        CTCP_CUSTOM;
+
+
 
 /* forward declarations for the built in CTCP functions */
 CTCP_HANDLER(do_crypto);
@@ -108,78 +138,107 @@ CTCP_HANDLER(do_utc);
 CTCP_HANDLER(do_dcc_reply);
 CTCP_HANDLER(do_ping_reply);
 
-static CtcpEntry ctcp_cmd[] =
+
+static	int	add_ctcp (const char *name, int flag, const char *desc, CTCP_Handler func, CTCP_Handler repl, const char *user_func, const char *user_repl)
 {
-	/* The most common ones */
-	{ "ACTION",	CTCP_ACTION, 	CTCP_SPECIAL | CTCP_NOLIMIT,
-		"contains action descriptions for atmosphere",
-		do_atmosphere, 	do_atmosphere },
-	{ "DCC",	CTCP_DCC, 	CTCP_SPECIAL | CTCP_NOLIMIT,
-		"requests a direct_client_connection",
-		do_dcc, 	do_dcc_reply },
-	{ "VERSION",	CTCP_VERSION,	CTCP_REPLY | CTCP_TELLUSER,
-		"shows client type, version and environment",
-		do_version, 	NULL },
+	CtcpEntry *ctcp;
+	int	numval;
+	const char *strval;
+
+	ctcp = (CtcpEntry *)new_malloc(sizeof(CtcpEntry));
+	ctcp->flag = flag;
+	ctcp->desc = malloc_strdup(desc);
+	ctcp->func = func;
+	ctcp->desc = desc;
+	ctcp->user_func = malloc_strdup(user_func);
+	ctcp->user_repl = malloc_strdup(user_repl);
+
+	add_to_bucket(ctcp_bucket, name, ctcp);
+	return (ctcp_bucket->numitems - 1);
+}
+
+int	init_ctcp (void)
+{
+	ctcp_bucket = new_bucket();
+
+	CTCP_ACTION = add_ctcp("ACTION", 
+				CTCP_SPECIAL | CTCP_NOLIMIT, 
+				"contains action descriptions for atmosphere", 
+				do_atmosphere, 	do_atmosphere, NULL, NULL);
+	CTCP_DCC = add_ctcp("DCC", 
+				CTCP_SPECIAL | CTCP_NOLIMIT, 
+				"requests a direct_client_connection", 
+				do_dcc, 	do_dcc_reply, NULL, NULL);
+	CTCP_VERSION = add_ctcp("VERSION", 
+				CTCP_REPLY | CTCP_TELLUSER,
+				"shows client type, version and environment",
+				do_version, 	NULL, NULL, NULL );
 
 	/* Common ones to people using strong crypto */
-	{ "AESSHA256-CBC",	CTCP_AESSHA256,	
-			CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
-		"transmit aes256-cbc ciphertext using a sha256 key",
-		do_crypto, 	do_crypto },
-	{ "AES256-CBC",		CTCP_AES256,	
-			CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
-		"transmit aes256-cbc ciphertext",
-		do_crypto, 	do_crypto },
-	{ "CAST128ED-CBC",	CTCP_CAST5, 	
-			CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
-		"transmit cast5-cbc ciphertext",
-		do_crypto, 	do_crypto},
-	{ "BLOWFISH-CBC",	CTCP_BLOWFISH,	
-			CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
-		"transmit blowfish-cbc ciphertext",
-		do_crypto, 	do_crypto },
-	{ "FISH",		CTCP_FISH,	
-			CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
-		"transmit FiSH (blowfish-ecb with sha256'd key) ciphertext",
-		do_crypto, 	do_crypto },
-	{ "SED",		CTCP_SED, 	
-			CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
-		"transmit simple_encrypted_data ciphertext",
-		do_crypto, 	do_crypto },
-	{ "SEDSHA",		CTCP_SEDSHA, 	
-			CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
-		"transmit simple_encrypted_data ciphertext using a sha256 key",
-		do_crypto, 	do_crypto },
+	CTCP_AESSHA256 = add_ctcp("AESSHA256-CBC", 
+				CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
+				"transmit aes256-cbc ciphertext using a sha256 key",
+				do_crypto, 	do_crypto, NULL, NULL );
+	CTCP_AES256 = add_ctcp("AES256-CBC", 
+				CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
+				"transmit aes256-cbc ciphertext",
+				do_crypto, 	do_crypto, NULL, NULL );
+	CTCP_CAST5 = add_ctcp("CAST128ED-CBC", 
+				CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
+				"transmit cast5-cbc ciphertext",
+				do_crypto, 	do_crypto, NULL, NULL );
+	CTCP_BLOWFISH = add_ctcp("BLOWFISH-CBC",
+				CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
+				"transmit blowfish-cbc ciphertext",
+				do_crypto, 	do_crypto, NULL, NULL );
+	CTCP_FISH = add_ctcp("FISH",
+				CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
+				"transmit FiSH (blowfish-ecb with sha256'd key) ciphertext",
+				do_crypto, 	do_crypto, NULL, NULL );
+	CTCP_SED = add_ctcp("SED",
+				CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
+				"transmit simple_encrypted_data ciphertext",
+				do_crypto, 	do_crypto, NULL, NULL );
+	CTCP_SEDSHA = add_ctcp("SEDSHA",
+				CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
+				"transmit simple_encrypted_data ciphertext using a sha256 key",
+				do_crypto, 	do_crypto, NULL, NULL );
 
-	/* The uncommon ones */
-	{ "PING", 	CTCP_PING, 	CTCP_REPLY | CTCP_TELLUSER,
-		"returns the arguments it receives",
-		do_ping, 	do_ping_reply },
-	{ "ECHO", 	CTCP_ECHO, 	CTCP_REPLY | CTCP_TELLUSER,
-		"returns the arguments it receives",
-		do_echo, 	NULL },
-	{ "UTC",	CTCP_UTC, 	CTCP_INLINE | CTCP_NOLIMIT,
-		"substitutes the local timezone",
-		do_utc, 	do_utc },
-	{ "CLIENTINFO",	CTCP_CLIENTINFO,CTCP_REPLY | CTCP_TELLUSER,
-		"gives information about available CTCP commands",
-		do_clientinfo, 	NULL },
-	{ "USERINFO",	CTCP_USERINFO, 	CTCP_REPLY | CTCP_TELLUSER,
-		"returns user settable information",
-		do_userinfo, 	NULL },
-	{ "ERRMSG",	CTCP_ERRMSG, 	CTCP_REPLY | CTCP_TELLUSER,
-		"returns error messages",
-		do_echo, 	NULL },
-	{ "FINGER",	CTCP_FINGER, 	CTCP_REPLY | CTCP_TELLUSER,
-		"shows real name, login name and idle time of user", 
-		do_finger, 	NULL },
-	{ "TIME",	CTCP_TIME, 	CTCP_REPLY | CTCP_TELLUSER,
-		"tells you the time on the user's host",
-		do_time, 	NULL },
-	{ NULL,		CTCP_CUSTOM,	CTCP_REPLY | CTCP_TELLUSER,
-		NULL,
-		NULL, NULL }
-};
+	CTCP_PING = add_ctcp("PING",
+				CTCP_REPLY | CTCP_TELLUSER,
+				"returns the arguments it receives",
+				do_ping, 	do_ping_reply, NULL, NULL );
+	CTCP_ECHO = add_ctcp("ECHO",
+				CTCP_REPLY | CTCP_TELLUSER,
+				"returns the arguments it receives",
+				do_echo, 	NULL, NULL, NULL );
+	CTCP_UTC = add_ctcp("UTC",
+				CTCP_INLINE | CTCP_NOLIMIT,
+				"substitutes the local timezone",
+				do_utc, 	do_utc , NULL, NULL);
+	CTCP_CLIENTINFO = add_ctcp("CLIENTINFO",
+				CTCP_REPLY | CTCP_TELLUSER,
+				"gives information about available CTCP commands",
+				do_clientinfo, 	NULL, NULL, NULL );
+	CTCP_USERINFO = add_ctcp("USERINFO",	
+				CTCP_REPLY | CTCP_TELLUSER,
+				"returns user settable information",
+				do_userinfo, 	NULL, NULL, NULL );
+	CTCP_ERRMSG = add_ctcp("ERRMSG",
+				CTCP_REPLY | CTCP_TELLUSER,
+				"returns error messages",
+				do_echo, 	NULL, NULL, NULL);
+	CTCP_FINGER = add_ctcp("FINGER",
+				CTCP_REPLY | CTCP_TELLUSER,
+				"shows real name, login name and idle time of user", 
+				do_finger, 	NULL, NULL, NULL );
+	CTCP_TIME = add_ctcp("TIME",	
+				CTCP_REPLY | CTCP_TELLUSER,
+				"tells you the time on the user's host",
+				do_time, 	NULL, NULL, NULL );
+
+	CTCP_CUSTOM = -1;
+}
 
 static const char	*ctcp_type[] =
 {
@@ -196,6 +255,8 @@ int     sed = 0;
  * CTCP REPLY 
  */
 int	in_ctcp_flag = 0;
+
+char	*ctcp_custom_value = NULL;
 
 
 /**************************** CTCP PARSERS ****************************/
@@ -224,8 +285,8 @@ CTCP_HANDLER(do_crypto)
 	tofrom = malloc_strdup3(to, ",", from);
 	malloc_strcat2_c(&tofrom, "!", FromUserHost, NULL);
 
-	if ((key = is_crypted(tofrom, from_server, ctcp->id)) ||
-	    (key = is_crypted(crypt_who, from_server, ctcp->id)))
+	if ((key = is_crypted(tofrom, from_server, ctcp_id)) ||
+	    (key = is_crypted(crypt_who, from_server, ctcp_id)))
 		ret = decrypt_msg(cmd, key);
 
 	new_free(&tofrom);
@@ -395,33 +456,33 @@ CTCP_HANDLER(do_clientinfo)
 
 	if (cmd && *cmd)
 	{
-		for (i = 0; i < NUMBER_OF_CTCPS; i++)
+		for (i = 0; i < ctcp_bucket->numitems; i++)
 		{
-			if (my_stricmp(cmd, ctcp_cmd[i].name) == 0)
+			if (my_stricmp(cmd, CTCP_NAME(i)) == 0)
 			{
-				send_ctcp(CTCP_NOTICE, from, CTCP_CLIENTINFO, 
-					"%s %s", 
-					ctcp_cmd[i].name, ctcp_cmd[i].desc);
+				send_ctcp(CTCP_NOTICE, from, ctcp_id,
+					"%s %s", CTCP_NAME(i), CTCP(i)->desc);
 				return NULL;
 			}
 		}
 		send_ctcp(CTCP_NOTICE, from, CTCP_ERRMSG,
 				"%s: %s is not a valid function",
-				ctcp_cmd[CTCP_CLIENTINFO].name, cmd);
+				CTCP_NAME(ctcp_id), cmd);
 	}
 	else
 	{
 		char buffer[BIG_BUFFER_SIZE + 1];
 		*buffer = '\0';
 
-		for (i = 0; i < NUMBER_OF_CTCPS; i++)
+		for (i = 0; i < ctcp_bucket->numitems; i++)
 		{
-			strlcat(buffer, ctcp_cmd[i].name, sizeof buffer);
+			const char *name = CTCP_NAME(i);
+			strlcat(buffer, name, sizeof buffer);
 			strlcat(buffer, " ", sizeof buffer);
 		}
-		send_ctcp(CTCP_NOTICE, from, CTCP_CLIENTINFO,
-			"%s :Use CLIENTINFO <COMMAND> to get more specific information", 
-			buffer);
+		send_ctcp(CTCP_NOTICE, from, ctcp_id,
+			"%s :Use %s <COMMAND> to get more specific information", 
+			buffer, CTCP_NAME(ctcp_id));
 	}
 	return NULL;
 }
@@ -448,13 +509,13 @@ CTCP_HANDLER(do_version)
 		the_unix = un.sysname;
 
 	/* We no longer show the detailed version of your OS. */
-	send_ctcp(CTCP_NOTICE, from, CTCP_VERSION, 
+	send_ctcp(CTCP_NOTICE, from, ctcp_id,
 			"ircII %s %s - %s", 
 			irc_version, the_unix, 
 			(tmp = get_string_var(CLIENT_INFORMATION_VAR)) ? 
 				tmp : IRCII_COMMENT);
 #else
-	send_ctcp(CTCP_NOTICE, from, CTCP_VERSION, 
+	send_ctcp(CTCP_NOTICE, from, ctcp_id,
 			"ircII %s *IX - %s", 
 			irc_version,
 			(tmp = get_string_var(CLIENT_INFORMATION_VAR)) ? 
@@ -466,7 +527,7 @@ CTCP_HANDLER(do_version)
 /* do_time: does the CTCP TIME command --- done by Veggen */
 CTCP_HANDLER(do_time)
 {
-	send_ctcp(CTCP_NOTICE, from, CTCP_TIME, 
+	send_ctcp(CTCP_NOTICE, from, ctcp_id,
 			"%s", my_ctime(time(NULL)));
 	return NULL;
 }
@@ -476,7 +537,7 @@ CTCP_HANDLER(do_userinfo)
 {
 	char *tmp;
 
-	send_ctcp(CTCP_NOTICE, from, CTCP_USERINFO, "%s", 
+	send_ctcp(CTCP_NOTICE, from, ctcp_id, "%s", 
 		(tmp = get_string_var(USER_INFORMATION_VAR)) ? tmp : "<No User Information>");
 	return NULL;
 }
@@ -488,13 +549,13 @@ CTCP_HANDLER(do_userinfo)
 CTCP_HANDLER(do_echo)
 {
 	if (!is_channel(to))
-		send_ctcp(CTCP_NOTICE, from, ctcp->id, "%s", cmd);
+		send_ctcp(CTCP_NOTICE, from, ctcp_id, "%s", cmd);
 	return NULL;
 }
 
 CTCP_HANDLER(do_ping)
 {
-	send_ctcp(CTCP_NOTICE, from, CTCP_PING, "%s", cmd ? cmd : empty_string);
+	send_ctcp(CTCP_NOTICE, from, ctcp_id, "%s", cmd ? cmd : empty_string);
 	return NULL;
 }
 
@@ -552,7 +613,7 @@ CTCP_HANDLER(do_finger)
 	if ((tmp = strchr(gecosbuff, GECOS_DELIMITER)) != NULL)
 		*tmp = 0;
 
-	send_ctcp(CTCP_NOTICE, from, CTCP_FINGER, 
+	send_ctcp(CTCP_NOTICE, from, ctcp_id,
 		"%s (%s@%s) Idle %ld second%s", 
 		gecosbuff, userbuff, my_host, diff, plural(diff));
 
@@ -775,14 +836,14 @@ static	time_t	last_ctcp_parsed = 0;
 		/*
 		 * Then we look for the correct CTCP.
 		 */
-		for (i = 0; i < NUMBER_OF_CTCPS; i++)
-			if (!strcmp(ctcp_command, ctcp_cmd[i].name))
+		for (i = 0; i < ctcp_bucket->numitems; i++)
+			if (!strcmp(ctcp_command, CTCP_NAME(i)))
 				break;
 
 		/*
 		 * We didnt find it?
 		 */
-		if (i == NUMBER_OF_CTCPS)
+		if (i == ctcp_bucket->numitems)
 		{
 			/*
 			 * Offer it to the user.
@@ -820,7 +881,7 @@ static	time_t	last_ctcp_parsed = 0;
 		 * All other CTCPs have not been recoded by the time they
 		 * reach here, so we must do it here!
 		 */
-		if (!(ctcp_cmd[i].flag & CTCP_NORECODE))
+		if (!(CTCP(i)->flag & CTCP_NORECODE))
 		{
 		   /*
 		    * We must recode to UTF8
@@ -837,8 +898,7 @@ static	time_t	last_ctcp_parsed = 0;
 		if (do_hook(CTCP_REQUEST_LIST, "%s %s %s %s",
 				from, to, ctcp_command, ctcp_argument))
 		{
-			ptr = ctcp_cmd[i].func(ctcp_cmd + i, from, 
-						to, ctcp_argument);
+			ptr = CTCP(i)->func(i, from, to, ctcp_argument);
 		}
 
 		/*
@@ -848,7 +908,7 @@ static	time_t	last_ctcp_parsed = 0;
 		 * would normally.  The UTC/SED gets converted into a 
 		 * regular privmsg body, which is flagged via FLOOD_PUBLIC.
 		 */
-		if (!(ctcp_cmd[i].flag & CTCP_NOLIMIT))
+		if (!(CTCP(i)->flag & CTCP_NOLIMIT))
 		{
 			time(&last_ctcp_parsed);
 			allow_ctcp_reply = 0;
@@ -863,7 +923,7 @@ static	time_t	last_ctcp_parsed = 0;
 		/*
 		 * If its an ``INLINE'' CTCP, we paste it back in.
 		 */
-		if (ctcp_cmd[i].flag & CTCP_INLINE)
+		if (CTCP(i)->flag & CTCP_INLINE)
 			strlcat(local_ctcp_buffer, ptr ? ptr : empty_string, sizeof local_ctcp_buffer);
 
 		/* 
@@ -871,7 +931,7 @@ static	time_t	last_ctcp_parsed = 0;
 		 * Note that this isnt mutex with ``INLINE'' in theory,
 		 * even though it is in practice.  Dont use 'else' here.
 		 */
-		if (ctcp_cmd[i].flag & CTCP_TELLUSER)
+		if (CTCP(i)->flag & CTCP_TELLUSER)
 		{
 		    if (do_hook(CTCP_LIST, "%s %s %s %s", 
 				from, to, ctcp_command, ctcp_argument))
@@ -988,18 +1048,17 @@ char *	do_notice_ctcp (const char *from, const char *to, char *str)
 		/* 
 		 * Find the correct CTCP and run it.
 		 */
-		for (i = 0; i < NUMBER_OF_CTCPS; i++)
-			if (!strcmp(ctcp_command, ctcp_cmd[i].name))
+		for (i = 0; i < ctcp_bucket->numitems; i++)
+			if (!strcmp(ctcp_command, CTCP_NAME(i)))
 				break;
 
 		/* 
 		 * If its a built in CTCP command, check to see if its
 		 * got a reply handler, call if appropriate.
 		 */
-		if (i < NUMBER_OF_CTCPS && ctcp_cmd[i].repl)
+		if (i < ctcp_bucket->numitems && CTCP(i)->repl)
 		{
-		    if ((ptr = ctcp_cmd[i].repl(ctcp_cmd + i, from, to, 
-						ctcp_argument)))
+		    if ((ptr = CTCP(i)->repl(i, from, to, ctcp_argument)))
 		    {
 			strlcat(local_ctcp_buffer, ptr, 
 					sizeof local_ctcp_buffer);
@@ -1010,14 +1069,14 @@ char *	do_notice_ctcp (const char *from, const char *to, char *str)
 		}
 
 		/* Toss it at the user.  */
-		if (ctcp_cmd[i].flag & CTCP_TELLUSER)
+		if (CTCP(i)->flag & CTCP_TELLUSER)
 		{
 		    if (do_hook(CTCP_REPLY_LIST, "%s %s %s %s", 
 					from, to, ctcp_command, ctcp_argument))
 			say("CTCP %s reply from %s: %s", 
 					ctcp_command, from, ctcp_argument);
 		}
-		if (!(ctcp_cmd[i].flag & CTCP_NOLIMIT))
+		if (!(CTCP(i)->flag & CTCP_NOLIMIT))
 			allow_ctcp_reply = 0;
 
 		pop_message_from(l);
@@ -1076,10 +1135,10 @@ void	send_ctcp (int type, const char *to, int datatag, const char *format, ...)
 
 		do_hook(SEND_CTCP_LIST, "%s %s %s %s", 
 				ctcp_type[type], to, 
-				ctcp_cmd[datatag].name, pb);
+				CTCP_NAME(datatag), pb);
 		snprintf(putbuf2, len, "%c%s %s%c", 
 				CTCP_DELIM_CHAR, 
-				ctcp_cmd[datatag].name, pb, 
+				CTCP_NAME(datatag), pb, 
 				CTCP_DELIM_CHAR);
 
 		new_free(&extra);
@@ -1088,10 +1147,10 @@ void	send_ctcp (int type, const char *to, int datatag, const char *format, ...)
 	{
 		do_hook(SEND_CTCP_LIST, "%s %s %s", 
 				ctcp_type[type], to, 
-				ctcp_cmd[datatag].name);
+				CTCP_NAME(datatag));
 		snprintf(putbuf2, len, "%c%s%c", 
 				CTCP_DELIM_CHAR, 
-				ctcp_cmd[datatag].name, 
+				CTCP_NAME(datatag), 
 				CTCP_DELIM_CHAR);
 	}
 
@@ -1108,19 +1167,11 @@ int 	get_ctcp_val (char *str)
 {
 	int i;
 
-	for (i = 0; i < NUMBER_OF_CTCPS; i++)
-		if (!strcmp(str, ctcp_cmd[i].name))
+	for (i = 0; i < ctcp_bucket->numitems; i++)
+		if (!strcmp(str, CTCP_NAME(i)))
 			return i;
 
-	/*
-	 * This is *dangerous*, but it works.  The only place that
-	 * calls this function is edit.c:ctcp(), and it immediately
-	 * calls send_ctcp().  So the pointer that is being passed
-	 * to us is globally allocated at a level higher then ctcp().
-	 * so it wont be bogus until some time after ctcp() returns,
-	 * but at that point, we dont care any more.
-	 */
-	ctcp_cmd[CTCP_CUSTOM].name = str;
+	malloc_strcpy(&ctcp_custom_value, str);
 	return CTCP_CUSTOM;
 }
 

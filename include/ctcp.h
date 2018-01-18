@@ -12,26 +12,27 @@
 #define CTCP_PRIVMSG 		0
 #define CTCP_NOTICE 		1
 
-#define CTCP_ACTION		0
-#define CTCP_DCC		1
-#define CTCP_VERSION		2
-#define CTCP_AESSHA256		3
-#define CTCP_AES256		4
-#define CTCP_CAST5		5
-#define CTCP_BLOWFISH		6
-#define CTCP_FISH		7
-#define CTCP_SED		8
-#define CTCP_SEDSHA		9
-#define CTCP_PING		10
-#define	CTCP_ECHO		11
-#define CTCP_UTC		12
-#define CTCP_CLIENTINFO		13
-#define CTCP_USERINFO		14
-#define CTCP_ERRMSG		15
-#define CTCP_FINGER		16
-#define CTCP_TIME		17
-#define CTCP_CUSTOM		18
-#define NUMBER_OF_CTCPS		CTCP_CUSTOM
+extern int
+	CTCP_ACTION,
+	CTCP_DCC,
+	CTCP_VERSION,
+	CTCP_AESSHA256,
+	CTCP_AES256,
+	CTCP_CAST5,
+	CTCP_BLOWFISH,
+	CTCP_FISH,
+	CTCP_SED,
+	CTCP_SEDSHA,
+	CTCP_PING,
+	CTCP_ECHO,
+	CTCP_UTC,
+	CTCP_CLIENTINFO	,
+	CTCP_USERINFO,
+	CTCP_ERRMSG,
+	CTCP_FINGER,
+	CTCP_TIME,
+	CTCP_CUSTOM;
+/* NUMBER_OF_CTCPS		CTCP_CUSTOM */
 
 #define CTCP_DELIM_CHAR         '\001' 
 #define CTCP_DELIM_STR          "\001" 
@@ -47,5 +48,6 @@ extern	int	in_ctcp_flag;
 	int	in_ctcp 	(void);
 	void	send_ctcp 	(int, const char *, int, const char *, ...) /*__A(4)*/;
 	int	get_ctcp_val 	(char *);
+	int     init_ctcp 	(void);
 
 #endif /* _CTCP_H_ */

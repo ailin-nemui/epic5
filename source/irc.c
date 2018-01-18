@@ -51,7 +51,7 @@ const char internal_version[] = "20160805";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1886;
+const unsigned long	commit_id = 1887;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -89,6 +89,7 @@ const char ridiculous_version_name[] = "Indolence";
 #include "levels.h"
 #include "extlang.h"
 #include "files.h"
+#include "ctcp.h"
 #include <pwd.h>
 #ifdef NEWLOCALE_REQUIRES__GNU_SOURCE
 #define _GNU_SOURCE
@@ -1192,6 +1193,7 @@ int 	main (int argc, char *argv[])
 	init_functions();
 	init_expandos();
 	init_newio();
+	init_ctcp();
 
 	fprintf(stderr, "EPIC Version 5 -- %s\n", ridiculous_version_name);
 	fprintf(stderr, "EPIC Software Labs (2006)\n");
