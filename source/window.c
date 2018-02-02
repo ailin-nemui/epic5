@@ -2138,6 +2138,16 @@ static void	restore_window_positions (Window *w, intmax_t scrolling, intmax_t ho
 	if (!w->scrollback_top_of_display && scrollback != -1)
 		w->scrollback_top_of_display = w->top_of_scrollback;
 
+	/* 
+	 * We must _NEVER_ allow scrolling_top_of_display to be NULL.
+	 * If it is, recalculate_window_cursor_and_display_ip() will null deref.
+	 * I don't know what the right thing to do is, so I choose to
+	 * move the scrolling display to the bottom (ie, /unclear).
+	 * This seems the least worst hack.
+	 */
+	if (!w->scrolling_top_of_display)
+		unclear_window(w);
+
 	recalculate_window_cursor_and_display_ip(w);
 	if (w->scrolling_distance_from_display_ip >= w->display_lines)
 		unclear_window(w);
@@ -6900,6 +6910,11 @@ void 	recalculate_window_cursor_and_display_ip (Window *window)
 		window->scrollback_distance_from_display_ip = 
 			window->display_ip->count - 
 				window->scrollback_top_of_display->count;
+
+	/* XXX This is a sanity check hack. */
+	if (window->scrolling_top_of_display == NULL)
+		window->scrolling_top_of_display = window->display_ip;
+
 	window->scrolling_distance_from_display_ip = 
 		window->display_ip->count - 
 			window->scrolling_top_of_display->count;

@@ -1205,6 +1205,59 @@ static int split_CTCP (char *raw_message, char *ctcp_dest, char *after_ctcp)
 }
 
 #if 0
+/*
+ * In a slight departure from tradition, this ctl function is not object-oriented (restful)
+ *
+ *   $ctcpctl(SET <ctcp-name> NORMAL_REQUEST <alias_name>)
+ *	A "Normal Request" means a CTCP in a PRIVMSG that (usually) elicits a reply.
+ *	Examples of "normal requests" are DCC, VERSION, FINGER, PING, USERINFO
+ *
+ *   $ctcpctl(SET <ctcp-name> INLINE_REQUEST <alias_name>)
+ *	A "Inline Request" means a CTCP in a PRIVMSG that does not expect a reply, but
+ *	instead carries information that needs to be transformed for the user
+ *	Examples of "inline requests" are ACTION (/me), UTC, and all the Crypto stuff
+ *
+ *   $ctcpctl(SET <ctcp-name> NORMAL_REPLY <alias_name>)
+ *	A "Normal Reply" means a CTCP in a NOTICE that (usually) is a response to a
+ *	CTCP "normal request" you made to someone else.  Since the default behavior 
+ *	of CTCP Reply handling is to display it to the user, YOU USUALLY DO NOT NEED
+ *	TO SPECIFY A REPLY HANDLER, unless you're doing something unusual.  The IRC
+ *	protocol forbids a reply to a NOTICE, so you can't respond to a reply without
+ *	doing something you shouldn't do.
+ *	The only example of this is DCC REJECTs
+ *
+ *   $ctcpctl(SET <ctcp-name> INLINE_REPLY <alias_name>)
+ *	A "Inline Reply" means a CTCP in a NOTICE that carries information that needs
+ *	to be transformed for the user
+ *	Examples of "inline replies" are ACTION (/me) and crypto messages in NOTICEs
+ */
+char *	ctcpctl	(char *input)
+{
+	char *	op;
+	size_t	op_len;
+	char *	ctcp_name;
+	size_t	ctcp_name_len;
+	char *	handle_type;
+	size_t	handle_type_len;
+	char *	alias_name;
+	size_t	alias_name_len;
+
+	GET_FUNC_ARG(op, input);
+	op_len = strlen(op);
+
+	if (!my_strnicmp(op, "SET", op_len)) {
+	} else if (!my_strnicmp(op, "GET", op_len)) {
+
+	if (!my_strnicmp(op, "NORMAL_REQUEST", len)) {
+	} else if (!my_strnicmp(op, "INLINE_REQUEST", len)) {
+	} else if (!my_strnicmp(op, "NORMAL_REPLY", len)) {
+	} else if (!my_strnicmp(op, "INLINE_REPLY", len)) {
+	}
+}
+#endif
+
+
+#if 0
 void    help_topics_ctcp (FILE *f)
 {
         int     x;                                                              
@@ -1213,3 +1266,5 @@ void    help_topics_ctcp (FILE *f)
                 fprintf(f, "ctcp %s\n", ctcp_cmd[x].name);
 }
 #endif
+
+
