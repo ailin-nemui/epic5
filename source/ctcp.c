@@ -65,12 +65,12 @@
  *
  * Each supported CTCP has these bitflags describing its behavior
  */
-#define CTCP_SPECIAL	0	/* Special/Internal - handles everything itself */
-#define CTCP_REPLY	1	/* Will send a reply to the requester */
-#define CTCP_INLINE	2	/* Returns a value to replace the CTCP inline */
-#define CTCP_NOLIMIT	4	/* Is NOT subject to ctcp flood control - ctcp handler should never suppress */
-#define CTCP_TELLUSER	8	/* Does not tell the user - ctcp handler should do that */
-#define CTCP_NORECODE	16	/* Recodes the message itself; ctcp handler should NOT do that */
+#define CTCP_SPECIAL	1	/* Special/Internal - handles everything itself */
+#define CTCP_REPLY	2	/* Will send a reply to the requester */
+#define CTCP_INLINE	4	/* Returns a value to replace the CTCP inline */
+#define CTCP_NOLIMIT	8	/* Is NOT subject to ctcp flood control - ctcp handler should never suppress */
+#define CTCP_TELLUSER	16	/* Does not tell the user - ctcp handler should do that */
+#define CTCP_NORECODE	32	/* Recodes the message itself; ctcp handler should NOT do that */
 
 /* CTCP ENTRIES */
 /*
@@ -125,6 +125,8 @@ static	Bucket	*ctcp_bucket = NULL;
 /* The value of a CTCP is the Value of the BucketItem. */
 #define CTCP(i) ((CtcpEntry *)ctcp_bucket->list[i].stuff)
 
+static int	in_ctcp = 0;
+
 
 /*
  * To make it easier on myself, I use a macro to ensure ctcp handler C functions
@@ -132,23 +134,6 @@ static	Bucket	*ctcp_bucket = NULL;
  */
 #define CTCP_HANDLER(x) \
 static char * x (const char *from, const char *to, const char *cmd, char *args)
-
-#if 0
-/* forward declarations for the built in CTCP functions */
-CTCP_HANDLER(do_crypto);
-CTCP_HANDLER(do_version);
-CTCP_HANDLER(do_clientinfo);
-CTCP_HANDLER(do_ping);
-CTCP_HANDLER(do_echo);
-CTCP_HANDLER(do_userinfo);
-CTCP_HANDLER(do_finger);
-CTCP_HANDLER(do_time);
-CTCP_HANDLER(do_atmosphere);
-CTCP_HANDLER(do_dcc);
-CTCP_HANDLER(do_utc);
-CTCP_HANDLER(do_dcc_reply);
-CTCP_HANDLER(do_ping_reply);
-#endif
 
 static	void	add_ctcp (const char *name, int flag, const char *desc, CTCP_Handler func, CTCP_Handler repl, const char *user_func, const char *user_repl)
 {
@@ -253,9 +238,9 @@ CTCP_HANDLER(do_crypto)
 	 * recode until we have removed any sub-ctcps!
 	 */
 	if (get_server_doing_privmsg(from_server))
-		extra = malloc_strdup(do_ctcp(from, to, ret));
+		extra = malloc_strdup(do_ctcp(1, from, to, ret));
 	else if (get_server_doing_notice(from_server))
-		extra = malloc_strdup(do_notice_ctcp(from, to, ret));
+		extra = malloc_strdup(do_ctcp(0, from, to, ret));
 	else
 	{
 		extra = ret;
@@ -399,11 +384,11 @@ CTCP_HANDLER(do_clientinfo)
 		{
 			if (my_stricmp(args, CTCP_NAME(i)) == 0)
 			{
-				send_ctcp("NOTICE", from, "CLIENTINFO", "%s %s", CTCP_NAME(i), CTCP(i)->desc);
+				send_ctcp(0, from, "CLIENTINFO", "%s %s", CTCP_NAME(i), CTCP(i)->desc);
 				return NULL;
 			}
 		}
-		send_ctcp("NOTICE", from, "ERRMSG", "%s: %s is not a valid function", "CLIENTINFO", args);
+		send_ctcp(0, from, "ERRMSG", "%s: %s is not a valid function", "CLIENTINFO", args);
 	}
 	else
 	{
@@ -416,7 +401,7 @@ CTCP_HANDLER(do_clientinfo)
 			strlcat(buffer, name, sizeof buffer);
 			strlcat(buffer, " ", sizeof buffer);
 		}
-		send_ctcp("NOTICE", from, cmd, "%s :Use %s <COMMAND> to get more specific information", buffer, cmd);
+		send_ctcp(0, from, cmd, "%s :Use %s <COMMAND> to get more specific information", buffer, cmd);
 	}
 	return NULL;
 }
@@ -443,11 +428,11 @@ CTCP_HANDLER(do_version)
 		the_unix = un.sysname;
 
 	/* We no longer show the detailed version of your OS. */
-	send_ctcp("NOTICE", from, cmd, "ircII %s %s - %s", irc_version, the_unix, 
+	send_ctcp(0, from, cmd, "ircII %s %s - %s", irc_version, the_unix, 
 			(tmp = get_string_var(CLIENT_INFORMATION_VAR)) ? 
 				tmp : IRCII_COMMENT);
 #else
-	send_ctcp("NOTICE", from, cmd, "ircII %s *IX - %s", irc_version,
+	send_ctcp(0, from, cmd, "ircII %s *IX - %s", irc_version,
 			(tmp = get_string_var(CLIENT_INFORMATION_VAR)) ? 
 				tmp : IRCII_COMMENT);
 #endif
@@ -457,7 +442,7 @@ CTCP_HANDLER(do_version)
 /* do_time: does the CTCP TIME command --- done by Veggen */
 CTCP_HANDLER(do_time)
 {
-	send_ctcp("NOTICE", from, cmd, "%s", my_ctime(time(NULL)));
+	send_ctcp(0, from, cmd, "%s", my_ctime(time(NULL)));
 	return NULL;
 }
 
@@ -466,7 +451,7 @@ CTCP_HANDLER(do_userinfo)
 {
 	char *tmp;
 
-	send_ctcp("NOTICE", from, cmd, "%s", (tmp = get_string_var(USER_INFORMATION_VAR)) ? tmp : "<No User Information>");
+	send_ctcp(0, from, cmd, "%s", (tmp = get_string_var(USER_INFORMATION_VAR)) ? tmp : "<No User Information>");
 	return NULL;
 }
 
@@ -477,13 +462,13 @@ CTCP_HANDLER(do_userinfo)
 CTCP_HANDLER(do_echo)
 {
 	if (!is_channel(to))
-		send_ctcp("NOTICE", from, cmd, "%s", args);
+		send_ctcp(0, from, cmd, "%s", args);
 	return NULL;
 }
 
 CTCP_HANDLER(do_ping)
 {
-	send_ctcp("NOTICE", from, cmd, "%s", args ? args : empty_string);
+	send_ctcp(0, from, cmd, "%s", args ? args : empty_string);
 	return NULL;
 }
 
@@ -541,7 +526,7 @@ CTCP_HANDLER(do_finger)
 	if ((tmp = strchr(gecosbuff, GECOS_DELIMITER)) != NULL)
 		*tmp = 0;
 
-	send_ctcp("NOTICE", from, cmd, "%s (%s@%s) Idle %ld second%s", 
+	send_ctcp(0, from, cmd, "%s (%s@%s) Idle %ld second%s", 
 		gecosbuff, userbuff, my_host, diff, plural(diff));
 
 	return NULL;
@@ -618,8 +603,29 @@ CTCP_HANDLER(do_ping_reply)
 
 /************************************************************************/
 /*
- * XXXX -- some may call this a hack, but if youve got a better
- * way to handle this job, id love to use it.
+ * split_CTCP - Extract a CTCP out of a message body
+ *
+ * Arguments:
+ *	raw_message -- A message, either a PRIVMSG, NOTICE, or DCC CHAT.
+ *			- If the message contains a CTCP, then the string
+ *			  will be truncated to the part before the CTCP.
+ *			- If the message does not contain a CTCP, it is
+ *			  unchanged.
+ *	ctcp_dest   -- A buffer (of size IRCD_BUFFER_SIZE)
+ *			- If the message contains a CTCP, then the CTCP
+ *			  itself (without the CTCP_DELIMs) will be put
+ *			  in here.
+ *			- If the message does not contain a CTCP, it is
+ *			  unchanged
+ *	after_ctcp  -- A buffer (of size IRCD_BUFFER_SIZE)
+ *			- If the message contains a CTCP, then the part
+ *			  of the message after the CTCP will be put in here
+ *			- If the message does not contain a CTCP, it is
+ *			  unchanged
+ *
+ * Return value:
+ *	-1	- No CTCP was found.  All parameters are unchanged
+ *	 0	- A CTCP was found.  All three parameters were changed
  */
 static int split_CTCP (char *raw_message, char *ctcp_dest, char *after_ctcp)
 {
@@ -630,13 +636,11 @@ static int split_CTCP (char *raw_message, char *ctcp_dest, char *after_ctcp)
 
 	if (!(ctcp_start = strchr(raw_message, CTCP_DELIM_CHAR)))
 		return -1;		/* No CTCPs present. */
-	*ctcp_start++ = 0;
 
-	if (!(ctcp_end = strchr(ctcp_start, CTCP_DELIM_CHAR)))
-	{
-		*--ctcp_start = CTCP_DELIM_CHAR; /* Revert change */
+	if (!(ctcp_end = strchr(ctcp_start + 1, CTCP_DELIM_CHAR)))
 		return -1;		 /* No CTCPs present after all */
-	}
+
+	*ctcp_start++ = 0;
 	*ctcp_end++ = 0;
 
 	strlcpy(ctcp_dest, ctcp_start, IRCD_BUFFER_SIZE - 1);
@@ -646,180 +650,108 @@ static int split_CTCP (char *raw_message, char *ctcp_dest, char *after_ctcp)
 
 
 /*
- * do_ctcp: a re-entrant form of a CTCP parser.  The old one was lame,
- * so i took a hatchet to it so it didnt suck.
+ * do_ctcp - Remove and process all CTCPs within a message
  *
- * XXXX - important!  The third argument -- 'str', is expected to be
- * 'BIG_BUFFER_SIZE + 1' or larger.  If it isnt, chaos will probably 
- * ensue if you get spammed with lots of CTCP UTC requests.
+ * Arguments:
+ *	request - Am i processing a request or a response?
+ *		   1 = This is a PRIVMSG or DCC CHAT (a request)
+ *		   0 = This is a NOTICE (a response)
+ *	from	- Who sent the CTCP
+ *	to	- Who received the CTCP (nick, channel, wall)
+ *	str	- The message we received. (may be modified)
+ *		  This must be at least BIG_BUFFER_SIZE+1 or bigger.
  *
- * UTC requests can be at minimum 5 bytes, and the expansion is always 24.
- * That means you can cram (510 - strlen("PRIVMSG x :") / 5) UTCs (100)
- * into a privmsg.  That means itll expand to 2400 characters.  We silently
- * limit the number of valid CTCPs to 4.  Anything more than that we dont
- * even bother with. (4 * 24 + 11 -> 106), which is less than
- * IRCD_BUFFER_SIZE, which gives us plenty of safety.
- *
- * XXXX - The normal way of implementation required two copies -- once into a
- * temporary buffer, once back into the original buffer -- for the best case
- * scenario.  This is horrendously inefficient, since most privmsgs dont
- * contain any CTCPs.  So we check to see if there are any CTCPs in the
- * message before we bother doing anything.  THIS IS AN INELEGANT HACK!
- * But the call to charcount() is less expensive than even one copy to 
- * strlcpy() since they both evaluate *each* character, and charcount()
- * doesnt have to do a write unless the character is present.  So it is 
- * definitely worth the cost to save CPU time for 99% of the PRIVMSGs.
+ * Return value:
+ *	'str' is returned.  
+ *	'str' may be modified.
+ *	It is guaranteed that 'str' shall contain no CTCPs upon return.
  */
-char *	do_ctcp (const char *from, const char *to, char *str)
+char *	do_ctcp (int request, const char *from, const char *to, char *str)
 {
 	int 	flag;
 	int	fflag;
 	char 	local_ctcp_buffer [BIG_BUFFER_SIZE + 1],
 		the_ctcp          [IRCD_BUFFER_SIZE + 1],
-		last              [IRCD_BUFFER_SIZE + 1];
+		after             [IRCD_BUFFER_SIZE + 1];
 	char	*ctcp_command,
 		*ctcp_argument;
+	char 	*original_ctcp_argument;
 	int	i;
 	char	*ptr = NULL;
-	int	allow_ctcp_reply = 1;
+	int	dont_process_more = 0;
 static	time_t	last_ctcp_parsed = 0;
 	int	l;
 	char *	extra = NULL;
+	int 	delim_char;
 
-	int delim_char = charcount(str, CTCP_DELIM_CHAR);
-
+	/*
+	 * Messages with less than 2 CTCP delims don't have a CTCP in them.
+	 * Messages with > 8 delims are probably rogue/attack messages.
+	 * We can save a lot of cycles by heading those off at the pass.
+	 */
+	delim_char = charcount(str, CTCP_DELIM_CHAR);
 	if (delim_char < 2)
 		return str;		/* No CTCPs. */
 	if (delim_char > 8)
-		allow_ctcp_reply = 0;	/* Historical limit of 4 CTCPs */
+		dont_process_more = 1;	/* Historical limit of 4 CTCPs */
 
+
+	/*
+	 * Ignored CTCP messages, or requests during a flood, are 
+	 * removed, but not processed.
+	 * Although all CTCPs are subject to IGNORE, and requests are subject
+	 * to flood control; we must apply these restrictions on the inside
+	 * of the loop, for each CTCP we see.
+	 */
 	flag = check_ignore_channel(from, FromUserHost, to, LEVEL_CTCP);
-	fflag = new_check_flooding(from, FromUserHost, is_channel(to) ? to : NULL,
+	if (request)
+		fflag = new_check_flooding(from, FromUserHost, 
+						is_channel(to) ? to : NULL, 
 						str, LEVEL_CTCP);
+	else
+		fflag = 0;
 
+	/* /IGNOREd or flooding messages are removed but not processed */
+	if (flag == IGNORED || fflag == 1)
+		dont_process_more = 1;
+
+	/* Messages sent to global targets are removed but not processed */
+	if (*to == '$' || (*to == '#' && !im_on_channel(to, from_server)))
+		dont_process_more = 1;
+
+
+
+	/* Set up the window level/logging */
+	if (im_on_channel(to, from_server))
+		l = message_from(to, LEVEL_CTCP);
+	else
+		l = message_from(from, LEVEL_CTCP);
+
+
+	/* For each CTCP we extract from 'local_ctcp_buffer'.... */
 	strlcpy(local_ctcp_buffer, str, sizeof(local_ctcp_buffer) - 2);
-
-	for (;;strlcat(local_ctcp_buffer, last, sizeof(local_ctcp_buffer) - 2))
+	for (;;new_free(&extra), strlcat(local_ctcp_buffer, after, sizeof(local_ctcp_buffer) - 2))
 	{
-		if (split_CTCP(local_ctcp_buffer, the_ctcp, last))
+		/* Extract next CTCP. If none found, we're done! */
+		if (split_CTCP(local_ctcp_buffer, the_ctcp, after))
 			break;		/* All done! */
 
+		/* If the CTCP is empty (ie, ^A^A), ignore it.  */
 		if (!*the_ctcp)
-			continue;	/* Empty requests are ignored */
-
-		/*
-		 * Apply some integrety rules:
-		 * -- If we've already replied to a CTCP, ignore it.
-		 * -- If user is ignoring sender, ignore it.
-		 * -- If we're being flooded, ignore it.
-		 * -- If CTCP was a global msg, ignore it.
-		 */
-
-		/*
-		 * Yes, this intentionally ignores "unlimited" CTCPs like
-		 * UTC and SED.  Ultimately, we have to make sure that
-		 * CTCP expansions dont overrun any buffers that might
-		 * contain this string down the road.  So by allowing up to
-		 * 4 CTCPs, we know we cant overflow -- but if we have more
-		 * than 40, it might overflow, and its probably a spam, so
-		 * no need to shed tears over ignoring them.  Also makes
-		 * the sanity checking much simpler.
-		 */
-		if (!allow_ctcp_reply)
 			continue;
 
-		/*
-		 * Check to see if the user is ignoring person.
-		 * Or if we're suppressing a flood.
-		 */
-		if (flag == IGNORED || fflag == 1)
-		{
-			if (x_debug & DEBUG_CTCPS)
-				yell("CTCP from [%s] ignored", from);
-			allow_ctcp_reply = 0;
+		/* If we're removing-but-not-processing CTCPs, ignore it */
+		if (dont_process_more)
 			continue;
-		}
-
-		/*
-		 * Check for CTCP flooding
-		 */
-		if (get_int_var(NO_CTCP_FLOOD_VAR))
-		{
-		    if (time(NULL) - last_ctcp_parsed < 2)
-		    {
-			/*
-			 * This extends the flood protection until
-			 * we dont get a CTCP for 2 seconds.
-			 */
-			last_ctcp_parsed = time(NULL);
-			allow_ctcp_reply = 0;
-			if (x_debug & DEBUG_CTCPS)
-				say("CTCP flood from [%s] ignored", from);
-			continue;
-		    }
-		}
-
-		/*
-		 * Check for global message
-		 */
-		if (*to == '$' || (*to == '#' && !im_on_channel(to, from_server)))
-		{
-			allow_ctcp_reply = 0;
-			continue;
-		}
 
 
-		/*
-		 * Now its ok to parse the CTCP.
-		 * First we remove the argument.
-		 * XXX - CTCP spec says word delim MUST be space.
-		 */
+		/* * * */
+		/* Seperate the "command" from the "argument" */
 		ctcp_command = the_ctcp;
-		ctcp_argument = strchr(the_ctcp, ' ');
-		if (ctcp_argument)
+		if ((ctcp_argument = strchr(the_ctcp, ' ')))
 			*ctcp_argument++ = 0;
 		else
 			ctcp_argument = endstr(the_ctcp);
-
-		/* Set up the window level/logging */
-		if (im_on_channel(to, from_server))
-			l = message_from(to, LEVEL_CTCP);
-		else
-			l = message_from(from, LEVEL_CTCP);
-
-		/*
-		 * Then we look for the correct CTCP.
-		 */
-		for (i = 0; i < ctcp_bucket->numitems; i++)
-			if (!strcmp(ctcp_command, CTCP_NAME(i)))
-				break;
-
-		/*
-		 * We didnt find it?
-		 */
-		if (i == ctcp_bucket->numitems)
-		{
-			/*
-			 * Offer it to the user.
-			 * Maybe they know what to do with it.
-			 */
-			if (do_hook(CTCP_REQUEST_LIST, "%s %s %s %s",
-				from, to, ctcp_command, ctcp_argument))
-			{
-			    if (do_hook(CTCP_LIST, "%s %s %s %s", from, to, 
-						ctcp_command, ctcp_argument))
-			    {
-				    say("Unknown CTCP %s from %s to %s: %s%s",
-					ctcp_command, from, to, 
-					*ctcp_argument ? ": " : empty_string, 
-					ctcp_argument);
-			    }
-			}
-			time(&last_ctcp_parsed);
-			allow_ctcp_reply = 0;
-			pop_message_from(l);
-			continue;
-		}
 
 		/*
 		 * rfc1459_any_to_utf8 specifically ignores CTCPs, because
@@ -832,64 +764,115 @@ static	time_t	last_ctcp_parsed = 0;
 		 * to be recoded prior to handling.  These are the encryption
 		 * CTCPS.
 		 *
-		 * All other CTCPs have not been recoded by the time they
-		 * reach here, so we must do it here!
+		 * For the NORECORD ctcps, we save "original_ctcp_argument"
+		 * For everybody else, 'ctcp_argument' is recoded.
 		 */
-		if (!(CTCP(i)->flag & CTCP_NORECODE))
-		{
-		   /*
-		    * We must recode to UTF8
-		    */
-		   inbound_recode(from, from_server, to, ctcp_argument, &extra);
-		   if (extra)
+		original_ctcp_argument = ctcp_argument;
+		inbound_recode(from, from_server, to, ctcp_argument, &extra);
+		if (extra)
 			ctcp_argument = extra;
-		}
 
 		/* 
-		 * We did find it.  Acknowledge it.
+		 * Offer it to the user FIRST.
+		 * CTCPs handled via /on CTCP_REQUEST are treated as 
+		 * ordinary "i sent a reply" CTCPs 
 		 */
-		ptr = NULL;
-		if (do_hook(CTCP_REQUEST_LIST, "%s %s %s %s",
-				from, to, ctcp_command, ctcp_argument))
+		if (request)
 		{
-			ptr = CTCP(i)->func(from, to, ctcp_command, ctcp_argument);
+			in_ctcp++;
+
+			/* If the user "handles" it, then we're done with it! */
+			if (!do_hook(CTCP_REQUEST_LIST, "%s %s %s %s",
+					from, to, ctcp_command, ctcp_argument))
+			{
+				in_ctcp--;
+				dont_process_more = 1;
+				continue;
+			}
+
+			in_ctcp--;
+			/* 
+			 * User did not "handle" it.  with /on ctcp_request.
+			 * Let's continue on! 
+			 */
 		}
 
 		/*
-		 * If this isnt an 'unlimited' CTCP, set up flood protection.
-		 *
-		 * No, this wont allow users to flood any more than they
-		 * would normally.  The UTC/SED gets converted into a 
-		 * regular privmsg body, which is flagged via FLOOD_PUBLIC.
+		 * Next, look for a built-in CTCP handler
 		 */
-		if (!(CTCP(i)->flag & CTCP_NOLIMIT))
+
+		/* Does this CTCP have a built-in handler? */
+		for (i = 0; i < ctcp_bucket->numitems; i++)
 		{
-			time(&last_ctcp_parsed);
-			allow_ctcp_reply = 0;
+			if (!strcmp(ctcp_command, CTCP_NAME(i)))
+			{
+				/* This counts only if there is a function to call! */
+				if (request && (CTCP(i)->func || CTCP(i)->user_func))
+					break;
+				else if (!request && (CTCP(i)->repl || CTCP(i)->user_repl))
+					break;
+			}
 		}
 
-
-		/*
-		 * We've only gotten to this point if its a valid CTCP
-		 * query and we decided to parse it.
-		 */
-
-		/*
-		 * If its an ``INLINE'' CTCP, we paste it back in.
-		 */
-		if (CTCP(i)->flag & CTCP_INLINE)
-			strlcat(local_ctcp_buffer, ptr ? ptr : empty_string, sizeof local_ctcp_buffer);
-
-		/* 
-		 * If its ``INTERESTING'', tell the user.
-		 * Note that this isnt mutex with ``INLINE'' in theory,
-		 * even though it is in practice.  Dont use 'else' here.
-		 */
-		if (CTCP(i)->flag & CTCP_TELLUSER)
+		/* There is a function to call. */
+		if (i < ctcp_bucket->numitems)
 		{
-		    if (do_hook(CTCP_LIST, "%s %s %s %s", 
-				from, to, ctcp_command, ctcp_argument))
-		    {
+			if ((CTCP(i)->flag & CTCP_NORECODE))
+				ctcp_argument = original_ctcp_argument;
+
+			in_ctcp++;
+
+			/* Call the appropriate callback (four-ways!) */
+			if (request)
+			{
+				if (CTCP(i)->user_func)
+				{
+					char *args = NULL;
+					malloc_sprintf(&args, "%s %s %s %s", from, to, ctcp_command, ctcp_argument);
+					ptr = call_lambda_function("CTCP", CTCP(i)->user_func, args);
+					new_free(&args);
+				}
+				else if (CTCP(i)->func)
+					ptr = CTCP(i)->func(from, to, ctcp_command, ctcp_argument);
+			}
+			else
+			{
+				if (CTCP(i)->user_repl)
+				{
+					char *args = NULL;
+					malloc_sprintf(&args, "%s %s %s %s", from, to, ctcp_command, ctcp_argument);
+					ptr = call_lambda_function("CTCP", CTCP(i)->user_repl, args);
+					new_free(&args);
+				}
+				else if (CTCP(i)->repl)
+					ptr = CTCP(i)->repl(from, to, ctcp_command, ctcp_argument);
+			}
+			in_ctcp--;
+
+			/* This CTCP is "handled" if the handler returned an inline expando */
+			if (ptr)
+			{
+				strlcat(local_ctcp_buffer, ptr, sizeof local_ctcp_buffer);
+				new_free(&ptr);
+				continue;
+			}
+
+			/* This CTCP is "handled" if it's marked as special (/me, /dcc) */
+			if (CTCP(i)->flag & CTCP_SPECIAL)
+				continue;
+
+			/* Otherwise, let's continue on! */
+		}
+
+		/* Default handling -- tell the user about it */
+		if (extra)
+			ctcp_argument = extra;
+		in_ctcp++;
+		if (request)
+		{
+			if (do_hook(CTCP_LIST, "%s %s %s %s", from, to, 
+						ctcp_command, ctcp_argument))
+			{
 			    if (is_me(from_server, to))
 				say("CTCP %s from %s%s%s", 
 					ctcp_command, from, 
@@ -900,154 +883,39 @@ static	time_t	last_ctcp_parsed = 0;
 					ctcp_command, from, to, 
 					*ctcp_argument ? ": " : empty_string, 
 					ctcp_argument);
-		    }
+			}
 		}
-		new_free(&extra);
-		new_free(&ptr);
-		pop_message_from(l);
+		else
+		{
+			if (do_hook(CTCP_REPLY_LIST, "%s %s %s %s", 
+					from, to, ctcp_command, ctcp_argument))
+				say("CTCP %s reply from %s: %s", 
+						ctcp_command, from, ctcp_argument);
+
+		}
+		in_ctcp--;
+
+		dont_process_more = 1;
 	}
 
-	/* 
+	/*
+	 * When we are all done, 'local_ctcp_buffer' contains a message without
+	 * any CTCPs in it!
+	 *
 	 * 'str' is required to be BIG_BUFFER_SIZE + 1 or bigger per the API.
 	 */
+	pop_message_from(l);
 	strlcpy(str, local_ctcp_buffer, BIG_BUFFER_SIZE);
 	return str;
 }
-
-
-
-/*
- * do_notice_ctcp: a re-entrant form of a CTCP reply parser.
- * See the implementation notes in do_ctcp().
- */
-char *	do_notice_ctcp (const char *from, const char *to, char *str)
-{
-	int 	flag;
-	char 	local_ctcp_buffer [BIG_BUFFER_SIZE + 1],
-		the_ctcp          [IRCD_BUFFER_SIZE + 1],
-		last              [IRCD_BUFFER_SIZE + 1];
-	char	*ctcp_command,
-		*ctcp_argument;
-	int	i;
-	char	*ptr;
-	int	allow_ctcp_reply = 1;
-	int	l;
-
-	int delim_char = charcount(str, CTCP_DELIM_CHAR);
-
-	if (delim_char < 2)
-		return str;		/* No CTCPs. */
-	if (delim_char > 8)
-		allow_ctcp_reply = 0;	/* Ignore all the CTCPs. */
-
-	/* We handle ignore, but not flooding (obviously) */
-	flag = check_ignore_channel(from, FromUserHost, to, LEVEL_CTCP);
-	strlcpy(local_ctcp_buffer, str, sizeof(local_ctcp_buffer) - 2);
-
-	for (;;strlcat(local_ctcp_buffer, last, sizeof(local_ctcp_buffer) - 2))
-	{
-		if (split_CTCP(local_ctcp_buffer, the_ctcp, last))
-			break;		/* All done! */
-
-		if (!*the_ctcp)
-			continue;	/* Empty requests are ignored */
-
-		/*
-		 * The logic of all this is essentially the same as 
-		 * do_ctcp
-		 */
-
-		if (!allow_ctcp_reply)
-			continue;
-
-		if (flag == IGNORED)
-		{
-			if (x_debug & DEBUG_CTCPS)
-				yell("CTCP REPLY from [%s] ignored", from);
-			allow_ctcp_reply = 0;
-			continue;
-		}
-
-		/* But we don't check ctcp flooding (obviously) */
-
-		/* Global messages -- just drop the CTCP */
-		if (*to == '$' || (is_channel(to) && 
-					!im_on_channel(to, from_server)))
-		{
-			allow_ctcp_reply = 0;
-			continue;
-		}
-
-
-		/*
-		 * Parse CTCP message
-		 * CTCP spec says word delim MUST be space
-		 */
-		ctcp_command = the_ctcp;
-		ctcp_argument = strchr(the_ctcp, ' ');
-		if (ctcp_argument)
-			*ctcp_argument++ = 0;
-		else
-			ctcp_argument = endstr(the_ctcp);
-
-		/* Set up the window level/logging */
-		if (is_channel(to))
-			l = message_from(to, LEVEL_CTCP);
-		else
-			l = message_from(from, LEVEL_CTCP);
-
-		/* 
-		 * Find the correct CTCP and run it.
-		 */
-		for (i = 0; i < ctcp_bucket->numitems; i++)
-			if (!strcmp(ctcp_command, CTCP_NAME(i)))
-				break;
-
-		/* 
-		 * If its a built in CTCP command, check to see if its
-		 * got a reply handler, call if appropriate.
-		 */
-		if (i < ctcp_bucket->numitems && CTCP(i)->repl)
-		{
-		    if ((ptr = CTCP(i)->repl(from, to, ctcp_command, ctcp_argument)))
-		    {
-			strlcat(local_ctcp_buffer, ptr, 
-					sizeof local_ctcp_buffer);
-			new_free(&ptr);
-			pop_message_from(l);
-			continue;
-		    }
-		}
-
-		/* Toss it at the user.  */
-		if (CTCP(i)->flag & CTCP_TELLUSER)
-		{
-		    if (do_hook(CTCP_REPLY_LIST, "%s %s %s %s", 
-					from, to, ctcp_command, ctcp_argument))
-			say("CTCP %s reply from %s: %s", 
-					ctcp_command, from, ctcp_argument);
-		}
-		if (!(CTCP(i)->flag & CTCP_NOLIMIT))
-			allow_ctcp_reply = 0;
-
-		pop_message_from(l);
-	}
-
-	/* 
-	 * local_ctcp_buffer is derived from 'str', so its always
-	 * smaller or equal in size to 'str', so this copy is safe.
-	 */
-	strlcpy(str, local_ctcp_buffer, BIG_BUFFER_SIZE);
-	return str;
-}
-
 
 
 /*
  * send_ctcp - Format and send a properly encoded CTCP message
  *
  * Arguments:
- *	protocol - Either "PRIVMSG" for a request or "NOTICE" for a reply.
+ *	request  - 1 - This is a CTCP request originating with the user
+ *		   0 - This is a CTCP reply in response to a CTCP request
  *		   Other values will have undefined behavior.
  *	to	- The target to send the message to.
  *	type	- A string describing the CTCP being sent or replied to.
@@ -1066,11 +934,12 @@ char *	do_notice_ctcp (const char *from, const char *to, char *str)
  *	To send a /me to a channel:
  *		send_ctcp("PRIVMSG", channel, "ACTION", "%s", message);
  */
-void	send_ctcp (const char *protocol, const char *to, const char *type, const char *format, ...)
+void	send_ctcp (int request, const char *to, const char *type, const char *format, ...)
 {
 	char *	putbuf2;
 	int	len;
 	int	l;
+	const char *protocol;
 
 	/* Make sure that the final \001 doesnt get truncated */
 	if ((len = IRCD_BUFFER_SIZE - (12 + strlen(to))) <= 0)
@@ -1078,6 +947,18 @@ void	send_ctcp (const char *protocol, const char *to, const char *type, const ch
 	putbuf2 = alloca(len);
 
 	l = message_from(to, LEVEL_CTCP);
+
+	if (request)
+		protocol = "PRIVMSG";
+	else
+		protocol = "NOTICE";
+#if 0
+	if (in_ctcp == 0)
+		protocol = "PRIVMSG";
+	else
+		protocol = "NOTICE";
+#endif
+
 	if (format)
 	{
 		const char *pb;
@@ -1175,16 +1056,6 @@ char *	ctcpctl	(char *input)
 #endif
 
 
-#if 0
-void    help_topics_ctcp (FILE *f)
-{
-        int     x;                                                              
-
-        for (x = 0; ctcp_cmd[x].name; x++)                            
-                fprintf(f, "ctcp %s\n", ctcp_cmd[x].name);
-}
-#endif
-
 int	init_ctcp (void)
 {
 	ctcp_bucket = new_bucket();
@@ -1251,5 +1122,15 @@ int	init_ctcp (void)
 				"tells you the time on the user's host",
 				do_time, 	NULL, NULL, NULL );
 }
+
+#if 0
+void    help_topics_ctcp (FILE *f)
+{
+        int     x;                                                              
+
+        for (x = 0; ctcp_cmd[x].name; x++)                            
+                fprintf(f, "ctcp %s\n", ctcp_cmd[x].name);
+}
+#endif
 
 

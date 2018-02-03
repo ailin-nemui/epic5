@@ -409,7 +409,7 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	 * until we know there's other stuff besides the ctcp in the
 	 * message, which keeps things going to the wrong window.
 	 */
-	message = do_ctcp(from, target, (char *)
+	message = do_ctcp(1, from, target, (char *)
 #ifdef HAVE_INTPTR_T
 					(intptr_t)
 #endif
@@ -1331,7 +1331,7 @@ static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 
 	/* Do normal /CTCP reply handling */
 	/* XXX -- Casting "message" to (char *) is cheating. */
-	message = do_notice_ctcp(from, target, (char *)
+	message = do_ctcp(0, from, target, (char *)
 #ifdef HAVE_INTPTR_T
 							(intptr_t)
 #endif

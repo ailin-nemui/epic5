@@ -1279,8 +1279,7 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 		/*
 		 * Dont bother with the checksum.
 		 */
-		send_ctcp("PRIVMSG", dcc->user, "DCC",
-			 "%s %s %s %s "INTMAX_FORMAT,
+		send_ctcp(1, dcc->user, "DCC", "%s %s %s %s "INTMAX_FORMAT,
 			 type, url_name, p_host, p_port,
 			 dcc->filesize);
 
@@ -1303,8 +1302,7 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 		/*
 		 * Send out the handshake
 		 */
-		send_ctcp("PRIVMSG", dcc->user, "DCC",
-			 "%s %s %s %s", 
+		send_ctcp(1, dcc->user, "DCC", "%s %s %s %s", 
 			 type, nopath, p_host, p_port);
 
 		/*
@@ -1918,7 +1916,7 @@ jumpstart_get:
 				/* Just in case we have to fool the protocol enforcement. */
 				proto = get_server_protocol_state(from_server);
 				set_server_protocol_state(from_server, 0);
-				send_ctcp("PRIVMSG", user, "DCC",
+				send_ctcp(1, user, "DCC",
 #if 1
 					strchr(dcc->description, ' ')
 						? "RESUME \"%s\" %s %ld"
@@ -2728,8 +2726,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 		else
 		{
 		    say("DCC %s collision for %s:%s", type, user, description);
-		    send_ctcp("NOTICE", user, "DCC",
-			"DCC %s collision occured while connecting to %s (%s)", 
+		    send_ctcp(0, user, "DCC", "DCC %s collision occured while connecting to %s (%s)", 
 			type, get_server_nickname(from_server), description);
 		    break;
 		}
@@ -3065,9 +3062,9 @@ static	char *	process_dcc_chat_ctcps (DCC_list *Client, char *tmp)
 
 		l = message_from(target, LEVEL_CTCP);
 		if (ctcp_request == 1)
-			tmp = do_ctcp(target, nickname, tmp);
+			tmp = do_ctcp(1, target, nickname, tmp);
 		else
-			tmp = do_notice_ctcp(target, nickname, tmp);
+			tmp = do_ctcp(0, target, nickname, tmp);
 		pop_message_from(l);
 
 		FromUserHost = OFUH;
@@ -3816,8 +3813,7 @@ static	void 	output_reject_ctcp (int refnum, char *original, char *received)
 
 		old_fs = from_server;
 		from_server = refnum;
-		send_ctcp("NOTICE", nickname_recieved, "DCC",
-				"REJECT %s %s", type, description);
+		send_ctcp(0, nickname_recieved, "DCC", "REJECT %s %s", type, description);
 		from_server = old_fs;
 	}
 
@@ -4079,7 +4075,7 @@ static void	dcc_getfile_resume_demanded (const char *user, char *filename, char 
 	proto = get_server_protocol_state(from_server);
 	set_server_protocol_state(from_server, 0);
 
-	send_ctcp("PRIVMSG", user, "DCC", "ACCEPT %s %s %s",
+	send_ctcp(1, user, "DCC", "ACCEPT %s %s %s",
 		realfilename, port, offset);
 
 	set_server_protocol_state(from_server, proto);

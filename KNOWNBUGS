@@ -834,3 +834,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Guard against null deref when changing lastlog and/or scrollback at same time
 * Overhaul ctcp.c so there are no more magic integers used as foreign keys.
 * Fix a core and leak to do with /userhost and /ison queues (ce)
+* Revamp/unify do_ctcp() and do_notice_ctcp() to reduce code duplication
+* Change send_ctcp() to take a boolean int rather than a string for first param.
+

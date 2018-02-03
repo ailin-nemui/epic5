@@ -512,7 +512,7 @@ BUILT_IN_COMMAND(ctcp)
 	const char	*to;
 	char *	stag;
 	int	i;
-	const char *type;
+	int	request;
 
 	if ((to = next_arg(args, &args)) != NULL)
 	{
@@ -527,18 +527,15 @@ BUILT_IN_COMMAND(ctcp)
 
 		if (get_server_doing_notice(from_server))
 			say("You may not use the CTCP command from a NOTICE!");
+		else if (get_server_doing_privmsg(from_server))
+			request = 0;		/* XXX What about dcc chat? */
 		else
-		{
-			if (i == 0)
-				type = "PRIVMSG";
-			else
-				type = "NOTICE";
+			request = 1;
 
-			if (args && *args)
-				send_ctcp(type, to, stag, "%s", args);
-			else
-				send_ctcp(type, to, stag, NULL);
-		}
+		if (args && *args)
+			send_ctcp(request, to, stag, "%s", args);
+		else
+			send_ctcp(request, to, stag, NULL);
 	}
 	else
 		say("Usage: /CTCP <[=]nick|channel|*> [<request>]");
@@ -633,7 +630,7 @@ BUILT_IN_COMMAND(describe)
 		message = args;
 
 		l = message_from(target, LEVEL_ACTION);
-		send_ctcp("PRIVMSG", target, "ACTION", "%s", message);
+		send_ctcp(1, target, "ACTION", "%s", message);
 		if (do_hook(SEND_ACTION_LIST, "%s %s", target, message))
 			put_it("* -> %s: %s %s", target, get_server_nickname(from_server), message);
 		pop_message_from(l);
@@ -2296,7 +2293,7 @@ BUILT_IN_COMMAND(mecmd)
 
 		if ((target = get_target_by_refnum(0)) != NULL)
 		{
-			send_ctcp("PRIVMSG", target, "ACTION", "%s", args);
+			send_ctcp(1, target, "ACTION", "%s", args);
 
 			l = message_from(target, LEVEL_ACTION);
 			if (do_hook(SEND_ACTION_LIST, "%s %s", target, args))
