@@ -6847,7 +6847,7 @@ BUILT_IN_FUNCTION(function_encryptparm, input)
 	Crypt	*key;
 
 	GET_FUNC_ARG(entry, input);
-	if ((key = is_crypted(entry, from_server, ANYCRYPT))) 
+	if ((key = is_crypted(entry, from_server, NULL))) 
 	{
 		malloc_strcat_word_c(&ret, space, key->nick, DWORD_DWORDS, &clue);
 		malloc_strcat_word_c(&ret, space, key->passwd, DWORD_DWORDS, &clue);

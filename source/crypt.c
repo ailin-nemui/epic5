@@ -73,22 +73,21 @@ static	Crypt	*crypt_list = (Crypt *) 0;
 
 struct ciphertypes {
 	int	sed_type;
-	int *	ctcp_type;
 	const char *flagname;
 	const char *username;
 	const char *ctcpname;
 };
 
 struct ciphertypes ciphers[] = {
-   { PROGCRYPT,      NULL,	      NULL,       "Program",  "SED"	      },
-   { SEDCRYPT,       &CTCP_SED,	     "-SED",      "SED",      "SED"	      },
-   { SEDSHACRYPT,    &CTCP_SEDSHA,    "-SEDSHA",   "SED+SHA",  "SEDSHA"        },
-   { CAST5CRYPT,     &CTCP_CAST5,     "-CAST",     "CAST5",    "CAST128ED-CBC" },
-   { BLOWFISHCRYPT,  &CTCP_BLOWFISH,  "-BLOWFISH", "BLOWFISH", "BLOWFISH-CBC"  },
-   { AES256CRYPT,    &CTCP_AES256,    "-AES",	  "AES",      "AES256-CBC"    },
-   { AESSHA256CRYPT, &CTCP_AESSHA256, "-AESSHA",   "AES+SHA",  "AESSHA256-CBC" },
-   { FISHCRYPT,	     NULL,	      NULL,	  "FiSH",     "BLOWFISH-EBC"  },
-   { NOCRYPT,        NULL,	      NULL,       NULL,       NULL           }
+   { PROGCRYPT,      NULL,        "Program",  "SED"	      },
+   { SEDCRYPT,       "-SED",      "SED",      "SED"	      },
+   { SEDSHACRYPT,    "-SEDSHA",   "SED+SHA",  "SEDSHA"        },
+   { CAST5CRYPT,     "-CAST",     "CAST5",    "CAST128ED-CBC" },
+   { BLOWFISHCRYPT,  "-BLOWFISH", "BLOWFISH", "BLOWFISH-CBC"  },
+   { AES256CRYPT,    "-AES",	  "AES",      "AES256-CBC"    },
+   { AESSHA256CRYPT, "-AESSHA",	  "AES+SHA",  "AESSHA256-CBC" },
+   { FISHCRYPT,	     NULL,	  "FiSH",     "BLOWFISH-EBC"  },
+   { NOCRYPT,        NULL,        NULL,       NULL            }
 };
 
 /* XXX sigh XXX */
@@ -285,7 +284,7 @@ static void	cleanse_crypto_item (Crypt *item)
 		return tmp;					\
 	}
 
-Crypt *	is_crypted (Char *nick, int serv, int ctcp_type)
+Crypt *	is_crypted (Char *nick, int serv, const char *ctcp_cmd)
 {
 	Crypt *	tmp;
 	int	sed_type = NOCRYPT;
@@ -294,16 +293,20 @@ Crypt *	is_crypted (Char *nick, int serv, int ctcp_type)
 	if (!crypt_list)
 		return NULL;
 
-	/* Convert CTCP_TYPE (ctcp.c:ctcp_cmd->id) into SED_TYPE */
-	/* Except that ANYCRYPT (== -1) matches anything */
-	if (ctcp_type != ANYCRYPT)
+	/* 
+	 * ctcp_cmd is either NULL ("Any type")
+	 * or a string containing a specific ctcp type.
+	 * We can convert the ctcp type to a sed type using
+	 * the 'ciphers' table.
+	 */
+	if (ctcp_cmd != NULL)
 	{
 		for (i = 0; ciphers[i].username; i++)
-			if (ciphers[i].ctcp_type && (ctcp_type == *ciphers[i].ctcp_type))
+			if (!my_stricmp(ciphers[i].ctcpname, ctcp_cmd))
 				sed_type = ciphers[i].sed_type;
 
 		if (sed_type == NOCRYPT)
-			return NULL;
+			return NULL;	/* This nick is not ciphered with that type */
 	}
 	else
 		sed_type = ANYCRYPT;

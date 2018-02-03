@@ -39,7 +39,7 @@ typedef struct	CryptStru
 	BUILT_IN_COMMAND(encrypt_cmd);
 	char *	crypt_msg 	(const unsigned char *, Crypt *);
 	char *	decrypt_msg 	(const unsigned char *, Crypt *);
-	Crypt *	is_crypted 	(const char *, int serv, int type);
+	Crypt *	is_crypted 	(const char *, int serv, const char *ctcp_type);
 
 	/* These are for internal use only -- do not call outside crypt.c */
 	unsigned char *	decipher_message (const unsigned char *, size_t, Crypt *, int *);
