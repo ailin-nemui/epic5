@@ -888,9 +888,6 @@ static 	void 	remove_from_server_list (int i)
 	new_free(&s->userhost);
 	new_free(&s->cookie);
 	new_free(&s->quit_message);
-	new_free(&s->ison_queue);		/* XXX Aren't these free? */
-	new_free(&s->ison_wait);
-	new_free(&s->who_queue);
 	new_free(&s->invite_channel);
 	new_free(&s->last_notify_nick);
 	new_free(&s->joined_nick);
@@ -2235,6 +2232,7 @@ int 	connect_to_server (int new_server)
 	 */
 	s->des = des;
 	s->operator = 0;
+	clean_server_queues(new_server);
 
 	/* So we set the default nickname for a server only when we use it */
 	if (!s->d_nickname)
@@ -2293,7 +2291,6 @@ void	close_server (int refnum, const char *message)
 
 	was_registered = is_server_registered(refnum);
 	set_server_status(refnum, SERVER_CLOSING);
-	clean_server_queues(refnum);
 	if (s->waiting_out > s->waiting_in)		/* XXX - hack! */
 		s->waiting_out = s->waiting_in = 0;
 

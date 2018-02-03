@@ -915,7 +915,7 @@ void	who_end (int refnum, const char *from, const char *comm, const char **ArgLi
 	if (!ArgList[0])
 		{ rfc1459_odd(from, comm, ArgList); return; }
 
-	if (!new_w)
+	if (!new_w || !new_w->who_target)
 	{
 		WHO_DEBUG("WHOEND: Server [%d], queue is empty.", refnum);
 		return;
@@ -1975,8 +1975,14 @@ void	clean_server_queues (int i)
 	while (ison_queue_top(i))
 		ison_queue_pop(i);
 
+	while (ison_wait_top(i))
+		ison_wait_pop(i);
+
 	while (userhost_queue_top(i))
 		userhost_queue_pop(i);
+
+	while (userhost_wait_top(i))
+		userhost_wait_pop(i);
 }
 
 
