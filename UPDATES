@@ -1,5 +1,74 @@
 EPIC5-2.2
 
+*** News 02/04/2018 -- User-defined CTCP handlers with $ctcpctl()
+	You can now create your own first-class user-defined CTCP handlers.
+
+	A CTCP handler is a block of code that takes four arguments:
+	  $0  - The person making the request
+	  $1  - The target of the request (you, or a channel you're on)
+	  $2  - The CTCP that was sent 
+	  $3- - Arguments (if any) to the CTCP
+
+	A CTCP request handler is a CTCP handler that handles incoming 	
+	requests (over PRIVMSG).  A CTCP request handler can either 
+	   (1) generate a response or 
+	   (2) substitute something.  
+	A response can be generated with:
+	      /CTCP $0 $2 Your Response Here
+	A substitute string is /return'ed by your handler, and replaces
+	the CTCP in the original message.
+
+	A CTCP response handler is a CTCP handler that handles incoming 
+	responses (over NOTICE).  A CTCP request handler can either
+	   (1) Output the response in a special way or
+	   (2) substitute something
+	CTCP response handlers are unusual, because the ordinary handling
+	of CTCP responses is the expected behavior.
+
+	Syntax:
+	  * $ctcpctl(SET <ctcp-name> REQUEST {<code>})
+		Register <code> as a CTCP handler for <ctcp-name> requests.
+
+	  * $ctcpctl(SET <ctcp-name> RESPONSE {<code>})
+		Register <code> as a CTCP handler for <ctcp-name> responses.
+		(Note -- handling responses is unusual.  Normally you just
+		 let the client output responses in the ordinary way)
+
+	  * $ctcpctl(SET <ctcp-name> DESCRIPTION <string>)
+		SET <string> as the CLIENTINFO for <ctcp-name>.  That is,
+		when someone does /CTCP CLIENTINFO <ctcp-name>, <string> 
+		will be returned as the description for this CTCP.
+
+	  * $ctcpctl(SET <ctcp-name> SPECIAL 1)
+	  * $ctcpctl(SET <ctcp-name> SPECIAL 0)
+		Enable/Disable a CTCP as being "Special".  A "Special" CTCP
+		is a remote function call, and handles everything itself.
+		There are only two "special" CTCPs -- ACTION (/me) and DCC.
+		I'm not sure if anyone will create a "special" user-defined CTCP
+
+	   * $ctcpctl(SET <ctcp-name> RAW 1)
+	   * $ctcpctl(SET <ctcp-name> RAW 0)
+		Enable/Disable a CTCP has requiring the "raw data".
+		Ordinary CTCPs transport strings, and they have to be recoded
+		according to /encode-ing rules.  But some CTCPs transport 
+		binary data, and so the handler needs access to the raw binary
+		data.  Ordinarily, the raw/binary data is CTCP encoded, which
+		mens you can pass it to $xform("-CTCP") to recover the raw
+		bytes (although it might not ba  C string, so you can't 
+		assign it to a variable.)
+
+	   There are corresponding GET operations for the above
+
+	Very soon, quite a few CTCP types will be migrated out to a script that
+	will be /load'ed from /load global, and you may have to add it to your
+	own start scripts if you do not /load global.
+
+	I need to write much better examples for all this.  To look at this you'd
+	scratch your head and wonder why you care.  But being able to add new 
+	CTCPs instead of requiring them to be written in C in a new version of
+	epic is expected to help a lot of people.
+
+
 *** News 01/16/2018 -- New status expando %{1}P ("status prefix") and variables
 	The %{1}P value will expand to a "when window current" or "when window
 	not current" value.  The idea is to put this at the start of your 

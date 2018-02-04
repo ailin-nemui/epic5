@@ -21,5 +21,6 @@ extern	int	in_ctcp_flag;
 	char *	do_ctcp 	(int, const char *, const char *, char *);
 	void	send_ctcp 	(int, const char *, const char *, const char *, ...) /*__A(4)*/;
 	int     init_ctcp 	(void);
+	char *	function_ctcpctl 	(char *);
 
 #endif /* _CTCP_H_ */

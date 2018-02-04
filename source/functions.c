@@ -47,6 +47,7 @@
 #include "alist.h"
 #include "array.h"
 #include "clock.h"
+#include "ctcp.h"
 #include "dcc.h"
 #include "debug.h"
 #include "commands.h"
@@ -509,6 +510,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "COUNT",		function_count		},
 	{ "CPARSE",		function_cparse		},
 	{ "CRYPT",		function_crypt		},
+	{ "CTCPCTL",		function_ctcpctl	},
 	{ "CURCMD",		function_curcmd		},
 	{ "CURPOS",		function_curpos 	},
 	{ "CURRCHANS",		function_currchans	},

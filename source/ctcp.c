@@ -53,6 +53,7 @@
 #include "ifcmd.h"
 #include "flood.h"
 #include "words.h"
+#include "functions.h"
 
 #include <pwd.h>
 #ifdef HAVE_UNAME
@@ -60,17 +61,9 @@
 #endif
 
 /* CTCP BITFLAGS */
-/*
- * TBD - Convert this to a lookup table for $ctcpctl()
- *
- * Each supported CTCP has these bitflags describing its behavior
- */
-#define CTCP_SPECIAL	1	/* Special/Internal - handles everything itself */
-#define CTCP_REPLY	2	/* Will send a reply to the requester */
-#define CTCP_INLINE	4	/* Returns a value to replace the CTCP inline */
-#define CTCP_NOLIMIT	8	/* Is NOT subject to ctcp flood control - ctcp handler should never suppress */
-#define CTCP_TELLUSER	16	/* Does not tell the user - ctcp handler should do that */
-#define CTCP_NORECODE	32	/* Recodes the message itself; ctcp handler should NOT do that */
+#define CTCP_SPECIAL	1	/* Special handlers handle everything and don't return anything */
+#define CTCP_ORDINARY   2	/* Ordinary handlers either return a inline value or you should tell the user */
+#define CTCP_RAW	32	/* Requires the original payload, not a recoded message */
 
 /* CTCP ENTRIES */
 /*
@@ -127,6 +120,28 @@ static	Bucket	*ctcp_bucket = NULL;
 
 static int	in_ctcp = 0;
 
+/*
+ * lookup_ctcp - Convert a CTCP name into a CTCP index.
+ *
+ * Arguments:
+ *	name - the name of a CTCP to be searched for
+ *
+ * Return value:
+ *	-1	- 'name' does not map to an internal CTCP
+ *	>= 0	- 'name' refers to an internal CTCP, an integer 'r' 
+ *		  such that CTCP(r) and CTCP_NAME(r) refer to that CTCP
+ */
+static int	lookup_ctcp (const char *name)
+{
+	int	i;
+
+	for (i = 0; i < ctcp_bucket->numitems; i++)
+		if (my_stricmp(name, CTCP_NAME(i)) == 0)
+			return i;
+
+	return -1;
+}
+
 
 /*
  * To make it easier on myself, I use a macro to ensure ctcp handler C functions
@@ -140,6 +155,7 @@ static	void	add_ctcp (const char *name, int flag, const char *desc, CTCP_Handler
 	CtcpEntry *ctcp;
 	int	numval;
 	const char *strval;
+	char *	name_copy;
 
 	ctcp = (CtcpEntry *)new_malloc(sizeof(CtcpEntry));
 	ctcp->flag = flag;
@@ -157,7 +173,9 @@ static	void	add_ctcp (const char *name, int flag, const char *desc, CTCP_Handler
 	else
 		ctcp->user_repl = NULL;
 
-	add_to_bucket(ctcp_bucket, name, ctcp);
+	/* The 'name' belongs to the bucket, so it must be malloc()ed */
+	name_copy = malloc_strdup(name);
+	add_to_bucket(ctcp_bucket, name_copy, ctcp);
 }
 
 /*
@@ -380,15 +398,10 @@ CTCP_HANDLER(do_clientinfo)
 
 	if (args && *args)
 	{
-		for (i = 0; i < ctcp_bucket->numitems; i++)
-		{
-			if (my_stricmp(args, CTCP_NAME(i)) == 0)
-			{
-				send_ctcp(0, from, "CLIENTINFO", "%s %s", CTCP_NAME(i), CTCP(i)->desc);
-				return NULL;
-			}
-		}
-		send_ctcp(0, from, "ERRMSG", "%s: %s is not a valid function", "CLIENTINFO", args);
+		if ((i = lookup_ctcp(args)) >= 0)
+			send_ctcp(0, from, "CLIENTINFO", "%s %s", CTCP_NAME(i), CTCP(i)->desc);
+		else
+			send_ctcp(0, from, "ERRMSG", "%s: %s is not a valid function", "CLIENTINFO", args);
 	}
 	else
 	{
@@ -403,6 +416,7 @@ CTCP_HANDLER(do_clientinfo)
 		}
 		send_ctcp(0, from, cmd, "%s :Use %s <COMMAND> to get more specific information", buffer, cmd);
 	}
+
 	return NULL;
 }
 
@@ -760,7 +774,7 @@ static	time_t	last_ctcp_parsed = 0;
 		 *
 		 * So some CTCPs are "recodable" and some are not.
 		 *
-		 * The CTCP_NORECODE is set for any CTCPs which are NOT
+		 * The CTCP_RAW is set for any CTCPs which are NOT
 		 * to be recoded prior to handling.  These are the encryption
 		 * CTCPS.
 		 *
@@ -817,7 +831,7 @@ static	time_t	last_ctcp_parsed = 0;
 		/* There is a function to call. */
 		if (i < ctcp_bucket->numitems)
 		{
-			if ((CTCP(i)->flag & CTCP_NORECODE))
+			if ((CTCP(i)->flag & CTCP_RAW))
 				ctcp_argument = original_ctcp_argument;
 
 			in_ctcp++;
@@ -940,18 +954,43 @@ void	send_ctcp (int request, const char *to, const char *type, const char *forma
 	int	len;
 	int	l;
 	const char *protocol;
+static	time_t	last_ctcp_reply = 0;
 
 	/* Make sure that the final \001 doesnt get truncated */
 	if ((len = IRCD_BUFFER_SIZE - (12 + strlen(to))) <= 0)
 		return;				/* Whatever. */
 	putbuf2 = alloca(len);
 
-	l = message_from(to, LEVEL_CTCP);
-
 	if (request)
 		protocol = "PRIVMSG";
 	else
 		protocol = "NOTICE";
+
+	/* 
+	 * Enforce _outbound_ CTCP Response Flood Protection.
+	 * To keep botnets from flooding us off by sending
+	 * us a flurry of CTCP requests from different nicks,
+	 * we refuse to send a CTCP response until 2 seconds
+	 * of quiet has happened.
+	 * 
+	 * This only affects responses.  We never throttle
+	 * requests.
+	 */
+	if (!request && get_int_var(NO_CTCP_FLOOD_VAR))
+	{
+		if (time(NULL) - last_ctcp_reply < 2)
+		{
+                        /*
+                         * This extends the flood protection until
+                         * we dont get a CTCP for 2 seconds.
+                         */
+                        last_ctcp_reply = time(NULL);
+                        if (x_debug & DEBUG_CTCPS)
+                                say("CTCP flood reply to [%s] dropped", to);
+			return;
+		}
+	}
+
 #if 0
 	if (in_ctcp == 0)
 		protocol = "PRIVMSG";
@@ -959,6 +998,7 @@ void	send_ctcp (int request, const char *to, const char *type, const char *forma
 		protocol = "NOTICE";
 #endif
 
+	l = message_from(to, LEVEL_CTCP);
 	if (format)
 	{
 		const char *pb;
@@ -1003,122 +1043,187 @@ void	send_ctcp (int request, const char *to, const char *type, const char *forma
 }
 
 
-#if 0
 /*
  * In a slight departure from tradition, this ctl function is not object-oriented (restful)
  *
- *   $ctcpctl(SET <ctcp-name> NORMAL_REQUEST <alias_name>)
- *	A "Normal Request" means a CTCP in a PRIVMSG that (usually) elicits a reply.
- *	Examples of "normal requests" are DCC, VERSION, FINGER, PING, USERINFO
+ *   $ctcpctl(SET <ctcp-name> REQUEST {code})
+ *	Register {code} to be run when client gets a CTCP <ctcp-name> request.
+ *	- If {code} returns a string, that string replaces the CTCP request in 
+ *	  the message.  The user is not otherwise notified.
+ *	- If {code} does not return a string, the CTCP is removed normally,
+ *	  and the user is notified of the CTCP request normally
+ *	This creates the new CTCP if necessary.
+ *	Setting a user callback will supercede any internal callback.
  *
- *   $ctcpctl(SET <ctcp-name> INLINE_REQUEST <alias_name>)
- *	A "Inline Request" means a CTCP in a PRIVMSG that does not expect a reply, but
- *	instead carries information that needs to be transformed for the user
- *	Examples of "inline requests" are ACTION (/me), UTC, and all the Crypto stuff
+ *   $ctcpctl(SET <ctcp-name> RESPONSE {code})
+ *	Register {code} to be run when client gets a CTCP <ctcp-name> reply.
+ *	- If {code} returns a string, that string replaces the CTCP request in
+ *	  the message.  The user is not otherwise notified.
+ *	- If {code} does not return a string, the CTCP is removed normally,
+ *	  and the user is notified of the CTCP response normally.
+ *	Setting a user callback will supercede any internal callback.
  *
- *   $ctcpctl(SET <ctcp-name> NORMAL_REPLY <alias_name>)
- *	A "Normal Reply" means a CTCP in a NOTICE that (usually) is a response to a
- *	CTCP "normal request" you made to someone else.  Since the default behavior 
- *	of CTCP Reply handling is to display it to the user, YOU USUALLY DO NOT NEED
- *	TO SPECIFY A REPLY HANDLER, unless you're doing something unusual.  The IRC
- *	protocol forbids a reply to a NOTICE, so you can't respond to a reply without
- *	doing something you shouldn't do.
- *	The only example of this is DCC REJECTs
+ *   $ctcpctl(SET <ctcp-name> DESCRIPTION <alias_name>)
+ *	Each CTCP has a "description string", which is used by CTCP CLIENTINFO.
+ * 
+ *   $ctcpctl(SET <ctcp-name> SPECIAL 1|0)
+ *	A CTCP can be "special", meaning it is entirely self-contained and acts 
+ *	as a sink of data.  The two special CTCPs are CTCP ACTION (/me) and 
+ *	CTCP DCC (/dcc).  You can make your own special DCCs, but be careful.
  *
- *   $ctcpctl(SET <ctcp-name> INLINE_REPLY <alias_name>)
- *	A "Inline Reply" means a CTCP in a NOTICE that carries information that needs
- *	to be transformed for the user
- *	Examples of "inline replies" are ACTION (/me) and crypto messages in NOTICEs
+ *   $ctcpctl(SET <ctcp-name> RAW 1|0)
+ *	Ordinarily, everything in the client is a string and has to be subject
+ *	to /encode recoding to make it utf-8 before your ircII code gets to 
+ *	interact with it.  Some CTCPs, like the encryption ctcps, work on 
+ *	raw/binary data that must not get recoded because it's not a string.  
+ *	If RAW is turned on, you will get the raw CTCP-encoded binary 
+ *	data, which you _must not_ pass	to /echo unless you like things to 
+ *	break.
+ *
+ *   $ctcpctl(GET <ctcp-name> REQUEST)
+ *   $ctcpctl(GET <ctcp-name> RESPONSE)
+ *   $ctcpctl(GET <ctcp-name> DESCRIPTION)
+ *   $ctcpctl(GET <ctcp-name> SPECIAL)
+ *   $ctcpctl(GET <ctcp-name> RAW)
+ *	Fetch information about a built-in CTCP.  If <ctcp-name> does not 
+ *	represent an internal CTCP, or the value requested does not apply,
+ * 	(such as a CTCP that does not have a user-defined REQUEST or 
+ *	RESPONSE), the empty string is returned.
  */
-char *	ctcpctl	(char *input)
+BUILT_IN_FUNCTION(function_ctcpctl, input)
 {
 	char *	op;
 	size_t	op_len;
 	char *	ctcp_name;
 	size_t	ctcp_name_len;
-	char *	handle_type;
-	size_t	handle_type_len;
-	char *	alias_name;
-	size_t	alias_name_len;
+	char *	field;
+	size_t	field_len;
+	int	i;
 
 	GET_FUNC_ARG(op, input);
+	GET_FUNC_ARG(ctcp_name, input);
+	GET_FUNC_ARG(field, input);
+
 	op_len = strlen(op);
+	upper(ctcp_name);
+	i = lookup_ctcp(ctcp_name);
 
 	if (!my_strnicmp(op, "SET", op_len)) {
-	} else if (!my_strnicmp(op, "GET", op_len)) {
+		/* Boostrap a new built-in CTCP if necessary */
+		if (i == -1)
+		{
+			yell("Added a new CTCP named %s", ctcp_name);
+			add_ctcp(ctcp_name, CTCP_ORDINARY, ctcp_name, NULL, NULL, NULL, NULL);
+			i = lookup_ctcp(ctcp_name);
+		}
 
-	if (!my_strnicmp(op, "NORMAL_REQUEST", len)) {
-	} else if (!my_strnicmp(op, "INLINE_REQUEST", len)) {
-	} else if (!my_strnicmp(op, "NORMAL_REPLY", len)) {
-	} else if (!my_strnicmp(op, "INLINE_REPLY", len)) {
+		if (!my_stricmp(field, "REQUEST")) {
+			malloc_strcpy(&(CTCP(i)->user_func), input);
+		} else if (!my_stricmp(field, "RESPONSE")) {
+			malloc_strcpy(&(CTCP(i)->user_repl), input);
+		} else if (!my_stricmp(field, "DESCRIPTION")) {
+			malloc_strcpy(&(CTCP(i)->desc), input);
+		} else if (!my_stricmp(field, "SPECIAL")) {
+			if (!strcmp(input, one))
+				CTCP(i)->flag = (CTCP(i)->flag | CTCP_SPECIAL);
+			else if (!strcmp(input, zero))
+				CTCP(i)->flag = (CTCP(i)->flag & ~CTCP_SPECIAL);
+			else
+				RETURN_EMPTY;
+		} else if (!my_stricmp(field, "RAW")) {
+			if (!strcmp(input, one))
+				CTCP(i)->flag = (CTCP(i)->flag | CTCP_RAW);
+			else if (!strcmp(input, zero))
+				CTCP(i)->flag = (CTCP(i)->flag & ~CTCP_RAW);
+			else
+				RETURN_EMPTY;
+		} else {
+			RETURN_EMPTY;
+		}
+
+		RETURN_INT(1);
+	} else if (!my_strnicmp(op, "GET", op_len)) {
+		if (!my_stricmp(field, "REQUEST")) {
+			RETURN_STR(CTCP(i)->user_func);
+		} else if (!my_stricmp(field, "RESPONSE")) {
+			RETURN_STR(CTCP(i)->user_repl);
+		} else if (!my_stricmp(field, "DESCRIPTION")) {
+			RETURN_STR(CTCP(i)->desc);
+		} else if (!my_stricmp(field, "SPECIAL")) {
+			RETURN_INT((CTCP(i)->flag & CTCP_SPECIAL) != 0);
+		} else if (!my_stricmp(field, "RAW")) {
+			RETURN_INT((CTCP(i)->flag & CTCP_RAW) != 0);
+		} else {
+			RETURN_EMPTY;
+		}
+	} else {
+		RETURN_EMPTY;
 	}
 }
-#endif
-
 
 int	init_ctcp (void)
 {
 	ctcp_bucket = new_bucket();
 
 	/* Special/Internal CTCPs */
-	add_ctcp("ACTION", 		CTCP_SPECIAL | CTCP_NOLIMIT, 
+	add_ctcp("ACTION", 		CTCP_SPECIAL, 
 				"contains action descriptions for atmosphere", 
 				do_atmosphere, 	do_atmosphere, NULL, NULL);
-	add_ctcp("DCC", 		CTCP_SPECIAL | CTCP_NOLIMIT, 
+	add_ctcp("DCC", 		CTCP_SPECIAL, 
 				"requests a direct_client_connection", 
 				do_dcc, 	do_dcc_reply, NULL, NULL);
 
 	/* Strong Crypto CTCPs */
-	add_ctcp("AESSHA256-CBC", 	CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
+	add_ctcp("AESSHA256-CBC", 	CTCP_ORDINARY | CTCP_RAW,
 				"transmit aes256-cbc ciphertext using a sha256 key",
 				do_crypto, 	do_crypto, NULL, NULL );
-	add_ctcp("AES256-CBC", 		CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
+	add_ctcp("AES256-CBC", 		CTCP_ORDINARY | CTCP_RAW,
 				"transmit aes256-cbc ciphertext",
 				do_crypto, 	do_crypto, NULL, NULL );
-	add_ctcp("CAST128ED-CBC", 	CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
+	add_ctcp("CAST128ED-CBC", 	CTCP_ORDINARY | CTCP_RAW,
 				"transmit cast5-cbc ciphertext",
 				do_crypto, 	do_crypto, NULL, NULL );
-	add_ctcp("BLOWFISH-CBC", 	CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
+	add_ctcp("BLOWFISH-CBC", 	CTCP_ORDINARY | CTCP_RAW,
 				"transmit blowfish-cbc ciphertext",
 				do_crypto, 	do_crypto, NULL, NULL );
-	add_ctcp("FISH", 		CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
+	add_ctcp("FISH", 		CTCP_ORDINARY | CTCP_RAW,
 				"transmit FiSH (blowfish-ecb with sha256'd key) ciphertext",
 				do_crypto, 	do_crypto, NULL, NULL );
-	add_ctcp("SED", 		CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
+	add_ctcp("SED", 		CTCP_ORDINARY | CTCP_RAW,
 				"transmit simple_encrypted_data ciphertext",
 				do_crypto, 	do_crypto, NULL, NULL );
-	add_ctcp("SEDSHA", 		CTCP_INLINE | CTCP_NOLIMIT | CTCP_NORECODE,
+	add_ctcp("SEDSHA", 		CTCP_ORDINARY | CTCP_RAW,
 				"transmit simple_encrypted_data ciphertext using a sha256 key",
 				do_crypto, 	do_crypto, NULL, NULL );
 
 	/* Inline expando CTCPs */
-	add_ctcp("UTC", 		CTCP_INLINE | CTCP_NOLIMIT,
+	add_ctcp("UTC", 		CTCP_ORDINARY,
 				"substitutes the local timezone",
 				do_utc, 	do_utc , NULL, NULL);
 
 	/* Classic response-generating CTCPs */
-	add_ctcp("VERSION", 		CTCP_REPLY | CTCP_TELLUSER,
+	add_ctcp("VERSION", 		CTCP_ORDINARY,
 				"shows client type, version and environment",
 				do_version, 	NULL, NULL, NULL );
-	add_ctcp("PING", 		CTCP_REPLY | CTCP_TELLUSER,
+	add_ctcp("PING", 		CTCP_ORDINARY,
 				"returns the arguments it receives",
 				do_ping, 	do_ping_reply, NULL, NULL );
-	add_ctcp("ECHO", 		CTCP_REPLY | CTCP_TELLUSER,
+	add_ctcp("ECHO", 		CTCP_ORDINARY,
 				"returns the arguments it receives",
 				do_echo, 	NULL, NULL, NULL );
-	add_ctcp("CLIENTINFO", 		CTCP_REPLY | CTCP_TELLUSER,
+	add_ctcp("CLIENTINFO", 		CTCP_ORDINARY,
 				"gives information about available CTCP commands",
 				do_clientinfo, 	NULL, NULL, NULL );
-	add_ctcp("USERINFO",		CTCP_REPLY | CTCP_TELLUSER,
+	add_ctcp("USERINFO",		CTCP_ORDINARY,
 				"returns user settable information",
 				do_userinfo, 	NULL, NULL, NULL );
-	add_ctcp("ERRMSG", 		CTCP_REPLY | CTCP_TELLUSER,
+	add_ctcp("ERRMSG", 		CTCP_ORDINARY,
 				"returns error messages",
 				do_echo, 	NULL, NULL, NULL);
-	add_ctcp("FINGER", 		CTCP_REPLY | CTCP_TELLUSER,
+	add_ctcp("FINGER", 		CTCP_ORDINARY,
 				"shows real name, login name and idle time of user", 
 				do_finger, 	NULL, NULL, NULL );
-	add_ctcp("TIME", 		CTCP_REPLY | CTCP_TELLUSER,
+	add_ctcp("TIME", 		CTCP_ORDINARY,
 				"tells you the time on the user's host",
 				do_time, 	NULL, NULL, NULL );
 }

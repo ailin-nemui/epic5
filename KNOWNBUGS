@@ -836,4 +836,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix a core and leak to do with /userhost and /ison queues (ce)
 * Revamp/unify do_ctcp() and do_notice_ctcp() to reduce code duplication
 * Change send_ctcp() to take a boolean int rather than a string for first param.
-
+* Simplify the CTCP flags to just "ordinary" and "special", with "raw" (or not)
+* CTCPs are "raw" if they need the original payload, or not if payload is string
+* CTCPs are "special" if they handle everything themselves (/me, /dcc)
+* Enforce anti-botnet CTCP reply flooding on the /CTCP side, not request side
+* (That way, CTCPs that don't generate responses are not throttled)
+* Implement $ctcpctl() to register user-defined ctcp handlers. (see UPDATES)
