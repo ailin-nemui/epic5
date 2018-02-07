@@ -856,6 +856,9 @@ static	time_t	last_ctcp_parsed = 0;
 					char *args = NULL;
 					malloc_sprintf(&args, "%s %s %s %s", from, to, ctcp_command, ctcp_argument);
 					ptr = call_lambda_function("CTCP", CTCP(i)->user_repl, args);
+					/* An empty string is the same as NULL here */
+					if (!ptr || !*ptr)
+						new_free(&ptr);
 					new_free(&args);
 				}
 				else if (CTCP(i)->repl)
@@ -1089,6 +1092,11 @@ static	time_t	last_ctcp_reply = 0;
  *	represent an internal CTCP, or the value requested does not apply,
  * 	(such as a CTCP that does not have a user-defined REQUEST or 
  *	RESPONSE), the empty string is returned.
+ *
+ * Additionally:
+ *
+ *   $ctcpctl(ALL)
+ *	Returns the names of all built-in/registered CTCPs
  */
 BUILT_IN_FUNCTION(function_ctcpctl, input)
 {
@@ -1101,10 +1109,24 @@ BUILT_IN_FUNCTION(function_ctcpctl, input)
 	int	i;
 
 	GET_FUNC_ARG(op, input);
+	op_len = strlen(op);
+
+	if (!my_strnicmp(op, "ALL", op_len)) {
+                char buffer[BIG_BUFFER_SIZE + 1];
+                *buffer = '\0';
+
+                for (i = 0; i < ctcp_bucket->numitems; i++)
+                {
+                        const char *name = CTCP_NAME(i);
+                        strlcat(buffer, name, sizeof buffer);
+                        strlcat(buffer, " ", sizeof buffer);
+                }
+		RETURN_STR(buffer);
+	}
+
 	GET_FUNC_ARG(ctcp_name, input);
 	GET_FUNC_ARG(field, input);
 
-	op_len = strlen(op);
 	upper(ctcp_name);
 	i = lookup_ctcp(ctcp_name);
 
@@ -1201,6 +1223,7 @@ int	init_ctcp (void)
 				"substitutes the local timezone",
 				do_utc, 	do_utc , NULL, NULL);
 
+#if 0
 	/* Classic response-generating CTCPs */
 	add_ctcp("VERSION", 		CTCP_ORDINARY,
 				"shows client type, version and environment",
@@ -1226,6 +1249,7 @@ int	init_ctcp (void)
 	add_ctcp("TIME", 		CTCP_ORDINARY,
 				"tells you the time on the user's host",
 				do_time, 	NULL, NULL, NULL );
+#endif
 }
 
 #if 0

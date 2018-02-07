@@ -842,3 +842,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Enforce anti-botnet CTCP reply flooding on the /CTCP side, not request side
 * (That way, CTCPs that don't generate responses are not throttled)
 * Implement $ctcpctl() to register user-defined ctcp handlers. (see UPDATES)
+* Add $ctcpctl(ALL) for CLIENTINFO purposes.
+* Create /load ctcp, some basic CTCPs implemented in script
+* Make /load builtins do a /load ctcp 
+* Comment out some basic CTCPs from the base client -- yay!
+* Treat empty return strings from ctcp handlers as "not handled"

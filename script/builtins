@@ -614,5 +614,9 @@ set verbose_ctcp on;
 #
 alias clr_256 (r, g, b) {
        @ function_return = (16 + (r * 36) + (g * 6) + b)
-}
+};
+
+# CTCP
+
+load -pf ctcp;
 

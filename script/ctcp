@@ -1,0 +1,82 @@
+if (word(2 $loadinfo()) != 'pf') { load -pf $word(1 $loadinfo()); return; };
+
+#
+# Some basic CTCPs, implemented in script!
+#
+
+@ctcpctl(SET VERSION REQUEST {ctcp $0 $2 ircII $J - $CLIENT_INFORMATION});
+@ctcpctl(SET VERSION DESCRIPTION shows client type, version and environment);
+
+@ctcpctl(SET PING REQUEST {ctcp $0 $2 $3-});
+alias do_ping_reply {
+	if (*4 == [seconds]) {return};
+	if (!*3 || !*4) {return};
+
+	@ now = utime();
+	@ now_seconds = word(0 $now);
+	@ now_usec = word(1 $now);
+	@ then_seconds = *3;
+	@ then_usec = *4;
+	@ diff_sec = now_seconds - then_seconds;
+	@ diff_usec = now_usec - then_usec;
+	if (diff_usec < 0) {
+		@diff_usec += 1000000;
+		@diff_sec--;
+	};
+	if (diff_sec < 0) { return };
+
+        ^push set floating_point_math;
+	^set floating_point_math on;
+	@ act_diff = (diff_sec * 1.0) + (diff_usec / 1000000.0);
+        ^pop set floating_point_math;
+
+	return $chr(1)$2 $act_diff seconds$chr(1);
+};
+@ctcpctl(SET PING RESPONSE {@retval = do_ping_reply($*);if (retval) {return $retval}});
+@ctcpctl(SET PING DESCRIPTION returns the arguments it receives);
+
+@ctcpctl(SET ECHO REQUEST {ctcp $0 $2 $3-});
+@ctcpctl(SET ECHO DESCRIPTION returns the arguments it receives);
+
+alias do_clientinfo_request {
+	if (!*3) { 
+		ctcp $0 $2 $ctcpctl(ALL) 
+	} else {
+		ctcp $0 $2 $toupper($3) $ctcpctl(GET $3 DESCRIPTION)
+	}
+};
+@ctcpctl(SET CLIENTINFO REQUEST {do_clientinfo_request $*});
+@ctcpctl(SET CLIENTINFO DESCRIPTION gives information about available CTCP commands);
+
+@ctcpctl(SET USERINFO REQUEST {ctcp $0 $2 $USER_INFORMATION});
+@ctcpctl(SET USERINFO DESCRIPTION returns user settable information);
+
+@ctcpctl(SET ERRMSG REQUEST {ctcp $0 $2 $3-});
+@ctcpctl(SET ERRMSG DESCRIPTION returns error messages);
+
+alias do_ctcp_finger_request {
+	if (getenv(IRCUSER)) {
+		@ user = getenv(IRCUSER)
+	} { 
+		@ user = before(@ $X)
+	};
+	@ host = after(@ $X);
+
+	if (getenv(IRCFINGER)) {
+		@ gecos = getenv(IRCFINGER)
+	} elif (DEFAULT_REALNAME) {
+		@ gecos = DEFAULT_REALNAME
+	} else {
+		@ gecos = 'Esteemed EPIC User'
+	};
+	@ idle = E;
+
+	ctcp $0 $2 $gecos \($user@$host\) Idle $idle second(s);
+};
+@ctcpctl(SET FINGER REQUEST {do_ctcp_finger_request $*});
+@ctcpctl(SET FINGER DESCRIPTION shows real name, login name and idle time of user);
+
+@ctcpctl(SET TIME REQUEST {ctcp $0 $2 $stime($time())});
+@ctcpctl(SET TIME DESCRIPTION tells you the time on the user's host);
+ 
+#hop'2k18

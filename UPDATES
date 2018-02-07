@@ -1,5 +1,31 @@
 EPIC5-2.2
 
+*** News 02/05/2018 -- Some CTCPs are now implemented as scripts
+	YOU NEED TO START DOING /LOAD ctcp  IN YOUR STARTUP SCRIPTS.
+
+	One of the larger projects in EPIC5 was to move as many
+	hard coded things into scripts as was feasible, so you,
+	the user (or the script you're using) can have as complete
+	control over them.  We've moved a lot of functionality out
+	into scripts.
+
+	Traditionally those users who don't have startup scripts 
+	(~/.epicrc or ~/.ircrc) get /load global as their startup
+	script.  One of the things /load global does is /load builtins
+	which brings in the scripted features.  
+
+	Now /load builtins will /load ctcp, which implements these 
+	core CTCP functions entirely in ircII, so you are welcome 
+	to modify or remove them, as _you_ choose.
+
+		VERSION		PING		ECHO
+		CLIENTINFO	USERINFO	ERRMSG
+		FINGER		TIME
+
+	Maybe more will be migrated in the future.  But this is a good
+	start for now.  This is also a great example of how to 
+	build your own first-class ctcp handlers!
+
 *** News 02/04/2018 -- User-defined CTCP handlers with $ctcpctl()
 	You can now create your own first-class user-defined CTCP handlers.
 
@@ -58,6 +84,9 @@ EPIC5-2.2
 		assign it to a variable.)
 
 	   There are corresponding GET operations for the above
+
+	You can get all the registered CTCPs with
+	   * $ctcpctl(ALL)
 
 	Very soon, quite a few CTCP types will be migrated out to a script that
 	will be /load'ed from /load global, and you may have to add it to your
