@@ -253,6 +253,8 @@ Window	*new_window (Screen *screen)
 	make_status(new_w, &new_w->status);
 	window_statusbar_needs_update(new_w);
 	window_statusbar_needs_redraw(new_w);
+	new_w->status.prefix_when_current = NULL;
+	new_w->status.prefix_when_not_current = NULL;
 
 	/* Scrollback stuff */
 	new_w->top_of_scrollback = NULL;	/* Filled in later */

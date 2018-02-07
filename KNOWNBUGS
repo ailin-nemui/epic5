@@ -847,3 +847,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make /load builtins do a /load ctcp 
 * Comment out some basic CTCPs from the base client -- yay!
 * Treat empty return strings from ctcp handlers as "not handled"
+* Initialize status.prefix_when_(not_)current in new windows.
