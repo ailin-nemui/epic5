@@ -63,6 +63,7 @@
 /* CTCP BITFLAGS */
 #define CTCP_SPECIAL	1	/* Special handlers handle everything and don't return anything */
 #define CTCP_ORDINARY   2	/* Ordinary handlers either return a inline value or you should tell the user */
+#define CTCP_REPLACE_ARGS   4	/* A "replace args" CTCP rewrites the args, but still needs to be "handled" normally */
 #define CTCP_RAW	32	/* Requires the original payload, not a recoded message */
 
 /* CTCP ENTRIES */
@@ -293,6 +294,7 @@ CTCP_HANDLER(do_crypto)
 	return ret;
 }
 
+#if 0
 /*
  * CTCP UTC - Expands inline to your current time.
  *		Does not reply.
@@ -304,6 +306,7 @@ CTCP_HANDLER(do_utc)
 
 	return malloc_strdup(my_ctime(my_atol(args)));
 }
+#endif
 
 
 /*
@@ -384,6 +387,7 @@ CTCP_HANDLER(do_dcc)
 
 
 
+#if 0
 /*************** REPLY-GENERATING CTCPS *****************/
 
 /*
@@ -545,6 +549,7 @@ CTCP_HANDLER(do_finger)
 
 	return NULL;
 }
+#endif
 
 
 /* 
@@ -570,7 +575,7 @@ CTCP_HANDLER(do_dcc_reply)
 	return NULL;
 }
 
-
+#if 0
 /*
  * Handles CTCP PING replies.
  */
@@ -613,6 +618,7 @@ CTCP_HANDLER(do_ping_reply)
 			(float)(tsec + (tusec / 1000000.0)));
 	return NULL;
 }
+#endif
 
 
 /************************************************************************/
@@ -814,7 +820,6 @@ static	time_t	last_ctcp_parsed = 0;
 		/*
 		 * Next, look for a built-in CTCP handler
 		 */
-
 		/* Does this CTCP have a built-in handler? */
 		for (i = 0; i < ctcp_bucket->numitems; i++)
 		{
@@ -866,15 +871,47 @@ static	time_t	last_ctcp_parsed = 0;
 			}
 			in_ctcp--;
 
-			/* This CTCP is "handled" if the handler returned an inline expando */
+			/***** Was the CTCP "handled"? *****/
+
+			/*
+			 * A CTCP that returns a value is either a 
+			 *  - Argument replacer (CTCP_REPLACE_ARGS)  [CTCP PING]
+			 *  - Whole-string replacer (default) [CTCP AES256-CBC]
+			 *
+			 * Whole-string replacers paste themselves back inline and
+			 * then go around for another pass.
+			 *
+			 * Argument Replacers are still "handled" in the ordinary way.
+			 */
 			if (ptr)
 			{
-				strlcat(local_ctcp_buffer, ptr, sizeof local_ctcp_buffer);
-				new_free(&ptr);
-				continue;
+				if (CTCP(i)->flag & CTCP_REPLACE_ARGS)
+				{
+					/* 
+					 * "extra" is where we stuck the original ctcp arguments.
+					 * When a CTCP is handled ordinarily, it will retrieve
+					 * the CTCP arguments from 'extra'.  So if we are replacing
+					 * the arguments, it is only logical to put them in 'extra'.
+					 *
+					 * This works even if extra == NULL here (because there was
+					 * no recoding), because we unconditionally reset
+					 * ctcp_argument to extra below.
+					 */
+					malloc_strcpy(&extra, ptr);
+					new_free(&ptr);
+				}
+				else
+				{
+					strlcat(local_ctcp_buffer, ptr, sizeof local_ctcp_buffer);
+					new_free(&ptr);
+					continue;
+				}
 			}
 
-			/* This CTCP is "handled" if it's marked as special (/me, /dcc) */
+			/*
+			 * A CTCP that does not return a value but is "special" (/me, /dcc)
+			 * is considered "handled"
+			 */
 			if (CTCP(i)->flag & CTCP_SPECIAL)
 				continue;
 
@@ -882,6 +919,7 @@ static	time_t	last_ctcp_parsed = 0;
 		}
 
 		/* Default handling -- tell the user about it */
+		/* !!!! Don't remove this, without reading the comments above !!! */
 		if (extra)
 			ctcp_argument = extra;
 		in_ctcp++;
@@ -1074,6 +1112,13 @@ static	time_t	last_ctcp_reply = 0;
  *	as a sink of data.  The two special CTCPs are CTCP ACTION (/me) and 
  *	CTCP DCC (/dcc).  You can make your own special DCCs, but be careful.
  *
+ *   $ctcpctl(SET <ctcp-name> REPLACE_ARGS 1|0)
+ *      A CTCP handler that returns a value is either a "replacer" or a "rewriter".
+ *      A "Replacer" replaces the arguments to the CTCP (this is what CTCP PING does)
+ *      A "Rewriter" replaces the entire CTCP with a different string (this is 
+ *                  what crypto CTCPs do)
+ *      When this is 1, it is a "replacer".  When this is 0, it is a "rewriter".
+ *
  *   $ctcpctl(SET <ctcp-name> RAW 1|0)
  *	Ordinarily, everything in the client is a string and has to be subject
  *	to /encode recoding to make it utf-8 before your ircII code gets to 
@@ -1152,6 +1197,13 @@ BUILT_IN_FUNCTION(function_ctcpctl, input)
 				CTCP(i)->flag = (CTCP(i)->flag & ~CTCP_SPECIAL);
 			else
 				RETURN_EMPTY;
+		} else if (!my_stricmp(field, "REPLACE_ARGS")) {
+			if (!strcmp(input, one))
+				CTCP(i)->flag = (CTCP(i)->flag | CTCP_REPLACE_ARGS);
+			else if (!strcmp(input, zero))
+				CTCP(i)->flag = (CTCP(i)->flag & ~CTCP_REPLACE_ARGS);
+			else
+				RETURN_EMPTY;
 		} else if (!my_stricmp(field, "RAW")) {
 			if (!strcmp(input, one))
 				CTCP(i)->flag = (CTCP(i)->flag | CTCP_RAW);
@@ -1218,12 +1270,12 @@ int	init_ctcp (void)
 				"transmit simple_encrypted_data ciphertext using a sha256 key",
 				do_crypto, 	do_crypto, NULL, NULL );
 
+#if 0
 	/* Inline expando CTCPs */
 	add_ctcp("UTC", 		CTCP_ORDINARY,
 				"substitutes the local timezone",
 				do_utc, 	do_utc , NULL, NULL);
 
-#if 0
 	/* Classic response-generating CTCPs */
 	add_ctcp("VERSION", 		CTCP_ORDINARY,
 				"shows client type, version and environment",
@@ -1250,6 +1302,8 @@ int	init_ctcp (void)
 				"tells you the time on the user's host",
 				do_time, 	NULL, NULL, NULL );
 #endif
+
+	return 0;
 }
 
 #if 0

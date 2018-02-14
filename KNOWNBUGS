@@ -5,7 +5,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * There should be a registerable callback for fd's gone bad. (newio)
 * What about rotate-able logfiles? (skered)
 * What about /query-ing an exec process, going to proper window? (skered)
-* You should be able to do /on ctcp_requests that do inline replacement (like CTCP UTC)
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -848,3 +847,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Comment out some basic CTCPs from the base client -- yay!
 * Treat empty return strings from ctcp handlers as "not handled"
 * Initialize status.prefix_when_(not_)current in new windows.
+* Create a distinction between CTCPs that replace their bodies and themselves
+* via $ctcpctl(SET <type> REPLACE_ARGS 0|1) [see UPDATES]
+* Rewrite CTCP PING handler, create CTCP UTC handler

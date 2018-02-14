@@ -9,7 +9,6 @@ if (word(2 $loadinfo()) != 'pf') { load -pf $word(1 $loadinfo()); return; };
 
 @ctcpctl(SET PING REQUEST {ctcp $0 $2 $3-});
 alias do_ping_reply {
-	if (*4 == [seconds]) {return};
 	if (!*3 || !*4) {return};
 
 	@ now = utime();
@@ -30,10 +29,11 @@ alias do_ping_reply {
 	@ act_diff = (diff_sec * 1.0) + (diff_usec / 1000000.0);
         ^pop set floating_point_math;
 
-	return $chr(1)$2 $act_diff seconds$chr(1);
+	return $act_diff seconds;
 };
 @ctcpctl(SET PING RESPONSE {@retval = do_ping_reply($*);if (retval) {return $retval}});
 @ctcpctl(SET PING DESCRIPTION returns the arguments it receives);
+@ctcpctl(SET PING REPLACE_ARGS 1);
 
 @ctcpctl(SET ECHO REQUEST {ctcp $0 $2 $3-});
 @ctcpctl(SET ECHO DESCRIPTION returns the arguments it receives);
@@ -79,4 +79,8 @@ alias do_ctcp_finger_request {
 @ctcpctl(SET TIME REQUEST {ctcp $0 $2 $stime($time())});
 @ctcpctl(SET TIME DESCRIPTION tells you the time on the user's host);
  
+@ctcpctl(SET UTC REQUEST {return $stime($3-)});
+@ctcpctl(SET UTC RESPONSE {return $stime($3-)});
+@ctcpctl(SET UTC DESCRIPTION substitutes the local timezone);
+
 #hop'2k18

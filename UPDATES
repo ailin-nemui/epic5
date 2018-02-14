@@ -1,5 +1,35 @@
 EPIC5-2.2
 
+*** News 02/05/2018 -- CTCP UTC now implemented as script
+	Given the below feature, CTCP PING support has been 
+	rewritten, and CTCP UTC is now scripted.
+
+*** News 02/13/2018 -- New flag for $ctcpctl(), "REPLACE_ARGS"
+	There are actually two kinds of CTCPs that replace things
+
+	* CTCP PING replaces its argument(s), but is otherwise
+	  handled "normally"
+		NOTICE nick :\001PING <sec> <usec>\001
+	  becomes
+		NOTICE nick :\001PING <sec> seconds\001
+
+	* CTCP UTC replaces itself entirely:
+		PRIVMSG nick :\001UTC 1518582810\001
+	  becomes
+		PRIVMSG nick :Tue Feb 13 22:33:30 2018
+
+	So it's not enough to say that "a CTCP handler can replace 
+	itself by returning a string", you need to be able to say
+	whether this CTCP replaces its arguments only, or whether
+	it replaces itself entirely.
+
+	  * $ctcpctl(SET <ctcp-name> REPLACE_ARGS 1)
+	  * $ctcpctl(SET <ctcp-name> REPLACE_ARGS 0)
+		Select whether or not a CTCP handler that returns a 
+		string replaces its arguments (like CTCP PING) or 
+		replaces itself entirely (like CTCP UTC).  
+		The default is 0 (replace entirely)
+
 *** News 02/05/2018 -- Some CTCPs are now implemented as scripts
 	YOU NEED TO START DOING /LOAD ctcp  IN YOUR STARTUP SCRIPTS.
 
