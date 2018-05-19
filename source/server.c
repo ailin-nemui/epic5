@@ -433,10 +433,13 @@ static	int	preserve_serverinfo (ServerInfo *si)
 	malloc_strcat2_c(&resultstr, si->server_type, ":", &clue);
 	malloc_strcat2_c(&resultstr, si->proto_type, ":", &clue);
 	if (si->vhost && strchr(si->vhost, ':'))
+	{
 	   malloc_strcat_c(&resultstr, "[", &clue);
-	malloc_strcat2_c(&resultstr, si->vhost, ":", &clue);
-	if (si->vhost && strchr(si->vhost, ':'))
-	   malloc_strcat_c(&resultstr, "]", &clue);
+	   malloc_strcat_c(&resultstr, si->vhost, &clue);
+	   malloc_strcat2_c(&resultstr, "]", ":", &clue);
+	}
+        else
+	   malloc_strcat2_c(&resultstr, si->vhost, ":", &clue);
 
 	new_free(&si->freestr);
 	new_free(&si->fulldesc);
