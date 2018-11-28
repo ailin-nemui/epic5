@@ -296,7 +296,7 @@ EPIC5-1.4
 	   idea to check this when you're upgrading.
 	4. /SET -CONTINUED_LINE	
 		to get rid of the + thingee
-	5. /SET FIRST_LINE »    
+	5. /SET FIRST_LINE >   
 		or something if you don't use /set output_rewrite 
 		to prefix every line
 	6. /SET WORD_BREAK<space><space><enter>

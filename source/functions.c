@@ -5727,6 +5727,7 @@ BUILT_IN_FUNCTION(function_pad, input)
 	char	*retval;
 	size_t	retvalsiz;
 	int	codepoint;
+	int	j;
 
 	GET_INT_ARG(width, input);
 	GET_DWORD_ARG(pads, input);
@@ -5734,8 +5735,15 @@ BUILT_IN_FUNCTION(function_pad, input)
 	if ((codepoint = next_code_point(CUC_PP &pads, 0)) == -1)
 		codepoint = ' ';	/* Sigh */
 
-	/* -1 is left justify */
-	retval = fix_string_width(input, -1, codepoint, width, 0);
+        if (width < 0)
+	{
+		width = -width;
+		j = 1;
+	}
+	else if (width > 0)
+		j = -1;
+
+	retval = fix_string_width(input, j, codepoint, width, 0);
 	RETURN_MSTR(retval);
 }
 
