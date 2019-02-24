@@ -1,5 +1,9 @@
 EPIC5-2.2
 
+*** News 02/24/2019 -- EPIC5-2.1.1 (Abulia) was released here
+	Even though not everything is done, I think I've probably
+	dragged my feet long enough
+
 *** News 02/05/2018 -- CTCP UTC now implemented as script
 	Given the below feature, CTCP PING support has been 
 	rewritten, and CTCP UTC is now scripted.

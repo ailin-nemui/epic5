@@ -851,4 +851,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * via $ctcpctl(SET <type> REPLACE_ARGS 0|1) [see UPDATES]
 * Rewrite CTCP PING handler, create CTCP UTC handler
 * Fix ipv6 p-addr vhosts for /server (rb wcarson)
-
+* EPIC5-2.1.1 released here (Abulia) (Commit: 1898)
