@@ -32,7 +32,6 @@
 #define __EXTLANG_H__
 
 #ifdef HAVE_PERL
-extern	void	xs_init (void);
 extern	void	perlstartstop (int);
 extern	char *	perlcall (char *, char *, char *, long, char *);
 extern	char *	perleval (char *);

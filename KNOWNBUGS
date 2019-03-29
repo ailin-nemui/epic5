@@ -853,3 +853,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix ipv6 p-addr vhosts for /server (rb wcarson)
 * Add /exec -wintarget, output to any old window (rb wcarson) (caf)
 * EPIC5-2.1.1 released here (Abulia) (Commit: 1898)
+* Improve perl support (remove warnings) (caf)
+

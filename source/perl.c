@@ -48,8 +48,8 @@
 int	isperlrunning=0, perlcalldepth=0;
 PerlInterpreter	*my_perl;
 
-EXTERN_C void xs_init _((void));
-EXTERN_C void boot_DynaLoader _((CV* cv));
+EXTERN_C void xs_init _((pTHX));
+EXTERN_C void boot_DynaLoader _((pTHX_ CV* cv));
 
 #define SV2STR(x,y) (y)=(void*)malloc_strdup((char*)SvPV_nolen(x))
 #ifndef SvPV_nolen
@@ -114,7 +114,7 @@ static XS (XS_yell) {
 	XSRETURN(items);
 }
 
-EXTERN_C void	xs_init(void)
+EXTERN_C void	xs_init(pTHX)
 {
 	const char *file = __FILE__;
 	dXSUB_SYS;
