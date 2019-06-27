@@ -10,7 +10,6 @@ addset nopaste bool {
 		remove_nopaste;
 	};
 };
-set nopaste off;
 
 alias setup_nopaste 
 {
@@ -46,4 +45,6 @@ alias remove_nopaste
 {
 	on input -*;
 };
+
+set nopaste off;
 
