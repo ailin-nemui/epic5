@@ -226,6 +226,8 @@ static void 	BreakArgs (char *Input, const char **Sender, const char **OutPut)
 
 		if (*Input == ':')
 		{
+			/* Squash the : so if PasteArgs() is called it doesn't reappear */
+			ov_strcpy(Input, Input + 1);
 			OutPut[ArgCount++] = ++Input;
 			break;
 		}
