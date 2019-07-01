@@ -228,7 +228,7 @@ static void 	BreakArgs (char *Input, const char **Sender, const char **OutPut)
 		{
 			/* Squash the : so if PasteArgs() is called it doesn't reappear */
 			ov_strcpy(Input, Input + 1);
-			OutPut[ArgCount++] = ++Input;
+			OutPut[ArgCount++] = Input;
 			break;
 		}
 
