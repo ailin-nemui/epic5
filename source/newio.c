@@ -75,7 +75,7 @@ typedef	struct	myio_struct
 		held;
 	void	(*callback) (int vfd);
 	int	(*io_callback) (int vfd, int quiet);
-	int	(*failure_callback) (int channel, int error);
+	void	(*failure_callback) (int channel, int error);
 	int	quiet;
 	int	server;			/* For message routing */
 }           MyIO;

@@ -101,6 +101,7 @@ static VALUE epic_call (VALUE module, VALUE string)
 void ruby_startstop (int value)
 {
 	VALUE	rubyval;
+	int	state;
 
 	/* If it is already in the state we want, do nothing. */
 	if (is_ruby_running == value)
@@ -129,34 +130,42 @@ void ruby_startstop (int value)
 	rb_gc_register_address(&rubyclass);
 
 	/* XXX Is it a hack to do it like this instead of in pure C? */
-	rubyval = rb_eval_string("EPICstderr = Object.new unless defined? EPICstderr\n"
+	rubyval = rb_eval_string_protect(
+				 "EPICstderr = Object.new unless defined? EPICstderr\n"
                                  "def EPICstderr.write(string) \n"
 				 "   str = string.chomp \n"
 				 "   EPIC.echo(\"RUBY-ERROR: #{str}\") \n"
 				 "end \n"
-				 "$stderr = EPICstderr");
+				 "$stderr = EPICstderr", &state);
 	if (rubyval == Qnil)
 		say("stderr assignment returned Qnil");
+	if (state)
+		say("stderr assignment threw exception");
 
-	rubyval = rb_eval_string("EPICstdout = Object.new unless defined? EPICstdout\n"
+	rubyval = rb_eval_string_protect(
+				 "EPICstdout = Object.new unless defined? EPICstdout\n"
                                  "def EPICstdout.write(string) \n"
 				 "   str = string.chomp \n"
 				 "   EPIC.echo(str) \n"
 				 "end \n"
-				 "$stdout = EPICstdout");
+				 "$stdout = EPICstdout", &state);
 	if (rubyval == Qnil)
-		say("stderr assignment returned Qnil");
+		say("stdout assignment returned Qnil");
+	if (state)
+		say("stdout assignment threw exception");
 }
 
 /*
  * Used by the $ruby(...) function: evalulate ... as a RUBY statement, and 
  * return the result of the statement.
  */
-static VALUE	internal_rubyeval (VALUE *a)
+static VALUE	internal_rubyeval (VALUE ruby_input)
 {
 	VALUE	rubyval;
+	char *	a;
 
-	rubyval = rb_eval_string((char *)a);
+	a = StringValueCStr(ruby_input);
+	rubyval = rb_eval_string(a);
 	if (rubyval == Qnil)
 		return Qnil;
 	else
@@ -177,12 +186,14 @@ static	VALUE	eval_failed (VALUE args, VALUE error_info)
 char *	rubyeval (char *input)
 {
 	VALUE	rubyval;
+	VALUE	ruby_input;
 	char *	retval = NULL;
 
 	if (input && *input) 
 	{
 		ruby_startstop(1);
-		rubyval = rb_rescue2(internal_rubyeval, (VALUE)input, 
+		ruby_input = rb_str_new_cstr(input);
+		rubyval = rb_rescue2(internal_rubyeval, ruby_input,
 					eval_failed, 0,
 					rb_eException, 0);
 		if (rubyval == Qnil)

@@ -38,6 +38,7 @@
  * escape sequences would never have been possible.
  */
 
+#define __need_term_h__
 #define __need_putchar_x__
 #include "irc.h"
 #include "alias.h"

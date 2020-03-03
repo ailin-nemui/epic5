@@ -37,6 +37,7 @@
  * Ben Winslow deserves specific praise for his fine work adding 
  * terminfo support to EPIC.
  */
+#define __need_term_h__
 #define __need_putchar_x__
 #define __need_term_flush__
 #include "irc.h"

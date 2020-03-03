@@ -75,12 +75,14 @@
 #ifdef HAVE_TERMCAP_H
 # include <termcap.h>
 #else
-# if defined(HAVE_TERM_H) && !defined(DONT_USE_TERM_H)
-#  if defined(TERM_H_REQUIRES_CURSES_H)
-#   include <termio.h>
-#   include <curses.h>
+# if defined(__need_term_h__)
+#  if defined(HAVE_TERM_H) && !defined(DONT_USE_TERM_H)
+#   if defined(TERM_H_REQUIRES_CURSES_H)
+#    include <termio.h>
+#    include <curses.h>
+#   endif
+#   include <term.h>
 #  endif
-#  include <term.h>
 # endif
 #endif
 

@@ -33,6 +33,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+#define __need_term_h__
 #include "irc.h"
 
 
@@ -51,7 +52,7 @@ const char internal_version[] = "20190224";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1901;
+const unsigned long	commit_id = 1902;
 
 /*
  * As a way to poke fun at the current rage of naming releases after

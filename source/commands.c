@@ -33,6 +33,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+#define __need_term_h__
 #define __need_putchar_x__
 #define __need_term_flush__
 #include "irc.h"

@@ -856,3 +856,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Improve perl support (remove warnings) (caf)
 * The : before inal param is part of the syntax, not the message (caf, rb trn)
 * Fix bug in previous patch
+* Don't include <term.h> unless it's needed, because of ruby-2.7 support
+* Modernize ruby support while we're at it (checked with 2.3/2.6/2.7)
