@@ -5,6 +5,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * There should be a registerable callback for fd's gone bad. (newio)
 * What about rotate-able logfiles? (skered)
 * What about /query-ing an exec process, going to proper window? (skered)
+* $regmatches() returns byte offsets, but $mid() expects code points
+   - $regmatches is not UTF-8 aware and it must be.
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -858,3 +860,13 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bug in previous patch
 * Don't include <term.h> unless it's needed, because of ruby-2.7 support
 * Modernize ruby support while we're at it (checked with 2.3/2.6/2.7)
+* Add "passthrough read|write" support to newio, for python.
+* Change python's "epic.xecho" to not default force -s by default
+* Change python's @on decorator do a ^on so it's silent
+* Fix a couple of compiler warnings suggested by new clang.
+* Add _epic.callback_when_readable and _epic.callback_when_writable for python
+* They take a python callback, and dispatch when an fd is ready.
+* This allows python scripts to submit an fd for callback with newio.
+* Call PyErr_Print() on an exception.  This is "noisy", but i needed it for debug.
+* Eventually we have to be able to do this on our own.
+* Add /pyload shortener -- an in-client url shortening redirecting proxy!

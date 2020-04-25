@@ -250,7 +250,7 @@ NOISE_SYSTEM = '%'
 
 # Functions that epic python scripts can utilize.
 def xecho(message, all=False, all_server=False, banner=True, current=False, 
-    e=None, f=False, level=None, line=None, nolog=False, raw=False, say=True, 
+    e=None, f=False, level=None, line=None, nolog=False, raw=False, say=False, 
     target=None, visible=False, window=None, x=False):
     """Output a line to the user's window.
 
@@ -425,7 +425,7 @@ def on(event_type, wildcard_pattern='*', noise_indicator=NOISE_DEFAULT,
         noise_indicator = NOISE_DEFAULT
 
     def decorator(f):
-        command("on %s%s%s%s %s%s%s%s%s {pydirect %s.%s $*}" % (
+        command("^on %s%s%s%s %s%s%s%s%s {pydirect %s.%s $*}" % (
             sni, noise_indicator, event_type, serial_number, exclude_match,
             delete, quote_type, wildcard_pattern, quote_type, f.__module__,
             f.__name__

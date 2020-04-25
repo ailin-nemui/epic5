@@ -41,6 +41,8 @@
 #include "output.h"
 #include "ifcmd.h"
 #include "extlang.h"
+#include "newio.h"
+#include "server.h"
 
 void	output_traceback (void);
 
@@ -684,6 +686,180 @@ static	PyObject *	epic_set_assign (PyObject *self, PyObject *args)
 
 }
 
+/* * * * * * * * * */
+typedef struct {
+	int		vfd;
+	PyObject *	read_callback;
+	PyObject *	write_callback;
+	PyObject *	except_callback;
+	int		flags;
+} PythonFDCallback;
+
+/* This should be in a header file somewhere... */
+#if defined(HAVE_SYSCONF) && defined(_SC_OPEN_MAX)
+#  define IO_ARRAYLEN   sysconf(_SC_OPEN_MAX)
+#else
+# if defined(FD_SETSIZE)
+#  define IO_ARRAYLEN   FD_SETSIZE
+# else
+#  define IO_ARRAYLEN   NFDBITS
+# endif
+#endif
+
+PythonFDCallback **python_vfd_callback = NULL;
+
+void	init_python_fd_callbacks (void)
+{
+	int	vfd;
+	int	max_fd = IO_ARRAYLEN;
+
+	if (python_vfd_callback)
+		return;		/* Panic is so 12008 */
+
+	python_vfd_callback = (PythonFDCallback **)new_malloc(sizeof(PythonFDCallback *) * max_fd);
+	for (vfd = 0; vfd < max_fd; vfd++)
+		python_vfd_callback[vfd] = NULL;
+}
+
+PythonFDCallback *	get_python_vfd_callback (int vfd)
+{
+	if (vfd < 0 || vfd > IO_ARRAYLEN)
+		return NULL;
+
+	return python_vfd_callback[vfd];
+}
+
+int	set_python_vfd_callback (int vfd, PythonFDCallback *callback)
+{
+	if (callback == NULL)
+		return -1;
+
+	if (python_vfd_callback[vfd] && python_vfd_callback[vfd] != callback)
+		return -1;
+
+	if (callback->vfd == -1)
+		callback->vfd = vfd;
+
+	if (vfd != callback->vfd)
+		return -1;
+
+	python_vfd_callback[vfd] = callback;
+	return 0;
+}
+
+PythonFDCallback *	new_python_fd_callback (int vfd)
+{
+	PythonFDCallback *callback;
+
+	callback= (PythonFDCallback *)new_malloc(sizeof(PythonFDCallback));
+	callback->vfd = vfd;
+	callback->read_callback = NULL;
+	callback->write_callback = NULL;
+	callback->except_callback = NULL;
+	callback->flags = 0;
+	set_python_vfd_callback(vfd, callback);
+	return callback;
+}
+
+int	destroy_python_fd_callback (int vfd)
+{
+	PythonFDCallback *callback;
+
+	if (!(callback = python_vfd_callback[vfd]))
+		return -1;
+
+	callback->vfd = -1;
+	callback->read_callback = NULL;
+	callback->write_callback = NULL;
+	callback->except_callback = NULL;
+	callback->flags = 0;
+	python_vfd_callback[vfd] = NULL;
+	new_free((void **)&callback);
+	return 0;
+}
+
+
+
+void 	call_python_function_1arg (PyObject *pFunc, int vfd)
+{
+	PyObject *args_py = NULL;
+	PyObject *pArgs = NULL, *pRetVal = NULL;
+	PyObject *retval_repr = NULL;
+	char 	*r = NULL, *retvalstr = NULL;
+
+	if (!PyCallable_Check(pFunc))
+	{
+		my_error("python_fd_callback: The callback was not a function");
+		goto c_p_f_error;
+	}
+
+	if (!(pArgs = PyTuple_New(1)))
+		goto c_p_f_error;
+
+	if (!(args_py = Py_BuildValue("i", vfd)))
+		goto c_p_f_error;
+
+	if ((PyTuple_SetItem(pArgs, 0, args_py))) 
+		goto c_p_f_error;
+	args_py = NULL;			/* args_py now belongs to the tuple! */
+
+	if (!(pRetVal = PyObject_CallObject(pFunc, pArgs)))
+		goto c_p_f_error;
+
+        if (!(retval_repr = PyObject_Repr(pRetVal)))
+		goto c_p_f_error;
+
+	goto c_p_f_cleanup;
+
+c_p_f_error:
+	output_traceback();
+
+c_p_f_cleanup:
+	Py_XDECREF(pArgs);
+	Py_XDECREF(pRetVal);
+}
+
+void	do_python_fd (int vfd)
+{
+	PythonFDCallback *callback;
+	char	buffer[BIG_BUFFER_SIZE];
+	int	n;
+
+	if (!((callback = get_python_vfd_callback(vfd))))
+	{
+		yell("do_python_fd: FD %d doesn't belong to me - new_close()ing it.", vfd);
+		new_close(vfd);
+	}
+
+	if ((n = dgets(vfd, buffer, BIG_BUFFER_SIZE, -1)) > 0)
+	{
+		if (callback->read_callback)
+			call_python_function_1arg(callback->read_callback, vfd);
+		else if (callback->write_callback)
+			call_python_function_1arg(callback->write_callback, vfd);
+	}
+	else if (n < 0)
+	{
+		if (callback->except_callback)
+			call_python_function_1arg(callback->except_callback, vfd);
+	}
+}
+
+
+void	do_python_fd_failure (int vfd, int error)
+{
+	PythonFDCallback *callback;
+
+	if (!((callback = get_python_vfd_callback(vfd))))
+	{
+		yell("do_python_fd_failure: FD %d doesn't belong to me - new_close()ing it myself.", vfd);
+		new_close(vfd);
+	}
+
+	if (callback->except_callback)
+		call_python_function_1arg(callback->except_callback, vfd);
+}
+
 
 /*
  * epic.callback_when_readable(fd, read_callback, except_function, flags)
@@ -698,14 +874,16 @@ static	PyObject *	epic_set_assign (PyObject *self, PyObject *args)
  *				You must "handle" the fd, or it will busy-loop.
  *				If you block while handling the fd, epic 
  *				will block.
+ *					Arg1 - fd
  *		3. except_callback - A CallableObject (ie, a method) - A python
- *				method that takes one integer argument. It will
+ *				method that takes two integer arguments. It will
  *				be called if the 'fd' becomes invalid.  This 
  *				would happen if somneone close()d the FD, but
  *				didn't call _epic.cancel_callback().
- *				You should call _epic.cancel_callbacks(), or 
+ *				You should call _epic.cancel_callback(), or 
  *				it will busy-loop.  If you block while handling
  *				the fd, epic will block.
+ *					Arg1 - fd, Arg2 - error code
  *		4. flags - Reserved for future expansion.  Pass in 0 for now.
  *
  * Return value:
@@ -715,8 +893,9 @@ static	PyObject *	epic_set_assign (PyObject *self, PyObject *args)
  */
 static	PyObject *	epic_callback_when_readable (PyObject *self, PyObject *args)
 {
-	long	fd, flags;
+	long	vfd, flags;
 	PyObject *read_callback, *except_callback;
+	PythonFDCallback *callback;
 
 	/*
 	 * https://docs.python.org/3/extending/extending.html
@@ -725,7 +904,7 @@ static	PyObject *	epic_callback_when_readable (PyObject *self, PyObject *args)
 	 * NULL.  And all i should do is return NULL.
 	 * So that is why i do that here (and everywhere)
 	 */
-	if (!PyArg_ParseTuple(args, "lOOl", &fd, &read_callback, &except_callback, &flags)) {
+	if (!PyArg_ParseTuple(args, "lOOl", &vfd, &read_callback, &except_callback, &flags)) {
 		return NULL;
 	}
 
@@ -734,8 +913,21 @@ static	PyObject *	epic_callback_when_readable (PyObject *self, PyObject *args)
 	 * 2. Set read_callback in the python fd record
 	 * 3. Call new_open() if necessary
 	 */
+	if (!(callback = get_python_vfd_callback(vfd)))
+		callback = new_python_fd_callback(vfd);
+	else
+	{
+		if (callback->write_callback)
+			new_close_with_option(vfd, 1);
+	}
 
-	/* XXX TODO XXX */
+	callback->write_callback = NULL;
+	callback->read_callback = read_callback;
+	callback->except_callback = except_callback;
+	callback->flags = flags;
+
+	new_open(vfd, do_python_fd, NEWIO_PASSTHROUGH_READ, 0, from_server);
+	new_open_failure_callback(vfd, do_python_fd_failure);
 	return PyLong_FromLong(0L);
 }
 
@@ -769,8 +961,9 @@ static	PyObject *	epic_callback_when_readable (PyObject *self, PyObject *args)
  */
 static	PyObject *	epic_callback_when_writable (PyObject *self, PyObject *args)
 {
-	long	fd, flags;
+	long	vfd, flags;
 	PyObject *write_callback, *except_callback;
+	PythonFDCallback *callback;
 
 	/*
 	 * https://docs.python.org/3/extending/extending.html
@@ -779,7 +972,7 @@ static	PyObject *	epic_callback_when_writable (PyObject *self, PyObject *args)
 	 * NULL.  And all i should do is return NULL.
 	 * So that is why i do that here (and everywhere)
 	 */
-	if (!PyArg_ParseTuple(args, "lOOl", &fd, &write_callback, &except_callback, &flags)) {
+	if (!PyArg_ParseTuple(args, "lOOl", &vfd, &write_callback, &except_callback, &flags)) {
 		return NULL;
 	}
 
@@ -788,8 +981,21 @@ static	PyObject *	epic_callback_when_writable (PyObject *self, PyObject *args)
 	 * 2. Set write_callback in the python fd record
 	 * 3. Call new_open() if necessary.
 	 */
+	if (!(callback = get_python_vfd_callback(vfd)))
+		callback = new_python_fd_callback(vfd);
+	else
+	{
+		if (callback->read_callback)
+			new_close_with_option(vfd, 1);
+	}
 
-	/* XXX TODO XXX */
+	callback->read_callback = NULL;
+	callback->write_callback = write_callback;
+	callback->except_callback = except_callback;
+	callback->flags = flags;
+
+	new_open(vfd, do_python_fd, NEWIO_PASSTHROUGH_WRITE, 0, from_server);
+	new_open_failure_callback(vfd, do_python_fd_failure);
 	return PyLong_FromLong(0L);
 }
 
@@ -808,7 +1014,8 @@ static	PyObject *	epic_callback_when_writable (PyObject *self, PyObject *args)
  */
 static	PyObject *	epic_cancel_callback (PyObject *self, PyObject *args)
 {
-	long	fd;
+	long	vfd;
+	PythonFDCallback *callback;
 
 	/*
 	 * https://docs.python.org/3/extending/extending.html
@@ -817,7 +1024,7 @@ static	PyObject *	epic_cancel_callback (PyObject *self, PyObject *args)
 	 * NULL.  And all i should do is return NULL.
 	 * So that is why i do that here (and everywhere)
 	 */
-	if (!PyArg_ParseTuple(args, "l", &fd)) {
+	if (!PyArg_ParseTuple(args, "l", &vfd)) {
 		return NULL;
 	}
 
@@ -827,8 +1034,15 @@ static	PyObject *	epic_cancel_callback (PyObject *self, PyObject *args)
 	 * 3. Clear the python fd record
 	 * (4. The python script has to close the fd...)
 	 */
+	if ((callback = get_python_vfd_callback(vfd)))
+	{
+		callback->read_callback = NULL;
+		callback->write_callback = NULL;
+		callback->except_callback = NULL;
+		callback->flags = 0;
+		new_close_with_option(vfd, 1);
+	}
 
-	/* XXX TODO XXX */
 	return PyLong_FromLong(0L);
 }
 
@@ -964,6 +1178,7 @@ char *	python_eval_expression (char *input)
 		Py_Initialize();
 		p_initialized = 1;
 		global_vars = PyModule_GetDict(PyImport_AddModule("__main__"));
+		init_python_fd_callbacks();
 	}
 
 	/*
@@ -1009,6 +1224,7 @@ void	python_eval_statement (char *input)
 		Py_Initialize();
 		p_initialized = 1;
 		global_vars = PyModule_GetDict(PyImport_AddModule("__main__"));
+		init_python_fd_callbacks();
 	}
 
 	/* 
@@ -1174,6 +1390,7 @@ void	output_traceback (void)
 	char *ptype_str, *pvalue_str, *ptraceback_str;
 
 	say("The python evaluation threw an exception:");
+	PyErr_Print();
 	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
 	if (ptype != NULL)
 	{
@@ -1189,9 +1406,11 @@ void	output_traceback (void)
 	}
 	if (ptraceback != NULL)
 	{
+#if 0
 		ptraceback_repr = PyObject_Repr(ptraceback);
 		ptraceback_str = PyUnicode_AsUTF8(ptraceback_repr);
 		say("Traceback: %s", ptraceback_str);
+#endif
 	}
 	Py_XDECREF(ptype);
 	Py_XDECREF(pvalue);

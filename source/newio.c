@@ -107,6 +107,7 @@ static int	unix_recv (int channel, int);
 static int	unix_accept (int channel, int);
 static int	unix_connect (int channel, int);
 static int	unix_close (int channel, int);
+static int	passthrough_event (int channel, int quiet);
 
 /* 
  * On systems where vfd != channel, you need these functions to 
@@ -581,13 +582,17 @@ int 	new_open (int channel, void (*callback) (int), int io_type, int quiet, int 
 	else if (io_type == NEWIO_SSL_CONNECT)
 		ioe->io_callback = ssl_connect;
 #endif
+	else if (io_type == NEWIO_PASSTHROUGH_READ)
+		ioe->io_callback = passthrough_event;
+	else if (io_type == NEWIO_PASSTHROUGH_WRITE)
+		ioe->io_callback = passthrough_event;
 	else
 		panic(1, "New_open doesn't recognize io type %d", io_type);
 
 	ioe->callback = callback;
 	ioe->failure_callback = NULL;
 
-	if (io_type == NEWIO_CONNECT)
+	if (io_type == NEWIO_CONNECT || io_type == NEWIO_PASSTHROUGH_WRITE)
 	{
 		knowrite(vfd);
 		knoread(vfd);
@@ -911,6 +916,12 @@ static int	unix_connect (int channel, int quiet)
 	return (sizeof(int) + sizeof(SS)) * 2;
 }
 
+static int	passthrough_event (int channel, int quiet)
+{
+	/* We just push something so it's there. */
+	dgets_buffer(channel, "\n", 1);
+	return 1;
+}
 
 /*
  * Perform a synchronous i/o operation on a file descriptor.  

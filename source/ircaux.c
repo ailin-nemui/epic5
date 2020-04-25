@@ -6065,7 +6065,7 @@ static ssize_t	ctcp_encoder (const char *orig, size_t orig_len, const void *meta
 			yell("ctcp_encoder: orig is NULL");
 		if (!dest)
 			yell("ctcp_encoder: dest is NULL");
-		if (!dest_len <= 0)
+		if (dest_len <= 0)
 			yell("ctcp_encoder: dest_len <= 0");
                 return -1;
 	}
