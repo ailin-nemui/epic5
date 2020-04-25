@@ -870,3 +870,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Call PyErr_Print() on an exception.  This is "noisy", but i needed it for debug.
 * Eventually we have to be able to do this on our own.
 * Add /pyload shortener -- an in-client url shortening redirecting proxy!
+* Capture STDOUT and STDERR from python, redirect to /echo.
+* Pull out the python init code into its own function
+* Don't try to fancy-print exceptions, now that we're capturing stderr.

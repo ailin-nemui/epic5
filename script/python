@@ -16,7 +16,8 @@ if (python(1) == 1)
 
 	# Import the high-level epic module
 	pyload epic
-	echo -s python loaded
+
+	xecho -b Python loaded
 }
 
 # skully'2k16

@@ -223,6 +223,7 @@ along the way. This integration is stronger for it.
 """
 
 from importlib import reload
+import sys
 
 from _epic import cmd, eval, expand, expr, echo, say, call
 from _epic import run_command, call_function, get_set, get_assign, get_var, builtin_cmd
@@ -450,3 +451,28 @@ def on_hook(args):
     """A python function working as an epic hook.
     """
     say('Hooked: ' + args)
+
+
+# # # # # #
+# Capture STDOUT and STDERR
+class CaptureStdout(object):
+    def __init__(self):
+        pass
+
+    def write(self, buf):
+        for line in buf.rstrip().splitlines():
+            echo("PYTHON-OUTPUT: %s" % (line,))
+
+class CaptureStderr(object):
+    def __init__(self):
+        pass
+
+    def write(self, buf):
+        for line in buf.rstrip().splitlines():
+            echo("PYTHON-ERROR: %s" % (line,))
+ 
+my_stdout = CaptureStdout()
+my_stderr = CaptureStderr()
+
+sys.stdout = my_stdout
+sys.stderr = my_stderr

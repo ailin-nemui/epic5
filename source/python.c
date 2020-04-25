@@ -1118,7 +1118,6 @@ static	PyMethodDef	epicMethods[] = {
 	{ "set_set",       epic_set_set,	METH_VARARGS,	"Set a /SET value (only)" },
 	{ "set_assign",    epic_set_assign,	METH_VARARGS,	"Set a /ASSIGN value (only)" },
 	{ "builtin_cmd",   epic_builtin_cmd,	METH_VARARGS,	"Make a Python function an EPIC builtin command" },
-
       /* Lower level IO facilities */
 	{ "callback_when_readable",  epic_callback_when_readable, METH_VARARGS,	"Register a python function for FD event callbacks" },
 	{ "callback_when_writable",  epic_callback_when_writable, METH_VARARGS,	"Register a python function for FD event callbacks" },
@@ -1145,6 +1144,17 @@ static	PyObject *	PyInit_epic (void)
 	return PyModule_Create(&epicModule);
 }
 
+void	initialize_python (int start)
+{
+	if (p_initialized == 0)
+	{
+		PyImport_AppendInittab("_epic", &PyInit_epic);
+		Py_Initialize();
+		p_initialized = 1;
+		global_vars = PyModule_GetDict(PyImport_AddModule("__main__"));
+		init_python_fd_callbacks();
+	}
+}
 
 /***********************************************************/
 /* 
@@ -1173,13 +1183,7 @@ char *	python_eval_expression (char *input)
 	char 	*r, *retvalstr = NULL;
 
 	if (p_initialized == 0)
-	{
-		PyImport_AppendInittab("_epic", &PyInit_epic);
-		Py_Initialize();
-		p_initialized = 1;
-		global_vars = PyModule_GetDict(PyImport_AddModule("__main__"));
-		init_python_fd_callbacks();
-	}
+		initialize_python(1);
 
 	/*
 	 * https://docs.python.org/3/c-api/veryhigh.html
@@ -1219,13 +1223,7 @@ char *	python_eval_expression (char *input)
 void	python_eval_statement (char *input)
 {
 	if (p_initialized == 0)
-	{
-		PyImport_AppendInittab("_epic", &PyInit_epic);
-		Py_Initialize();
-		p_initialized = 1;
-		global_vars = PyModule_GetDict(PyImport_AddModule("__main__"));
-		init_python_fd_callbacks();
-	}
+		initialize_python(1);
 
 	/* 
 	 * https://docs.python.org/3/c-api/veryhigh.html
@@ -1389,7 +1387,8 @@ void	output_traceback (void)
 	PyObject *ptype_repr, *pvalue_repr, *ptraceback_repr;
 	char *ptype_str, *pvalue_str, *ptraceback_str;
 
-	say("The python evaluation threw an exception:");
+	say("The python evaluation threw an exception.");
+#if 0
 	PyErr_Print();
 	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
 	if (ptype != NULL)
@@ -1415,6 +1414,7 @@ void	output_traceback (void)
 	Py_XDECREF(ptype);
 	Py_XDECREF(pvalue);
 	Py_XDECREF(ptraceback);
+#endif
 	return;
 }
 
