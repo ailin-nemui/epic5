@@ -1,5 +1,22 @@
 EPIC5-2.2
 
+*** News 04/26/2020 -- New python script, 'shortener'
+	You can load this script with
+		pyload shortener
+	This script provides an in-client URL shortening service.
+	Whenever someone provides a URL in a message, the service
+	will create a short URL that will be served by an http
+	redirection server that runs in client
+
+	Example:
+	--------
+	<nick> hey, please visit www.frobnitz.com/really-long-and-wraps
+        +onto-the-next-line-so-you-can-tpaste-it
+	*** http://127.0.0.1:8080/1
+
+	Then you can visit http://127.0.0.1:8080/1 and it will
+	redirect you to the original url.
+
 *** News 02/24/2019 -- EPIC5-2.1.1 (Abulia) was released here
 	Even though not everything is done, I think I've probably
 	dragged my feet long enough
