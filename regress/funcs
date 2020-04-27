@@ -778,6 +778,39 @@ assert delitem(testarray 1) == 0
 assert delarray(testarray) == 0
 assert delarray(testarray) == -1
 
+# Testing Regular Expressions
+clear
+@ RE = regcomp(.*x[aä]y.*)
+@ RE_CS = regcomp_cs(.*x[aä]y.*)
+@ RE2 = regcomp(.*x[aäª]*y.*)
+@ RE_M = regcomp(x[aä]y)
+assert RE != []
+assert RE_CS != []
+assert regexec($RE abcdxayz) == 0
+assert regexec($RE ABCDXAYZ) == 0
+assert regexec($RE abcdxay) == 0
+assert regexec($RE xayz) == 0
+assert regexec($RE abcdxaayz) == 1
+assert regexec($RE abcdxbyz) == 1
+assert regexec($RE abcdxyz) == 1
+assert regexec($RE_CS abcdxayz) == 0
+assert regexec($RE_CS ABCDXAYZ) == 1
+assert regexec($RE abcdxäyz) == 0
+assert regexec($RE ABCDXÄYZ) == 0
+assert regexec($RE_CS abcdxäyz) == 0
+assert regexec($RE_CS abcdxÄyz) == 1
+assert regexec($RE2 abcdxäaÄªÄyz) == 0
+assert regexec($RE2 abcdxêyz) == 1
+assert mid($regmatches($RE_M 1 abcdxayz) abcdxayz) == [xay]
+assert mid($regmatches($RE_M 1 ABCDXAYZ) ABCDXAYZ) == [XAY]
+assert mid($regmatches($RE_M 1 abcdxäyz) abcdxäyz) == [xäy]
+assert mid($regmatches($RE_M 1 ABCDXÄYZ) ABCDXÄYZ) == [XÄY]
+
+@ regfree($RE)
+@ regfree($RE_CS)
+@ regfree($RE2)
+@ regfree($RE_M)
+
 # Testing internal array consistency.
 echo
 fe (function fnexist command cexist set) label exist {
