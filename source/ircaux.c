@@ -7216,7 +7216,8 @@ void	init_signal_names (void)
 	{
 		signal_name[i] = NULL;
 
-#define SIGH(x) if (i == x) malloc_strcpy(&signal_name[i], #x + 3);
+/* XXX because clang objects to #x + 3 */
+#define SIGH(x) if (i == x) malloc_strcpy(&signal_name[i], & #x [3]);
 
 #ifdef SIGABRT
 		SIGH(SIGABRT)

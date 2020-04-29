@@ -317,6 +317,7 @@ extern	int	grab_codepoint 		(const unsigned char *x);
 extern	int     quick_code_point_count	(const unsigned char *str);
 extern	int     previous_code_point	(const unsigned char *, const unsigned char **);
 extern	int	quick_code_point_index	(const unsigned char *, const unsigned char *);
+extern	int     count_initial_codepoints (const unsigned char *, const unsigned char *);
 
 extern	int	strext2		(unsigned char **, unsigned char *, size_t , size_t);
 extern	int     invalid_utf8str (unsigned char *utf8str);

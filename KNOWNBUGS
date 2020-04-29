@@ -2,7 +2,6 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* There should be a registerable callback for fd's gone bad. (newio)
 * What about rotate-able logfiles? (skered)
 * What about /query-ing an exec process, going to proper window? (skered)
 * $regmatches() returns byte offsets, but $mid() expects code points
@@ -873,3 +872,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Capture STDOUT and STDERR from python, redirect to /echo.
 * Pull out the python init code into its own function
 * Don't try to fancy-print exceptions, now that we're capturing stderr.
+* Add count_initial_codepoints() to convert a ptr to something for $mid()
+* Change $regmatches() to use count_initial_codepoints().
+* Fix a dumb warning from clang about pointer arithmetic.
+

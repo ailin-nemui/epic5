@@ -482,6 +482,46 @@ int	quick_display_column_count (const unsigned char *str)
 	return length;
 }
 
+/*
+ * count_initial_codepoints - How many codepoints in 'str' before 'p'?
+ *
+ * Arguments:
+ *	str	- A UTF-8 string
+ *      p       - A character pointer somewhere inside 'str'
+ *
+ * Return Value:
+ * 	The number of codepoints in 'str' before 'p'
+ *      ie,  $mid(X 999 $str) == $p
+ *
+ * IMPORTANT NOTE!
+ *      This is used by $regmatches() to convert a pointer to something
+ *      that you can pass to $mid().
+ */
+int	count_initial_codepoints (const unsigned char *str, const unsigned char *p)
+{
+	const unsigned char *s;
+	int	code_point;
+	int	length = 0;
+	int	x;
+
+	s = str;
+	while ((code_point = next_code_point(&s, 1)))
+	{
+		length++;
+		if (s >= p)
+			return length;
+	}
+
+	/* 
+	 * This is only reached if 'p' is not in 'str'.
+	 * In this case, I decided it's better to point at
+	 * the end ofo the string, which yields a zero-length
+	 * string.  I'm not positive this is the right call
+	 */
+	return length;
+}
+
+
 int	input_column_count (const unsigned char *str)
 {
 	const unsigned char *s;

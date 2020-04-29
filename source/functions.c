@@ -4914,6 +4914,8 @@ BUILT_IN_FUNCTION(function_regmatches, input)
 	if (!(last_regex_error = regexec(&preg, input, nmatch, pmatch, 0)))
 	{
 	    size_t	n, clue = 0;
+	    const unsigned char *rm_so_str, *rm_eo_str;
+	    int		rm_so_str_cnt, rm_eo_str_cnt;
 
 	    for (n = 0; n < nmatch; n++) 
 	    {
@@ -4923,11 +4925,16 @@ BUILT_IN_FUNCTION(function_regmatches, input)
 			 * on the regex implementation */
 			break;
 		}
+		rm_so_str = input + pmatch[n].rm_so;
+		rm_eo_str = input + pmatch[n].rm_eo;
+		rm_so_str_cnt = count_initial_codepoints(input, rm_so_str);
+		rm_eo_str_cnt = count_initial_codepoints(input, rm_eo_str);
+
 		malloc_strcat_word_c(&ret, space, 
-					ltoa(pmatch[n].rm_so), 
+					ltoa(rm_so_str_cnt),
 					DWORD_NO, &clue);
 		malloc_strcat_word_c(&ret, space, 
-					ltoa(pmatch[n].rm_eo - pmatch[n].rm_so),
+					ltoa(rm_eo_str_cnt - rm_so_str_cnt),
 					DWORD_NO, &clue);
 	    }
 	}
