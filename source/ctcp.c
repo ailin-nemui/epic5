@@ -256,9 +256,9 @@ CTCP_HANDLER(do_crypto)
 	 * might yield another CTCP message), and so we must not
 	 * recode until we have removed any sub-ctcps!
 	 */
-	if (get_server_doing_privmsg(from_server))
+	if (get_server_doing_privmsg(from_server) > 0)
 		extra = malloc_strdup(do_ctcp(1, from, to, ret));
-	else if (get_server_doing_notice(from_server))
+	else if (get_server_doing_notice(from_server) > 0)
 		extra = malloc_strdup(do_ctcp(0, from, to, ret));
 	else
 	{

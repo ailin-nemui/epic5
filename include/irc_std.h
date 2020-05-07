@@ -250,6 +250,7 @@ sigfunc *my_signal (int, sigfunc *);
 sigfunc *init_signals (void);
 void	init_signal_names (void);
 const char *get_signal_name (int);
+int	get_signal_by_name (const char *);	/* Returns -1 on error */
 extern	volatile int    signals_caught[NSIG];
 
 #define BUILT_IN_COMMAND(x) \

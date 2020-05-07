@@ -4,7 +4,7 @@
  * Copyright (c) 1990 Michael Sandroff.
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
- * Copyright 1997, 2014 EPIC Software Labs
+ * Copyright 1997, 2014, 2020 EPIC Software Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,7 +43,6 @@
 #include "screen.h"
 #include "hook.h"
 #include "input.h"
-#include "list.h"
 #include "server.h"
 #include "output.h"
 #include "parse.h"
@@ -58,16 +57,13 @@ BUILT_IN_COMMAND(execcmd)
 }
 int	get_child_exit (pid_t x)			{ return -1; }
 void	clean_up_processes (void)			{ return; }
-int	text_to_process (int x, const char *y, int z) 	
+int	text_to_process (const char *x, const char *y, int z) 	
 { 
 	say("Cannot send text to process without job control, sorry.");
 	return 1; 
 }
-void	exec_server_delete (int x)			{ return; }
-void	add_process_wait (int x, const char *y)		{ return; }
-int	get_process_index (char **x)			{ return -1; }
+void	add_process_wait (const char *, const char *y)	{ return; }
 int	is_valid_process (const char *x)		{ return -1; }
-int	process_is_running (char *x)			{ return 0; }
 #else
 
 #include <sys/wait.h>
@@ -76,669 +72,153 @@ int	process_is_running (char *x)			{ return 0; }
 #include <sys/filio.h>
 #endif
 
+typedef struct WaitCmdStru
+{
+	struct WaitCmdStru *	next;
+	char *			commands;
+}	WaitCmd;
 
 /* Process: the structure that has all the info needed for each process */
 typedef struct
 {
-	int	index;			/* Where in the proc array it is */
-	char	*name;			/* full process name */
-	char	*logical;
+	int	refnum;			/* The logical refnum of an /EXECd process */
+	char *	refnum_desc;		/* The %<refnum> */
+	char *	logical;		/* The logical name supplied by the user  (-NAME) */
+	char *	logical_desc;		/* The %<logical> */
+	char *	commands;		/* The commands being executed */
+	int	direct;			/* Whether to use a shell or not */
+
 	pid_t	pid;			/* process-id of process */
-	int	p_stdin;		/* stdin description for process */
-	int	p_stdout;		/* stdout descriptor for process */
-	int	p_stderr;		/* stderr descriptor for process */
-	int	counter;		/* output line counter for process */
-	char	*redirect;		/* redirection command (MSG, NOTICE) */
-	unsigned refnum;		/* a window for output to go to */
-	int	server;			/* the server to use for output */
-	char	*who;			/* nickname used for redirection */
-	int	exited;			/* true if process has exited */
-	int	termsig;		/* The signal that terminated
-					 * the process */
-	int	retcode;		/* return code of process */
-	List	*waitcmds;		/* commands queued by WAIT -CMD */
-	int	dumb;			/* 0 if input still going, 1 if not */
-	int	disowned;		/* 1 if we let it loose */
-	char	*stdoutc;
-	char	*stdoutpc;
-	char	*stderrc;
-	char	*stderrpc;
+	int	p_stdin;		/* fd through which we send to process's stdin */
+	int	p_stdout;		/* fd through which we receive from process's stdout */
+	int	p_stderr;		/* fd through which we receive from process's stderr */
+
+	int	exited;			/* 0 if process is running, 1 if it exited or was killed */
+	int	termsig;		/* The signal that killed it (if any) */
+	int	retcode;		/* It's exit code (if any) */
+
+	char *	redirect;		/* Either PRIVMSG or NOTICE (for send_to_target) */
+	char *	who;			/* Who all output is sent to (for send_to_target) */
+	unsigned  window_refnum;	/* A window all output shall be /echo'd to */
+	int	server_refnum;		/* The server this /exec process is attached to */
+
+	int	dumb;			/* 0 if we're handling output from it, 1 if we stopped listening */
+	int	disowned;		/* NOT IMPLEMENTED - 1 if we disowned it for cleanup */
+
+	char *	stdoutc;		/* Commands to run on each line of stdout (-LINE) */
+	char *	stdoutpc;		/* Commands to run on each partial line of output (-LINEPART) */
+	char *	stderrc;		/* Commands to run on each line of stderr (-ERROR) */
+	char *	stderrpc;		/* Commands to run on each partial line of error (-ERRORPART) */
+	WaitCmd *waitcmds;		/* Commands to run on process exit (-END or /WAIT -CMD) */
+
+	Timeval	started_at;		/* When the process began */
+	int	lines_recvd;		/* How many lines we've received from process */
+	int	lines_recvd_limit;	/* How many lines until we ignore (-1 for never) */
+	int	lines_sent;		/* How many lines we've sent */
+	int	lines_limit;		/* How many lines till we give up */
 }	Process;
 
 
 static	Process **process_list = NULL;
 static	int	process_list_size = 0;
+static	int	next_process_refnum = 1;
 
 static 	void 	handle_filedesc 	(Process *, int *, int, int);
 static 	void 	cleanup_dead_processes 	(void);
-static 	void 	ignore_process 		(int);
-static 	void 	exec_close_in		(int);
-static 	void 	exec_close_out		(int);
-static 	void 	kill_process 		(int, int);
+static 	void 	ignore_process 		(Process *);
+static 	void 	exec_close_in		(Process *);
+static 	void 	exec_close_out		(Process *);
+static 	void 	kill_process 		(Process *, int);
 static 	void 	kill_all_processes 	(int signo);
-static 	int 	valid_process_index 	(int proccess);
 static 	int 	is_logical_unique 	(char *logical);
-static	int 	logical_to_index 	(const char *logical);
-static	int	index_to_target 	(int, char *, size_t);
 static	void 	do_exec 		(int fd);
+static	Process *	get_process_by_refnum (int refnum);
+static int 	get_process_refnum 	(const char *desc);
+
+static	int	set_message_from_for_process (Process *proc)
+{
+	const char *logical_name; 
+	int	l;
+
+	if (proc->logical_desc)
+		logical_name = proc->logical_desc;
+	else
+		logical_name = proc->refnum_desc;
+
+	if (proc->window_refnum)
+		l = message_setall(proc->window_refnum, logical_name, LEVEL_OTHER);
+	else
+		l = message_from(logical_name, LEVEL_OTHER);
+
+	return l;
+}
+
+
+/*************************************************************/
+/*
+ * summarize_process
+ */
+static size_t	summarize_process (Process *proc, char *outbuf, size_t outbufsize)
+{
+	if (proc)
+	{
+		if (proc->logical)
+			return snprintf(outbuf, outbufsize, 
+					"%d (%s) (pid %d): %s", 
+				        proc->refnum, proc->logical, proc->pid, 
+					proc->commands);
+		else
+			return snprintf(outbuf, outbufsize,
+					"%d (pid %d): %s", 
+				        proc->refnum, proc->pid, proc->commands);
+	}
+	else
+		return 0;
+}
 
 /*
- * exec: the /EXEC command.  Does the whole shebang for ircII sub procceses
- * I melded in about half a dozen external functions, since they were only
- * ever used here.  Perhaps at some point theyll be broken out again, but
- * not until i regain control of this module.
+ * output_process
  */
-BUILT_IN_COMMAND(execcmd)
+static void	output_process (Process *process)
 {
-	const char	*who = NULL;
-	char		*logical = NULL;
-	const char	*flag;
-	const char 	*redirect = NULL;
-	unsigned 	refnum = 0;
-	size_t		len;
-	int		sig,
-			i,
-			refnum_flag = 0,
-			logical_flag = 0;
-	int		direct = 0;
-	Process		*proc;
-	char		*stdoutc = NULL,
-			*stderrc = NULL,
-			*stdoutpc = NULL,
-			*stderrpc = NULL,
-			*endc = NULL;
+}
 
-	/*
-	 * If no args are given, list all the processes.
-	 */
-	if (!*args)
+/*
+ * check_process_list
+ * - This defrags the process list, moving all alive processes to 
+ *   the lowest index, and if none are alive, deleting the list.
+ */
+static void	check_process_list (void)
+{
+}
+
+/*************************************************************/
+/*
+ * execcmd_list_processes
+ */
+static void	execcmd_list_processes (void)
+{
+	int		i;
+	Process	*	proc;
+	char		outbuf[BIG_BUFFER_SIZE + 1];
+	size_t		outbufsiz = sizeof(outbuf);
+
+	if (process_list)
 	{
-		if (!process_list)
-		{
-			say("No processes are running");
-			return;
-		}
-
 		say("Process List:");
 		for (i = 0; i < process_list_size; i++)
 		{
-			if (((proc = process_list[i])) == NULL)
-				continue;
-
-			if (proc->logical)
-				say("\t%d (%s) (pid %d): %s", 
-				    i, proc->logical, proc->pid, proc->name);
-			else
-				say("\t%d (pid %d): %s", 
-				    i, proc->pid, proc->name);
-		}
-		return;
-	}
-
-	/*
-	 * Walk through and parse out all the args
-	 */
-	while ((*args == '-') && (flag = next_arg(args, &args)))
-	{
-		flag++;
-		len = strlen(flag);
-
-		/*
-		 * /EXEC -OUT redirects all output from the /exec to the
-		 * current channel for the current window.
-		 */
-		if (my_strnicmp(flag, "OUT", len) == 0)
-		{
-			if (get_server_doing_privmsg(from_server))
-				redirect = "NOTICE";
-			else
-				redirect = "PRIVMSG";
-
-			if (!(who = get_target_by_refnum(0)))
+			if ((proc = process_list[i]))
 			{
-			     say("No query or channel in this window for -OUT");
-			     return;
+				if (summarize_process(proc, outbuf, outbufsiz))
+					say("\t%s", outbuf);
 			}
-		}
-
-		/*
-		 * /EXEC -NAME gives the /exec a logical name that can be
-		 * refered to as %name 
-		 */
-		else if (my_strnicmp(flag, "NAME", len) == 0)
-		{
-			logical_flag = 1;
-			if (!(logical = next_arg(args, &args)))
-			{
-				say("You must specify a logical name");
-				return;
-			}
-		}
-
-		/*
-		 * /EXEC -WINDOW forces all output for an /exec to go to
-		 * the window that is current at this time
-		 */
-		else if (my_strnicmp(flag, "WINDOW", len) == 0)
-		{
-			refnum_flag = 1;
-			refnum = current_refnum();
-		}
-
-		/*
-		 * /EXEC -WINTARGET sends all output for an /exec to
-		 * a given target window
-		 */
-		else if (my_strnicmp(flag, "WINTARGET", len) == 0)
-		{
-			const char *desc = next_arg(args, &args);
-			Window *w;
-
-			if (!desc || !(w = get_window_by_desc(desc)))
-			{
-				say("Target window not found");
-				return;
-			}
-			refnum_flag = 1;
-			refnum = w->refnum;
-		}
-
-		/*
-		 * /EXEC -MSG <target> redirects the output of an /exec 
-		 * to the given target.
-		 */
-		else if (my_strnicmp(flag, "MSG", len) == 0)
-		{
-			if (get_server_doing_privmsg(from_server))
-				redirect = "NOTICE";
-			else
-				redirect = "PRIVMSG";
-
-			if (!(who = next_arg(args, &args)))
-			{
-				say("No nicknames specified");
-				return;
-			}
-		}
-
-		/*
-		 * /EXEC -LINE  specifies the stdout callback
-		 */
-		else if (my_strnicmp(flag, "LINE", len) == 0)
-		{
-			if ((stdoutc = next_expr(&args, '{')) == NULL)
-				say("Need {...} argument for -LINE flag");
-		}
-
-		/*
-		 * /EXEC -LINEPART specifies the stdout partial line callback
-		 */
-		else if (my_strnicmp(flag, "LINEPART", len) == 0)
-		{
-			if ((stdoutpc = next_expr(&args, '{')) == NULL)
-				say("Need {...} argument for -LINEPART flag");
-		}
-
-		/*
-		 * /EXEC -ERROR specifies the stderr callback
-		 */
-		else if (my_strnicmp(flag, "ERROR", len) == 0)
-		{
-			if ((stderrc = next_expr(&args, '{')) == NULL)
-				say("Need {...} argument for -ERROR flag");
-		}
-
-		/*
-		 * /EXEC -ERRORPART specifies the stderr part line callback
-		 */
-		else if (my_strnicmp(flag, "ERRORPART", len) == 0)
-		{
-			if ((stderrpc = next_expr(&args, '{')) == NULL)
-				say("Need {...} argument for -ERRORPART flag");
-		}
-
-		/*
-		 * /EXEC -END  specifies the final collection callback
-		 */
-		else if (my_strnicmp(flag, "END", len) == 0)
-		{
-			if ((endc = next_expr(&args, '{')) == NULL)
-				say("Need {...} argument for -END flag");
-		}
-
-		/*
-		 * /EXEC -CLOSE forcibly closes all the fd's to a process,
-		 * in the hope that it will take the hint.
-		 */
-		else if (my_strnicmp(flag, "CLOSE", len) == 0)
-		{
-			if ((i = get_process_index(&args)) == -1)
-				return;
-
-			ignore_process(i);
-			return;
-		}
-
-		/*
-		 * /EXEC -CLOSEIN close the processes STDIN,
-		 * in the hope that it will take the hint.
-		 */
-		else if (my_strnicmp(flag, "CLOSEIN", len) == 0)
-		{
-			if ((i = get_process_index(&args)) == -1)
-				return;
-
-			exec_close_in(i);
-			return;
-		}
-
-		/*
-		 * /EXEC -CLOSEIN close the processes STDIN,
-		 * in the hope that it will take the hint.
-		 */
-		else if (my_strnicmp(flag, "CLOSEOUT", len) == 0)
-		{
-			if ((i = get_process_index(&args)) == -1)
-				return;
-
-			exec_close_out(i);
-			return;
-		}
-
-		/*
-		 * /EXEC -NOTICE <target> redirects the output of an /exec 
-		 * to a specified target
-		 */
-		else if (my_strnicmp(flag, "NOTICE", len) == 0)
-		{
-			redirect = "NOTICE";
-			if (!(who = next_arg(args, &args)))
-			{
-				say("No nicknames specified");
-				return;
-			}
-		}
-
-		/*
-		 * /EXEC -IN sends a line of text to a process
-		 */
-		else if (my_strnicmp(flag, "IN", len) == 0)
-		{
-			if ((i = get_process_index(&args)) == -1)
-				return;
-
-			text_to_process(i, args, 1);
-			return;
-		}
-
-		/*
-		 * /EXEC -DIRECT suppresses the use of a shell
-		 */
-		else if (my_strnicmp(flag, "DIRECT", len) == 0)
-			direct = 1;
-
-
-		/*
-		 * All other - arguments are implied KILLs
-		 */
-		else
-		{
-			if (*args != '%')
-			{
-				say("%s is not a valid process", args);
-				return;
-			}
-
-			/*
-			 * Check for a process to kill
-			 */
-			if ((i = get_process_index(&args)) == -1)
-				return;
-
-			/*
-			 * Handle /exec -<num> %<process>
-			 */
-			if ((sig = my_atol(flag)) > 0)
-			{
-				if ((sig > 0) && (sig < NSIG))
-					kill_process(i, sig);
-				else
-					say("Signal number can be from 1 to %d", NSIG);
-				return;
-			}
-
-			/*
-			 * Handle /exec -<SIGNAME> %<process>
-			 */
-			for (sig = 1; sig < NSIG; sig++)
-			{
-				if (!get_signal_name(sig))
-					continue;
-				if (!my_strnicmp(get_signal_name(sig), flag, len))
-				{
-					kill_process(i, sig);
-					return;
-				}
-			}
-
-			/*
-			 * Give up! =)
-			 */
-			say("No such signal: %s", flag);
-			return;
 		}
 	}
-
-	/*
-	 * This handles the form:
-	 *
-	 *	/EXEC <flags> %process
-	 *
-	 * Where the user wants to redefine some options for %process.
-	 */
-	if (*args == '%')
-	{
-		int	l;
-
-		/*
-		 * Make sure the process is actually running
-		 */
-		if ((i = get_process_index(&args)) == -1)
-			return;
-
-		proc = process_list[i];
-		l = message_setall(refnum, NULL, LEVEL_OTHER);
-
-		/*
-		 * Check to see if the user wants to change windows
-		 */
-		if (refnum_flag)
-		{
-			proc->refnum = refnum;
-			if (refnum)
-say("Output from process %d (%s) now going to this window", i, proc->name);
-			else
-say("Output from process %d (%s) not going to any window", i, proc->name);
-		}
-
-		/*
-		 * Check to see if the user is changing the default target
-		 */
-		malloc_strcpy(&(proc->redirect), redirect);
-		malloc_strcpy(&(proc->who), who);
-
-		if (redirect)
-say("Output from process %d (%s) now going to %s", i, proc->name, who);
-		else
-say("Output from process %d (%s) now going to you", i, proc->name);
-
-		/*
-		 * Check to see if the user changed the NAME of %proc.
-		 */
-		if (logical_flag)
-		{
-			if (is_logical_unique(logical))
-			{
-				malloc_strcpy(&proc->logical, logical);
-				say("Process %d (%s) is now called %s",
-					i, proc->name, proc->logical);
-			} 
-			else 
-				say("The name %s is not unique!", logical);
-		}
-
-		/*
-		 * Change the stdout and stderr lines _if_ they are given.
-		 */
-		if (stdoutc)
-			malloc_strcpy(&proc->stdoutc, stdoutc);
-		if (stdoutpc)
-			malloc_strcpy(&proc->stdoutpc, stdoutpc);
-		if (stderrc)
-			malloc_strcpy(&proc->stderrc, stderrc);
-		if (stderrpc)
-			malloc_strcpy(&proc->stderrpc, stderrpc);
-
-		pop_message_from(l);
-	}
-
-	/*
-	 * The user is trying to fire up a new /exec, so pass the buck.
-	 */
 	else
-	{
-		int	p0[2], p1[2], p2[2],
-			pid, cnt;
-		char	*shell,
-			*arg;
-		char	*name;
-
-		name = LOCAL_COPY(args);
-
-		if (!is_logical_unique(logical))
-		{
-			say("The name %s is not unique!", logical);
-			return;
-		}
-
-		p0[0] = p1[0] = p2[0] = -1;
-		p0[1] = p1[1] = p2[1] = -1;
-
-		/*
-		 * Open up the communication pipes
-		 */
-		if (pipe(p0) || pipe(p1) || pipe(p2))
-		{
-			say("Unable to start new process: %s", strerror(errno));
-			close(p0[0]);
-			close(p0[1]);
-			close(p1[0]);
-			close(p1[1]);
-			close(p2[0]);
-			close(p2[1]);
-			return;
-		}
-
-		switch ((pid = fork()))
-		{
-		case -1:
-			say("Couldn't start new process!");
-			close(p0[0]);
-			close(p0[1]);
-			close(p1[0]);
-			close(p1[1]);
-			close(p2[0]);
-			close(p2[1]);
-			break;
-
-		/*
-		 * CHILD: set up and exec the process
-		 */
-		case 0:
-		{
-			/*
-			 * Fire up a new job control session,
-			 * Sever all ties we had with the parent ircII process
-			 */
-			setsid();
-			if (setgid(getgid()))
-				_exit(0);
-			if (setuid(getuid()))
-				_exit(0);
-			my_signal(SIGINT, SIG_IGN);
-			my_signal(SIGQUIT, SIG_DFL);
-			my_signal(SIGSEGV, SIG_DFL);
-			my_signal(SIGBUS, SIG_DFL);
-
-			dup2(p0[0], 0);
-			dup2(p1[1], 1);
-			dup2(p2[1], 2);
-			for (i = 3; i < 256; i++)
-				close(i);
-
-			/*
-			 * Pretend to be just a dumb terminal
-			 */
-			setenv("TERM", "tty", 1);
-
-			/*
-			 * Figure out what shell (if any) we're using
-			 */
-			shell = get_string_var(SHELL_VAR);
-
-			/*
-			 * If we're not using a shell, doovie up the exec args
-			 * array and pass it off to execvp
-			 */
-			if (direct || !shell)
-			{
-				int	max;
-				char **my_args;
-
-				cnt = 0;
-				max = 5;
-				my_args = new_malloc(sizeof(char *) * max);
-				while ((arg = new_next_arg(name, &name)))
-				{
-					my_args[cnt] = arg;
-
-					if (++cnt >= max)
-					{
-						max += 5;
-						RESIZE(my_args, char *, max);
-					}
-				}
-				my_args[cnt] = NULL;
-				execvp(my_args[0], my_args);
-
-				printf("*** Error running program \"%s\": %s\n",
-						args, strerror(errno));
-			}
-
-			/*
-			 * If we're using a shell, let them have all the fun
-			 */
-			else
-			{
-				if (!(flag = get_string_var(SHELL_FLAGS_VAR)))
-					flag = empty_string;
-
-				execl(shell, shell, flag, name, NULL);
-
-				printf("*** Error running program \"%s %s\": %s\n", 
-						shell, args, strerror(errno));
-			}
-
-			/*
-			 * Something really died if we got here
-			 */
-			_exit(-1);
-			break;
-		}
-
-		/*
-		 * PARENT: add the new process to the process table list
-		 */
-		default:
-		{
-			proc = new_malloc(sizeof(Process));
-			close(p0[0]);
-			close(p1[1]);
-			close(p2[1]);
-
-			/*
-			 * Init the proc list if neccesary
-			 */
-			if (!process_list)
-			{
-			    process_list = new_malloc(sizeof(Process *));
-			    process_list_size = 1;
-			    process_list[0] = NULL;
-			}
-
-			/*
-			 * Find the first empty proc entry
-			 */
-			for (i = 0; i < process_list_size; i++)
-			{
-				if (!process_list[i])
-				{
-					process_list[i] = proc;
-					break;
-				}
-			}
-
-			/*
-			 * If there are no empty proc entries, make a new one.
-			 */
-			if (i == process_list_size)
-			{
-			    process_list_size++;
-			    RESIZE(process_list, Process *, process_list_size);
-			    process_list[i] = proc;
-			}
-
-			/*
-			 * Fill in the new proc entry
-			 */
-			proc->name = malloc_strdup(name);
-			if (logical)
-				proc->logical = malloc_strdup(logical);
-			else
-				proc->logical = NULL;
-			proc->index = i;
-			proc->pid = pid;
-			proc->p_stdin = p0[1];
-			proc->p_stdout = p1[0];
-			proc->p_stderr = p2[0];
-			proc->refnum = refnum;
-			proc->redirect = NULL;
-			if (redirect)
-				proc->redirect = malloc_strdup(redirect);
-			proc->server = from_server;
-			proc->counter = 0;
-			proc->exited = 0;
-			proc->termsig = 0;
-			proc->retcode = 0;
-			proc->waitcmds = NULL;
-			proc->who = NULL;
-			proc->disowned = 0;
-			if (who)
-				proc->who = malloc_strdup(who);
-			proc->dumb = 0;
-
-			if (stdoutc)
-				proc->stdoutc = malloc_strdup(stdoutc);
-			else
-				proc->stdoutc = NULL;
-
-			if (stdoutpc)
-				proc->stdoutpc = malloc_strdup(stdoutpc);
-			else
-				proc->stdoutpc = NULL;
-
-			if (stderrc)
-				proc->stderrc = malloc_strdup(stderrc);
-			else
-				proc->stderrc = NULL;
-
-			if (stderrpc)
-				proc->stderrpc = malloc_strdup(stderrpc);
-			else
-				proc->stderrpc = NULL;
-
-			if (endc)
-				add_process_wait(proc->index, endc);
-
-			new_open(proc->p_stdout, do_exec, NEWIO_READ, 1, proc->server);
-			new_open(proc->p_stderr, do_exec, NEWIO_READ, 1, proc->server);
-			break;
-		}
-		}
-	}
-
-	cleanup_dead_processes();
+		say("No processes are running");
 }
+
 
 /*
  * do_processes: This is called from the main io() loop to handle any
@@ -747,15 +227,16 @@ say("Output from process %d (%s) now going to you", i, proc->name);
  * are closed.  If EOF has been asserted on both, then  we mark the process
  * as being "dumb".  Once it is reaped (exited), it is expunged.
  */
-void 		do_exec (int fd)
+static void 		do_exec (int fd)
 {
 	int	i;
-	int	limit;
+	int	global_limit, limit;
 
 	if (!process_list)
 		return;
 
-	limit = get_int_var(SHELL_LIMIT_VAR);
+	global_limit = get_int_var(SHELL_LIMIT_VAR);
+
 	for (i = 0; i < process_list_size; i++)
 	{
 		Process *proc = process_list[i];
@@ -775,8 +256,18 @@ void 		do_exec (int fd)
 					EXEC_PROMPT_LIST, EXEC_ERRORS_LIST);
 		}
 
-		if (limit && proc->counter >= limit)
-			ignore_process(proc->index);
+		if (proc->lines_limit)
+			limit = proc->lines_limit;
+		else
+			limit = global_limit;
+
+		if (limit > 0 && proc->lines_recvd >= limit)
+		{
+			int l = set_message_from_for_process(proc);
+			say("Ignoring process %d (reached output limit): %s", proc->refnum, proc->commands);
+			ignore_process(proc);
+			pop_message_from(l);
+		}
 	}
 
 	/* Clean up any (now) dead processes */
@@ -794,7 +285,7 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 	const char *callback = NULL;
 	int	hook = -1;
 	int	l;
-	char	logical_name[1024];
+	const char *logical_name;
 	const char	*utf8_text;
 	char *extra = NULL;
 
@@ -856,24 +347,22 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 	}
 
 	ofs = from_server;
-	from_server = proc->server;
-	if (proc->refnum)
-		l = message_setall(proc->refnum, NULL, LEVEL_OTHER);
-	else
-		l = message_from(NULL, LEVEL_OTHER);
-
-	proc->counter++;
+	from_server = proc->server_refnum;
+	proc->lines_recvd++;
 
 	while (len > 0 && (exec_buffer[len - 1] == '\n' ||
 			   exec_buffer[len - 1] == '\r'))
 	     exec_buffer[--len] = 0;
 
-	index_to_target(proc->index, logical_name, sizeof(logical_name));
-	utf8_text = inbound_recode(logical_name, proc->server, empty_string, exec_buffer, &extra);
+	if (proc->logical_desc)
+		logical_name = proc->logical_desc;
+	else
+		logical_name = proc->refnum_desc;
+	utf8_text = inbound_recode(logical_name, proc->server_refnum, empty_string, exec_buffer, &extra);
 
-	if (proc->redirect) 
-	     redirect_text(proc->server, proc->who, 
-				utf8_text, proc->redirect, 1);
+	l = set_message_from_for_process (proc);
+	if (proc->redirect && proc->who) 
+	     redirect_text(proc->server_refnum, proc->who, utf8_text, proc->redirect, 1);
 
 	if (callback)
 	    call_lambda_command("EXEC", callback, utf8_text);
@@ -885,13 +374,13 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 	}
 	else
 	{
-	    if ((do_hook(hook, "%d %s", proc->index, utf8_text)))
+	    if ((do_hook(hook, "%d %s", proc->refnum, utf8_text)))
 		if (!proc->redirect)
 		    put_it("%s", utf8_text);
 	}
+	pop_message_from(l);
 
 	new_free(&extra);
-	pop_message_from(l);
 	from_server = ofs;
 }
 
@@ -1010,59 +499,81 @@ void 		clean_up_processes (void)
 
 /*
  * text_to_process: sends the given text to the given process.  If the given
- * process index is not valid, an error is reported and 1 is returned.
+ * process reference is not valid, an error is reported and 1 is returned.
  * Otherwise 0 is returned. 
  * Added show, to remove some bad recursion, phone, april 1993
  */
-int 		text_to_process (int proc_index, const char *text, int show)
+int 		text_to_process (const char *target, const char *text, int show)
 {
+	int	process_refnum;
 	Process	*proc;
 	char *	my_buffer;
 	size_t	size;
-	char	logical_name[1024];
+	const char *logical_name;
 	const char *recoded_text;
 	char *	extra = NULL;
+	int	l;
 
-	if (valid_process_index(proc_index) == 0)
-		return 1;
-
-	proc = process_list[proc_index];
-
-	if (show)
+	if (!(process_refnum = get_process_refnum(target)))
 	{
-		int	l = message_setall(proc->refnum, NULL, LEVEL_OTHER);
-		put_it("%s%s", get_prompt_by_refnum(proc->refnum), text);
-		pop_message_from(l);
+		say("Cannot send text to invalid process %s", target);
+		return -1;
 	}
+
+	if (!(proc = get_process_by_refnum(process_refnum)))
+	{
+		say("Cannot send text to invalid process %s", target);
+		return -1;
+	}
+
+	if (proc->logical_desc)
+		logical_name = proc->logical_desc;
+	else
+		logical_name = proc->refnum_desc;
 
 	size = strlen(text) + 2;
 	my_buffer = alloca(size);
 	snprintf(my_buffer, size, "%s\n", text);
+	recoded_text = outbound_recode(logical_name, proc->server_refnum, my_buffer, &extra);
 
-	index_to_target(proc_index, logical_name, sizeof(logical_name));
-	recoded_text = outbound_recode(logical_name, proc->server, my_buffer, &extra);
+	l = set_message_from_for_process (proc);
 	if (write(proc->p_stdin, recoded_text, strlen(recoded_text)) <= 0)
-	{
-		yell("Was unable to write text %s to process %d",
-			text, proc_index);
-	}
+		yell("Was unable to write text %s to process %s", text, target);
 	new_free(&extra);
+	set_prompt_by_refnum(proc->window_refnum, empty_string);
 
-	set_prompt_by_refnum(proc->refnum, empty_string);
+	if (show)
+		if ((do_hook(SEND_EXEC_LIST, "%s %d %s", logical_name, process_refnum, text)))
+			put_it("%s%s", get_prompt_by_refnum(proc->window_refnum), text);
+
+	pop_message_from(l);
 	return (0);
 }
 
 /*
  * This adds a new /wait %proc -cmd   entry to a running process.
  */
-void 		add_process_wait (int proc_index, const char *cmd)
+void 		add_process_wait (const char *target, const char *cmd)
 {
-	Process	*proc = process_list[proc_index];
-	List	*new_ewl, *posn;
+	Process *proc;
+	WaitCmd *new_ewl, *posn;
+	int	process_refnum;
 
-	new_ewl = new_malloc(sizeof(List));
+	if (!(process_refnum = get_process_refnum(target)))
+	{
+		say("Cannot add wait command to invalid process %s", target);
+		return;
+	}
+
+	if (!(proc = get_process_by_refnum(process_refnum)))
+	{
+		say("Cannot add wait command to invalid process %s", target);
+		return;
+	}
+
+	new_ewl = new_malloc(sizeof(WaitCmd));
 	new_ewl->next = NULL;
-	new_ewl->name = malloc_strdup(cmd);
+	new_ewl->commands = malloc_strdup(cmd);
 
 	if ((posn = proc->waitcmds))
 	{
@@ -1109,8 +620,7 @@ void 		add_process_wait (int proc_index, const char *cmd)
 static void 	cleanup_dead_processes (void)
 {
 	int	i;
-	List	*cmd,
-		*next;
+	WaitCmd	*cmd, *next;
 	Process *deadproc, *proc;
 	char	*exit_info;
 	int	old_from_server, l;
@@ -1151,11 +661,11 @@ static void 	cleanup_dead_processes (void)
 		{
 			exit_info = alloca(40);
 			snprintf(exit_info, 32, "%d %d %d",
-				deadproc->index, deadproc->termsig, deadproc->retcode);
+				deadproc->refnum, deadproc->termsig, deadproc->retcode);
 		}
 
-		from_server = deadproc->server;
-		l = message_from(NULL, LEVEL_OTHER);
+		from_server = deadproc->server_refnum;
+		l = set_message_from_for_process(deadproc);
 
 		/*
 		 * First thing we do is run any /wait %proc -cmd commands
@@ -1165,8 +675,8 @@ static void 	cleanup_dead_processes (void)
 		while ((cmd = next))
 		{
 			next = cmd->next;
-			call_lambda_command("WAITPROC", cmd->name, exit_info);
-			new_free(&cmd->name);
+			call_lambda_command("WAITPROC", cmd->commands, exit_info);
+			new_free(&cmd->commands);
 			new_free((char **)&cmd);
 		}
 
@@ -1181,7 +691,7 @@ static void 	cleanup_dead_processes (void)
 			{
 				say("Process %d (%s) terminated "
 					"with signal %s (%d)", 
-				   deadproc->index, deadproc->name, 
+				   deadproc->refnum, deadproc->commands,
 				   get_signal_name(deadproc->termsig),
 				   deadproc->termsig);
 
@@ -1189,13 +699,13 @@ static void 	cleanup_dead_processes (void)
 			else if (deadproc->disowned)
 			{
 				say("Process %d (%s) disowned", 
-				   deadproc->index, deadproc->name);
+				   deadproc->refnum, deadproc->commands);
 			}
 			else
 			{
 				say("Process %d (%s) terminated "
 					"with return code %d", 
-				   deadproc->index, deadproc->name, 
+				   deadproc->refnum, deadproc->commands, 
 				   deadproc->retcode);
 			}
 		    }
@@ -1205,7 +715,7 @@ static void 	cleanup_dead_processes (void)
 		deadproc->p_stdin = new_close(deadproc->p_stdin);
 		deadproc->p_stdout = new_close(deadproc->p_stdout);
 		deadproc->p_stderr = new_close(deadproc->p_stderr);
-		new_free(&deadproc->name);
+		new_free(&deadproc->commands);
 		new_free(&deadproc->logical);
 		new_free(&deadproc->who);
 		new_free(&deadproc->redirect);
@@ -1228,7 +738,7 @@ static void 	cleanup_dead_processes (void)
 	if (process_list_size != i + 1)
 	{
 		process_list_size = i + 1;
-		RESIZE(process_list, Process, process_list_size);
+		RESIZE(process_list, Process *, process_list_size);
 	}
 
 	from_server = old_from_server;
@@ -1243,10 +753,13 @@ static void 	cleanup_dead_processes (void)
  * condition on its output fd, so it will probably either take the hint, or
  * its output will go the bit bucket (which we want to happen)
  */
-static void 	ignore_process (int idx)
+static void 	ignore_process (Process *proc)
 {
-	exec_close_in(idx);
-	exec_close_out(idx);
+	if (!proc)
+		return;
+
+	exec_close_in(proc);
+	exec_close_out(proc);
 }
 
 /*
@@ -1254,14 +767,11 @@ static void 	ignore_process (int idx)
  * rest of its output, we close its input, and hopefully it will get the
  * message and close up shop.
  */
-static void 	exec_close_in (int idx)
+static void 	exec_close_in (Process *proc)
 {
-	Process *proc;
-
-	if (valid_process_index(idx) == 0)
+	if (!proc)
 		return;
 
-	proc = process_list[idx];
 	if (proc->p_stdin != -1)
 		proc->p_stdin = new_close(proc->p_stdin);
 }
@@ -1271,14 +781,11 @@ static void 	exec_close_in (int idx)
  * close our stdout before they will do their thing and send us data back
  * to stdin.  
  */
-static void 	exec_close_out (int idx)
+static void 	exec_close_out (Process *proc)
 {
-	Process *proc;
-
-	if (valid_process_index(idx) == 0)
+	if (!proc)
 		return;
 
-	proc = process_list[idx];
 	if (proc->p_stdout != -1)
 		proc->p_stdout = new_close(proc->p_stdout);
 	if (proc->p_stderr != -1)
@@ -1295,36 +802,31 @@ static void 	exec_close_out (int idx)
  * to kill it.)  The actual reaping of the children will take place async
  * on the next parsing run.
  */
-static void 	kill_process (int kill_index, int sig)
+static void 	kill_process (Process *proc, int sig)
 {
 	pid_t	pgid;
 	int	old_from_server, l;
 
-	if (!process_list || kill_index > process_list_size || 
-			!process_list[kill_index])
-	{
-		say("There is no such process %d", kill_index);
+	if (!proc)
 		return;
-	}
 
 	old_from_server = from_server;
-	from_server = process_list[kill_index]->server;
-	l = message_from(NULL, LEVEL_OTHER);
+	from_server = proc->server_refnum;
+	l = set_message_from_for_process(proc);
 
 	say("Sending signal %s (%d) to process %d: %s", 
-		get_signal_name(sig), sig, kill_index, 
-		process_list[kill_index]->name);
+		get_signal_name(sig), sig, proc->refnum, proc->commands);
 
 	pop_message_from(l);
 	from_server = old_from_server;
 
 #ifdef HAVE_GETPGID
-	pgid = getpgid(process_list[kill_index]->pid);
+	pgid = getpgid(proc->pid);
 #else
 #  ifndef GETPGRP_VOID
-	pgid = getpgrp(process_list[kill_index]->pid);
+	pgid = getpgrp(proc->pid);
 #  else
-	pgid = process_list[kill_index]->pid;
+	pgid = proc->pid;
 #  endif
 #endif
 
@@ -1340,7 +842,7 @@ static void 	kill_process (int kill_index, int sig)
 	}
 
 	killpg(pgid, sig);
-	kill(process_list[kill_index]->pid, sig);
+	kill(proc->pid, sig);
 }
 
 
@@ -1373,8 +875,8 @@ static void 	kill_all_processes (int signo)
 	{
 		if (process_list[i])
 		{
-			ignore_process(i);
-			kill_process(i, signo);
+			ignore_process(process_list[i]);
+			kill_process(process_list[i], signo);
 		}
 	}
 	window_display = tmp;
@@ -1384,22 +886,6 @@ static void 	kill_all_processes (int signo)
 
 
 /* * * * * * logical stuff * * * * * * */
-/*
- * valid_process_index: checks to see if index refers to a valid running
- * process and returns true if this is the case.  Returns false otherwise 
- */
-static int 	valid_process_index (int process)
-{
-	if ((process < 0) || (process >= process_list_size) || 
-			!process_list[process])
-	{
-		say("No such process number %d", process);
-		return (0);
-	}
-
-	return (1);
-}
-
 static int 	is_logical_unique (char *logical)
 {
 	Process	*proc;
@@ -1421,81 +907,803 @@ static int 	is_logical_unique (char *logical)
 }
 
 
-/*
- * logical_to_index: converts a logical process name to it's approriate index
- * in the process list, or -1 if not found 
- */
-static	int 	logical_to_index (const char *logical)
+static	Process *	get_process_by_refnum (int refnum)
 {
-	Process	*proc;
 	int	i;
 
 	for (i = 0; i < process_list_size; i++)
 	{
-		if (!(proc = process_list[i]) || !proc->logical)
-			continue;
-
-		if (!my_stricmp(proc->logical, logical))
-			return i;
+		if (process_list[i] && process_list[i]->refnum == refnum)
+			return process_list[i];
 	}
-
-	return -1;
+	return NULL;
 }
 
-static	int	index_to_target (int process, char *buf, size_t bufsiz)
+/*
+ * get_process_refnum: parses out a process index or logical name from the
+ * given string 
+ */
+static int 	get_process_refnum (const char *desc)
 {
-	if ((process < 0) || (process >= process_list_size) ||
-			!process_list[process])
-	{
-		snprintf(buf, bufsiz, "(Process %d does not exist)", process);
-		return -1;
-	}
+	int	i;
 
-	/* /EXEC targets are always preceded by a percent sign */
-	if (process_list[process]->logical)
-		snprintf(buf, bufsiz, "%%%s", process_list[process]->logical);
-	else 
-		snprintf(buf, bufsiz, "%%%d", process);
+	if (!desc || *desc != '%')
+		return 0;
+
+	for (i = 0; i < process_list_size; i++)
+	{
+		if (process_list[i])
+		{
+			if (process_list[i]->refnum_desc && !my_stricmp(process_list[i]->refnum_desc, desc))
+				return process_list[i]->refnum;
+			else if (process_list[i]->logical_desc && !my_stricmp(process_list[i]->logical_desc, desc))
+				return process_list[i]->refnum;
+		}
+	}
 
 	return 0;
 }
 
 /*
- * get_process_index: parses out a process index or logical name from the
- * given string 
- */
-int 		get_process_index (char **args)
-{
-	char	*s = next_arg(*args, args);
-	return is_valid_process(s);
-}
-
-/*
- * is_valid_process: tells me if the spec is a process that is either
+ * is_valid_process: convert a %procdesc into a process index.
  * running or still has not closed its pipes, or both.
  */
-int		is_valid_process (const char *arg)
+int	is_valid_process (const char *desc)
 {
-	if (!arg || *arg != '%')
+	if (get_process_refnum(desc))
+		return 1;
+	return 0;
+}
+
+static Process *	new_process (const char *commands)
+{
+	Process *proc;
+	int	i;
+
+	proc = new_malloc(sizeof(Process));
+
+	/*
+	 * Init the proc list if neccesary
+	 */
+	if (!process_list)
+	{
+	    process_list = new_malloc(sizeof(Process *));
+	    process_list_size = 1;
+	    process_list[0] = NULL;
+	}
+
+	/*
+	 * Find the first empty proc entry
+	 */
+	for (i = 0; i < process_list_size; i++)
+	{
+		if (!process_list[i])
+		{
+			process_list[i] = proc;
+			break;
+		}
+	}
+
+	/*
+	 * If there are no empty proc entries, make a new one.
+	 */
+	if (i == process_list_size)
+	{
+	    process_list_size++;
+	    RESIZE(process_list, Process *, process_list_size);
+	    process_list[i] = proc;
+	}
+
+	proc->refnum = next_process_refnum++;
+	proc->refnum_desc = NULL;
+	malloc_sprintf(&proc->refnum_desc, "%%%d", proc->refnum);
+	proc->logical = NULL;
+	proc->logical_desc = NULL;
+	proc->commands = malloc_strdup(commands);
+	proc->direct = 0;
+
+	proc->pid = -1;
+	proc->p_stdin = -1;
+	proc->p_stdout = -1;
+	proc->p_stderr = -1;
+
+	proc->exited = -1;
+	proc->termsig = -1;
+	proc->retcode = -1;
+
+	proc->redirect = NULL;
+	proc->who = NULL;
+	proc->window_refnum = 0;
+	proc->server_refnum = -1;
+
+	proc->dumb = -1;
+	proc->disowned = -1;
+
+	proc->stdoutc = NULL;
+	proc->stdoutpc = NULL;
+	proc->stderrc = NULL;
+	proc->stderrpc = NULL;
+	proc->waitcmds = NULL;
+
+	get_time(&proc->started_at);
+	proc->lines_recvd = 0;
+	proc->lines_recvd_limit = 0;
+	proc->lines_sent = 0;
+
+	return proc;
+}
+
+static int	start_process (Process *proc)
+{
+	int	p0[2], p1[2], p2[2],
+		pid, cnt;
+	char	*shell,
+		*arg;
+	char *	commands;
+
+	if (proc->commands == NULL)
 		return -1;
 
-	arg++;
-	if (is_number(arg) && valid_process_index(my_atol(arg)))
-		return my_atol(arg);
-	else
-		return logical_to_index(arg);
+	commands = LOCAL_COPY(proc->commands);
 
-	return -1;
+	p0[0] = p1[0] = p2[0] = -1;
+	p0[1] = p1[1] = p2[1] = -1;
+
+	/*
+	 * Open up the communication pipes
+	 */
+	if (pipe(p0) || pipe(p1) || pipe(p2))
+	{
+		say("Unable to start new process: %s", strerror(errno));
+		close(p0[0]);
+		close(p0[1]);
+		close(p1[0]);
+		close(p1[1]);
+		close(p2[0]);
+		close(p2[1]);
+		return -1;
+	}
+
+	switch ((pid = fork()))
+	{
+	case -1:
+		say("Couldn't start new process!");
+		close(p0[0]);
+		close(p0[1]);
+		close(p1[0]);
+		close(p1[1]);
+		close(p2[0]);
+		close(p2[1]);
+		return -1;
+
+	/*
+	 * CHILD: set up and exec the process
+	 */
+	case 0:
+	{
+		int	i;
+
+		/*
+		 * Fire up a new job control session,
+		 * Sever all ties we had with the parent ircII process
+		 */
+		setsid();
+		if (setgid(getgid()))
+			_exit(0);
+		if (setuid(getuid()))
+			_exit(0);
+		my_signal(SIGINT, SIG_IGN);
+		my_signal(SIGQUIT, SIG_DFL);
+		my_signal(SIGSEGV, SIG_DFL);
+		my_signal(SIGBUS, SIG_DFL);
+
+		dup2(p0[0], 0);
+		dup2(p1[1], 1);
+		dup2(p2[1], 2);
+		for (i = 3; i < 256; i++)
+			close(i);
+
+		/*
+		 * Pretend to be just a dumb terminal
+		 */
+		setenv("TERM", "tty", 1);
+
+		/*
+		 * Figure out what shell (if any) we're using
+		 */
+		shell = get_string_var(SHELL_VAR);
+
+		/*
+		 * If we're not using a shell, doovie up the exec args
+		 * array and pass it off to execvp
+		 */
+		if (proc->direct || !shell)
+		{
+			int	max;
+			char **my_args;
+
+			cnt = 0;
+			max = 5;
+			my_args = new_malloc(sizeof(char *) * max);
+			while ((arg = new_next_arg(commands, &commands)))
+			{
+				my_args[cnt] = arg;
+
+				if (++cnt >= max)
+				{
+					max += 5;
+					RESIZE(my_args, char *, max);
+				}
+			}
+			my_args[cnt] = NULL;
+			execvp(my_args[0], my_args);
+
+			printf("*** Error running program \"%s\": %s\n",
+					proc->commands, strerror(errno));
+		}
+
+		/*
+		 * If we're using a shell, let them have all the fun
+		 */
+		else
+		{
+			const char *flag;
+
+			if (!(flag = get_string_var(SHELL_FLAGS_VAR)))
+				flag = empty_string;
+
+			execl(shell, shell, flag, proc->commands, NULL);
+
+			printf("*** Error running program \"%s %s %s\": %s\n", 
+					shell, flag, proc->commands, strerror(errno));
+		}
+
+		/*
+		 * Something really died if we got here
+		 */
+		_exit(-1);
+		break;
+	}
+
+	default:
+	{
+		proc->pid = pid;
+		proc->server_refnum = from_server;
+
+		close(p0[0]);
+		close(p1[1]);
+		close(p2[1]);
+		proc->p_stdin = p0[1];
+		proc->p_stdout = p1[0];
+		proc->p_stderr = p2[0];
+
+		proc->lines_recvd = 0;
+		proc->exited = 0;
+		proc->termsig = 0;
+		proc->retcode = 0;
+		proc->disowned = 0;
+		proc->dumb = 0;
+		proc->disowned = 0;
+
+		new_open(proc->p_stdout, do_exec, NEWIO_READ, 1, proc->server_refnum);
+		new_open(proc->p_stderr, do_exec, NEWIO_READ, 1, proc->server_refnum);
+		break;
+	}
+	}
+
+	return 0;
 }
+/********************************/
+/*
+ * execcmd: The /EXEC command - run sub processes underneath the client.
+ *
+ * The unified general syntax of /EXEC:
+ *	/EXEC [-flag [param]]* commands
+ *	/EXEC [-flag [param]]* %proc extra-args
+ *	/EXEC [-flag [param]]* (commands) extra-args
+ * Double quotes ar enot supported anywhere.
+ *
+ * Each /EXEC command must have a "Process Context"
+ *    1.) A %proc of an already running process
+ *    2.) A parenthesis-surrounded command line to run
+ *    3.) A command line to run 
+ *
+ * For backwards compatability, it was never possible to specify
+ * both commands and flags that required "extra args" (such as -IN).
+ * To allow you to specify both commands and extra-args, you may 
+ * surround the commands with parenthesis.
+ *
+ * You can string together as many -flag's as you want, and they will be
+ * evaluated in the order you provide.
+ *
+ * Here is the canonical list of /EXEC flags:
+ *	-CLOSE
+ *		Close the process's stdin, stdout, and stderr (ie, EOF)
+ * 		Many programs will shut down cleanly when they get an EOF on stdin
+ *		No further output from the program will be received
+ *	-CLOSEIN
+ *		Close the process's stdin (ie, EOF)
+ *	-CLOSEOUT
+ *		Close the process's stdout and stderr (ie, EOF)
+ *		No further output from the program will be received
+ *	-IN (requires extra-args)
+ *		Send a message to a process.
+ *		This is equivalent to /MSG %proc extra-args
+ *
+ *	-SIGNAL number
+ *	-SIGNAL signame
+ *	-number
+ *	-signame
+ *		Send a signal to the process ("kill").
+ *		The signal may either be a number of its short name (ie, HUP)
+ *
+ *	-NAME local-name
+ *		Set the process's logical name (ie, for %procname)
+ *	-OUT 
+ *		Directs all output from the process to the current window's current channel.
+ *		If you change the current channel, it will keep sending to the original 
+ *		   current channel.
+ *	-WINDOW
+ *		Directs all output from the process to be displayed in the current window.
+ *		Normally, output from the process goes to the OTHER window level.
+ *	-WINTARGET windesc
+ *		Directs all output from the process to be displayed in the specified window
+ *		"windesc" can be either a window refnum or window name.
+ *		This is handy if you are using a centralized window for /EXEC output.
+ *	-MSG target
+ *		Directs all output from the process to be sent to the "target"
+ *		Target is anything you can send a message to: a nick or channel on irc,
+ *		a DCC Chat, a window, a logfile, or even another exec process.
+ *		If sent over IRC, it will be sent as a PRIVMSG.
+ *	-NOTICE target
+ *		Directs all output from the process to be sent to the "target"
+ *		If sent over IRC, it will be sent as a NOTICE.
+ *
+ *	-LINE {block}
+ *		Run {block} for each complete line of stdout from the process as $*
+ *		The curly braces are required
+ *	-LINEPART {block}
+ *		Run {block} for each incomplete line of stdout from the process as $*
+ *		"Incomplete line" means it didn't end with a newline
+ *		The curly braces are required
+ *	-ERROR {block}
+ *		Run {block} for each complete line of stderr from the process as $*
+ *		The curly braces are required
+ *	-ERRORPART {block}
+ *		Run {block} for each incomplete line of stdout from the process as $*
+ *		"Incomplete line" means it didn't end with a newline
+ *		The curly braces are required
+ *	-END {block}
+ *		Run {block} when the process exits.
+ *		This does the same thing as /WAIT %proc -CMD {code}
+ *		The curly braces are required
+ *
+ *	-DIRECT
+ *		Run the command directly with execvp(), do not use a shell
+ *		-> double quoted words are honored and the double quotes are removed
+ *		-> everything else is treated literally
+ *	-LIMIT
+ *		Limit the number of lines to receive from the process before doing an implicit -CLOSE
+ *		This overrules /SET SHELL_LIMIT for this process only.
+ *		The value 0 means "unlimited"
+ *
+ * Ordinarily (unless you use -DIRECT) your commands are run by a shell, which allows you to use
+ * filename wildcard matching, shell variable expansion, etc.  The /SET SHELL (default: "/bin/sh")
+ * value is the shell that will be used, and /SET SHELL_FLAGS (default: "-c") is the shell's flag
+ * to tell it that the rest of the arguments are commands to run.
+ *
+ * It gets run something like this:
+ *		/bin/sh -c you_commands_here
+ */
 
-int		process_is_running (char *arg)
+static void	execcmd_push_arg (char **arg_list, size_t arg_list_size, int arg_list_idx, char *flag)
 {
-	int idx = is_valid_process(arg);
-
-	if (idx == -1)
-		return 0;
+	if (arg_list_idx < arg_list_size - 1)
+	{
+		/* yell("Adding [%d] [%s] argument to list", arg_list_idx, flag); */
+		arg_list[arg_list_idx] = flag;
+	}
 	else
-		return 1;
+		/* yell("Not adding [%s] argument to list - overflow", flag) */;
 }
+
+static char **	execcmd_tokenize_arguments (const char *args, Process **process, char **free_ptr, char **extra_args, int *numargs, int *flags_size)
+{
+	char **	arg_list;
+	int	arg_list_size;
+	int	arg_list_idx;
+	char *	args_copy;
+	char *	flag;
+	size_t	len;
+	Process	*proc = NULL;
+
+	args_copy = malloc_strdup(args);
+	*free_ptr = args_copy;
+
+	/* XXX hardcoding 64 here is bogus */
+	arg_list_size = 64;
+	arg_list = (char **)new_malloc(sizeof(char *) * arg_list_size);
+	arg_list_idx = 0;
+
+	while ((args_copy && *args_copy == '-')  && (flag = next_arg(args_copy, &args_copy)))
+	{
+		len = strlen(flag);
+
+		if (my_strnicmp(flag, "-CLOSE", len) == 0)
+			execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag);
+		else if (my_strnicmp(flag, "-CLOSEIN", len) == 0)
+			execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag);
+		else if (my_strnicmp(flag, "-CLOSEOUT", len) == 0)
+			execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag);
+		else if (my_strnicmp(flag, "-IN", len) == 0)
+			execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag);
+		else if (my_strnicmp(flag, "-NAME", len) == 0)
+		{
+			char *arg = next_arg(args_copy, &args_copy);
+			execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag);
+			execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, arg);
+		}
+		else if (my_strnicmp(flag, "-OUT", len) == 0)
+			execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag);
+		else if (my_strnicmp(flag, "-WINDOW", len) == 0)
+			execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag);
+		else if (my_strnicmp(flag, "-WINTARGET", len) == 0)
+		{
+			char *arg = next_arg(args_copy, &args_copy);
+			if (arg && *arg)
+			{
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag);
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, arg);
+			}
+			else
+				say("EXEC: Error: -WINTARGET requires an argument");
+		}
+		else if (my_strnicmp(flag, "-MSG", len) == 0)
+		{
+			char *arg = next_arg(args_copy, &args_copy);
+			if (arg && *arg)
+			{
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag);
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, arg);
+			}
+			else
+				say("EXEC: Error: -MSG requires a nick or channel argument");
+		}
+		else if (my_strnicmp(flag, "-NOTICE", len) == 0)
+		{
+			char *arg = next_arg(args_copy, &args_copy);
+			if (arg && *arg)
+			{
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag);
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, arg);
+			}
+			else
+				say("EXEC: Error: -MSG requires a nick or channel argument");
+		}
+		else if (my_strnicmp(flag, "-LINE", len) == 0)
+		{
+			char *arg = next_expr(&args_copy, '{');
+			if (arg && *arg)
+			{
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag);
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, arg);
+			}
+			else
+				say("EXEC: Error: Need {...} argument for -LINE flag");
+		}
+		else if (my_strnicmp(flag, "-LINEPART", len) == 0)
+		{
+			char *arg = next_expr(&args_copy, '{');
+			if (arg && *arg)
+			{
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag);
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, arg);
+			}
+			else
+				say("EXEC: Error: Need {...} argument for -ERRORPART flag");
+		}
+		else if (my_strnicmp(flag, "-ERROR", len) == 0)
+		{
+			char *arg = next_expr(&args_copy, '{');
+			if (arg && *arg)
+			{
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag);
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, arg);
+			}
+			else
+				say("EXEC: Error: Need {...} argument for -ERROR flag");
+		}
+		else if (my_strnicmp(flag, "-ERRORPART", len) == 0)
+		{
+			char *arg = next_expr(&args_copy, '{');
+			if (arg && *arg)
+			{
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag);
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, arg);
+			}
+			else
+				say("EXEC: Error: Need {...} argument for -ERRORPART flag");
+		}
+		else if (my_strnicmp(flag, "-END", len) == 0)
+		{
+			char *arg = next_expr(&args_copy, '{');
+			if (arg && *arg)
+			{
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag);
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, arg);
+			}
+		}
+		else if (my_strnicmp(flag, "-DIRECT", len) == 0)
+			execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag);
+		else if (my_strnicmp(flag, "-LIMIT", len) == 0)
+		{
+			char *arg = next_arg(args_copy, &args_copy);
+			if (arg && *arg)
+			{
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag);
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, arg);
+			}
+		}
+
+		else if (my_atol(flag + 1) > 0)
+		{
+			execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, "-SIGNAL");
+			execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag + 1);
+		}
+		else if (get_signal_by_name(flag + 1) > 0)
+		{
+			execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, "-SIGNAL");
+			execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag + 1);
+		}
+		else
+			continue;		/* Do we handle errors, or not? */
+	}
+
+	execcmd_push_arg(arg_list, arg_list_size, arg_list_idx, NULL);
+
+	if (args_copy && *args_copy)
+	{
+		if (*args_copy == '%')
+		{
+			const char *proc_desc;
+			int	refnum;
+
+			/* yell("Looking up existing process %s", args_copy); */
+			proc_desc = next_arg(args_copy, &args_copy);
+			refnum = get_process_refnum(proc_desc);
+
+			if (!(proc = get_process_by_refnum(refnum)))
+			{
+				say("EXEC: Error: The process %s is not a valid process", proc_desc);
+				return NULL;
+			}
+		}
+		else if (*args_copy == '(')
+		{
+			const char *cmds = next_expr(&args_copy, '(');
+			/* yell("STarting up new process from parethensis"); */
+			proc = new_process(cmds);
+		}
+		else
+		{
+			/* yell("Starting up new naked process from [%s]", args_copy); */
+			proc = new_process(args_copy);
+			args_copy = NULL;
+		}
+	}
+
+	if (proc == NULL)
+	{
+		say("EXEC: Error: After all flags, there should be either a %%proc or commands to run");
+		return NULL;
+	}
+
+	*process = proc;
+	*extra_args = args_copy;
+	*numargs = arg_list_idx;
+	*flags_size = arg_list_size;
+	return arg_list;
+}
+
+BUILT_IN_COMMAND(execcmd)
+{
+	char *	free_ptr;
+	Process *process;
+	char **	flags;
+	int	flags_size;
+	char *	extra_args;
+	int	numargs;
+	int	i, l;
+
+	if (!args || !*args)
+	{
+		execcmd_list_processes();
+		return;
+	}
+
+	if (!(flags = execcmd_tokenize_arguments(args, &process, &free_ptr, &extra_args, &numargs, &flags_size)))
+		return;
+
+	l = set_message_from_for_process(process);
+
+	for (i = 0; i < numargs; i++)
+	{
+		const char *flag;
+		size_t	len;
+
+		flag = flags[i];
+		len = strlen(flag);
+
+		if (my_strnicmp(flag, "-CLOSE", len) == 0)
+			ignore_process(process);
+		else if (my_strnicmp(flag, "-CLOSEIN", len) == 0)
+			exec_close_in(process);
+		else if (my_strnicmp(flag, "-CLOSEOUT", len) == 0)
+			exec_close_out(process);
+		else if (my_strnicmp(flag, "-IN", len) == 0)
+			text_to_process(process->logical_desc, extra_args, 1);
+
+		else if (my_strnicmp(flag, "-NAME", len) == 0)
+		{
+			char *new_name = flags[++i];
+
+			if (is_logical_unique(new_name))
+			{
+				malloc_strcpy(&process->logical, new_name);
+				malloc_sprintf(&process->logical_desc, "%%%s", new_name);
+				say("Process %d (%s) is now called %s",
+					process->refnum, process->commands, process->logical);
+			} 
+			else 
+				say("The name %s is not unique!", new_name);
+		}
+		else if (my_strnicmp(flag, "-OUT", len) == 0)
+		{
+			const char *who;
+
+			if (!(who = get_target_by_refnum(0)))
+				say("No query or channel in this window for -OUT");
+			else
+			{
+				malloc_strcpy(&process->who, who);
+				malloc_strcpy(&process->redirect, "PRIVMSG");
+			}
+
+		}
+		else if (my_strnicmp(flag, "-WINDOW", len) == 0)
+		{
+			pop_message_from(l);
+			l = set_message_from_for_process(process);
+			process->window_refnum = current_refnum();
+			say("Output from process %d (%s) now going to window %d", 
+					process->refnum, process->commands, process->window_refnum);
+		}
+		else if (my_strnicmp(flag, "-WINTARGET", len) == 0)
+		{
+			const char *desc = flags[++i];
+			Window *w;
+
+			if (!desc || !(w = get_window_by_desc(desc)))
+				say("Target window not found");
+			else
+			{
+				process->window_refnum = w->refnum;
+				pop_message_from(l);
+				l = set_message_from_for_process(process);
+				say("Output from process %d (%s) now going to window %d", 
+					process->refnum, process->commands, process->window_refnum);
+			}
+		}
+		else if (my_strnicmp(flag, "-MSG", len) == 0)
+		{
+			const char *arg = flags[++i];
+
+			if (arg && *arg)
+			{
+				malloc_strcpy(&process->redirect, "PRIVMSG");
+				malloc_strcpy(&process->who, arg);
+			}
+			else
+				say("EXEC: Error: -MSG requires a nick or channel argument");
+		}
+		else if (my_strnicmp(flag, "-NOTICE", len) == 0)
+		{
+			const char *arg = flags[++i];
+
+			if (arg && *arg)
+			{
+				malloc_strcpy(&process->redirect, "NOTICE");
+				malloc_strcpy(&process->who, arg);
+			}
+			else
+				say("EXEC: Error: -NOTICE requires a nick or channel argument");
+		}
+
+		else if (my_strnicmp(flag, "-LINE", len) == 0)
+		{
+			const char *arg = flags[++i];
+
+			if (arg && *arg)
+				malloc_strcpy(&process->stdoutc, arg);
+			else
+				say("EXEC: Error: Need {...} argument for -LINE flag");
+		}
+		else if (my_strnicmp(flag, "-LINEPART", len) == 0)
+		{
+			const char *arg = flags[++i];
+
+			if (arg && *arg)
+				malloc_strcpy(&process->stdoutpc, arg);
+			else
+				say("EXEC: Error: Need {...} argument for -LINEPART flag");
+		}
+		else if (my_strnicmp(flag, "-ERROR", len) == 0)
+		{
+			const char *arg = flags[++i];
+
+			if (arg && *arg)
+				malloc_strcpy(&process->stderrc, arg);
+			else
+				say("EXEC: Error: Need {...} argument for -ERROR flag");
+		}
+		else if (my_strnicmp(flag, "-ERRORPART", len) == 0)
+		{
+			const char *arg = flags[++i];
+
+			if (arg && *arg)
+				malloc_strcpy(&process->stderrpc, arg);
+			else
+				say("EXEC: Error: Need {...} argument for -ERRORPART flag");
+		}
+		else if (my_strnicmp(flag, "-END", len) == 0)
+		{
+			const char *arg = flags[++i];
+
+			if (arg && *arg)
+				add_process_wait(process->refnum_desc, arg);
+			else
+				say("EXEC: Error: Need {...} argument for -END flag");
+		}
+
+
+		else if (my_strnicmp(flag, "-DIRECT", len) == 0)
+			process->direct = 1;
+		else if (my_strnicmp(flag, "-LIMIT", len) == 0)
+		{
+			const char *arg = flags[++i];
+			if (is_number(arg))
+				process->lines_limit = my_atol(arg);
+		}
+
+		else if (my_strnicmp(flag, "-SIGNAL", len) == 0)
+		{
+			const char *arg = flags[++i];
+			int	signum;
+
+			if (is_number(arg))
+				signum = my_atol(arg);
+			else
+				signum = get_signal_by_name(arg);
+
+			if (signum > 0 && signum < NSIG)
+				kill_process(process, signum);
+			else
+				say("No such signal: %s", arg);
+		}
+
+		else
+			continue;
+	}
+
+	if (process->pid == -1)
+		start_process(process);
+
+	pop_message_from(l);
+
+	new_free((char **)&flags);
+	new_free((char **)&free_ptr);
+}
+
 
 #endif
+

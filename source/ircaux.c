@@ -7327,3 +7327,73 @@ const char *	get_signal_name (int signo)
 		return signal_name[signo];
 }
 
+int	get_signal_by_name (const char *signame)
+{
+	int	i;
+	size_t	len;
+
+	len = strlen(signame);
+
+	for (i = 1; i < NSIG; i++)
+	{
+		if (!get_signal_name(i))
+			continue;
+		if (!my_strnicmp(get_signal_name(i), signame, len))
+			return i;
+	}
+	return -1;
+}
+
+/*
+ * This is from https://github.com/rxi/uuid4/blob/master/src/uuid4.c
+ */
+/**
+ * Copyright (c) 2018 rxi
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the MIT license. See LICENSE for details.
+ */
+
+char *	uuid4_generate (void)
+{
+static const char *template = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";
+static const char *chars = "0123456789abcdef";
+	union { unsigned char b[16]; uint32_t word[4]; } s;
+	const char *	p;
+	int 	i, n;
+	char	*dst, *retval;
+
+	s.word[0] = (uint32_t)random_number(0);
+	s.word[1] = (uint32_t)random_number(0);
+	s.word[2] = (uint32_t)random_number(0);
+	s.word[3] = (uint32_t)random_number(0);
+
+	dst = retval = new_malloc(64);
+	memset(retval, 0, 64);
+
+	/* build string */
+	for (i = 0, p = template; *p; p++, dst++)
+	{
+		n = s.b[i >> 1];
+		n = (i & 1) ? (n >> 4) : (n & 0xf);
+
+		switch (*p) 
+		{
+			case 'x': 
+				*dst = chars[n];
+				i++;  
+				break;
+			case 'y': 
+				*dst = chars[(n & 0x3) + 8];  
+				i++;  
+				break;
+			default: 
+				*dst = *p;
+		}
+	}
+	*dst = 0;
+	return retval;
+}
+
+/* End of stuff from from https://github.com/rxi/uuid4/blob/master/src/uuid4.c */
+

@@ -12,11 +12,8 @@
 	BUILT_IN_COMMAND(execcmd);
 	int	get_child_exit		(pid_t);
 	void	clean_up_processes	(void);
-	int	text_to_process		(int, const char *, int);
-	void	exec_server_delete 	(int);
-	void	add_process_wait	(int, const char *);
-	int	get_process_index	(char **);  /* XXXX */
+	int	text_to_process		(const char *, const char *, int);
+	void	add_process_wait	(const char *, const char *);
 	int	is_valid_process	(const char *);
-	int	process_is_running	(char *);
 
 #endif /* _EXEC_H_ */

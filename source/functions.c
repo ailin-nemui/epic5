@@ -427,6 +427,7 @@ static	char
 	*function_uniq		(char *),
 	*function_unlink 	(char *),
 	*function_unsplit	(char *),
+	*function_uuid4		(char *),
 	*function_which 	(char *),
 	*function_winchan	(char *),
 	*function_windowctl	(char *),
@@ -769,6 +770,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "USERMODE",		function_umode		},
 	{ "USETITEM",           function_usetitem 	},
 	{ "UTIME",		function_utime	 	},
+	{ "UUID4",		function_uuid4		},
 	{ "VERSION",		function_server_version },
 	{ "WHICH",		function_which 		},
 	{ "WINCHAN",		function_winchan	},
@@ -8101,5 +8103,10 @@ BUILT_IN_FUNCTION(function_json_implode, input)
 		cJSON_free(json);
 
 	return retval;
+}
+
+BUILT_IN_FUNCTION(function_uuid4, input)
+{
+	RETURN_MSTR(uuid4_generate());
 }
 

@@ -5060,7 +5060,7 @@ Window *window_query (Window *window, char **args)
 		 * to a non-existing process!
 		 */
 #if 0
-		if (is_valid_process(nick) == -1)
+		if (!is_valid_process(nick))
 			nick = NULL;
 #endif
 	}

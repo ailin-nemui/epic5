@@ -634,7 +634,7 @@ const char *	prompt;
 	 */
 	if (last_input_screen->il->input_prompt_raw)
 		prompt = last_input_screen->il->input_prompt_raw;
-	else if (is_valid_process(get_target_by_refnum(0)) != -1)
+	else if (is_valid_process(get_target_by_refnum(0)))
 		prompt = get_prompt_by_refnum(0);
 	else
 		prompt = input_prompt;

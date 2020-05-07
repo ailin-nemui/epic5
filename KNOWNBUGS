@@ -2,10 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* What about rotate-able logfiles? (skered)
-* What about /query-ing an exec process, going to proper window? (skered)
-* $regmatches() returns byte offsets, but $mid() expects code points
-   - $regmatches is not UTF-8 aware and it must be.
+<none at this time>
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -855,7 +852,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /exec -wintarget, output to any old window (rb wcarson) (caf)
 * EPIC5-2.1.1 released here (Abulia) (Commit: 1898)
 * Improve perl support (remove warnings) (caf)
-* The : before inal param is part of the syntax, not the message (caf, rb trn)
+* The : before final param is part of the syntax, not the message (caf, rb trn)
 * Fix bug in previous patch
 * Don't include <term.h> unless it's needed, because of ruby-2.7 support
 * Modernize ruby support while we're at it (checked with 2.3/2.6/2.7)
@@ -875,4 +872,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add count_initial_codepoints() to convert a ptr to something for $mid()
 * Change $regmatches() to use count_initial_codepoints().
 * Fix a dumb warning from clang about pointer arithmetic.
-
+* Revamp /exec to behave regularly so we can treat %proc as real targetsa (see UPDATES)
+* Add /on send_exec so you can reformat messages being sent to exec procs
+* Add $uuid4() -- it returns UUID4s!

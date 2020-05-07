@@ -1,5 +1,113 @@
 EPIC5-2.2
 
+*** News 05/07/2020 -- New function, $uuid4()
+	This function returns a random UUID4 string.  If you know what that is,
+	you might know why it's handy to be able to have one.
+
+*** News 05/07/2020 -- New /ON, /ON SEND_EXEC
+	Whenever text is being sent to an /EXEC process, either through /EXEC -IN
+	or /MSG %proc or a /QUERY or whatever, it is displayed to your screen.
+	The /ON SEND_EXEC process will let you adorn how this text is displayed,
+	instead of it just being displayed blankly as it has always done.
+
+*** News 05/07/2020 -- The /EXEC command
+	The /EXEC command has always been part of ircII, but it hasn't
+	changed much during EPIC's lifetime.  There were some rough edges
+	related to querying exec'd processes, things not always going
+	to the windows people expected, some flags not being able to be
+	used with other flags, etc.
+
+	So the /EXEC command has been substantially revamped, with an intention
+	of everything being "do what i expect".  If you find things that are 
+	weirdly behaving, please let me know!
+
+	Instead of describing the changes, let's just level-set the behavior:
+
+	Every /EXEC command can create or modify one process
+
+	[The most general explanation of the syntax]
+	Modify an existing running exec:
+		/EXEC [options] %refnum [extra arguments]
+		/EXEC [options] %logical-name [extra arguments]
+
+	Create a new exec:
+		/EXEC [options] commands to run
+		/EXEC [options] (commands to run) [extra-arguments]
+
+	OPTIONS to /EXEC
+
+	   [ Options related to sending data to/from the process ]
+		-CLOSE
+			Close the process's STDIN, STDOUT, and STDERR
+		-CLOSEIN
+			Close the process's STDIN
+		-CLOSEOUT
+			Close the process's STDOUT and STDERR
+		-IN [extra arguments]
+			Send data to a process
+
+	   [ Options related to how the process integrates with ircII ]
+		-NAME
+			Change the logical name of a process
+		-OUT
+			Send all output from the process to the now-current 
+			channel in the now-current window.
+		-WINDOW
+			Display all output from or related to the process to the 
+			now-current window.
+		-WINTARGET <windesc>
+			Display all output from or related to the process to the 
+			specified window
+		-MSG [target]
+			Send all output from the process to the target.
+			The target can be an irc, dcc chat, or other exec,
+			or anything you can send a message to.
+			Messages sent over IRC are sent as PRIVMSGs
+		-NOTICE
+			Send all output from the process to the target.
+			Messages sent over IRC are sent as NOTICEs.
+
+	    [ Options related to scripting with processes ]
+		-LINE {code}
+			Run {code} for each full line of output from stdout of the process.
+			$* will be the line of output
+		-LINEPART {code}
+			Run {code} for each incomplete line of output from stdout of the process.
+			$* will be the incomplete line of output
+		-ERROR {code}
+			Run {code} for each full line of output from stderr of the process.
+			$* will be the incomplete line of output
+		-ERRORPART {code}
+			Run {code} for each incomplete line of output from stderr of the process.
+			$* will be the incomplete line of output
+		-END {code}
+			Run {code} when the process has completed.  This means when the process
+			has exited and all of its output has been processed.  (Sometimes this 
+			lags the actual exit)
+				$0 is the logical process name or its refnum
+				$1 is the signal that killed it (if it was killed)
+				$2 is the exit code (if it exited)
+
+	    [ Options that don't fit in the other categories ]
+		-DIRECT
+			Run the program directly -- do not use a shell.  
+			Advantages:  The command you give is literally executed
+			Disadvantages: If you depend on filename globbing or aliases, well, tough
+		-LIMIT <number>
+			Read <number> lines from the process and then -CLOSE it.
+
+	    [ Options related to sending a signal to the process ]
+		-<signal_number>
+			Send the signal to the process, similar to kill -<signal_number> <pid>
+		-<signal_name>
+			Send the signal to the process, similar to kill -<signal_name> <pid>
+
+	Additionally, %<procref> or %<procname> are full blown message targets that you can 
+	/msg or /query or whatever you want, just like all other targets.
+
+	[Examples of how this works]
+
+
 *** News 04/26/2020 -- New python script, 'shortener'
 	You can load this script with
 		pyload shortener
@@ -141,7 +249,7 @@ EPIC5-2.2
 		binary data, and so the handler needs access to the raw binary
 		data.  Ordinarily, the raw/binary data is CTCP encoded, which
 		mens you can pass it to $xform("-CTCP") to recover the raw
-		bytes (although it might not ba  C string, so you can't 
+		bytes (although it might not be a C string, so you can't 
 		assign it to a variable.)
 
 	   There are corresponding GET operations for the above

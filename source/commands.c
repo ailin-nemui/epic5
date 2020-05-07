@@ -526,7 +526,7 @@ BUILT_IN_COMMAND(ctcp)
 		else
 			stag = LOCAL_COPY("VERSION");
 
-		if (get_server_doing_notice(from_server))
+		if (get_server_doing_notice(from_server) > 0)
 			say("You may not use the CTCP command from a NOTICE!");
 		else if (get_server_doing_privmsg(from_server))
 			request = 0;		/* XXX What about dcc chat? */
@@ -2917,23 +2917,22 @@ BUILT_IN_COMMAND(waitcmd)
 
 	else if (ctl_arg && *ctl_arg == '%')
 	{
-		int	w_index = is_valid_process(ctl_arg);
-		char	reason[1024];
-
-		if (w_index != -1)
+		if (is_valid_process(ctl_arg))
 		{
 			if (args && *args)
 			{
 				if (!my_strnicmp(args, "-cmd ", 4))
 					next_arg(args, &args);
-				add_process_wait(w_index, args);
+				add_process_wait(ctl_arg, args);
 			}
 			else
 			{
+				char	reason[1024];
+
 				snprintf(reason, 1024, "WAIT on EXEC %s", 
 						ctl_arg);
 				lock_stack_frame();
-				while (process_is_running(ctl_arg))
+				while (is_valid_process(ctl_arg) != -1)
 					io(reason);
 				unlock_stack_frame();
 			}
@@ -3237,15 +3236,8 @@ struct target_type target[4] =
 		recode_text = text;
 
 	    if (*current_nick == '%')
-	    {
-		char *current_nick_copy;
+		text_to_process(current_nick, recode_text, 1);
 
-		current_nick_copy = LOCAL_COPY(current_nick);
-		if ((i = get_process_index(&current_nick_copy)) == -1)
-			say("Sending message to /EXEC %s failed because it doesn't exist.", current_nick);
-		else
-			text_to_process(i, recode_text, 1);
-	    }
 	    /*
 	     * Blank lines may be sent to /exec'd processes, but
 	     * not to any other targets.  Once we know that the target
@@ -3350,7 +3342,7 @@ struct target_type target[4] =
 
 		/* XXX Should we check for invalid from_server here? */
 
-		if (get_server_doing_notice(from_server))
+		if (get_server_doing_notice(from_server) > 0)
 		{
 			say("You cannot send a message from within ON NOTICE");
 			new_free(&extra);
@@ -3506,15 +3498,7 @@ void 	new_send_text (int server, const char *orig_target_list, const char *text,
 	    target = next_in_comma_list(target_list, &target_list);
 
 	    if (*target == '%')
-	    {
-		char *x = target;
-		int i;
-		if ((i = get_process_index(&x)) != -1)
-			text_to_process(i, text, 1);
-		else
-			say("Tried to send msg to exec process '%s' "
-				"but it doesn't exist", target);
-	    }
+		text_to_process(target, text, 1);
 	    else if (!text || !*text)
 		;
 	    else if (*target == '0' && target[1] == 0)

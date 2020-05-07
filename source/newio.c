@@ -1023,6 +1023,23 @@ static  void    kwrite (int vfd) { FD_SET(CHANNEL(vfd), &writables); }
 static  void    knowrite (int vfd) { FD_CLR(CHANNEL(vfd), &writables); }
 static	void	kcleaned (int vfd) { return; }
 
+static	void	show_fd_set (fd_set *whatever)
+{
+	int	i;
+	char *	sigh = NULL;
+
+	for (i = 0; i <= global_max_channel; i++)
+	{
+		if (FD_ISSET(i, whatever))
+		{
+			malloc_strcat(&sigh, ltoa(i));
+			malloc_strcat(&sigh, " ");
+		}
+	}
+	yell("Waiting for fds: %s", sigh);
+	new_free(&sigh);
+}
+
 static	int	kdoit (Timeval *timeout)
 {
 	fd_set	working_rd, working_wd;
@@ -1031,6 +1048,7 @@ static	int	kdoit (Timeval *timeout)
 	working_rd = readables;
 	working_wd = writables;
 	errno = 0;
+	/* show_fd_set(&working_rd); */
 	retval = select(global_max_channel + 1, &working_rd, &working_wd, 
 			NULL, timeout);
 
