@@ -1,8 +1,110 @@
 EPIC5-2.2
 
+*** News 05/09/2020 -- New built in function $execctl()
+	You can now program the /EXEC command with this low level function
+
+	--- warning ---
+	Many of the things you can set here are not sanity checked.
+	If you feed it garbage in, you will get garbage out.
+	If you need safety rails, use the /EXEC command.
+	--- warning ---
+
+	Usage:
+	------
+	$execctl(REFNUMS)
+		Get all refnums in the entire system (as integers)
+	$execctl(REFNUM <description>)
+		Convert a description (like %3 or %myproc) into a refnum integer
+
+	$execctl(NEW <commands>)
+		Create a new /exec process (does not run it!)
+	$execctl(LAUNCH <refnum>)
+		Run an /exec process that hasn't been started yet
+	$execctl(CLOSEIN <refnum>)
+		Close the STDIN to the process (this means you can't send any
+		more data to the program.  This is useful for programs
+		that wait until they've got an EOF from stdin to do their 
+		thing)
+	$execctl(CLOSEOUT <refnum>)
+		Close the STDOUT and STDERR from the process (this means 
+		we won't receive any more output from the program.  This is
+		useful if we don't want any more output from the program.
+		Many programs will die from SIGPIPE if stdout is closed)
+	$execctl(SIGNAL <signal> <refnum>)
+		KILL (send a signal) to a process.  The <signal> may either
+		be an integer (like $execctl(SIGNAL 9 3) or it may
+		be a short name (like $execctlSIGNAL HUP 3) to kill 
+		process 3.
+
+	$execctl(GET <refnum> [FIELD])
+	$execctl(SET <refnum> [FIELD] [VALUE])
+		You can GET all the fields of the object, and SET some of them.
+		Some fields cannot be changed after the process is launched.
+
+	Field		Set?	Notes
+	-------------	------	-----------------------------------
+	REFNUM		No	The integer refnum - never repeated.
+	REFNUM_DESC	No	The "target" version (ie, %3)
+	LOGICAL		Yes	The user-supplied name - must be unique
+	LOGICAL_DESC	No	The "target" version (ie, %myproc)
+				-- This will change if you SET LOGICAL
+	COMMANDS	Yes	The commands to run (**)
+	DIRECT		Yes	Whether to use a shell (**)
+	REDIRECT	Yes	Either PRIVMSG or NOTICE
+	WHO		Yes	The target to send output to
+				-- Output from the process is redirected verbatim
+	WINDOW_REFNUM	Yes	The window this exec runs in context of
+				-- Undefined behavior if window does not exist
+	SERVER_REFNUM	Yes	The server this exec runs in context of
+				-- This is for redirects and code callbacks
+	LINES_LIMIT	Yes	How many lines to receive before CLOSEOUT
+				-- 0 means "no limit"
+	STDOUTC		Yes	ircII code for every complete line of stdout
+	STDOUTPC	Yes	ircII code for every partial line of stdout
+	STDERRC		Yes	ircII code for every complete line of stderr
+	STDERRPC	Yes	ircII code for every partial line of stderr
+
+	PID		No	The process id of the process (after launch)
+				-- This is -1 before launch
+	STARTED_AT	No	When the process was created or launched
+				-- It is first set when creation happens
+				-- It is last set when launched
+	P_STDIN		No	File descriptor to talk to process's STDIN
+	P_STDOUT	No	File descriptor to read from process's STDOUT
+	P_STDERR	No	File descriptor to read form process's STDERR
+				-- There is nothing you can do with these.
+				-- Don't try.
+	LINES_RECVD	No	How many lines of output the process has sent
+	LINES_SENT	No	How many lines we sent to the process
+	EXITED		No	0 if process has exited yet -- 1 if it has
+	TERMSIG		No	The signal that killed the process
+				-- It is -1 if the process has not died
+				-- It is -1 if the process exited normally
+	RETCODE		No	The exit code of the process
+				-- It is -1 if the process has not died
+				-- It is -1 if the process was killed
+	DUMB		No	Reserved for future/internal use
+	DISOWNED	No	Reserved for future/internal use
+	(Note: ** - Cannot be SET after launch)
+
+*** News 05/08/2020 -- New flag to /EXEC, /EXEC -NOLAUNCH
+	The /EXEC -NOLAUNCH flag directs the /EXEC command not to launch 
+	a process that has not already launched.  You can launch it later 
+	merely by referencing it with its name or refnum.
+
+		/EXEC -nolaunch -name myproc ls -l
+		/EXEC -nolaunch -limit 5 %myproc
+		/EXEC %myproc
+
+	Many /EXEC operations do not work on an unlaunched process.
+
 *** News 05/07/2020 -- New function, $uuid4()
 	This function returns a random UUID4 string.  If you know what that is,
 	you might know why it's handy to be able to have one.
+
+	ALL ARGUMENTS TO THIS FUNCTION ARE RESERVED FOR FUTURE EXPANSION.
+	To get the default behavior, pass no arguments to this function.
+	Forwards compatability is not guaranteed if you pass undefined args
 
 *** News 05/07/2020 -- New /ON, /ON SEND_EXEC
 	Whenever text is being sent to an /EXEC process, either through /EXEC -IN

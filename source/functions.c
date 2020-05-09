@@ -51,6 +51,7 @@
 #include "dcc.h"
 #include "debug.h"
 #include "commands.h"
+#include "exec.h"
 #include "files.h"
 #include "flood.h"
 #include "ignore.h"
@@ -244,6 +245,7 @@ static	char
 	*function_epic		(char *),
 	*function_error		(char *),
 	*function_exec		(char *),
+	*function_execctl	(char *),
 	*function_exp		(char *),
 	*function_fnexist	(char *),
 	*function_fexist 	(char *),
@@ -527,6 +529,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "EOF",		function_eof 		},
 	{ "EPIC",		function_epic		},
 	{ "EXEC",		function_exec		},
+	{ "EXECCTL",		function_execctl	},
 	{ "EXP",		function_exp		},
 	{ "FERROR",		function_error		},
 	{ "FEXIST",             function_fexist 	},
@@ -8107,6 +8110,15 @@ BUILT_IN_FUNCTION(function_json_implode, input)
 
 BUILT_IN_FUNCTION(function_uuid4, input)
 {
-	RETURN_MSTR(uuid4_generate());
+	char *retval;
+	retval = uuid4_generate();
+	RETURN_MSTR(retval);	/* Never pass function call to RETURN_* */
+}
+
+BUILT_IN_FUNCTION(function_execctl, input)
+{
+	char *retval;
+	retval = execctl(input);	
+	RETURN_MSTR(retval);	/* Never pass function call to RETURN_* */
 }
 

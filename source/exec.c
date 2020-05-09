@@ -48,6 +48,7 @@
 #include "parse.h"
 #include "newio.h"
 #include "ifcmd.h"
+#include "functions.h"
 
 #ifdef NO_JOB_CONTROL
 BUILT_IN_COMMAND(execcmd)
@@ -64,6 +65,7 @@ int	text_to_process (const char *x, const char *y, int z)
 }
 void	add_process_wait (const char *, const char *y)	{ return; }
 int	is_valid_process (const char *x)		{ return -1; }
+BUILT_IN_FUNCTION(execctl) { RETURN_EMPTY; }
 #else
 
 #include <sys/wait.h>
@@ -113,7 +115,6 @@ typedef struct
 
 	Timeval	started_at;		/* When the process began */
 	int	lines_recvd;		/* How many lines we've received from process */
-	int	lines_recvd_limit;	/* How many lines until we ignore (-1 for never) */
 	int	lines_sent;		/* How many lines we've sent */
 	int	lines_limit;		/* How many lines till we give up */
 }	Process;
@@ -448,7 +449,7 @@ int 		get_child_exit (pid_t wanted)
 			for (i = 0; i < process_list_size; i++)
 			{
 				proc = process_list[i];
-				if (proc && proc->pid == pid)
+				if (proc && proc->pid != -1 && proc->pid == pid)
 				{
 					proc->exited = 1;
 					proc->termsig = WTERMSIG(status);
@@ -523,6 +524,18 @@ int 		text_to_process (const char *target, const char *text, int show)
 	if (!(proc = get_process_by_refnum(process_refnum)))
 	{
 		say("Cannot send text to invalid process %s", target);
+		return -1;
+	}
+
+	if (proc->pid == -1)
+	{
+		say("Cannot send text to unlaunched process %s", target);
+		return -1;
+	}
+
+	if (proc->p_stdin == -1)
+	{
+		say("Cannot send text to -CLOSEd process %s", target);
 		return -1;
 	}
 
@@ -820,6 +833,15 @@ static void 	kill_process (Process *proc, int sig)
 	pop_message_from(l);
 	from_server = old_from_server;
 
+	/* Administrative kill of unlaunched process */
+	if (proc->pid == -1)
+	{
+		proc->exited = 1;
+		proc->disowned = 1;
+		proc->termsig = sig;
+		return;
+	}
+
 #ifdef HAVE_GETPGID
 	pgid = getpgid(proc->pid);
 #else
@@ -944,6 +966,27 @@ static int 	get_process_refnum (const char *desc)
 	return 0;
 }
 
+static  Process *       get_process_by_description (const char *desc)
+{
+       	int	i;
+
+	if (!desc || *desc != '%')
+		return NULL;
+
+	for (i = 0; i < process_list_size; i++)
+	{
+		if (process_list[i])
+		{
+			if (process_list[i]->refnum_desc && !my_stricmp(process_list[i]->refnum_desc, desc))
+				return process_list[i];
+			else if (process_list[i]->logical_desc && !my_stricmp(process_list[i]->logical_desc, desc))
+				return process_list[i];
+		}
+	}
+	return NULL;
+}
+
+
 /*
  * is_valid_process: convert a %procdesc into a process index.
  * running or still has not closed its pipes, or both.
@@ -1007,17 +1050,17 @@ static Process *	new_process (const char *commands)
 	proc->p_stdout = -1;
 	proc->p_stderr = -1;
 
-	proc->exited = -1;
-	proc->termsig = -1;
-	proc->retcode = -1;
+	proc->exited = 0;
+	proc->termsig = 0;
+	proc->retcode = 0;
 
 	proc->redirect = NULL;
 	proc->who = NULL;
 	proc->window_refnum = 0;
 	proc->server_refnum = -1;
 
-	proc->dumb = -1;
-	proc->disowned = -1;
+	proc->dumb = 0;
+	proc->disowned = 0;
 
 	proc->stdoutc = NULL;
 	proc->stdoutpc = NULL;
@@ -1027,7 +1070,6 @@ static Process *	new_process (const char *commands)
 
 	get_time(&proc->started_at);
 	proc->lines_recvd = 0;
-	proc->lines_recvd_limit = 0;
 	proc->lines_sent = 0;
 
 	return proc;
@@ -1169,6 +1211,7 @@ static int	start_process (Process *proc)
 	{
 		proc->pid = pid;
 		proc->server_refnum = from_server;
+		get_time(&proc->started_at);
 
 		close(p0[0]);
 		close(p1[1]);
@@ -1183,7 +1226,6 @@ static int	start_process (Process *proc)
 		proc->retcode = 0;
 		proc->disowned = 0;
 		proc->dumb = 0;
-		proc->disowned = 0;
 
 		new_open(proc->p_stdout, do_exec, NEWIO_READ, 1, proc->server_refnum);
 		new_open(proc->p_stderr, do_exec, NEWIO_READ, 1, proc->server_refnum);
@@ -1444,6 +1486,8 @@ static char **	execcmd_tokenize_arguments (const char *args, Process **process, 
 				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, arg);
 			}
 		}
+		else if (my_strnicmp(flag, "-NOLAUNCH", len) == 0)
+			execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag);
 
 		else if (my_atol(flag + 1) > 0)
 		{
@@ -1514,6 +1558,7 @@ BUILT_IN_COMMAND(execcmd)
 	char *	extra_args;
 	int	numargs;
 	int	i, l;
+	int	launch = 1;
 
 	if (!args || !*args)
 	{
@@ -1664,8 +1709,6 @@ BUILT_IN_COMMAND(execcmd)
 			else
 				say("EXEC: Error: Need {...} argument for -END flag");
 		}
-
-
 		else if (my_strnicmp(flag, "-DIRECT", len) == 0)
 			process->direct = 1;
 		else if (my_strnicmp(flag, "-LIMIT", len) == 0)
@@ -1674,6 +1717,8 @@ BUILT_IN_COMMAND(execcmd)
 			if (is_number(arg))
 				process->lines_limit = my_atol(arg);
 		}
+		else if (my_strnicmp(flag, "-NOLAUNCH", len) == 0)
+			launch = 0;
 
 		else if (my_strnicmp(flag, "-SIGNAL", len) == 0)
 		{
@@ -1695,7 +1740,7 @@ BUILT_IN_COMMAND(execcmd)
 			continue;
 	}
 
-	if (process->pid == -1)
+	if (process->pid == -1 && launch)
 		start_process(process);
 
 	pop_message_from(l);
@@ -1704,6 +1749,280 @@ BUILT_IN_COMMAND(execcmd)
 	new_free((char **)&free_ptr);
 }
 
+/*
+ * Here's the plan:
+ *
+ * $execctl(REFNUM <description>)
+ * $execctl(REFNUMS)
+ * $execctl(NEW <commands>)
+ * $execctl(LAUNCH <refnum>)
+ * $execctl(CLOSEIN <refnum>)
+ * $execctl(CLOSEOUT <refnum>)
+ * $execctl(SIGNAL <signal> %<refnum>)
+ *
+ * $execctl(GET <refnum> [FIELD])
+ * $execclt(SET <refnum> [FIELD] [VALUE])
+ *
+ * [FIELD] is one of the following:
+ *	REFNUM		The process's unique integer refnum
+ *	REFNUM_DESC	The user-exposed version of REFNUM (ie, prefixed with %)
+ *	LOGICAL		The process's logical name (provided by user)
+ *	LOGICAL_DESC	LOGICAL, prefixed with a %
+ *	COMMANDS	The commands htat will be run. -- (* cannot be SET after launch)
+ *	DIRECT		Whether to run <commands> in a shell -- (*)
+ *	REDIRECT	Either PRIVMSG or NOTICE
+ *	WHO		Who to send all output from process to
+ *	WINDOW_REFNUM	Which window to send all exec output to
+ *	SERVER_REFNUM	Which server to use for redirects
+ *	STARTED_AT	The time when the process was created or launched
+ *	STDOUTC		Code to execute when a complete line of stdout happens
+ *	STDOUTPC	Code to execute when an incomplete line of stdout happens
+ *	STDERRC		Code to execute when a complete line of stderr happens
+ *	STDERRPC	Code to execute when an incomplete line of stderr happens
+ *
+ * All of the following [LIST] values may be GET but not SET.
+ * I make absolutely no guarantees these things won't change. use at your own risk.
+ *
+ *	PID		The process's PID, if it has been launched -- (** Cannot be SET)
+ *	P_STDIN		The fd attached to the process's stdin (**)
+ *	P_STDOUT	The fd attached to the process's stdout (**)
+ *	P_STDERR	The fd attached to the process's stdout (**)
+ *	EXITED		1 if the process has exited, 0 if not yet (**)
+ *	TERMSIG		If the process died of a signal, what signal killed it
+ *	RETCODE		If the process exited cleanly, what its exit code was
+ *	DUMB		0 if we're handling output from process, 1 if we're ignoring it
+ *	LINES_RECVD
+ *	LINES_SENT
+ *	LINES_LIMIT
+ *	DISOWNED	0 - not implemented
+ *	WAITCMDS	empty-string - not implemented
+ */
+char *  execctl (char *input)
+{
+        char *  listc;
+        int     len;
+	int	refnum;
+	char *	field;
+	Process *proc;
+	char *	retval = NULL;
+	size_t	clue = 0;
+
+        GET_FUNC_ARG(listc, input);
+        len = strlen(listc);
+        if (!my_strnicmp(listc, "REFNUM", len)) {
+		RETURN_INT(get_process_refnum(input));
+        } else if (!my_strnicmp(listc, "REFNUMS", len)) {
+		int	i;
+
+		for (i = 0; i < process_list_size; i++)
+			if ((proc = process_list[i]))
+				malloc_strcat_word_c(&retval, space, proc->refnum_desc, DWORD_NO, &clue);
+		RETURN_MSTR(retval);
+        } else if (!my_strnicmp(listc, "NEW", len)) {
+		proc = new_process(input);
+		RETURN_INT(proc->refnum);
+        } else if (!my_strnicmp(listc, "LAUNCH", len)) {
+		GET_INT_ARG(refnum, input);
+		if (!(proc = get_process_by_refnum(refnum)))
+			RETURN_EMPTY;
+
+		if (proc->pid == -1)
+			start_process(proc);
+        } else if (!my_strnicmp(listc, "CLOSEIN", len)) {
+		GET_INT_ARG(refnum, input);
+		if (!(proc = get_process_by_refnum(refnum)))
+			RETURN_EMPTY;
+
+		exec_close_in(proc);
+        } else if (!my_strnicmp(listc, "CLOSEOUT", len)) {
+		GET_INT_ARG(refnum, input);
+		if (!(proc = get_process_by_refnum(refnum)))
+			RETURN_EMPTY;
+
+		exec_close_out(proc);
+        } else if (!my_strnicmp(listc, "SIGNAL", len)) {
+		int	signum;
+
+		GET_INT_ARG(refnum, input);
+		if (!(proc = get_process_by_refnum(refnum)))
+			RETURN_EMPTY;
+
+		if (is_number(input))
+			signum = my_atol(input);
+		else
+			signum = get_signal_by_name(input);
+
+		if (signum > 0 && signum < NSIG)
+		{
+			kill_process(proc, signum);
+			RETURN_INT(1);
+		}
+		RETURN_INT(0);
+        } else if (!my_strnicmp(listc, "GET", len)) {
+		GET_INT_ARG(refnum, input);
+		GET_FUNC_ARG(field, input);
+
+		if (!(proc = get_process_by_refnum(refnum)))
+			RETURN_EMPTY;
+
+		if (!my_stricmp(field, "REFNUM")) {
+			RETURN_INT(proc->refnum);
+		} else if (!my_stricmp(field, "REFNUM_DESC")) {
+			RETURN_STR(proc->refnum_desc);
+		} else if (!my_stricmp(field, "LOGICAL")) {
+			RETURN_STR(proc->logical);
+		} else if (!my_stricmp(field, "LOGICAL_DESC")) {
+			RETURN_STR(proc->logical_desc);
+		} else if (!my_stricmp(field, "COMMANDS")) {
+			RETURN_STR(proc->commands);
+		} else if (!my_stricmp(field, "DIRECT")) {
+			RETURN_INT(proc->direct);
+		} else if (!my_stricmp(field, "REDIRECT")) {
+			RETURN_STR(proc->redirect);
+		} else if (!my_stricmp(field, "WHO")) {
+			RETURN_STR(proc->who);
+		} else if (!my_stricmp(field, "WINDOW_REFNUM")) {
+			RETURN_INT(proc->window_refnum);
+		} else if (!my_stricmp(field, "SERVER_REFNUM")) {
+			RETURN_INT(proc->server_refnum);
+		} else if (!my_stricmp(field, "LINES_LIMIT")) {
+			RETURN_INT(proc->lines_limit);
+		} else if (!my_stricmp(field, "STDOUTC")) {
+			RETURN_STR(proc->stdoutc);
+		} else if (!my_stricmp(field, "STDOUTPC")) {
+			RETURN_STR(proc->stdoutpc);
+		} else if (!my_stricmp(field, "STDERRC")) {
+			RETURN_STR(proc->stderrc);
+		} else if (!my_stricmp(field, "STDERRPC")) {
+			RETURN_STR(proc->stderrpc);
+		} else if (!my_stricmp(field, "PID")) {
+			RETURN_INT(proc->pid);
+		} else if (!my_stricmp(field, "STARTED_AT")) {
+                        return malloc_sprintf(&retval, "%ld %ld",
+                                (long) proc->started_at.tv_sec,
+                                (long) proc->started_at.tv_usec);
+		} else if (!my_stricmp(field, "P_STDIN")) {
+			RETURN_INT(proc->p_stdin);
+		} else if (!my_stricmp(field, "P_STDOUT")) {
+			RETURN_INT(proc->p_stdout);
+		} else if (!my_stricmp(field, "P_STDERR")) {
+			RETURN_INT(proc->p_stderr);
+		} else if (!my_stricmp(field, "LINES_RECVD")) {
+			RETURN_INT(proc->lines_recvd);
+		} else if (!my_stricmp(field, "LINES_SENT")) {
+			RETURN_INT(proc->lines_sent);
+		} else if (!my_stricmp(field, "EXITED")) {
+			RETURN_INT(proc->exited);
+		} else if (!my_stricmp(field, "TERMSIG")) {
+			RETURN_INT(proc->termsig);
+		} else if (!my_stricmp(field, "RETCODE")) {
+			RETURN_INT(proc->retcode);
+		} else if (!my_stricmp(field, "DUMB")) {
+			RETURN_INT(proc->dumb);
+		} else if (!my_stricmp(field, "DISOWNED")) {
+			RETURN_INT(proc->disowned);
+		}
+
+        } else if (!my_strnicmp(listc, "SET", len)) {
+		char 	*desc, *field;
+		GET_FUNC_ARG(desc, input);
+		GET_FUNC_ARG(field, input);
+
+		if (!(proc = get_process_by_refnum(refnum)))
+			RETURN_EMPTY;
+
+		if (!my_stricmp(field, "LOGICAL")) {
+			char *new_name;
+			GET_FUNC_ARG(new_name, input);
+
+			if (is_logical_unique(new_name))
+			{
+				malloc_strcpy(&proc->logical, new_name);
+				malloc_sprintf(&proc->logical_desc, "%%%s", new_name);
+				RETURN_INT(1);
+			} 
+			else
+				RETURN_INT(0);
+		} else if (!my_stricmp(field, "COMMANDS")) {
+			if (proc->pid != -1)
+				RETURN_INT(0);
+			malloc_strcpy(&proc->commands, input);
+			RETURN_INT(1);
+		} else if (!my_stricmp(field, "DIRECT")) {
+			int	newval;
+
+			GET_INT_ARG(newval, input);
+			if (proc->pid != -1)
+				RETURN_INT(0);
+			if (newval == 0 || newval == 1)
+			{
+				proc->direct = newval;
+				RETURN_INT(1);
+			}
+			RETURN_INT(0);
+		} else if (!my_stricmp(field, "REDIRECT")) {
+			char *	newval;
+
+			GET_FUNC_ARG(newval, input);
+			if (!strcmp(newval, "PRIVMSG") || !strcmp(newval, "NOTICE"))
+			{
+				malloc_strcpy(&proc->redirect, newval);
+				RETURN_INT(1);
+			}
+			RETURN_INT(0);
+		} else if (!my_stricmp(field, "WHO")) {
+			char *	newval;
+
+			GET_FUNC_ARG(newval, input);
+			malloc_strcpy(&proc->who, newval);
+			RETURN_INT(1);
+		} else if (!my_stricmp(field, "WINDOW_REFNUM")) {
+			int	newval;
+
+			GET_INT_ARG(newval, input);
+			if (newval > 0)
+			{
+				proc->window_refnum = newval;
+				RETURN_INT(1);
+			}
+			RETURN_INT(0);
+		} else if (!my_stricmp(field, "SERVER_REFNUM")) {
+			int	newval;
+
+			GET_INT_ARG(newval, input);
+			if (newval >= 0)
+			{
+				proc->server_refnum = newval;
+				RETURN_INT(1);
+			}
+			RETURN_INT(0);
+		} else if (!my_stricmp(field, "STDOUTC")) {
+			malloc_strcpy(&proc->stdoutc, input);
+			RETURN_INT(1);
+		} else if (!my_stricmp(field, "STDOUTPC")) {
+			malloc_strcpy(&proc->stdoutpc, input);
+			RETURN_INT(1);
+		} else if (!my_stricmp(field, "STDERRC")) {
+			malloc_strcpy(&proc->stderrc, input);
+			RETURN_INT(1);
+		} else if (!my_stricmp(field, "STDERRPC")) {
+			malloc_strcpy(&proc->stderrpc, input);
+			RETURN_INT(1);
+		} else if (!my_stricmp(field, "LINES_LIMIT")) {
+			int	newval;
+
+			GET_INT_ARG(newval, input);
+			if (newval >= 0)
+			{
+				proc->lines_limit = newval;
+				RETURN_INT(1);
+			}
+			RETURN_INT(0);
+		}
+	}
+
+	RETURN_EMPTY;
+}
 
 #endif
 

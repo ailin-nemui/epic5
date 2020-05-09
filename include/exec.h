@@ -15,5 +15,6 @@
 	int	text_to_process		(const char *, const char *, int);
 	void	add_process_wait	(const char *, const char *);
 	int	is_valid_process	(const char *);
+	char *	execctl			(char *);
 
 #endif /* _EXEC_H_ */

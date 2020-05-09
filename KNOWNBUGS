@@ -875,3 +875,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Revamp /exec to behave regularly so we can treat %proc as real targetsa (see UPDATES)
 * Add /on send_exec so you can reformat messages being sent to exec procs
 * Add $uuid4() -- it returns UUID4s!
+* Add /exec -nolaunch so you can build an /exec before starting it.
+* Add $execctl() -- see UPDATES
