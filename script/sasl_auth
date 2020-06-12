@@ -124,7 +124,7 @@ on #-server_established 100 '\\\\[$$sasl_auth.servers\\\\] %' {
 	};
 };
 
-on ^odd_server_stuff '\\\\[$$sasl_auth.servers\\\\] CAP % ACK :*sasl*' {
+on ^odd_server_stuff '\\\\[$$sasl_auth.servers\\\\] CAP % ACK *sasl*' {
 	@ :server = servername();
 	@ :state = sasl_auth.status.$server;
 
@@ -214,7 +214,7 @@ on #-001 100 '\\\\[$$sasl_auth.servers\\\\] *' {
 	sasl_auth.setstate $server null;
 };
 
-on ^odd_server_stuff '\\\\[$$sasl_auth.servers\\\\] CAP * NAK :sasl' {
+on ^odd_server_stuff '\\\\[$$sasl_auth.servers\\\\] CAP * NAK *sasl*' {
 	@ :server = servername();
 	@ :state = sasl_auth.status.$server;
 	
