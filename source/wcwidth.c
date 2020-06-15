@@ -504,6 +504,9 @@ int	count_initial_codepoints (const unsigned char *str, const unsigned char *p)
 	int	length = 0;
 	int	x;
 
+	if (str >= p)
+		return 0;
+
 	s = str;
 	while ((code_point = next_code_point(&s, 1)))
 	{

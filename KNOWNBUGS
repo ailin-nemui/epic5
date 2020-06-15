@@ -877,3 +877,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $uuid4() -- it returns UUID4s!
 * Add /exec -nolaunch so you can build an /exec before starting it.
 * Add $execctl() -- see UPDATES
+* Fix count_initial_codepoints() - it couldn't return 0
+* This fixes $regmatches() for wcarson
