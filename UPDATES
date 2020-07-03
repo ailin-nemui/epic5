@@ -1,5 +1,27 @@
 EPIC5-2.2
 
+*** News 07/03/2020 -- New /WINDOW operation, /WINDOW DELETE_KILL
+	Harzilein pointed out:
+	  1) You cannot delete the last window on a screen
+	  2) Deleting a screen does not kill a window
+	  3) Therefore, deleting a screen necessarily orphans a window
+	But what if you don't want to orphan a window when you kill a
+	screeN?  
+
+	The /WINDOW DELETE_KILL operation does a /WINDOW DELETE and
+	then does a /WINDOW KILL on the window that was the current
+	window.  There are several caveats to this *which i reserve
+	the right to change in the future*
+	
+	Caveat 1) Only the "current window" gets killed.  So if you 
+	    DELETE_KILL a screen with multiple windows, other windows
+	    will be orphaned in the ordinary way.  I reserve the right
+ 	    to change this behavior (it will be documented)
+	Caveat 2) If you cannot kill the window for other reasons, 
+	    such as /window killable off, then the attempt to kill the
+	    window will fail, and it will be orphaned.
+
+
 *** News 05/09/2020 -- New built in function $execctl()
 	You can now program the /EXEC command with this low level function
 

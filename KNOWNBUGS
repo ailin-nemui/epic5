@@ -877,5 +877,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $uuid4() -- it returns UUID4s!
 * Add /exec -nolaunch so you can build an /exec before starting it.
 * Add $execctl() -- see UPDATES
+* EPIC5-2.1.2 released here (Lugibrious) (Commit: 1908)
 * Fix count_initial_codepoints() - it couldn't return 0
 * This fixes $regmatches() for wcarson
+* Add /window delete_kill (rb Harzilein)

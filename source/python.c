@@ -1180,7 +1180,8 @@ char *	python_eval_expression (char *input)
 {
 	PyObject *retval;
 	PyObject *retval_repr;
-	char 	*r, *retvalstr = NULL;
+	const char 	*r;
+	char *retvalstr = NULL;
 
 	if (p_initialized == 0)
 		initialize_python(1);
@@ -1281,7 +1282,8 @@ char *	call_python_directly (const char *orig_object, char *args)
 	PyObject *mod_py = NULL, *meth_py = NULL, *args_py = NULL;
 	PyObject *pModule = NULL, *pFunc = NULL, *pArgs = NULL, *pRetVal = NULL;
 	PyObject *retval_repr = NULL;
-	char 	*r = NULL, *retvalstr = NULL;
+	const char 	*r = NULL;
+	char *retvalstr = NULL;
 
 	object = LOCAL_COPY(orig_object);
 	module = object;

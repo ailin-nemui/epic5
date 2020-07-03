@@ -3876,6 +3876,20 @@ static Window *window_delete (Window *window, char **args)
 }
 
 /*
+ * /WINDOW DELETE_KILL
+ * This does a /window delete (destroy screen) plus a /window kill 
+ * (destroy window) as one atomic operation.  Normally you cannot
+ * kill the last window on a screen; and destroying a screen orphans
+ * that last window.  But what if you wnat them to go away together?
+ */
+static Window *window_delete_kill (Window *window, char **args)
+{
+	kill_screen(window->screen);
+	delete_window(window);
+	return current_window;
+}
+
+/*
  * /WINDOW DESCRIBE
  * Directs the client to tell you a bit about the current window.
  * This is the 'default' argument to the /window command.
@@ -5906,6 +5920,7 @@ static const window_ops options [] = {
 	{ "CLEAR",		window_clear		},
 	{ "CREATE",		window_create 		},
 	{ "DELETE",		window_delete 		},
+	{ "DELETE_KILL",	window_delete_kill	},
 	{ "DESCRIBE",		window_describe		}, /* * */
 	{ "DISCON",		window_discon		},
 	{ "DOUBLE",		window_double 		},
