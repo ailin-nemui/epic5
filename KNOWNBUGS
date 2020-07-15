@@ -881,3 +881,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix count_initial_codepoints() - it couldn't return 0
 * This fixes $regmatches() for wcarson
 * Add /window delete_kill (rb Harzilein)
+* Fix /wait %proc (caf, rb wuf)

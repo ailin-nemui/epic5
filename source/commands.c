@@ -2932,7 +2932,7 @@ BUILT_IN_COMMAND(waitcmd)
 				snprintf(reason, 1024, "WAIT on EXEC %s", 
 						ctl_arg);
 				lock_stack_frame();
-				while (is_valid_process(ctl_arg) != -1)
+				while (is_valid_process(ctl_arg))
 					io(reason);
 				unlock_stack_frame();
 			}
