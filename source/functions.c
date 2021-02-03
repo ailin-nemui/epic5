@@ -590,6 +590,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "INDEXTOITEM",        function_indextoitem 	},
 	{ "INDEXTOWORD",	function_indextoword	},
 	{ "INFO",		function_info		},
+	{ "INPUTCTL",		function_inputctl	},
 	{ "INSERT",		function_insert 	},
 	{ "INSERTW",            function_insertw 	},
 	{ "IPTOLONG",		function_iptolong	},

@@ -3588,6 +3588,9 @@ static int 	get_boolean (const char *name, char **args, short *var)
 	char	*arg;
 	int	newval;
 
+	if (!args)
+		return -1;
+
 	newval = *var;
 	if (!(arg = next_arg(*args, args)))
 	{
@@ -3607,6 +3610,7 @@ static int 	get_boolean (const char *name, char **args, short *var)
 	return (0);
 }
 
+/* * * * * * * * * * * WINDOW OPERATIONS * * * * * * * * * */
 /*
  * /WINDOW ADD nick<,nick>
  * Adds a list of one or more nicknames to the current list of usupred
@@ -3617,8 +3621,14 @@ static Window *window_add (Window *window, char **args)
 {
 	char		*ptr;
 	WNickList 	*new_w;
-	char 		*arg = next_arg(*args, args);
+	char 		*arg;
 
+	if (!args)
+	{
+		return window;
+	}
+
+	arg = next_arg(*args, args);
 	if (!arg)
 		say("ADD: Add nicknames to be redirected to this window");
 
@@ -3653,6 +3663,11 @@ static Window *window_back (Window *window, char **args)
 {
 	Window *tmp;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	tmp = get_window_by_refnum(last_input_screen->last_window_refnum);
 	if (!tmp)
 		tmp = last_input_screen->window_list;
@@ -3675,6 +3690,11 @@ static Window *window_back (Window *window, char **args)
  */
 static Window *window_balance (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	if (window->screen)
 		rebalance_windows(window->screen);
 	else
@@ -3692,6 +3712,11 @@ static Window *window_balance (Window *window, char **args)
  */
 static Window *window_beep_always (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	if (get_boolean("BEEP_ALWAYS", args, &window->beep_always))
 		return NULL;
 	return window;
@@ -3717,6 +3742,11 @@ static Window *window_channel (Window *window, char **args)
 	char 		*cl;
 	char 		*chans_to_join, *passes_to_use;
 	int		l;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	/* Fix by Jason Brand, Nov 6, 2000 */
 	if (window->server == NOSERV)
@@ -3823,6 +3853,11 @@ static Window *window_check (Window *window, char **args)
 	Window *tmp;
 	int	lastlog_count;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	tmp = NULL;
 	while (traverse_all_windows(&tmp))
 	{
@@ -3838,6 +3873,11 @@ static Window *window_check (Window *window, char **args)
 /* WINDOW CLEAR -- should be obvious, right? */
 static Window *window_clear (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	clear_window(window);
 	return window;
 }
@@ -3854,6 +3894,12 @@ static Window *window_clear (Window *window, char **args)
 static Window *window_create (Window *window, char **args)
 {
 	Window *tmp;
+
+	if (!args)
+	{
+		return window;
+	}
+
 	if ((tmp = (Window *)create_additional_screen()))
 		window = tmp;
 	else
@@ -3871,6 +3917,11 @@ static Window *window_create (Window *window, char **args)
  */
 static Window *window_delete (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	kill_screen(window->screen);
 	return current_window;
 }
@@ -3884,6 +3935,11 @@ static Window *window_delete (Window *window, char **args)
  */
 static Window *window_delete_kill (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	kill_screen(window->screen);
 	delete_window(window);
 	return current_window;
@@ -3898,6 +3954,11 @@ static Window *window_describe (Window *window, char **args)
 {
 	const char *chan;
 	char *c;
+
+	if (!args)
+	{
+		return window;
+	}
 
 if (window->name)
 	say("Window %s (%u)", 
@@ -4009,6 +4070,11 @@ else
  */
 static Window *window_discon (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	reassign_window_channels(window->refnum);
 	destroy_window_waiting_channels(window->refnum);
 	window_change_server(window, NOSERV); /* XXX This shouldn't be set here. */
@@ -4028,6 +4094,11 @@ static Window *window_double (Window *window, char **args)
 {
 	short	newval = 0;
 	int	current = window->status.number;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	newval = window->status.number - 1;
 	if (get_boolean("DOUBLE", args, &newval))
@@ -4061,6 +4132,11 @@ static	Window *window_echo (Window *window, char **args)
 	const char *to_echo;
 	int	l;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	if (**args == '"')
 		to_echo = new_next_arg(*args, args);
 	else
@@ -4084,6 +4160,11 @@ static	Window *window_echo (Window *window, char **args)
  */
 static	Window *window_fixed (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	if (get_boolean("FIXED", args, &window->fixed_size))
 		return NULL;
 	return window;
@@ -4096,6 +4177,11 @@ static	Window *window_fixed (Window *window, char **args)
  */
 static	Window *window_flush (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	flush_scrollback_after(window);
 	return window;
 }
@@ -4105,6 +4191,11 @@ static	Window *window_flush (Window *window, char **args)
  */
 static	Window *window_flush_scrollback (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	flush_scrollback(window);
 	return window;
 }
@@ -4116,6 +4207,11 @@ static	Window *window_flush_scrollback (Window *window, char **args)
  */
 static Window *window_goto (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	my_goto_window(window->screen, get_number("GOTO", args));
 	from_server = get_window_server(0);
 	return current_window;
@@ -4131,6 +4227,11 @@ static Window *window_goto (Window *window, char **args)
  */
 static Window *window_grow (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	resize_window(RESIZE_REL, window, get_number("GROW", args));
 	return window;
 }
@@ -4144,6 +4245,11 @@ static Window *window_grow (Window *window, char **args)
  */
 static Window *window_hide (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	hide_window(window);
 	return current_window;
 }
@@ -4156,6 +4262,11 @@ static Window *window_hide (Window *window, char **args)
 static Window *window_hide_others (Window *window, char **args)
 {
 	Window *tmp, *next;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	/* There are no "others" to hide if the window isn't visible. */
 	if (!window->screen)
@@ -4180,8 +4291,14 @@ static Window *window_hide_others (Window *window, char **args)
  */
 static Window *window_hold_interval (Window *window, char **args)
 {
-	char *arg = next_arg(*args, args);
+	char *arg;
 
+	if (!args)
+	{
+		return window;
+	}
+
+	arg = next_arg(*args, args);
 	if (arg)
 	{
 		int	size = my_atol(arg);
@@ -4208,6 +4325,11 @@ static Window *window_hold_mode (Window *window, char **args)
 	short	hold_mode;
 	int	slider;
 	int	i;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	if (window->holding_top_of_display)
 		hold_mode = 1;
@@ -4249,7 +4371,14 @@ static Window *window_hold_mode (Window *window, char **args)
  */
 static Window *window_hold_slider (Window *window, char **args)
 {
-	char *arg = next_arg(*args, args);
+	char *arg;
+
+	if (!args)
+	{
+		return window;
+	}
+
+	arg = next_arg(*args, args);
 
 	if (arg)
 	{
@@ -4275,6 +4404,11 @@ static Window *window_hold_slider (Window *window, char **args)
  */
 static	Window *window_indent (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	if (get_boolean("INDENT", args, &window->indent))
 		return NULL;
 	return window;
@@ -4289,6 +4423,11 @@ static	Window *window_indent (Window *window, char **args)
  */
 static Window *window_kill (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	if (!window->killable)
 	{
 		say("You cannot kill an unkillable window");
@@ -4306,6 +4445,11 @@ static Window *window_kill (Window *window, char **args)
 static Window *window_kill_all_hidden (Window *window, char **args)
 {
 	Window *tmp, *next;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	tmp = invisible_list;
 	while (tmp)
@@ -4337,6 +4481,11 @@ static Window *window_kill_others (Window *window, char **args)
 {
 	Window *tmp, *next;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	if (window->screen)
 		tmp = window->screen->window_list;
 	else
@@ -4358,6 +4507,11 @@ static Window *window_kill_others (Window *window, char **args)
 
 static Window *window_killable (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	if (get_boolean("KILLABLE", args, &window->killable))
 		return NULL;
 
@@ -4371,6 +4525,11 @@ static Window *window_killable (Window *window, char **args)
  */
 static Window *window_killswap (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	if (!window->killable)
 	{
 		say("You cannot KILLSWAP an unkillable window");
@@ -4396,6 +4555,11 @@ static Window *window_killswap (Window *window, char **args)
  */
 static Window *window_last (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	set_screens_current_window(window->screen, NULL);
 	return current_window;
 }
@@ -4409,6 +4573,11 @@ static Window *window_last (Window *window, char **args)
 static Window *window_lastlog (Window *window, char **args)
 {
 	char *arg = next_arg(*args, args);
+
+	if (!args)
+	{
+		return window;
+	}
 
 	if (arg)
 	{
@@ -4449,6 +4618,11 @@ static Window *window_lastlog_mask (Window *window, char **args)
 	char *arg = next_arg(*args, args);;
 	char *rejects = NULL;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	if (arg)
 	{
 	    if (str_to_mask(&window->lastlog_mask, arg, &rejects))
@@ -4474,6 +4648,11 @@ static Window *window_level (Window *window, char **args)
 	Mask	mask;
 	int	i;
 	char *	rejects = NULL;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	mask_unsetall(&mask);
 	if ((arg = next_arg(*args, args)))
@@ -4515,6 +4694,11 @@ static Window *window_list (Window *window, char **args)
 	int	len = 6;
 	int	cnw = get_int_var(CHANNEL_NAME_WIDTH_VAR);
 
+	if (!args)
+	{
+		return window;
+	}
+
 	if (cnw == 0)
 		cnw = 12;	/* Whatever */
 
@@ -4553,6 +4737,11 @@ static Window *window_log (Window *window, char **args)
 	const char *logfile;
 	int add_ext = 1;
 	char buffer[BIG_BUFFER_SIZE + 1];
+
+	if (!args)
+	{
+		return window;
+	}
 
 	if (get_boolean("LOG", args, &window->log))
 		return NULL;
@@ -4595,8 +4784,16 @@ static Window *window_log (Window *window, char **args)
  */
 static Window *window_logfile (Window *window, char **args)
 {
-	char *arg = next_arg(*args, args);
+	char *arg;
 
+	if (!args)
+	{
+		new_free(&window->logfile);
+		say("Window LOGFILE unset");
+		return window;
+	}
+
+	arg = next_arg(*args, args);
 	if (arg)
 	{
 		malloc_strcpy(&window->logfile, arg);
@@ -4636,6 +4833,11 @@ static Window *window_log_rewrite (Window *window, char **args)
 {
 	char *arg;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	arg = new_next_arg(*args, args);
 	malloc_strcpy(&window->log_rewrite, arg);
 
@@ -4652,6 +4854,11 @@ static Window *window_log_mangle (Window *window, char **args)
 	char *	arg;
 	int	mangle;
 	char *	nv;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	arg = new_next_arg(*args, args);
 	window->log_mangle = parse_mangle(arg, window->log_mangle, &nv);
@@ -4671,6 +4878,11 @@ static Window *window_log_mangle (Window *window, char **args)
 static	Window *window_merge (Window *window, char **args)
 {
 	Window *tmp;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	if ((tmp = get_window("MERGE", args)))
 	{
@@ -4705,12 +4917,22 @@ static	Window *window_merge (Window *window, char **args)
 
 static Window *window_move (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	move_window(window, get_number("MOVE", args));
 	return window;
 }
 
 static Window *window_move_to (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	move_window_to(window, get_number("MOVE_TO", args));
 	return window;
 }
@@ -4718,6 +4940,11 @@ static Window *window_move_to (Window *window, char **args)
 static Window *window_name (Window *window, char **args)
 {
 	char *arg;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	if ((arg = new_next_arg(*args, args)))
 	{
@@ -4757,6 +4984,12 @@ static Window *window_name (Window *window, char **args)
 static Window *window_new (Window *window, char **args)
 {
 	Window *tmp;
+
+	if (!args)
+	{
+		return window;
+	}
+
 	if ((tmp = new_window(window->screen)))
 		window = tmp;
 
@@ -4767,6 +5000,11 @@ static Window *window_new (Window *window, char **args)
 
 static Window *window_new_hide (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	new_window(NULL);
 	return window;
 }
@@ -4776,6 +5014,11 @@ static Window *window_next (Window *window, char **args)
 	Window	*tmp;
 	Window	*next = NULL;
 	Window	*smallest = NULL;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	smallest = window;
 	for (tmp = invisible_list; tmp; tmp = tmp->next)
@@ -4804,6 +5047,11 @@ static Window *window_next (Window *window, char **args)
 
 static Window *window_notify (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	if (get_boolean("NOTIFY", args, &window->notify_when_hidden))
 		return NULL;
 
@@ -4812,6 +5060,11 @@ static Window *window_notify (Window *window, char **args)
 
 static Window *window_notify_list (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	if (get_boolean("NOTIFIED", args, &window->notified))
 		return NULL;
 
@@ -4822,6 +5075,11 @@ static Window *window_notify_mask (Window *window, char **args)
 {
 	char *arg;
 	char *rejects = NULL;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	if ((arg = next_arg(*args, args)))
 	    if (str_to_mask(&window->notify_mask, arg, &rejects))
@@ -4834,6 +5092,11 @@ static Window *window_notify_mask (Window *window, char **args)
 static Window *window_notify_name (Window *window, char **args)
 {
 	char *arg;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	if ((arg = new_next_arg(*args, args)))
 	{
@@ -4874,6 +5137,11 @@ static Window *window_number (Window *window, char **args)
 	Window 	*tmp;
 	char 	*arg;
 	int 	i, oldref, newref;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	if ((arg = next_arg(*args, args)))
 	{
@@ -4927,6 +5195,11 @@ static Window *window_pop (Window *window, char **args)
 	WindowStack 	*tmp;
 	Window		*win = NULL;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	while (window->screen->window_stack)
 	{
 		refnum = window->screen->window_stack->refnum;
@@ -4954,6 +5227,11 @@ static Window *window_previous (Window *window, char **args)
 {
 	Window	*tmp;
 	Window	*previous = NULL, *largest;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	largest = window;
 	for (tmp = invisible_list; tmp; tmp = tmp->next)
@@ -4984,6 +5262,11 @@ static Window *window_prompt (Window *window, char **args)
 {
 	char *arg;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	if ((arg = next_arg(*args, args)))
 	{
 		malloc_strcpy(&window->prompt, arg);
@@ -4999,6 +5282,11 @@ static Window *window_push (Window *window, char **args)
 {
 	WindowStack *new_ws;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	new_ws = (WindowStack *) new_malloc(sizeof(WindowStack));
 	/* XXX refnum is changed here XXX */
 	new_ws->refnum = window->refnum;
@@ -5013,6 +5301,11 @@ Window *window_query (Window *window, char **args)
 	const char *oldnick, *nick;
 	char	  *a;
 	int	l;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	nick = new_next_arg(*args, args);
 
@@ -5113,6 +5406,11 @@ Window *window_query (Window *window, char **args)
 
 static Window *window_rebuild_scrollback (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	window->rebuild_scrollback = 1;
 	/* rebuild_scrollback(window); */
 	return window;
@@ -5152,6 +5450,11 @@ Window *window_rejoin (Window *window, char **args)
 	const char *	chan;
 	char *	keys = NULL;
 	char *	newchan = NULL;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	/* First off, we have to be connected to join */
 	if (from_server == NOSERV || !is_server_registered(from_server))
@@ -5272,6 +5575,12 @@ Window *window_rejoin (Window *window, char **args)
 static Window *window_refnum (Window *window, char **args)
 {
 	Window *tmp;
+
+	if (!args)
+	{
+		return window;
+	}
+
 	if ((tmp = get_window("REFNUM", args)))
 	{
 		window = tmp;
@@ -5292,6 +5601,11 @@ static Window *window_refnum_or_swap (Window *window, char **args)
 {
 	Window  *tmp;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	if (!(tmp = get_window("REFNUM_OR_SWAP", args)))
 		return NULL;
 
@@ -5309,6 +5623,11 @@ static Window *window_refnum_or_swap (Window *window, char **args)
 
 static Window *window_refresh (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	update_all_status();
 	update_all_windows();
 	return window;
@@ -5317,6 +5636,11 @@ static Window *window_refresh (Window *window, char **args)
 static Window *window_remove (Window *window, char **args)
 {
 	char *arg;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	if ((arg = next_arg(*args, args)))
 	{
@@ -5352,6 +5676,11 @@ static	Window *window_scratch (Window *window, char **args)
 {
 	short scratch = 0;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	if (get_boolean("SCRATCH", args, &scratch))
 		return NULL;
 
@@ -5363,6 +5692,11 @@ Window *window_scroll (Window *window, char **args)
 {
 	short 	scroll = 0;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	if (get_boolean("SCROLL", args, &scroll))
 		return NULL;
 
@@ -5371,6 +5705,11 @@ Window *window_scroll (Window *window, char **args)
 
 static Window *window_scrolladj (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	if (get_boolean("SCROLLADJ", args, &window->scrolladj))
 		return NULL;
 
@@ -5380,6 +5719,11 @@ static Window *window_scrolladj (Window *window, char **args)
 static Window *window_scroll_lines (Window *window, char **args)
 {
 	int new_value = 0;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	if (!args || !*args || !**args)
 	{
@@ -5416,6 +5760,11 @@ static	Window *window_scrollback (Window *window, char **args)
 {
 	int val;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	if (args && *args && **args)
 	{
 		val = get_number("SCROLLBACK", args);
@@ -5435,6 +5784,11 @@ static	Window *window_scroll_backward (Window *window, char **args)
 {
 	int	val;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	if (args && *args && **args)
 	{
 		val = get_number("SCROLL_BACKWARD", args);
@@ -5452,6 +5806,11 @@ static	Window *window_scroll_backward (Window *window, char **args)
 
 static	Window *window_scroll_end (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	window_scrollback_end(window);
 	return window;
 }
@@ -5459,6 +5818,11 @@ static	Window *window_scroll_end (Window *window, char **args)
 static	Window *window_scroll_forward (Window *window, char **args)
 {
 	int	val;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	if (args && *args && **args)
 	{
@@ -5477,6 +5841,11 @@ static	Window *window_scroll_forward (Window *window, char **args)
 
 static	Window *window_scroll_start (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	window_scrollback_start(window);
 	return window;
 }
@@ -5511,6 +5880,11 @@ static Window *window_search_back (Window *window, char **args)
 {
 	char *arg;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	if ((arg = new_next_arg(*args, args)))
 	{
 		if (new_search_term(arg))
@@ -5528,6 +5902,11 @@ static Window *window_search_back (Window *window, char **args)
 static Window *window_search_forward (Window *window, char **args)
 {
 	char *arg;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	if ((arg = new_next_arg(*args, args)))
 	{
@@ -5549,6 +5928,11 @@ static Window *window_scroll_seconds (Window *window, char **args)
 {
 	int	val;
 	time_t	right_now, when;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	if (args && *args && **args)
 		val = get_number("SCROLL_SECONDS", args);
@@ -5577,6 +5961,11 @@ static Window *window_scrollback_toseconds (Window *window, char **args)
 	int	val;
 	time_t	right_now, when;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	if (args && *args && **args)
 		val = get_number("SCROLL_SECONDS", args);
 	else
@@ -5596,6 +5985,11 @@ static Window *window_scrollback_toseconds (Window *window, char **args)
 
 static Window *window_skip (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	if (get_boolean("SKIP", args, &window->skip))
 		return NULL;
 
@@ -5605,6 +5999,11 @@ static Window *window_skip (Window *window, char **args)
 Window *window_server (Window *window, char **args)
 {
 	char *	arg;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	if ((arg = next_arg(*args, args)))
 	{
@@ -5651,6 +6050,11 @@ static Window *window_show (Window *window, char **args)
 {
 	Window *tmp;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	if ((tmp = get_window("SHOW", args)))
 	{
 		show_window(tmp);
@@ -5662,6 +6066,11 @@ static Window *window_show (Window *window, char **args)
 static Window *window_show_all (Window *window, char **args)
 {
 	int	governor = 0;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	while (invisible_list)
 	{
@@ -5676,6 +6085,11 @@ static Window *window_show_all (Window *window, char **args)
 
 static Window *window_shrink (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	resize_window(RESIZE_REL, window, -get_number("SHRINK", args));
 	return window;
 }
@@ -5684,6 +6098,11 @@ static Window *window_size (Window *window, char **args)
 {
 	char *	ptr = *args;
 	int	number;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	number = parse_number(args);
 	if (ptr == *args) 
@@ -5703,6 +6122,11 @@ static Window *window_stack (Window *window, char **args)
 	WindowStack 	*last, *tmp, *holder;
 	Window 		*win = NULL;
 	size_t		len = 4;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	while (traverse_all_windows(&win))
 	{
@@ -5741,6 +6165,11 @@ static Window *window_status_format (Window *window, char **args)
 {
 	char	*arg;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	arg = new_next_arg(*args, args);
 	malloc_strcpy(&window->status.line[0].raw, arg);
 	compile_status(window, &window->status);
@@ -5752,6 +6181,11 @@ static Window *window_status_format (Window *window, char **args)
 static Window *window_status_format1 (Window *window, char **args)
 {
 	char	*arg;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	arg = new_next_arg(*args, args);
 	malloc_strcpy(&window->status.line[1].raw, arg);
@@ -5765,6 +6199,11 @@ static Window *window_status_format2 (Window *window, char **args)
 {
 	char	*arg;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	arg = new_next_arg(*args, args);
 	malloc_strcpy(&window->status.line[2].raw, arg);
 	compile_status(window, &window->status);
@@ -5777,6 +6216,11 @@ static Window *window_status_prefix_when_current (Window *window, char **args)
 {
 	char *arg;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	arg = new_next_arg(*args, args);
 	malloc_strcpy(&window->status.prefix_when_current, arg);
 	window_statusbar_needs_redraw(window);
@@ -5787,6 +6231,11 @@ static Window *window_status_prefix_when_current (Window *window, char **args)
 static Window *window_status_prefix_when_not_current (Window *window, char **args)
 {
 	char *arg;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	arg = new_next_arg(*args, args);
 	malloc_strcpy(&window->status.prefix_when_not_current, arg);
@@ -5800,6 +6249,11 @@ static Window *window_status_special (Window *window, char **args)
 {
 	char *arg;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	arg = new_next_arg(*args, args);
 	malloc_strcpy(&window->status.special, arg);
 	window_statusbar_needs_redraw(window);
@@ -5811,6 +6265,11 @@ static Window *window_swap (Window *window, char **args)
 {
 	Window *tmp;
 
+	if (!args)
+	{
+		return window;
+	}
+
 	if ((tmp = get_invisible_window("SWAP", args)))
 		swap_window(window, tmp);
 
@@ -5819,6 +6278,11 @@ static Window *window_swap (Window *window, char **args)
 
 static Window *window_swappable (Window *window, char **args)
 {
+	if (!args)
+	{
+		return window;
+	}
+
 	if (get_boolean("SWAPPABLE", args, &window->swappable))
 		return NULL;
 
@@ -5837,6 +6301,11 @@ static Window *window_topline (Window *window, char **args)
 	int	line;
 	const char *linestr;
 	const char *topline;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	if (!(linestr = new_next_arg(*args, args)))
 		return window;
@@ -5868,6 +6337,11 @@ static Window *window_toplines (Window *window, char **args)
 	char *	ptr = *args;
 	int	number;
 	int	saved = window->toplines_wanted;
+
+	if (!args)
+	{
+		return window;
+	}
 
 	number = parse_number(args);
 	if (ptr == *args) 
@@ -6028,9 +6502,16 @@ BUILT_IN_COMMAND(windowcmd)
 	{
 		int i;
 		int len = strlen(arg);
+		int pass_null;
 
+#if 0
 		if (*arg == '-' || *arg == '/')		/* Ignore - or / */
 			arg++, len--;
+#endif
+		if (*arg == '-')
+			arg++, len--, pass_null = 1;
+		else
+			pass_null = 0;
 
 		l = message_setall(window ? window->refnum : (unsigned)-1, 
 					who_from, who_level);
@@ -6042,7 +6523,10 @@ BUILT_IN_COMMAND(windowcmd)
 				if (window)
 					from_server = window->server;
 				winref = window ? (int)window->refnum : -1;
-				window = options[i].func(window, &args); 
+				if (pass_null)
+					window = options[i].func(window, NULL);
+				else
+					window = options[i].func(window, &args); 
 				nargs++;
 				if (!window)
 					args = NULL;

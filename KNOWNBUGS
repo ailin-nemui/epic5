@@ -2,7 +2,10 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none at this time>
+* If you /server irc.foo.com and the window is associated with irc.foo.com
+   it doesn't cause the server to be reconnected.
+* Harzelein would like to [re]set the cut buffer
+   This will be coming to $Inputctl()
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -883,3 +886,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /window delete_kill (rb Harzilein)
 * Fix /wait %proc (caf, rb wuf)
 * Fix chmod() to not use ancien S_IREAD/S_IWRITE (S_IRUSR) (rb Tilt)
+* Support /window -<operation> to pass in NULL to window op
+* Seed all window operations with no-op handlers for NULL
+* Don't discard DNS results for server until we get to ACTIVE
+* Add a stub for $inputctl() -- future expansion.
+* Add %{5}S status expando -- the server status (ie, "ACTIVE")
+

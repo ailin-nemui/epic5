@@ -106,6 +106,7 @@ STATUS_FUNCTION(status_test);
 STATUS_FUNCTION(status_swappable);
 STATUS_FUNCTION(status_activity);
 STATUS_FUNCTION(status_window_prefix);
+STATUS_FUNCTION(status_server_status);
 
 /* These are used as placeholders for some expandos */
 static	char	*mode_format 		= (char *) 0;
@@ -234,7 +235,8 @@ struct status_formats status_expandos[] = {
 { 3, 'S', status_server,        &server_format,     	&STATUS_SERVER_VAR },
 { 3, 'W', status_window,	NULL, 			NULL },
 { 3, '+', status_mode,		&mode_format,       	&STATUS_MODE_VAR },
-{ 4, 'S', status_server,        &server_format,     	&STATUS_SERVER_VAR }
+{ 4, 'S', status_server,        &server_format,     	&STATUS_SERVER_VAR },
+{ 5, 'S', status_server_status,	NULL,			NULL }
 };
 #define NUMBER_OF_EXPANDOS (sizeof(status_expandos) / sizeof(struct status_formats))
 
@@ -1133,6 +1135,14 @@ const	char	*n = NULL;
 
 	PRESS(server_format, n)
 	RETURN
+}
+
+STATUS_FUNCTION(status_server_status)
+{
+	const char *	state = NULL;
+
+	state = get_server_status_str(window->server);
+	return state ? state : "Unknown";
 }
 
 /*

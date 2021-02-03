@@ -19,6 +19,7 @@
 	void	set_input_prompt		(void *);
 	void	update_input 			(void *, int);
 	int     cursor_position 		(void *s);
+	char *	function_inputctl		(char *);
 
 /* keybinding functions */
 	BUILT_IN_KEYBINDING(backward_character);

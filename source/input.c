@@ -48,6 +48,7 @@
 #include "clock.h"
 #include "commands.h"
 #include "exec.h"
+#include "functions.h"
 #include "hook.h"
 #include "input.h"
 #include "ircaux.h"
@@ -1664,5 +1665,10 @@ BUILT_IN_KEYBINDING(parse_text)
 	if (string)
 		runcmds(string, empty_string);
 	system_exception = old;
+}
+
+BUILT_IN_FUNCTION(function_inputctl, words)
+{
+	RETURN_EMPTY;
 }
 

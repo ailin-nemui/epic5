@@ -352,6 +352,7 @@ const	char*	get_server_005			(int, const char *);
 	int	get_server_userhost_max		(int);
 	void	set_server_status		(int, int);
 	int	get_server_status		(int);
+const char *	get_server_status_str		(int);
 	void	set_server_autoclose		(int, int);
 	int	get_server_autoclose		(int);
 

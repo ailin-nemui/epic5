@@ -135,6 +135,7 @@ static	int	serverinfo_to_newserv (ServerInfo *s);
 static 	void 	remove_from_server_list (int i);
 static	char *	shortname (const char *oname);
 static void	set_server_uh_addr (int refnum);
+static void	discard_dns_results (int refnum);
 
 
 /*
@@ -1585,6 +1586,7 @@ something_broke:
 						"address [%d]: (Internal error)", 
 						i, s->addr_counter);
 
+				/* This results in trying the next IP addr */
 				set_server_status(i, SERVER_ERROR);
 				close_server(i, NULL);
 				connect_to_server(i);
@@ -2265,6 +2267,28 @@ int 	close_all_servers (const char *message)
 }
 
 /*
+ * discard_dns_results:  Connecting to a server results in a DNS lookup,
+ * which returns a set of IP addresses to try.  When we successfully connect
+ * to a server, then we do not need the rest of the IP addresses we have.
+ * That is to say, a reconnect should prompt a new DNS lookup.
+ *
+ * This is only to be done when the server status switches to ACTIVE.
+ * If a connection fails at any previous state, we would want to try the
+ * next IP address.
+ */
+static void	discard_dns_results (int refnum)
+{
+	Server *s;
+
+	if (!(s = get_server(refnum)))
+		return;
+
+	new_free(&s->addrs);
+	s->next_addr = NULL;
+}
+
+
+/*
  * close_server: Given an index into the server list, this closes the
  * connection to the corresponding server.  If 'message' is anything other
  * than the NULL or the empty_string, it will send a protocol QUIT message
@@ -2276,6 +2300,7 @@ void	close_server (int refnum, const char *message)
 	int	was_registered;
 	char *  sub_format;
 	char 	final_message[IRCD_BUFFER_SIZE];
+	int	old_server_status;
 
 	/* Make sure server refnum is valid */
 	if (!(s = get_server(refnum)))
@@ -2293,6 +2318,7 @@ void	close_server (int refnum, const char *message)
 	new_free(&sub_format);
 
 	was_registered = is_server_registered(refnum);
+	old_server_status = get_server_status(refnum);
 	set_server_status(refnum, SERVER_CLOSING);
 	if (s->waiting_out > s->waiting_in)		/* XXX - hack! */
 		s->waiting_out = s->waiting_in = 0;
@@ -2306,8 +2332,14 @@ void	close_server (int refnum, const char *message)
 	new_free(&s->realname);
 	new_free(&s->ssl_certificate);
 	new_free(&s->ssl_certificate_hash);
-	new_free(&s->addrs);
-	s->next_addr = NULL;
+
+	/* 
+	 * XXX Previously here, we discarded the extra IP addresses.
+	 * but it was decided to do that only when we switched to
+	 * ACTIVE rather than when we switched to CLOSED.  This permits 
+	 * you to call close_server() and then connect_to_server()
+	 */
+
 	s->uh_addr_set = 0;
 
 	if (s->des == -1)
@@ -2771,6 +2803,16 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 					get_server_itsname(from_server));
 	window_check_channels();
 	set_server_status(refnum, SERVER_ACTIVE);
+
+	/* 
+	 * When we hit ACTIVE, we discard other DNS results so that any 
+	 * reconnect results in a new DNS lookup.  If a failure occurs 
+	 * before we hit this point, we will move to the next saved DNS 
+	 * address on failure.
+	 * (This is especially relevant for failed nonblocking connects)
+	 */
+	discard_dns_results(refnum);
+
 	isonbase(from_server, NULL, NULL);
 }
 
@@ -3326,6 +3368,17 @@ void	set_server_status (int refnum, int new_status)
 	s->status = new_status;
 	newstr = server_states[new_status];
 	do_hook(SERVER_STATUS_LIST, "%d %s %s", refnum, oldstr, newstr);
+	update_all_status();
+}
+
+const char *	get_server_status_str (int refnum)
+{
+	Server *s;
+
+	if (!(s = get_server(refnum)))
+		return empty_string;
+
+	return server_states[s->status];
 }
 
 
