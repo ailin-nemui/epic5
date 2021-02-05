@@ -92,13 +92,13 @@ alias rejoin.rejoin
 	};
 };
 
-fe (server_status part kick) li {
+fe (server_state part kick) li {
 	fe ($hookctl(list hooks $li)) no {
 		if (hookctl(get hook $no package) == 'REJOIN')
 		{ @ hookctl(remove $no); }; 
 	}; };
 
-^on #-server_status - "% % closing"
+^on #-server_state - "% % closing"
 {
 	xeval -s $0
 	{

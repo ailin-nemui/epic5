@@ -1,5 +1,34 @@
 EPIC5-2.2
 
+*** News 02/05/2021 -- /ON SERVER_STATUS changed to /ON SERVER_STATE
+	Some expressed some confusion about whather "SERVER STATUS"
+	and "SERVER STATE" were the same thing, and what the states
+	were and what they meant.  To reduce this confusion, there
+	will be only one term, "SERVER STATE". However, much code
+	already uses "SERVER STATUS".  So we have to support both.
+
+	For now, /ON SERVER_STATUS and /ON SERVER_STATE will both 
+	exist side by side.   However, I recommend you use 
+	/ON SERVER_STATE for new code, and think about migrating
+	your old code.   There will come a day when /ON SERVER_STATUS
+	will beoome an alias for /ON SERVER_STATE.
+
+	To be unambiguous, using /ON SERVER_STATUS will never break.
+	But you should know the official name is going to be 
+	SERVER_STATE.
+
+	The stock scripts have been updated.  You can get the changes
+	by making sure to do a 'make install'
+
+*** News 02/05/2021 -- $serverctl(GET x STATUS) changed to STATE
+	As per the above, both $serverctl(GET x STATUS) and 
+	$serverctl(GET x STATE) will return the server's state.
+	However, you are encouraged to start using "STATE", since
+	that is now the official term for it.
+
+	The stock scripts have been updated.  You can get the changes
+	by making sure to do a 'make install'
+
 *** News 07/03/2020 -- New /WINDOW operation, /WINDOW DELETE_KILL
 	Harzilein pointed out:
 	  1) You cannot delete the last window on a screen

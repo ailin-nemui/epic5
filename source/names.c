@@ -1671,7 +1671,7 @@ void	channel_check_windows (void)
 			continue;			/* This is OK. */
 
 		if (tmp->server != get_window_server(tmp->winref))
-		    if (get_server_status(tmp->server) != SERVER_CLOSING)
+		    if (get_server_state(tmp->server) != SERVER_CLOSING)
 			panic(0, "Referential integrity failure: "
 			      "Channel [%s] on server [%d] is connected "
 			      "to window [%d] on server [%d]",
@@ -1687,7 +1687,7 @@ void	channel_check_windows (void)
 			panic(1, "I thought we just checked for this! [2]");
 
 		if (!get_window_by_refnum(tmp->winref))
-		    if (get_server_status(tmp->server) != SERVER_CLOSING)
+		    if (get_server_state(tmp->server) != SERVER_CLOSING)
 			panic(0, "Referential integrity failure: "
 			      "Channel [%s] on server [%d] is connected "
 			      "to window [%d] "

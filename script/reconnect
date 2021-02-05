@@ -60,18 +60,18 @@ alias _reconn.hook.disconn {
 };
 
 fe (ERROR EOF) i {
-  on #-SERVER_STATUS 27 "% % $i" {
+  on #-SERVER_STATE 27 "% % $i" {
     _reconn.hook.disconn $*;
   };
 };
 
-on #-SERVER_STATUS 27 "% % CLOSING" {
+on #-SERVER_STATE 27 "% % CLOSING" {
   if ([$1] != [EOF] && [$1] != [ERROR]) {
     _reconn.purge $0;
   };
 };
 
-on #-SERVER_STATUS 27 "% % ACTIVE" {
+on #-SERVER_STATE 27 "% % ACTIVE" {
   fe ($winrefs()) i {
     if (winserv($i) == [$0]) {
       fe ($windowctl(GET $i TOPLINE 9)) ch k {
@@ -82,7 +82,7 @@ on #-SERVER_STATUS 27 "% % ACTIVE" {
   _reconn.purge $0;
 };
 
-on #-SERVER_STATUS 27 "% % DELETE" {
+on #-SERVER_STATE 27 "% % DELETE" {
   _reconn.sweep $0;
 };
 
@@ -195,7 +195,7 @@ alias rmreconnect {
     ^timer -delete _reconn$i;
   };
   fe ($serverctl(OMATCH *)) i {
-    @ st = serverctl(GET $i STATUS);
+    @ st = serverctl(GET $i STATE);
     switch ($st) {
       (dns) (connecting) (registering) (syncing) (ssl_connecting) {
         xecho -b Disconnecting from $servername($i) \(refnum $i);

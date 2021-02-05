@@ -137,6 +137,13 @@ static	char *	shortname (const char *oname);
 static void	set_server_uh_addr (int refnum);
 static void	discard_dns_results (int refnum);
 
+static	void	set_server_vhost (int servref, const char * param );
+static	void	set_server_itsname (int servref, const char * param );
+static	void	set_server_state (int servref, int param );
+static	void 	got_my_userhost (int refnum, UserhostItem *item, const char *nick, const char *stuff);
+static	void	make_005 (int refnum);
+static	void	destroy_005 (int refnum);
+static 	int	server_addrs_left (int refnum);
 
 /*
  * clear_serverinfo: Initialize/Reset a ServerInfo object
@@ -732,11 +739,8 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	add_to_bucket(s->altnames, shortname(s->info->host), NULL);
 	s->away = (char *) 0;
 	s->version_string = (char *) 0;
-	s->server2_8 = 0;
-	s->operator = 0;
 	s->des = -1;
-	s->version = 0;
-	s->status = SERVER_CREATED;
+	s->state = SERVER_CREATED;
 	s->nickname = (char *) 0;
 	s->s_nickname = (char *) 0;
 	s->d_nickname = (char *) 0;
@@ -798,7 +802,7 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	make_notify_list(i);
 	make_005(i);
 
-	set_server_status(i, SERVER_RECONNECT);
+	set_server_state(i, SERVER_RECONNECT);
 	return i;
 }
 
@@ -879,7 +883,7 @@ static 	void 	remove_from_server_list (int i)
 	}
 
 	say("Deleting server [%d]", i);
-	set_server_status(i, SERVER_DELETED);
+	set_server_state(i, SERVER_DELETED);
 
 	clean_server_queues(i);
 	new_free(&s->itsname);
@@ -1045,21 +1049,21 @@ void 	display_server_list (void)
 			say("\t%d) %s %d [%s] %s [%s] (vhost: %s)",
 				i, s->info->host, s->info->port, 
 				get_server_group(i), get_server_type(i),
-				server_states[get_server_status(i)],
+				get_server_state_str(i),
 				get_server_vhost(i));
 		else if (is_server_open(i))
 			say("\t%d) %s %d (%s) [%s] %s [%s] (vhost: %s)",
 				i, s->info->host, s->info->port,
 				s->nickname, get_server_group(i),
 				get_server_type(i),
-				server_states[get_server_status(i)],
+				get_server_state_str(i),
 				get_server_vhost(i));
 		else
 			say("\t%d) %s %d (was %s) [%s] %s [%s] (vhost: %s)",
 				i, s->info->host, 
 				s->info->port, s->nickname, get_server_group(i),
 				get_server_type(i),
-				server_states[get_server_status(i)],
+				get_server_state_str(i),
 				get_server_vhost(i));
 	}
 }
@@ -1135,12 +1139,34 @@ static void 	reset_nickname (int refnum);
 static	char    lame_wait_nick[] = "***LW***";
 static	char    wait_nick[] = "***W***";
 
+/*
+ * Each server goes through various stages/states where it builds up its capabilities
+ * until it is fully enabled as a conduit for IRC commands by the user.
+ * Each state *generally* automatically transitions to the next state when it completes.
+ * 
+ * There are three quiescent states (ie, states that do not automatically advance)
+ *	RECONNECT	A server in RECONNECT will stay there until a window is associated with the server
+ *			Once a window is associated with a server, it advances to DNS
+ *	ACTIVE		A server in ACTIVE will stay there until the protocol session ends, because of
+ *			1. The user requests disconnection,
+ *			2. The server tells us we're being rejected,
+ *			3. An EOF occurs on the underying network socket
+ *	CLOSED		A server in CLOSED will stay there until the user moves it back to RECONNECT
+ */
 const char *server_states[13] = {
-	"CREATED",
-	"RECONNECT",		"DNS",			"CONNECTING",
-	"SSL_CONNECTING",	"REGISTERING",		"SYNCING",
-	"ACTIVE",		"EOF",			"ERROR",
-	"CLOSING",		"CLOSED",		"DELETED"
+	"CREATED",		/* A server in CREATED is being built and can't be used yet. */
+	"RECONNECT",		/* A server in RECONNECT can be connected to (but isn't).  Quiescent until a window points at it */
+	"DNS",			/* A server in DNS is fetching IP addresses (but doesn't have them). */
+	"CONNECTING",		/* A server in CONNECTING is doing a non-blocking connect. */
+	"SSL_CONNECTING",	/* A server in SSL_CONNECTING is establishing SSL on top of the socket */
+	"REGISTERING",		/* A server in REGISTERING is establishing an RFC1459 session with irc server */
+	"SYNCING",		/* A server in SYNCING has a RFC1459 protocol layer and is doing things like setting AWAY */
+	"ACTIVE",		/* A server in ACTIVE is quiescent and can be used by the user */
+	"EOF",			/* A server in EOF has received an EOF on the socket (needs to be server_close()d */
+	"ERROR",		/* A server in ERROR has received an error incompatable with the connection and needs to be reset */
+	"CLOSING",		/* A server in CLOSING has already failed, and we are just cleaning up state */
+	"CLOSED",		/* A server in CLOSED is "cleaned" and quiescent - you need to reset to RECONNECT */
+	"DELETED"		/* A server in DELETED is being torn down and can't be used any more */
 };
 
 
@@ -1296,8 +1322,8 @@ BUILT_IN_COMMAND(servercmd)
 			say("No such server [%s] in list", server);
 			return;
 		}
-		if (get_server(i) && get_server_status(i) == SERVER_CLOSED)
-			set_server_status(i, SERVER_RECONNECT);
+		if (get_server(i) && get_server_state(i) == SERVER_CLOSED)
+			set_server_state(i, SERVER_RECONNECT);
 		return;
 	}
 
@@ -1332,26 +1358,30 @@ BUILT_IN_COMMAND(servercmd)
 	}
 
 	/* Always unconditionally allow new server to auto-reconnect */
-	if (get_server_status(news) == SERVER_CLOSED)
-		set_server_status(news, SERVER_RECONNECT);
+	if (!is_server_registered(news))
+	{
+		say("Reconnecting to server %d", news);
+		set_server_state(news, SERVER_RECONNECT);
+	}
 
 	/* If the user is not actually changing server, just reassure them */
 	if (olds == news)
 	{
-		say("Connected to port %d of server %s",
-			get_server_port(olds), get_server_name(olds));
-		return;
+		say("This window is associated with server %d (%s:%d)",
+			olds, get_server_name(olds), get_server_port(olds));
 	}
+	else
+	{
+		/* Do the switch! */
+		set_server_quit_message(olds, "Changing servers");
 
-	/* Do the switch! */
-	set_server_quit_message(olds, "Changing servers");
+		/* XXX - Should i really be doing this here? */
+		if (!empty(get_server_type(news)) &&
+				my_stricmp(get_server_type(news), "IRC-SSL") == 0)
+			set_server_ssl_enabled(news, TRUE);
 
-	/* XXX - Should i really be doing this here? */
-	if (!empty(get_server_type(news)) &&
-			my_stricmp(get_server_type(news), "IRC-SSL") == 0)
-		set_server_ssl_enabled(news, TRUE);
-
-	change_window_server(olds, news);
+		change_window_server(olds, news);
+	}
 }
 
 
@@ -1364,11 +1394,11 @@ BUILT_IN_COMMAND(servercmd)
  * This is the function that should be used for every server fd.
  *
  * It will:
- *  1) Determine what status the file descriptor is in 
- *  2) De-queue the next chunk of data from the server (which is status 
+ *  1) Determine what state the file descriptor is in 
+ *  2) De-queue the next chunk of data from the server (which is state
  *     dependent -- ie, in DNS, it's a serialized IP address.  In CONNECTED, 
  *     it's a line of text terminated by \r\n).
- *  3) Take the appropriate action based on the status and data received.
+ *  3) Take the appropriate action based on the state and data received.
  *
  * It might have been reasonable to have several different callbacks -- one for
  * each server state, and it might have been reasonable to implement each 
@@ -1412,7 +1442,7 @@ void	do_server (int fd)
 		 * [the call to connect_to_server() below], which replaces
 		 * s->des with a new socket connecting to the server.
 		 */
-		if (s->status == SERVER_DNS)
+		if (s->state == SERVER_DNS)
 		{
 			int cnt = 0;
 			ssize_t len;
@@ -1451,16 +1481,16 @@ void	do_server (int fd)
 					yell("Getaddrinfo(%s) for server %d failed: %s",
 						s->info->host, i, gai_strerror(s->addr_len));
 					s->des = new_close(s->des);
-					set_server_status(i, SERVER_ERROR);
-					set_server_status(i, SERVER_CLOSED);
+					set_server_state(i, SERVER_ERROR);
+					set_server_state(i, SERVER_CLOSED);
 				}
 				else if (s->addr_len == 0) 
 				{
 					yell("Getaddrinfo(%s) for server (%d) did not "
 						"resolve.", s->info->host, i);
 					s->des = new_close(s->des);
-					set_server_status(i, SERVER_ERROR);
-					set_server_status(i, SERVER_CLOSED);
+					set_server_state(i, SERVER_ERROR);
+					set_server_state(i, SERVER_CLOSED);
 				}
 				else
 				{
@@ -1520,7 +1550,7 @@ void	do_server (int fd)
 
 				    s->next_addr = s->addrs;
 				    s->addr_counter = 0;
-				    connect_to_server(i);
+				    connect_to_server(i);	/* This function advances us to SERVER_CONNECTING */
 				}
 			}
 		}
@@ -1528,7 +1558,7 @@ void	do_server (int fd)
 		/*
 		 * First look for nonblocking connects that are finished.
 		 */
-		else if (s->status == SERVER_CONNECTING)
+		else if (s->state == SERVER_CONNECTING)
 		{
 			ssize_t c;
 			SS	 name;
@@ -1587,7 +1617,7 @@ something_broke:
 						i, s->addr_counter);
 
 				/* This results in trying the next IP addr */
-				set_server_status(i, SERVER_ERROR);
+				set_server_state(i, SERVER_ERROR);
 				close_server(i, NULL);
 				connect_to_server(i);
 				pop_message_from(l);
@@ -1603,7 +1633,7 @@ something_broke:
 			 * detour.  First we start up the ssl connection, which
 			 * always returns before it completes.  Then we tell 
 			 * newio to call the ssl connector when the fd is 
-			 * ready, and change our status to tell us what we're 
+			 * ready, and change our state to tell us what we're 
 			 * doing.
 			 */
 			if (!my_stricmp(get_server_type(i), "IRC-SSL"))
@@ -1629,7 +1659,7 @@ something_broke:
 				 * later, since the return code is posted to us via
 				 * dgets().
 				 */
-				s->status = SERVER_SSL_CONNECTING;
+				s->state = SERVER_SSL_CONNECTING;
 				new_open(des, do_server, NEWIO_SSL_CONNECT, 0, i);
 				pop_message_from(l);
 				break;
@@ -1664,7 +1694,7 @@ return_from_ssl_detour:
 		 * If it succeeded, we "return" from out detour and go back
 		 * to the place in SERVER_CONNECTING we left off.
 		 */
-		else if (s->status == SERVER_SSL_CONNECTING)
+		else if (s->state == SERVER_SSL_CONNECTING)
 		{
 			ssize_t c;
 
@@ -1705,7 +1735,7 @@ return_from_ssl_detour:
 			 * and whatever metadata would go into other vars.
 			 *
 			 * XXX TODO - We need to de-couple the protocol
-			 * status (to the server) from the status of the
+			 * state (to the server) from the state of the
 			 * socket we use to talk to it.
 			 */
 
@@ -1963,7 +1993,7 @@ void	send_to_aserver_raw (int refnum, size_t len, const char *buffer)
 		if (is_server_registered(refnum))
 		{
 			say("Write to server failed.  Resetting connection.");
-			set_server_status(refnum, SERVER_ERROR);
+			set_server_state(refnum, SERVER_ERROR);
 			close_server(refnum, NULL);
 		}
 	    }
@@ -1985,6 +2015,17 @@ void	flush_server (int servnum)
  *	save them in the Server data for later use.  Someone must free
  * 	the results when they're done using the data (usually when we 
  *	successfully connect, or when we run out of addrs)
+ *
+ * XXX IMPORTANT XXX
+ * 	This function technically is the entry point for a server connection "from scratch".
+ *	It is only called by window_check_servers() when a window observes it
+ * 	is associated with a server in the RECONNECT state.
+ *
+ *	Thus, to reconnect to a server, you put a server in a RECONNECT state.
+ *	When a window notices this, it will kick off the reconnect (here)
+ *
+ *	After the server addresses are grabbed, do_server() will automatically
+ * 	kick off connect_to_server(), the next function in the chain.
  */
 int	grab_server_address (int server)
 {
@@ -2013,7 +2054,7 @@ int	grab_server_address (int server)
 		s->next_addr = NULL;
 	}
 
-	set_server_status(server, SERVER_DNS);
+	set_server_state(server, SERVER_DNS);
 
 	say("Performing DNS lookup for [%s] (server %d)", s->info->host, server);
 	xvfd[0] = xvfd[1] = -1;
@@ -2148,9 +2189,28 @@ static int	connect_next_server_address (int server)
 }
 
 /*
- * This establishes a new connection to 'new_server'.  This function does
- * not worry about why or where it is doing this.  It is only concerned
- * with getting a connection up and running.
+ * connect_to_server:  Supervision of a new network connection to server
+ * 
+ * Arguments:
+ * 	new_server - A server refnum which has previously successfully completed a DNS lookup
+ *			(ie, grab_server_addresses())
+ *
+ * This function is used by exactly two places:
+ *	1) do_server() after a DNS lookup has completed
+ *	2) /RECONNECT (disconnectcmd()) when a user wants to give up on a connection
+ * The results of those two cases is "please try the next IP address"
+ *
+ * This function catches these errant initial conditions:
+ *	1) You are trying to connect to an invalid server refnum
+ *	2) The server is already open [this should be impossible, so we tell the user to /RECONNECT]
+ * 
+ * The function sets the server to CONNECTING and kicks off a nonblocking connect
+ * (with connect_next_server_address(), which should only be called here!
+ *  (and so maybe should actually be included in this function))
+ * Then it handles some administrative book-keeping and returns.
+ *
+ * If for any reason this function cannot succeed to produce a nonblocking connection,
+ * we recommend the user do a /RECONNECT,
  */
 int 	connect_to_server (int new_server)
 {
@@ -2173,33 +2233,26 @@ int 	connect_to_server (int new_server)
 	 */
 	if (s->des != -1)
 	{
-		say("Connected to server %d at %s:%d", 
-				new_server, s->info->host, s->info->port);
+		say("Network connection to server %d at %s:%d is already open (state [%s])",
+				new_server, s->info->host, s->info->port,
+				server_states[s->state]);
+		say("Use /RECONNECT if this connection is stuck");
 		from_server = new_server;
 		return -1;		/* Server is already connected */
 	}
 
 	/*
 	 * Make an attempt to connect to the new server.
+	 * XXX I am not sure all these should be done _here_.
 	 */
-/*
-	say("Connecting to port %d of server %s [refnum %d]", 
-			s->info->port, s->info->host, new_server);
-*/
-
-	set_server_status(new_server, SERVER_CONNECTING);
-	s->closing = 0;
-	oper_command = 0;
-	errno = 0;
+	set_server_state(new_server, SERVER_CONNECTING);
+	errno = 0;				/* XXX And why do we need to reset errno? */
 	memset(&s->local_sockname, 0, sizeof(s->local_sockname));
 	memset(&s->remote_sockname, 0, sizeof(s->remote_sockname));
 
-	if (s->addrs == NULL)
-	{
-		say("This server doesn't have any addresses to connect to.");
-		return -1;
-	}
-
+	/*
+	 * Get a nonblocking connect going
+	 */
 	if ((des = connect_next_server_address(new_server)) < 0)
 	{
 		if (x_debug & DEBUG_SERVER_CONNECT)
@@ -2214,18 +2267,36 @@ int 	connect_to_server (int new_server)
 		    set_server_ssl_enabled(new_server, FALSE);
 		}
 		else
-			say("Unable to connect to server.");
+			say("Unable to connect to server %d: not a valid server refnum", new_server);
 
-		set_server_status(new_server, SERVER_CLOSED);
+		say("Use /RECONNECT to reconnect to this server");
+		set_server_state(new_server, SERVER_CLOSED);
 		return -1;		/* Connect failed */
 	}
 
+	/*
+	 * Now we have a valid nonblocking connect going
+	 * Register the nonblocking connect with newio.
+	 */
 	if (x_debug & DEBUG_SERVER_CONNECT)
 		say("connect_next_server_address returned [%d]", des);
 	from_server = new_server;	/* XXX sigh */
 	new_open(des, do_server, NEWIO_CONNECT, 0, from_server);
 
-	/* Don't check getpeername(), we're not connected yet. */
+	/*
+	 * Get the local IP socket address
+	 * 
+	 * (This test will appear odd to some:
+	 *  "When would a hostname start with a slash?"
+	 *  Unix Domain Sockets are "files" in your filesystem
+	 *  which you can bind() and connect() to.   
+	 *  I don't know if any ircd's still support them, but
+	 *  i was using UDS for servers for local development
+	 *  even as late as 2006.
+ 	 *  I've never seen any reason to remove support)
+	 *
+	 * Anyways, you can't call getsockname() on a UDS.
+	 */
 	if (*s->info->host != '/')
 	{
 		len = sizeof(s->local_sockname);
@@ -2234,20 +2305,22 @@ int 	connect_to_server (int new_server)
 
 	/*
 	 * Initialize all of the server_list data items
+	 * XXX I am not sure all these should be done _here_.
 	 */
 	s->des = des;
-	s->operator = 0;
-	clean_server_queues(new_server);
+
+
+	clean_server_queues(new_server);	/* XXX Protocol level - should be somewhere else */
 
 	/* So we set the default nickname for a server only when we use it */
-	if (!s->d_nickname)
+	if (!s->d_nickname)			/* XXX Protocol level - should be somewhere else */
 		malloc_strcpy(&s->d_nickname, nickname);
 
 	/*
 	 * Reset everything and go on our way.
 	 */
 	update_all_status();
-	return 0;			/* New connection established */
+	return 0;			/* New nonblocking connection established */
 }
 
 int 	close_all_servers (const char *message)
@@ -2272,7 +2345,7 @@ int 	close_all_servers (const char *message)
  * to a server, then we do not need the rest of the IP addresses we have.
  * That is to say, a reconnect should prompt a new DNS lookup.
  *
- * This is only to be done when the server status switches to ACTIVE.
+ * This is only to be done when the server state switches to ACTIVE.
  * If a connection fails at any previous state, we would want to try the
  * next IP address.
  */
@@ -2299,8 +2372,8 @@ void	close_server (int refnum, const char *message)
 	Server *s;
 	int	was_registered;
 	char *  sub_format;
+	int	old_server_state;
 	char 	final_message[IRCD_BUFFER_SIZE];
-	int	old_server_status;
 
 	/* Make sure server refnum is valid */
 	if (!(s = get_server(refnum)))
@@ -2310,23 +2383,15 @@ void	close_server (int refnum, const char *message)
 	}
 
 	*final_message = 0;
-	if (!message)
-	    if (!(message = get_server_quit_message(refnum)))
-		message = "Leaving";
-	sub_format = convert_sub_format(message, 's');
-	snprintf(final_message, sizeof(final_message), sub_format, irc_version);
-	new_free(&sub_format);
-
 	was_registered = is_server_registered(refnum);
-	old_server_status = get_server_status(refnum);
-	set_server_status(refnum, SERVER_CLOSING);
+	old_server_state = get_server_state(refnum);
+	set_server_state(refnum, SERVER_CLOSING);
 	if (s->waiting_out > s->waiting_in)		/* XXX - hack! */
 		s->waiting_out = s->waiting_in = 0;
 
 	destroy_waiting_channels(refnum);
 	destroy_server_channels(refnum);
 
-	s->operator = 0;
 	new_free(&s->nickname);
 	new_free(&s->s_nickname);
 	new_free(&s->realname);
@@ -2345,25 +2410,27 @@ void	close_server (int refnum, const char *message)
 	if (s->des == -1)
 		return;		/* Nothing to do here */
 
-	if (*final_message && !s->closing)
+	if (was_registered)
 	{
-	    s->closing = 1;
-	    if (x_debug & DEBUG_OUTBOUND)
-		yell("Closing server %d because [%s]", refnum, final_message);
+		if (!message)
+		    if (!(message = get_server_quit_message(refnum)))
+			message = "Leaving";
+		sub_format = convert_sub_format(message, 's');
+		snprintf(final_message, sizeof(final_message), sub_format, irc_version);
+		new_free(&sub_format);
 
-	    /*
-	     * Only tell the server we are leaving if we are 
-	     * registered.  This avoids an infinite loop in the
-	     * D-line case.
-	     */
-	    if (was_registered)
-		    send_to_aserver(refnum, "QUIT :%s\n", final_message);
+		if (x_debug & DEBUG_OUTBOUND)
+			yell("Closing server %d because [%s]", refnum, final_message);
+		if (*final_message)
+			send_to_aserver(refnum, "QUIT :%s\n", final_message);
+
+		server_is_unregistered(refnum);
 	}
 
 	do_hook(SERVER_LOST_LIST, "%d %s %s", 
 			refnum, s->info->host, final_message);
 	s->des = new_close(s->des);
-	set_server_status(refnum, SERVER_CLOSED);
+	set_server_state(refnum, SERVER_CLOSED);
 }
 
 /********************* OTHER STUFF ************************************/
@@ -2517,7 +2584,7 @@ static void	remove_user_mode (int refnum, int mode)
 	strlcpy(s->umode, new_umodes, 54);
 }
 
-void 	clear_user_modes (int refnum)
+static void 	clear_user_modes (int refnum)
 {
 	Server *s;
 
@@ -2541,14 +2608,11 @@ void	update_user_mode (int refnum, const char *modes)
 			add_user_mode(refnum, *modes);
 		else if (onoff == 0)
 			remove_user_mode(refnum, *modes);
-
-		if (*modes == 'O' || *modes == 'o')
-			set_server_operator(from_server, onoff);
 	}
 	update_all_status();
 }
 
-void	reinstate_user_modes (void)
+static void	reinstate_user_modes (void)
 {
 	const char *modes = get_umode(from_server);
 
@@ -2562,6 +2626,19 @@ void	reinstate_user_modes (void)
 		send_to_server("MODE %s +%s", get_server_nickname(from_server), modes);
 		clear_user_modes(from_server);
 	}
+}
+
+int	get_server_operator (int refnum)
+{
+	Server *s;
+
+	if (!(s = get_server(refnum)))
+		return 0;
+
+	if (strchr(s->umode, 'O') || strchr(s->umode, 'o'))
+		return 1;
+	else
+		return 0;
 }
 
 
@@ -2596,13 +2673,13 @@ void	register_server (int refnum, const char *nick)
 	if (!(s = get_server(refnum)))
 		return;
 
-	if (get_server_status(refnum) != SERVER_CONNECTING &&
-	    get_server_status(refnum) != SERVER_SSL_CONNECTING)
+	if (get_server_state(refnum) != SERVER_CONNECTING &&
+	    get_server_state(refnum) != SERVER_SSL_CONNECTING)
 	{
 		if (x_debug & DEBUG_SERVER_CONNECT)
 			say("Server [%d] state should be [%d] but it is [%d]", 
 				refnum, SERVER_CONNECTING, 
-				get_server_status(refnum));
+				get_server_state(refnum));
 		return;		/* Whatever */
 	}
 
@@ -2613,7 +2690,7 @@ void	register_server (int refnum, const char *nick)
 		return;		/* Whatever */
 	}
 
-	set_server_status(refnum, SERVER_REGISTERING);
+	set_server_state(refnum, SERVER_REGISTERING);
 
 	from_server = refnum;
 	do_hook(SERVER_ESTABLISHED_LIST, "%s %d",
@@ -2704,7 +2781,7 @@ void 	password_sendline (char *data, const char *line)
 	new_server = str_to_servref(data);
 	set_server_password(new_server, line);
 	close_server(new_server, NULL);
-	set_server_status(new_server, SERVER_RECONNECT);
+	set_server_state(new_server, SERVER_RECONNECT);
 }
 
 
@@ -2725,13 +2802,13 @@ int	is_server_open (int refnum)
 int	is_server_registered (int refnum)
 {
 	Server *s;
-	int	status;
+	int	state;
 
 	if (!(s = get_server(refnum)))
 		return 0;
 
-	status = get_server_status(refnum);
-	if (status == SERVER_SYNCING  || status == SERVER_ACTIVE)
+	state = get_server_state(refnum);
+	if (state == SERVER_SYNCING  || state == SERVER_ACTIVE)
 		return 1;
 	else
 		return 0;
@@ -2758,7 +2835,7 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 	new_free(&s->addrs);
 	s->next_addr = NULL;
 
-	set_server_status(refnum, SERVER_SYNCING);
+	set_server_state(refnum, SERVER_SYNCING);
 
 	accept_server_nickname(refnum, ourname);
 	set_server_itsname(refnum, itsname);
@@ -2802,7 +2879,7 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 					get_server_port(refnum), 
 					get_server_itsname(from_server));
 	window_check_channels();
-	set_server_status(refnum, SERVER_ACTIVE);
+	set_server_state(refnum, SERVER_ACTIVE);
 
 	/* 
 	 * When we hit ACTIVE, we discard other DNS results so that any 
@@ -2824,7 +2901,7 @@ void	server_is_unregistered (int refnum)
 		return;
 
 	destroy_005(refnum);
-	set_server_status(refnum, SERVER_EOF);
+	set_server_state(refnum, SERVER_EOF);
 }
 
 int	is_server_active (int refnum)
@@ -2834,7 +2911,7 @@ int	is_server_active (int refnum)
 	if (!(s = get_server(refnum)))
 		return 0;
 
-	if (get_server_status(refnum) == SERVER_ACTIVE)
+	if (get_server_state(refnum) == SERVER_ACTIVE)
 		return 1;
 	return 0;
 }
@@ -2847,6 +2924,10 @@ int	is_server_valid (int refnum)
 }
 
 
+/*
+ * Despite its name, this is the handler for both /DISCONNECT and /RECONNECT.
+ * The "recon" variable controls which one we're doing.
+ */
 BUILT_IN_COMMAND(disconnectcmd)
 {
 	char	*server;
@@ -2885,13 +2966,13 @@ BUILT_IN_COMMAND(disconnectcmd)
 						get_server_itsname(i));
 	}
 
-	if (!connected_to_server)
+	if (!recon && !connected_to_server)
                 if (do_hook(DISCONNECT_LIST, "Disconnected by user request"))
 			say("You are not connected to a server, use /SERVER to connect.");
 
-	if (recon && 0 > connect_to_server(i))
+	if (recon && connect_to_server(i) < 0)
 	{
-		set_server_status(i, SERVER_RECONNECT);
+		set_server_state(i, SERVER_RECONNECT);
 		say("Reconnecting to server %s", get_server_itsname(i));
 	}
 } 
@@ -3294,12 +3375,16 @@ GET_IATTRIBUTE(member)
 SET_SATTRIBUTE(param, member)			\
 GET_SATTRIBUTE(member, default)
 
+/* A getter and a static setter for a mundane string field */
+#define SSACCESSOR(param, member, default)	\
+static SET_SATTRIBUTE(param, member)			\
+GET_SATTRIBUTE(member, default)
+
 /* Various mundane getters and setters */
 IACCESSOR(v, doing_privmsg)
 IACCESSOR(v, doing_notice)
 IACCESSOR(v, doing_ctcp)
 IACCESSOR(v, sent)
-IACCESSOR(v, version)
 IACCESSOR(v, line_length)
 IACCESSOR(v, max_cached_chan_size)
 IACCESSOR(v, ison_len)
@@ -3346,56 +3431,42 @@ void	set_server_unique_id (int servref, const char * id)
 /*
  * Getter and setter for Server Status ("server state")
  */
-GET_IATTRIBUTE(status)
-void	set_server_status (int refnum, int new_status)
+GET_IATTRIBUTE(state)
+static void	set_server_state (int refnum, int new_state)
 {
 	Server *s;
-	int	old_status;
+	int	old_state;
 	const char *oldstr, *newstr;
 
 	if (!(s = get_server(refnum)))
 		return;
 
-	if (new_status < 0 || new_status > SERVER_DELETED)
+	if (new_state < 0 || new_state > SERVER_DELETED)
 		return;			/* Not acceptable */
 
-	old_status = s->status;
-	if (old_status < 0 || old_status > SERVER_DELETED)
+	old_state = s->state;
+	if (old_state < 0 || old_state > SERVER_DELETED)
 		oldstr = "UNKNOWN";
 	else
-		oldstr = server_states[old_status];
+		oldstr = server_states[old_state];
 
-	s->status = new_status;
-	newstr = server_states[new_status];
+	s->state = new_state;
+	newstr = server_states[new_state];
+	do_hook(SERVER_STATE_LIST, "%d %s %s", refnum, oldstr, newstr);
 	do_hook(SERVER_STATUS_LIST, "%d %s %s", refnum, oldstr, newstr);
 	update_all_status();
 }
 
-const char *	get_server_status_str (int refnum)
+const char *	get_server_state_str (int refnum)
 {
 	Server *s;
 
 	if (!(s = get_server(refnum)))
 		return empty_string;
 
-	return server_states[s->status];
+	return server_states[s->state];
 }
 
-
-/*
- * Getter and setter for server operatorship
- */
-GET_IATTRIBUTE(operator)
-void	set_server_operator (int refnum, int flag)
-{
-	Server *s;
-
-	if (!(s = get_server(refnum)))
-		return;
-
-	s->operator = flag;
-	oper_command = 0;		/* No longer doing oper */
-}
 
 /*
  * Getter for the full server description string (irc.host.com:port:::...)
@@ -3416,7 +3487,7 @@ static const char *	get_server_fulldesc (int servref)
 /*
  * Getter and setter for "name" (ie, "ourname")
  */
-void	set_server_name (int servref, const char * param )
+static void	set_server_name (int servref, const char * param )
 {
 	Server *s;
 
@@ -3525,7 +3596,7 @@ const char *	get_server_vhost (int servref )
 /* 
  * Getter and setter for "itsname"
  */
-SET_SATTRIBUTE(name, itsname)
+static SET_SATTRIBUTE(name, itsname)
 const char	*get_server_itsname (int refnum)
 {
 	Server *s;
@@ -3937,6 +4008,7 @@ const char *	get_server_altname (int refnum, int which)
 	return s->altnames->list[which].name;
 }
 
+#if 0
 /*
  * which_server_altname: Check if 'name' is an altname for 'refnum'
  *
@@ -3968,6 +4040,7 @@ int	which_server_altname (int refnum, const char *name)
 
 	return -1;
 }
+#endif
 
 
 /*
@@ -4037,7 +4110,7 @@ static char *	shortname (const char *oname)
  * If you call it elsewhere, it will leak memory (s->a005.list).
  * If you want to clean up/reset an 005 bucket, use destroy_005(refnum)
  */
-void	make_005 (int refnum)
+static void	make_005 (int refnum)
 {
 	Server *s;
 
@@ -4083,7 +4156,7 @@ static void	destroy_a_005 (A005_item *item)
  * been called make_005(refnum) to set up the server's 005 Bucket.  This
  * would always be the case, but I'm just saying...
  */
-void	destroy_005 (int refnum)
+static void	destroy_005 (int refnum)
 {
 	Server *s;
 	A005_item *new_i;
@@ -4427,8 +4500,10 @@ char 	*serverctl 	(char *input)
 		} else if (!my_strnicmp(listc, "005s", len)) {
 			retval = get_server_005s(refnum, input);
 			RETURN_MSTR(retval);
+		} else if (!my_strnicmp(listc, "STATE", len)) {
+			RETURN_STR(server_states[get_server_state(refnum)]);
 		} else if (!my_strnicmp(listc, "STATUS", len)) {
-			RETURN_STR(server_states[get_server_status(refnum)]);
+			RETURN_STR(server_states[get_server_state(refnum)]);
 		} else if (!my_strnicmp(listc, "ALTNAME", len)) {
 			retval = get_server_altnames(refnum);
 			RETURN_MSTR(retval);
@@ -4641,7 +4716,7 @@ char 	*serverctl 	(char *input)
  * 
  * XXX I suppose this doesn't belong here.  But where else shall it go?
  */
-void 	got_my_userhost (int refnum, UserhostItem *item, const char *nick, const char *stuff)
+static void 	got_my_userhost (int refnum, UserhostItem *item, const char *nick, const char *stuff)
 {
 	char *freeme;
 
@@ -4704,7 +4779,7 @@ int	server_more_addrs (int refnum)
  *
  * This is used by $serverctl(GET x ADDRSLEFT).
  */
-int	server_addrs_left (int refnum)
+static int	server_addrs_left (int refnum)
 {
 	Server *s;
 	const AI *ai;
@@ -4718,6 +4793,7 @@ int	server_addrs_left (int refnum)
 
 	return count;
 }
+
 #if 0
 /*
  * This calculates how long a privmsg/notice can be on 'server' that we send
@@ -4743,4 +4819,14 @@ size_t	get_server_message_limit (int server, const char *target)
 	return 512 - overhead;
 }
 #endif
+
+
+Server *      get_server (int server)
+{
+        if (server == -1 && from_server >= 0)
+                server = from_server;
+        if (server < 0 || server >= number_of_servers)
+                return NULL;
+        return server_list[server];
+}
 

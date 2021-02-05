@@ -20,8 +20,8 @@ set server_log_name irc.$${server}.log;
 set channel_log_name irc.$${server}.$${channel}.log;
 
 # Shims
-on #^server_status -115 "% % CONNECTING" { logman.open_server_log $0; };
-on #^server_status -115 "% % CLOSED" { logman.close_server_log $0; };
+on #^server_state -115 "% % CONNECTING" { logman.open_server_log $0; };
+on #^server_state -115 "% % CLOSED" { logman.close_server_log $0; };
 on #^channel_sync -115 "% % %" { logman.open_channel_log $0 $2; };
 on #^channel_lost -115 "% %" { logman.close_channel_log $1 $0; };
 

@@ -891,4 +891,17 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't discard DNS results for server until we get to ACTIVE
 * Add a stub for $inputctl() -- future expansion.
 * Add %{5}S status expando -- the server status (ie, "ACTIVE")
+* Signficant refactoring of server.c/server.h
+* - Change the term "server status" to 'server state" everywhere
+* - Reorganize Server object to show what values are filled in by each state
+* - Make all server.c functions static whenever possible
+* - Remove all server.c functions not used anywhere
+* - Remove all server.h decls not used anywhere
+* - Remove unused variables in Server and other structs
+* - Remove extern server_list[] and make get_server() an ordinary function
+* - Remove extern server_states[] and create get_server_state_str()
+* - Document many more things to make it more understandable
+* - Drive the determination of "ircop" from your umode, not from a variable
+* Add /on server_state to duplicate /on server_status for now
+* Support $serverctl(GET x STATE) to duplicate GET STATUS
 

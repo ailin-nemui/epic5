@@ -1141,7 +1141,7 @@ STATUS_FUNCTION(status_server_status)
 {
 	const char *	state = NULL;
 
-	state = get_server_status_str(window->server);
+	state = get_server_state_str(window->server);
 	return state ? state : "Unknown";
 }
 

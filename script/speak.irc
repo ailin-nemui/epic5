@@ -129,10 +129,10 @@ on #-dcc_connect 5 "*" {dccspeak $0 INIT $1-}
 on #-dcc_lost 5 "*" {dccspeak $0 LOST $1-}
 
 on #-server_lost 5 "*" {nspeak force Disconnected from $1: $2-}
-on #-server_status 5 "% % CONNECTING" {
+on #-server_state 5 "% % CONNECTING" {
 	nspeak force Connecting to server $serverctl(GET $0 name)
 }
-on #-server_status 5 "% % ACTIVE" {
+on #-server_state 5 "% % ACTIVE" {
 	nspeak force Connected to server $serverctl(GET $0 name)
 }
 

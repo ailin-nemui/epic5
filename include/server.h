@@ -45,89 +45,73 @@ typedef struct ServerInfo
         const char *  server_type;
         const char *  proto_type;
 	const char *  vhost;
-#if 0
-	const char *  default_encoding;
-#endif
 } ServerInfo;
+typedef ServerInfo SI;
 
 /* Server: a structure for the server_list */
 typedef	struct
 {
-	ServerInfo *info;		/* Canonical information */
+	int		des;			/* file descriptor to server (or helper) */
+	int		state;			/* See above */
 
-	AI 	*addrs;			/* Returned by getaddrinfo */
-const	AI	*next_addr;		/* The next one to try upon failure */
-	int	addr_counter;		/* How far we're into "addrs" */
-	ssize_t	addr_len;
-	ssize_t	addr_offset;
+	/* status = CREATED, RECONNECT */
+	SI *		info;			/* Canonical information */
+	Bucket *	altnames;		/* Alternate handles for the server */
 
-	char	*itsname;		/* the server's idea of its name */
-	Bucket	*altnames;		/* Alternate handles for the server */
-	char	*nickname;		/* Authoritative nickname for us */
-	char	*s_nickname;		/* last NICK command sent */
-	char	*d_nickname;		/* Default nickname to use */
-	char	*unique_id;		/* Unique ID (for ircnet) */
+	/* state = DNS */
+	AI *		addrs;			/* Returned by getaddrinfo */
+const	AI *		next_addr;		/* The next one to try upon failure */
+	int		addr_counter;		/* How far we're into "addrs" */
+	ssize_t		addr_len;
+	ssize_t		addr_offset;
 
-	int	status;			/* See above */
+	/* state = CONNECTING */
+	SS		local_sockname; 	/* sockname of this connection */
+	SS		remote_sockname; 	/* sockname of this connection */
 
-	char *	default_encoding;	/* What string encoding we should 
-					   assume for non-utf8 strings */
-	char	*userhost;		/* my userhost on this server */
-	char	*away;			/* away message for this server */
-	int	operator;		/* true if operator */
-	int	version;		/* the version of the server -
-					 * defined above */
-	int	server2_8;		/* defined if we get an 001 numeric */
-	char	*version_string;	/* what is says */
-	char	umode[54];		/* Currently set user modes */
-	int	des;			/* file descriptor to server */
-	int	sent;			/* set if something has been sent,
-					 * used for redirect */
-	char	*redirect;		/* Who we're redirecting to here */
-	int	who_max;		/* Max pending whos */
-	WhoEntry *	who_queue;	/* Who queue */
-	int	ison_len;		/* Max ison characters */
-	int	ison_max;		/* Max pending isons */
-	IsonEntry *	ison_queue;	/* Ison queue */
-	IsonEntry *	ison_wait;	/* Ison wait queue */
-	int	userhost_max;		/* Max pending userhosts */
-	UserhostEntry *	userhost_queue;	/* Userhost queue */
-	UserhostEntry *	userhost_wait;	/* Userhost wait queue */
+	/* state = SSL_CONNECTING */
+	int		ssl_enabled;		/* Current SSL status. */
+	char *		ssl_certificate;
+	char *		ssl_certificate_hash;
 
-	SS	local_sockname; 	/* sockname of this connection */
-	SS	remote_sockname; 	/* sockname of this connection */
-	SS	uh_addr;		/* ip address the server sees */
-	int	uh_addr_set;		/* 0 or 1, if set_uh_addr() has been called */
-					/* Used to guard an annoying error message */
-	NotifyList	notify_list;	/* Notify list for this server */
-	char 	*cookie;		/* Erf/TS4 "cookie" value */
-	int	line_length;		/* How long a protocol command may be */
-	int	max_cached_chan_size;	/* Bigger channels won't cache U@H */
-	int	closing;		/* True if close_server called */
-	char	*quit_message;		/* Where we stash a quit message */
-	A005	a005;			/* 005 settings kept kere. */
-	int	stricmp_table;		/* Which case insensitive map to use */
-	int	autoclose;		/* Whether the server is closed when
-					   there are no windows on it */
+	/* state = REGISTERING */
+	char *		nickname;		/* Authoritative nickname for us */
+	char *		s_nickname;		/* last NICK command sent */
+	char *		d_nickname;		/* Default nickname to use */
+	char *		realname;		/* The actual realname. */
+	char *		default_realname;	/* The default realname. */
 
-	int	funny_min;		/* Funny stuff */
-	int	funny_max;
-	int	funny_flags;
-	char *	funny_match;
+	/* state = SYNCING */
 
-	int	ssl_enabled;		/* Current SSL status. */
 
-	char *	realname;		/* The actual realname. */
-	char *	default_realname;	/* The default realname. */
+	/* state = ACTIVE */
 
-        int             doing_privmsg;
-        int             doing_notice;
-        int             doing_ctcp;
-        int             waiting_in;
-        int             waiting_out;
-        WaitCmd *       start_wait_list;
-        WaitCmd *       end_wait_list;
+		/* metadata about the server */
+	char *		itsname;		/* the server's idea of its name */
+	char *		version_string;		/* what is says */
+	A005		a005;			/* 005 settings kept kere. */
+	int		stricmp_table;		/* Which case insensitive map to use */
+	int		line_length;		/* How long a protocol command may be */
+	int		max_cached_chan_size;	/* Bigger channels won't cache U@H */
 
+		/* metadata about us */
+	char *		unique_id;		/* Unique ID (for ircnet) */
+	char *		cookie;			/* Erf/TS4 "cookie" value */
+	SS		uh_addr;		/* ip address the server sees */
+	int		uh_addr_set;		/* 0 or 1, if set_uh_addr() has been called */
+						/* Used to guard an annoying error message */
+	char		umode[54];		/* Currently set user modes */
+	char *		userhost;		/* my userhost on this server */
+	char *		away;			/* away message for this server */
+
+		/* metadata about the session */
+	int		sent;			/* set if something has been sent, used for redirect */
+	char *		quit_message;		/* Where we stash a quit message */
+	int		autoclose;		/* Whether the server is closed when
+					   	   there are no windows on it */
+	char *		redirect;		/* Who we're redirecting to here */
+
+		/* Metadata about activity */
         char *          invite_channel;
         char *          last_notify_nick;
         char *          joined_nick;
@@ -136,14 +120,44 @@ const	AI	*next_addr;		/* The next one to try upon failure */
         char *          sent_nick;
         char *          sent_body;
 
-	char *		ssl_certificate;
-	char *		ssl_certificate_hash;
-}	Server;
-extern	Server	**server_list;
+		/* /WHO */
+	int		who_max;		/* Max pending whos */
+	WhoEntry *	who_queue;		/* Who queue */
+	int		ison_len;		/* Max ison characters */
+	int		ison_max;		/* Max pending isons */
+	IsonEntry *	ison_queue;		/* Ison queue */
+	IsonEntry *	ison_wait;		/* Ison wait queue */
+	int		userhost_max;		/* Max pending userhosts */
+	UserhostEntry *	userhost_queue;		/* Userhost queue */
+	UserhostEntry *	userhost_wait;		/* Userhost wait queue */
 
-	int     serverinfo_matches_servref	(ServerInfo *, int);
-        int     clear_serverinfo (ServerInfo *s);
-        int     str_to_serverinfo (char *str, ServerInfo *s);
+		/* /NOTIFY */
+	NotifyList	notify_list;		/* Notify list for this server */
+
+		/* /LIST, /NAMES */
+	int		funny_min;		/* Funny stuff */
+	int		funny_max;
+	int		funny_flags;
+	char *		funny_match;
+
+		/* /WAIT */
+        int             waiting_in;
+        int             waiting_out;
+        WaitCmd *       start_wait_list;
+        WaitCmd *       end_wait_list;
+
+		/* metadata about message processing */
+        int             doing_privmsg;
+        int             doing_notice;
+        int             doing_ctcp;
+
+}	Server;
+extern	Server	**server_list; 
+
+	int    	serverinfo_matches_servref	(ServerInfo *, int);
+        int    	clear_serverinfo 		(ServerInfo *s);
+        int    	str_to_serverinfo 		(char *str, ServerInfo *s);
+	Server *get_server 			(int);
 
 #endif	/* NEED_SERVER_LIST */
 
@@ -153,38 +167,6 @@ extern	Server	**server_list;
 	extern	int	from_server;
 	extern	int	last_server;
 	extern	int	parsing_server_index;
-
-#ifdef NEED_SERVER_LIST
-static __inline__ Server *	get_server (int server)
-{
-	if (server == -1 && from_server >= 0)
-		server = from_server;
-	if (server < 0 || server >= number_of_servers)
-		return NULL;
-	return server_list[server];
-}
-
-/* 
- * These two macros do bounds checking on server refnums that are
- * passed into various server functions
- */
-#define CHECK_SERVER(x)				\
-{						\
-	if (!get_server(x))			\
-		return;				\
-}
-
-#define CHECK_SERVER_RET(x, y)			\
-{						\
-	if (!get_server(x))			\
-		return (y);			\
-}
-
-
-#define __FROMSERV	get_server(from_server)
-#define SERVER(x)	get_server(x)
-
-#endif	/* NEED_SERVER_LIST */
 
 #define NOSERV		-2
 #define FROMSERV	-1
@@ -209,24 +191,22 @@ static __inline__ Server *	get_server (int server)
 #define SERVER_CLOSING		10
 #define SERVER_CLOSED		11
 #define SERVER_DELETED		12
-extern	const char *server_states[13];
-
 
 
 	BUILT_IN_COMMAND(servercmd);
 	BUILT_IN_COMMAND(disconnectcmd);
 	BUILT_IN_COMMAND(reconnectcmd);
 
-	int	str_to_servref		(Char *);
+	int	str_to_servref			(const char *);
 	int	str_to_servref_with_update	(const char *desc);
-	int	str_to_newserv		(Char *);
-	void	destroy_server_list	(void);
-	void	add_servers		(char *, Char *);
-	int	read_default_server_file (void);
-	void	display_server_list	(void);
-	char *	create_server_list	(void);	/* MALLOC */
-	int	server_list_size	(void);
-	int	is_server_valid		(int refnum);
+	int	str_to_newserv			(const char *);
+	void	destroy_server_list		(void);
+	void	add_servers			(char *, const char *);
+	int	read_default_server_file 	(void);
+	void	display_server_list		(void);
+	char *	create_server_list		(void);	/* MALLOC */
+	int	server_list_size		(void);
+	int	is_server_valid			(int refnum);
 
 	void	flush_server			(int);
 	void	send_to_server			(const char *, ...) __A(1);
@@ -243,28 +223,15 @@ extern	const char *server_states[13];
 
 	void	set_server_away			(int, const char *);
 const	char *	get_server_away			(int);
+	int	get_server_operator		(int);
 
-const	char *	get_possible_umodes		(int);
-	void	set_possible_umodes		(int, const char *);
 const	char *	get_umode			(int);
-	void	clear_user_modes		(int);
-	void    reinstate_user_modes    	(void);
 	void    update_user_mode        	(int, const char *);
-	void	set_server_flag			(int, int, int);
-	int	get_server_flag			(int, int);
 
-	void	set_server_version		(int, int);
-	int	get_server_version		(int);
-
-	void	set_server_name			(int, const char *);
 const	char *	get_server_name			(int);
-	void	set_server_itsname		(int, const char *);
 const	char *	get_server_itsname		(int);
-	void	set_server_group		(int, const char *);
 const	char *	get_server_group		(int);
-const	char *    get_server_server_type	(int);
-	void    set_server_server_type		(int, const char *);
-	void	set_server_vhost		(int, const char *);
+const	char *  get_server_server_type		(int);
 const	char *	get_server_vhost		(int);
 
 const	char *	get_server_type			(int);
@@ -289,12 +256,6 @@ const	char *	get_server_ssl_cipher		(int);
 	SS	get_server_uh_addr		(int);
 
 const	char *	get_server_userhost		(int);
-	void 	got_my_userhost 		(int, UserhostItem *, 
-						 const char *, const char *);
-
-	int	get_server_operator		(int);
-	void	set_server_operator		(int, int);
-
 	void	use_server_cookie		(int);
 
 const	char *	get_server_nickname		(int);
@@ -307,24 +268,20 @@ const	char *	get_pending_nickname		(int);
 	void	set_server_redirect		(int, const char *);
 const	char *	get_server_redirect		(int);
 	int	check_server_redirect		(int, const char *);
-	void	save_servers			(FILE *);
 
-	void	server_did_rejoin_channels	(int);
-	int	did_server_rejoin_channels	(int);
-
-	void	clear_reconnect_counts		(void);
-
-	int	get_server_enable_ssl 		(int);
-	void   	set_server_enable_ssl 		(int, int);
-
-	void	make_005			(int);
-	void	destroy_005			(int);
 const	char*	get_server_005			(int, const char *);
 	void	set_server_005			(int, char*, const char*);
 
-        void    server_hard_wait 		(int);
+	void	server_hard_wait		(int);
         void    server_passive_wait 		(int, const char *);
         int     check_server_wait 		(int, const char *);
+
+	int	get_server_line_length		(int);
+	int	get_server_state		(int);
+const char *	get_server_state_str		(int);
+	int	get_server_ison_max		(int);
+	int	get_server_userhost_max		(int);
+	int	get_server_max_cached_chan_size	(int);
 
         void    set_server_doing_privmsg 	(int, int);
         int     get_server_doing_privmsg 	(int);
@@ -334,25 +291,10 @@ const	char*	get_server_005			(int, const char *);
         int     get_server_doing_ctcp 		(int);
 	void	set_server_sent			(int, int);
 	int	get_server_sent			(int);
-	void	set_server_try_ssl		(int, int);
-	int	get_server_try_ssl		(int);
 	void	set_server_ssl_enabled		(int, int);
 	int	get_server_ssl_enabled		(int);
-	void	set_server_save_channels	(int, int);
-	int	get_server_save_channels	(int);
 	void	set_server_protocol_state	(int, int);
 	int	get_server_protocol_state	(int);
-	void	set_server_line_length		(int, int);
-	int	get_server_line_length		(int);
-	void	set_server_max_cached_chan_size	(int, int);
-	int	get_server_max_cached_chan_size	(int);
-	void	set_server_ison_max		(int, int);
-	int	get_server_ison_max		(int);
-	void	set_server_userhost_max		(int, int);
-	int	get_server_userhost_max		(int);
-	void	set_server_status		(int, int);
-	int	get_server_status		(int);
-const char *	get_server_status_str		(int);
 	void	set_server_autoclose		(int, int);
 	int	get_server_autoclose		(int);
 
@@ -380,11 +322,11 @@ const char *	get_server_last_notify_nick    	(int);
 const char *	get_server_unique_id    	(int);
 	void	set_server_realname		(int, const char *);
 const char *	get_server_realname		(int);
-	void	set_server_default_realname	(int, const char *);
+	void	set_server_default_realname	(int, const char *);	/* static */
 const char *	get_server_default_realname	(int);
-        void    set_server_ssl_certificate      (int, const char *);
+        void    set_server_ssl_certificate      (int, const char *);	/* static */
 const char *	get_server_ssl_certificate      (int);
-        void    set_server_ssl_certificate_hash (int, const char *);
+        void    set_server_ssl_certificate_hash (int, const char *);	/* static */
 const char *	get_server_ssl_certificate_hash (int);
 
 	void	set_server_funny_min         	(int, int);
@@ -397,23 +339,16 @@ const char *	get_server_ssl_certificate_hash (int);
 const char *	get_server_funny_match         	(int);
 	void	set_server_funny_stuff		(int, int, int, int, const char *);
 
-        void    set_server_window_count         (int, int);
-        int     get_server_window_count         (int);
-        void    set_server_stricmp_table        (int, int);
+        void    set_server_stricmp_table        (int, int);		/* static */
         int     get_server_stricmp_table        (int);
-        void    set_server_ison_len             (int, int);
+        void    set_server_ison_len             (int, int);		/* static */
         int     get_server_ison_len             (int);
-
-const	char *	get_server_default_encoding	(int);
 
 	char *	serverctl			(char *);
 
 	int	server_more_addrs		(int);
-	int	server_addrs_left		(int);
-	int	get_server_by_desc		(const char *, int);
 
 const char *	get_server_altname		(int refnum, int which);
-	int     which_server_altname		(int refnum, const char *);
 
 
 #endif /* _SERVER_H_ */

@@ -123,7 +123,7 @@ alias _svkey (ref, void) {
   return gr $gr;
 };
 
-on #-SERVER_STATUS 286 "% % ACTIVE" {
+on #-SERVER_STATE 286 "% % ACTIVE" {
   @ :svk = encode($_svkey($0));
   @ :egr = encode($servergroup($0));
   foreach channels[$egr] i {

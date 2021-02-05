@@ -2854,7 +2854,7 @@ void 	window_check_servers (void)
 	max = server_list_size();
 	for (i = 0; i < max; i++)
 	{
-	    status = get_server_status(i);
+	    status = get_server_state(i);
 
 	    if (!(tmp = get_window_by_servref(i)))
 	    {
@@ -2874,8 +2874,9 @@ void 	window_check_servers (void)
 		if (x_debug & DEBUG_SERVER_CONNECT)
 		    yell("window_check_servers() is bringing up server %d", i);
 
+		/* This bootstraps the reconnect process */
+		/* XXX - I should create a shim with a better name */
 		grab_server_address(i);
-		/* connect_to_server(i); */
 	    }
 	    else if (status == SERVER_ACTIVE)
 	    {
@@ -2894,11 +2895,6 @@ void 	window_check_servers (void)
 
 	if (!is_server_open(primary_server))
 		primary_server = prime;
-
-/*
-	update_all_status();
-	cursor_to_input();
-*/
 }
 
 /*
@@ -6025,7 +6021,7 @@ Window *window_server (Window *window, char **args)
 		 * Associate ourselves with the new server.
 		 */
 		window_change_server(window, i);
-		status = get_server_status(i);
+		status = get_server_state(i);
 
 		if (status > SERVER_RECONNECT && status < SERVER_EOF)
 		{
@@ -6035,8 +6031,9 @@ Window *window_server (Window *window, char **args)
 			revamp_window_masks(window);
 		    }
 		}
-		else if (status >= SERVER_CLOSING)
-			set_server_status(i, SERVER_RECONNECT);
+		else if (status > SERVER_ACTIVE)
+			disconnectcmd("RECONNECT", NULL, NULL);
+			/* set_server_status(i, SERVER_RECONNECT); */
 
 		malloc_strcpy(&window->original_server_string, arg);
 	}
