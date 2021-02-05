@@ -35,7 +35,6 @@
 #include "commands.h"
 #include "ircaux.h"
 #include "who.h"
-#include "ssl.h"
 #include "server.h"
 #include "window.h"
 #include "vars.h"

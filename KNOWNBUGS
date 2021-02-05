@@ -904,4 +904,12 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * - Drive the determination of "ircop" from your umode, not from a variable
 * Add /on server_state to duplicate /on server_status for now
 * Support $serverctl(GET x STATE) to duplicate GET STATUS
+* More refactoring of server.c/server.h ssl support
+* - Remove unused fields and getters/setters
+* - Defer all "is this ssl?" questions to the ssl module
+* - Rename "is_ssl_enabled()" to "is_fd_ssl_enabled()"
+* - Rename "get_server_isssl()" to "get_server_ssl_enabled()"
+* - Remove trying to track ssl enablement separately
+* - Since openssl has been required for a while, remove "ssl is missing" stuff
+* - Avoid setting the server state directly (ie, avoiding /on server_state)
 

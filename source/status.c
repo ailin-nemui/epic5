@@ -1363,7 +1363,7 @@ STATUS_FUNCTION(status_ssl)
 {
 	char *text;
 
-	if (window->server != NOSERV && get_server_isssl(window->server) &&
+	if (window->server != NOSERV && get_server_ssl_enabled(window->server) &&
 		(text = get_string_var(STATUS_SSL_ON_VAR)))
 			return text;
 	else if ((text = get_string_var(STATUS_SSL_OFF_VAR)))

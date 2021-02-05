@@ -862,7 +862,7 @@ int	ssl_connected (int vfd)
 }
 
 
-int	is_ssl_enabled (int vfd)
+int	is_fd_ssl_enabled (int vfd)
 {
 	if (find_ssl(vfd))
 		return 1;
@@ -1017,7 +1017,7 @@ const char *get_ssl_cipher (int vfd)
 	return NULL;
 }
 
-int	is_ssl_enabled (int vfd)
+int	is_fd_ssl_enabled (int vfd)
 {
 	return 0;
 }

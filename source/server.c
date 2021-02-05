@@ -144,6 +144,7 @@ static	void 	got_my_userhost (int refnum, UserhostItem *item, const char *nick, 
 static	void	make_005 (int refnum);
 static	void	destroy_005 (int refnum);
 static 	int	server_addrs_left (int refnum);
+static const char *	get_server_type (int servref);
 
 /*
  * clear_serverinfo: Initialize/Reset a ServerInfo object
@@ -786,13 +787,8 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	s->sent_nick = NULL;
 	s->sent_body = NULL;
 
-	s->ssl_certificate = NULL;
-	s->ssl_certificate_hash = NULL;
-
 	s->stricmp_table = 1;		/* By default, use rfc1459 */
 	s->funny_match = NULL;
-
-	s->ssl_enabled = FALSE;
 
 	if (!empty(s->info->nick))
 		malloc_strcpy(&s->d_nickname, s->info->nick);
@@ -903,8 +899,6 @@ static 	void 	remove_from_server_list (int i)
 	new_free(&s->recv_nick);
 	new_free(&s->sent_nick);
 	new_free(&s->sent_body);
-	new_free(&s->ssl_certificate);
-	new_free(&s->ssl_certificate_hash);
 	new_free(&s->funny_match);
 	new_free(&s->default_realname);
 	destroy_notify_list(i);
@@ -1374,12 +1368,6 @@ BUILT_IN_COMMAND(servercmd)
 	{
 		/* Do the switch! */
 		set_server_quit_message(olds, "Changing servers");
-
-		/* XXX - Should i really be doing this here? */
-		if (!empty(get_server_type(news)) &&
-				my_stricmp(get_server_type(news), "IRC-SSL") == 0)
-			set_server_ssl_enabled(news, TRUE);
-
 		change_window_server(olds, news);
 	}
 }
@@ -1627,7 +1615,6 @@ something_broke:
 			/* Update this! */
 			*(SA *)&s->remote_sockname = *(SA *)&name;
 
-#ifdef HAVE_SSL
 			/*
 			 * For SSL server connections, we have to take a little
 			 * detour.  First we start up the ssl connection, which
@@ -1659,24 +1646,21 @@ something_broke:
 				 * later, since the return code is posted to us via
 				 * dgets().
 				 */
-				s->state = SERVER_SSL_CONNECTING;
+				set_server_state(i, SERVER_SSL_CONNECTING);
 				new_open(des, do_server, NEWIO_SSL_CONNECT, 0, i);
 				pop_message_from(l);
 				break;
 			}
 
 return_from_ssl_detour:
-#endif
-			if (is_ssl_enabled(des))
-			{
-				set_server_ssl_enabled(i, TRUE);
+			/* 
+			 * IF AND ONLY IF the _file descriptor_ is doing SSL,
+			 * then we say the _server_ is doing SSL.
+			 */
+			if (is_fd_ssl_enabled(des))
 				new_open(des, do_server, NEWIO_SSL_READ, 0, i);
-			}
 			else
-			{
-				set_server_ssl_enabled(i, FALSE);
 				new_open(des, do_server, NEWIO_RECV, 0, i);
-			}
 
 			/* Always try to fall back to the nick from the server description */
 			/* This was discussed and agreed to in April 2016 */
@@ -1983,7 +1967,7 @@ void	send_to_aserver_raw (int refnum, size_t len, const char *buffer)
 
 	if ((des = s->des) != -1 && buffer)
 	{
-	    if (get_server_ssl_enabled(refnum) == TRUE)
+	    if (is_fd_ssl_enabled(des) == TRUE)
 		err = ssl_write(des, buffer, len);
 	    else
 		err = write(des, buffer, len);
@@ -2262,9 +2246,6 @@ int 	connect_to_server (int new_server)
 		{
 		    say("Unable to connect to server %d at %s:%d",
 				new_server, s->info->host, s->info->port);
-
-		    /* Would cause client to crash, if not wiped out */
-		    set_server_ssl_enabled(new_server, FALSE);
 		}
 		else
 			say("Unable to connect to server %d: not a valid server refnum", new_server);
@@ -2395,8 +2376,6 @@ void	close_server (int refnum, const char *message)
 	new_free(&s->nickname);
 	new_free(&s->s_nickname);
 	new_free(&s->realname);
-	new_free(&s->ssl_certificate);
-	new_free(&s->ssl_certificate_hash);
 
 	/* 
 	 * XXX Previously here, we discarded the extra IP addresses.
@@ -2642,22 +2621,24 @@ int	get_server_operator (int refnum)
 }
 
 
-/* get_server_isssl: returns 1 if the server is using SSL connection */
-int	get_server_isssl (int refnum)
+/* get_server_ssl_enabled: returns 1 if the server is using SSL connection */
+int	get_server_ssl_enabled (int refnum)
 {
 	Server *s;
 
 	if (!(s = get_server(refnum)))
 		return 0;
 
-	return (s->ssl_enabled == TRUE ? 1 : 0);
+	return (is_fd_ssl_enabled(s->des) == TRUE ? 1 : 0);
 }
 
 const char	*get_server_ssl_cipher (int refnum)
 {
 	Server *s;
 
-	if (!(s = get_server(refnum)) || s->ssl_enabled == FALSE)
+	if (!(s = get_server(refnum)))
+		return empty_string;
+	if (!is_fd_ssl_enabled(s->des))
 		return empty_string;
 	return get_ssl_cipher(s->des);
 }
@@ -3399,8 +3380,6 @@ SACCESSOR(nick, public_nick, NULL)
 SACCESSOR(nick, recv_nick, NULL)
 SACCESSOR(nick, sent_nick, NULL)
 SACCESSOR(text, sent_body, NULL)
-SACCESSOR(text, ssl_certificate, NULL)
-SACCESSOR(text, ssl_certificate_hash, NULL)
 SACCESSOR(nick, redirect, NULL)
 SACCESSOR(message, quit_message, get_string_var(QUIT_MESSAGE_VAR))
 SACCESSOR(cookie, cookie, NULL)
@@ -3552,7 +3531,11 @@ void	set_server_server_type (int servref, const char * param )
 	preserve_serverinfo(s->info);
 }
 
-const char *	get_server_type (int servref )
+/*
+ * This returne either "IRC" or "IRC-SSL" for now.
+ * XXX - I really regret calling this field "type".
+ */
+static const char *	get_server_type (int servref )
 {
 	Server *s;
 
@@ -3644,29 +3627,6 @@ void	set_server_protocol_state (int refnum, int state)
 	set_server_doing_ctcp(refnum, val);
 	/* state = state >> 8; */
 }
-
-/*
- * Getter and setter for "ssl_enabled".
- */
-void	set_server_ssl_enabled (int refnum, int flag)
-{
-	Server *s;
-
-	if (!(s = get_server(refnum)))
-		return;
-
-	if (client_ssl_enabled() == 0)
-	{
-	    if (flag == TRUE)
-		say("This client was not built with SSL support.");
-	    s->info->server_type = "IRC";
-	    preserve_serverinfo(s->info);
-	}
-
-	s->ssl_enabled = flag;
-}
-GET_IATTRIBUTE(ssl_enabled)
-
 
 /***********************************************************************/
 /* WAIT STUFF */
@@ -4544,7 +4504,7 @@ char 	*serverctl 	(char *input)
 			Server *s;
 			int	des;
 
-			if (!(s = get_server(refnum)) || s->ssl_enabled == FALSE)
+			if (!(s = get_server(refnum)) || !get_server_ssl_enabled(refnum))
 				RETURN_EMPTY;
 
 			if (!my_strnicmp(listc, "SSL_CIPHER", len)) {

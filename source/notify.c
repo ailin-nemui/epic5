@@ -45,7 +45,6 @@
 #include "notify.h"
 #include "ircaux.h"
 #include "hook.h"
-#include "ssl.h"
 #include "server.h"
 #include "output.h"
 #include "parse.h"

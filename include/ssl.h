@@ -35,7 +35,7 @@ typedef struct ssl_metadata {
 	int	ssl_connect (int nfd, int quiet);
 	int	ssl_connected (int nfd);
 
-	int	is_ssl_enabled (int nfd);
+	int	is_fd_ssl_enabled (int nfd);
 	int	client_ssl_enabled (void);
 
 	const char *	get_ssl_cipher (int nfd);

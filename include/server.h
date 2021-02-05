@@ -70,9 +70,6 @@ const	AI *		next_addr;		/* The next one to try upon failure */
 	SS		remote_sockname; 	/* sockname of this connection */
 
 	/* state = SSL_CONNECTING */
-	int		ssl_enabled;		/* Current SSL status. */
-	char *		ssl_certificate;
-	char *		ssl_certificate_hash;
 
 	/* state = REGISTERING */
 	char *		nickname;		/* Authoritative nickname for us */
@@ -234,10 +231,9 @@ const	char *	get_server_group		(int);
 const	char *  get_server_server_type		(int);
 const	char *	get_server_vhost		(int);
 
-const	char *	get_server_type			(int);
 	void	set_server_version_string	(int, const char *);
 const 	char *	get_server_version_string	(int);
-	int	get_server_isssl		(int);
+	int	get_server_ssl_enabled		(int);
 const	char *	get_server_ssl_cipher		(int);
  
 	void	register_server			(int, const char *);
@@ -291,8 +287,10 @@ const char *	get_server_state_str		(int);
         int     get_server_doing_ctcp 		(int);
 	void	set_server_sent			(int, int);
 	int	get_server_sent			(int);
+#if 0
 	void	set_server_ssl_enabled		(int, int);
 	int	get_server_ssl_enabled		(int);
+#endif
 	void	set_server_protocol_state	(int, int);
 	int	get_server_protocol_state	(int);
 	void	set_server_autoclose		(int, int);
@@ -324,10 +322,12 @@ const char *	get_server_unique_id    	(int);
 const char *	get_server_realname		(int);
 	void	set_server_default_realname	(int, const char *);	/* static */
 const char *	get_server_default_realname	(int);
+#if 0
         void    set_server_ssl_certificate      (int, const char *);	/* static */
 const char *	get_server_ssl_certificate      (int);
         void    set_server_ssl_certificate_hash (int, const char *);	/* static */
 const char *	get_server_ssl_certificate_hash (int);
+#endif
 
 	void	set_server_funny_min         	(int, int);
 	int	get_server_funny_min         	(int);

@@ -6711,7 +6711,7 @@ BUILT_IN_FUNCTION(function_isencrypted, input)
 		RETURN_INT(0);
 
 	/* Check if it is encrypted connection */
-	RETURN_INT(get_server_isssl(sval));
+	RETURN_INT(get_server_ssl_enabled(sval));
 }
 
 BUILT_IN_FUNCTION(function_ssl, words)
