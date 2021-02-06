@@ -2,8 +2,6 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* If you /server irc.foo.com and the window is associated with irc.foo.com
-   it doesn't cause the server to be reconnected.
 * Harzelein would like to [re]set the cut buffer
    This will be coming to $Inputctl()
 
@@ -912,4 +910,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * - Remove trying to track ssl enablement separately
 * - Since openssl has been required for a while, remove "ssl is missing" stuff
 * - Avoid setting the server state directly (ie, avoiding /on server_state)
-
+* If something goes wrong in do_server(), just close_server()
+  - If a server is connected to a window with more addrs, it'll resurrect

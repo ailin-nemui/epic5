@@ -1420,6 +1420,7 @@ void	do_server (int fd)
 		from_server = i;
 		l = message_from(NULL, LEVEL_OTHER);
 
+		/* - - - - */
 		/*
 		 * Is the dns lookup finished?
 		 * Handle DNS lookup responses from the dns helper.
@@ -1543,6 +1544,7 @@ void	do_server (int fd)
 			}
 		}
 
+		/* - - - - */
 		/*
 		 * First look for nonblocking connects that are finished.
 		 */
@@ -1604,10 +1606,18 @@ something_broke:
 						"address [%d]: (Internal error)", 
 						i, s->addr_counter);
 
-				/* This results in trying the next IP addr */
+				/* 
+				 * This results in trying the next IP addr 
+				 * Servers that have windows pointing to them
+				 * that land in CLOSED that still have IP addrs
+				 * left to try, will auto-resurrect in 
+				 * window_check_servers().
+				 * 
+				 * It is not necessary for us to take any 
+				 * action here
+				 */
 				set_server_state(i, SERVER_ERROR);
 				close_server(i, NULL);
-				connect_to_server(i);
 				pop_message_from(l);
 				continue;
 			}
@@ -1653,9 +1663,8 @@ something_broke:
 			}
 
 return_from_ssl_detour:
-			/* 
-			 * IF AND ONLY IF the _file descriptor_ is doing SSL,
-			 * then we say the _server_ is doing SSL.
+			/*
+			 * Our IO callback depends on our medium
 			 */
 			if (is_fd_ssl_enabled(des))
 				new_open(des, do_server, NEWIO_SSL_READ, 0, i);
@@ -1670,7 +1679,7 @@ return_from_ssl_detour:
 				register_server(i, s->d_nickname);
 		}
 
-#ifdef HAVE_SSL
+		/* - - - - */
 		/*
 		 * Above, we did new_open(..., NEWIO_SSL_CONNECT, ...)
 		 * which leads us here when the ssl stuff posts a result code.
@@ -1704,8 +1713,8 @@ return_from_ssl_detour:
 
 			goto return_from_ssl_detour;	/* All is well! */
 		}
-#endif
 
+		/* - - - - */
 		/* Everything else is a normal read. */
 		else
 		{
