@@ -1,5 +1,28 @@
 EPIC5-2.2
 
+*** News 02/07/2021 -- Low level operations on cutbuffer - $inputctl()
+	Harzelein asked if there was a way to manipulate the cutbuffer
+	without having to put something in the input line.  As it happens,
+	that has never been requested before.  So here we go!
+
+	$inputctl(GET cutbuffer)
+		This returns the cut buffer.  This is the same as $U
+
+	$inputctl(SET cutbuffer ... new value ...)
+		This sets the cut buffer.  This would be effectively
+		the same as:
+		 * Saving the input line (with $L)
+		 * Erasing the input line (parsekey ERASE_LINE)
+		 * /TYPEing what you want into the cut buffer
+		 * Erasing the input line (to put it into the cut buffer)
+		 * /TYPEing the origial input line
+		But this doesn't require you to disrupt the input line.
+
+		Please remember that there is only one cut buffer,
+		and a large number of operations replace it -- so 
+		whatever you put in the cut buffer, use it quickly,
+		or the user might clobber it.
+
 *** News 02/05/2021 -- /ON SERVER_STATUS changed to /ON SERVER_STATE
 	Some expressed some confusion about whather "SERVER STATUS"
 	and "SERVER STATE" were the same thing, and what the states

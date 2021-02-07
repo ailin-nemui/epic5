@@ -1667,8 +1667,33 @@ BUILT_IN_KEYBINDING(parse_text)
 	system_exception = old;
 }
 
-BUILT_IN_FUNCTION(function_inputctl, words)
+BUILT_IN_FUNCTION(function_inputctl, input)
 {
+	char 	*verb, *domain;
+	int	verblen, domainlen;
+        char    *ret = NULL;
+        int     old_status_update;
+
+        GET_FUNC_ARG(verb, input);
+        verblen = strlen(verb);
+        if (!my_strnicmp(verb, "GET", verblen)) {
+	    GET_FUNC_ARG(domain, input)
+	    domainlen = strlen(domain);
+
+	    if (!my_strnicmp(domain, "CUTBUFFER", domainlen)) {
+		RETURN_STR((const char *)CUT_BUFFER);
+	    } 
+	}
+        else if (!my_strnicmp(verb, "SET", verblen)) {
+	    GET_FUNC_ARG(domain, input)
+	    domainlen = strlen(domain);
+
+	    if (!my_strnicmp(domain, "CUTBUFFER", domainlen)) {
+		malloc_strcpy((char **)&CUT_BUFFER, input);
+		RETURN_STR((const char *)CUT_BUFFER);
+	    } 
+	}
+
 	RETURN_EMPTY;
 }
 
