@@ -1461,7 +1461,14 @@ void	rfc1459_odd (const char *from, const char *comm, const char **ArgList)
 		say("Odd server stuff: \"%s %s\" (%s)", comm, stuff, from);
 }
 
-protocol_command rfc1459[] = {
+typedef struct {
+        const char      *command;
+        void            (*inbound_handler) (const char *, const char *, const char **);
+        int             flags;
+} protocol_command;
+#define PROTO_QUOTEBAD  (1 << 0)
+
+static protocol_command rfc1459[] = {
 {	"ADMIN",	NULL,		0		},
 {	"AWAY",		NULL,		0		},
 { 	"CONNECT",	NULL,		0		},
@@ -1508,7 +1515,7 @@ protocol_command rfc1459[] = {
 {	NULL,		NULL,		0		}
 };
 #define NUMBER_OF_COMMANDS (sizeof(rfc1459) / sizeof(protocol_command)) - 2;
-int 	num_protocol_cmds = -1;
+static int 	num_protocol_cmds = -1;
 
 #define islegal(c) ((((c) >= 'A') && ((c) <= '~')) || \
                     (((c) >= '0') && ((c) <= '9')) || \
