@@ -912,3 +912,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * If something goes wrong in do_server(), just close_server()
   - If a server is connected to a window with more addrs, it'll resurrect
 * Add $inputctl(GET|SET CUTBUFFER), manipulate the cut buffer.  See UPDATES
+* Fix /load help.irc - point to correct url
+* Remove some commented out code before release
+
