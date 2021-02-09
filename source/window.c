@@ -3951,10 +3951,12 @@ static Window *window_describe (Window *window, char **args)
 	const char *chan;
 	char *c;
 
+#if 0
 	if (!args)
 	{
 		return window;
 	}
+#endif
 
 if (window->name)
 	say("Window %s (%u)", 
@@ -4981,10 +4983,12 @@ static Window *window_new (Window *window, char **args)
 {
 	Window *tmp;
 
+#if 0
 	if (!args)
 	{
 		return window;
 	}
+#endif
 
 	if ((tmp = new_window(window->screen)))
 		window = tmp;
@@ -4996,10 +5000,12 @@ static Window *window_new (Window *window, char **args)
 
 static Window *window_new_hide (Window *window, char **args)
 {
+#if 0
 	if (!args)
 	{
 		return window;
 	}
+#endif
 
 	new_window(NULL);
 	return window;
@@ -5011,10 +5017,12 @@ static Window *window_next (Window *window, char **args)
 	Window	*next = NULL;
 	Window	*smallest = NULL;
 
+#if 0
 	if (!args)
 	{
 		return window;
 	}
+#endif
 
 	smallest = window;
 	for (tmp = invisible_list; tmp; tmp = tmp->next)
@@ -5224,10 +5232,13 @@ static Window *window_previous (Window *window, char **args)
 	Window	*tmp;
 	Window	*previous = NULL, *largest;
 
+	/* It is ok for 'args' to be NULL -- SWAP_PREVIOUS_WINDOW uses this. */
+#if 0
 	if (!args)
 	{
 		return window;
 	}
+#endif
 
 	largest = window;
 	for (tmp = invisible_list; tmp; tmp = tmp->next)

@@ -914,4 +914,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $inputctl(GET|SET CUTBUFFER), manipulate the cut buffer.  See UPDATES
 * Fix /load help.irc - point to correct url
 * Remove some commented out code before release
-
+* window_next() and window_previous() can accept nulls from SWAP_NEXT_WINDOW
