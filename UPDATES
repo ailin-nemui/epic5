@@ -1,5 +1,10 @@
 EPIC5-2.2
 
+*** News 02/10/2021 -- New /WINDOW operation, /WINDOW UNCLEAR
+	There was already an /UNCLEAR command, and a /CLEAR and
+	/WINDOW CLEAR command, but there was no /WINDOW UNCLEAR.
+	WHy not? Anyways...
+
 *** News 02/07/2021 -- Low level operations on cutbuffer - $inputctl()
 	Harzelein asked if there was a way to manipulate the cutbuffer
 	without having to put something in the input line.  As it happens,

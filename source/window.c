@@ -6384,6 +6384,18 @@ static Window *window_toplines (Window *window, char **args)
 	return window;
 }
 
+/* WINDOW UNCLEAR -- pull down the scrollback to fill the window */
+static Window *window_unclear (Window *window, char **args)
+{
+	if (!args)
+	{
+		return window;
+	}
+
+	unclear_window(window);
+	return window;
+}
+
 
 typedef Window *(*window_func) (Window *, char **args);
 
@@ -6484,6 +6496,7 @@ static const window_ops options [] = {
 	{ "SWAPPABLE",		window_swappable	},
 	{ "TOPLINE",		window_topline		},
 	{ "TOPLINES",		window_toplines		},
+	{ "UNCLEAR",		window_unclear		},
 	{ NULL,			NULL 			}
 };
 
