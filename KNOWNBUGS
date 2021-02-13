@@ -916,3 +916,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove some commented out code before release
 * window_next() and window_previous() can accept nulls from SWAP_NEXT_WINDOW
 * Add /window unclear -- why did this not exist?
+* If a Python callback fails, call the except; if that fails, give up on fd
+* /PYDIRECT without args needs a usage message

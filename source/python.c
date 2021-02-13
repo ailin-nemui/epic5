@@ -780,7 +780,20 @@ int	destroy_python_fd_callback (int vfd)
 
 
 
-void 	call_python_function_1arg (PyObject *pFunc, int vfd)
+/*
+ * call_python_function_1arg - Call a python function to handle IO callbacks
+ *
+ * Python IO callbacks take one argument - the file descriptor.  
+ * Python IO callbacks _may not throw exceptions_.
+ * Exceptions are considered a "broken" situation and will result in 
+ * a call to the except_callback to repair the situation.
+ * If the except_callback fails, then it's game over for this fd.
+ *
+ * Retval
+ *   -1 	- The callback failed (threw an exception)
+ *    0		- The callback did not fail 
+ */
+int 	call_python_function_1arg (PyObject *pFunc, int vfd)
 {
 	PyObject *args_py = NULL;
 	PyObject *pArgs = NULL, *pRetVal = NULL;
@@ -813,10 +826,12 @@ void 	call_python_function_1arg (PyObject *pFunc, int vfd)
 
 c_p_f_error:
 	output_traceback();
+	return -1;
 
 c_p_f_cleanup:
 	Py_XDECREF(pArgs);
 	Py_XDECREF(pRetVal);
+	return 0;
 }
 
 void	do_python_fd (int vfd)
@@ -834,14 +849,40 @@ void	do_python_fd (int vfd)
 	if ((n = dgets(vfd, buffer, BIG_BUFFER_SIZE, -1)) > 0)
 	{
 		if (callback->read_callback)
-			call_python_function_1arg(callback->read_callback, vfd);
+		{
+			if ((call_python_function_1arg(callback->read_callback, vfd)))
+			{
+				if ((call_python_function_1arg(callback->except_callback, vfd)))
+				{
+					yell("do_python_fd: FD %d failed: both ordinary and error callback failed.");
+					new_close(vfd);
+				}
+			}
+		}
+
 		else if (callback->write_callback)
-			call_python_function_1arg(callback->write_callback, vfd);
+		{
+			if ((call_python_function_1arg(callback->write_callback, vfd)))
+			{
+				if ((call_python_function_1arg(callback->except_callback, vfd)))
+				{
+					yell("do_python_fd: FD %d failed: both ordinary and error callback failed.");
+					new_close(vfd);
+				}
+			}
+		}
+
 	}
 	else if (n < 0)
 	{
 		if (callback->except_callback)
-			call_python_function_1arg(callback->except_callback, vfd);
+		{
+			if ((call_python_function_1arg(callback->except_callback, vfd)))
+			{
+				yell("do_python_fd: FD %d failed: both ordinary and error callback failed.");
+				new_close(vfd);
+			}
+		}
 	}
 }
 
@@ -1285,6 +1326,10 @@ char *	call_python_directly (const char *orig_object, char *args)
 	const char 	*r = NULL;
 	char *retvalstr = NULL;
 
+	/* BAH! */
+	if (!orig_object)
+		RETURN_EMPTY;
+
 	object = LOCAL_COPY(orig_object);
 	module = object;
 	if (!(method = strchr(module, '.')))
@@ -1367,6 +1412,12 @@ BUILT_IN_COMMAND(pydirect_cmd)
 {
 	char *pyfuncname;
 	char *x;
+
+	if (!args || !*args)
+	{
+		say("Usage: /PYDIRECT module.method arguments");
+		return;
+	}
 
 	pyfuncname = new_next_arg(args, &args);
 	x = call_python_directly(pyfuncname, args);
