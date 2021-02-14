@@ -1,5 +1,5 @@
 /*
- * timer.c -- handles timers in ircII
+ 4 timer.c -- handles timers in ircII
  *
  * Copyright (c) 1991, 1992 Troy Rollo.
  * Copyright (c) 1992-1996 Matthew Green.
@@ -358,6 +358,7 @@ typedef struct  timerlist_stru
 	int	domref;
 	int	cancelable;
 	long	fires;
+	char *	package;
 }       Timer;
 
 static 	Timer *		PendingTimers;
@@ -401,6 +402,7 @@ static Timer *	new_timer (void)
 	ntimer->domref = -1;
 	ntimer->cancelable = 0;
 	ntimer->fires = 0;
+	ntimer->package = NULL;
 	return ntimer;
 }
 
@@ -453,6 +455,8 @@ static Timer *	clone_timer (Timer *otimer)
 	ntimer->domref = otimer->domref;
 	ntimer->cancelable = otimer->cancelable;
 	ntimer->fires = otimer->fires;
+	if (otimer->package)
+		ntimer->package = malloc_strdup(otimer->package);
 	return ntimer;
 }
 
@@ -491,6 +495,7 @@ static void	delete_timer (Timer *otimer)
 		new_free((char **)&otimer->command);
 		new_free((char **)&otimer->subargs);
 	}
+	new_free(&otimer->package);
 	new_free(&otimer->ref);
 	new_free((char **)&otimer);
 }
@@ -962,6 +967,8 @@ char *add_timer (int update, const char *refnum_want, double interval, long even
 
 		ntimer = new_timer();
 		ntimer->ref = refnum_got;
+                if (current_package())
+			ntimer->package = malloc_strdup(current_package());
 	}
 
 	/* Update the interval */
@@ -1168,6 +1175,7 @@ advance:
  *	INTERVAL	The interval of time between executions
  *	SERVER		The server this timer bound to
  *	WINDOW		The window this timer bound to
+ *	PACKAGE		The /load package the timer bound to
  */
 char *	timerctl (char *input)
 {
@@ -1230,6 +1238,8 @@ char *	timerctl (char *input)
 			if (t->domain != WINDOW_TIMER)
 				RETURN_INT(-1);
 			RETURN_INT(t->domref);
+		} else if (!my_strnicmp(listc, "PACKAGE", len)) {
+			RETURN_STR(t->package);
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {
 		GET_FUNC_ARG(refstr, input);
@@ -1279,6 +1289,8 @@ char *	timerctl (char *input)
 			GET_INT_ARG(refnum, input);
 			t->domain = WINDOW_TIMER;
 			t->domref = refnum;
+		} else if (!my_strnicmp(listc, "PACKAGE", len)) {
+			malloc_strcpy(&t->package, input);
 		}
 	} else
 		RETURN_EMPTY;
@@ -1322,4 +1334,20 @@ void    timers_merge_winrefs (unsigned oldref, unsigned newref)
         }
 }
 
+void	unload_timers (char *filename)
+{
+	Timer *ref;
+
+	for (ref = PendingTimers; ref; )
+	{
+		if (!my_stricmp(ref->package, filename))
+		{
+			unlink_timer(ref);
+			delete_timer(ref);
+			ref = PendingTimers;
+		}
+		else
+			ref = ref->next;
+	}
+}
 

@@ -27,5 +27,6 @@ typedef enum {
 	void	dump_timers	(void);
 	void    timers_swap_winrefs (unsigned oldref, unsigned newref);
 	void	timers_merge_winrefs (unsigned oldref, unsigned newref);
+	void    unload_timers	(char *filename);
 
 #endif /* _TIMER_H_ */

@@ -1,5 +1,16 @@
 EPIC5-2.2
 
+*** News 02/13/2021 -- /UNLOAD now supports /TIMERs
+	If you create a /TIMER in a script you /LOAD with /PACKAGE
+	the timer will be tagged just like any aliases or assigns
+	or ons or whatever.
+
+	Note that /TIMERs are _not_ tagged if they are created 
+	after /load time.  This includes but is not limited to 
+	timers created by aliases that are tagged; as well as
+	timers that create new versions of themselves (but it 
+	will catch timers that run forever)
+
 *** News 02/10/2021 -- New /WINDOW operation, /WINDOW UNCLEAR
 	There was already an /UNCLEAR command, and a /CLEAR and
 	/WINDOW CLEAR command, but there was no /WINDOW UNCLEAR.

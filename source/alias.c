@@ -55,6 +55,7 @@
 #include "words.h"
 #include "reg.h"
 #include "vars.h"
+#include "timer.h"
 
 #define LEFT_BRACE '{'
 #define RIGHT_BRACE '}'
@@ -655,6 +656,8 @@ BUILT_IN_COMMAND(unloadcmd)
 		unload_on_hooks(filename);
 		say("Removing keybinds from %s ...", filename);
 		unload_bindings(filename);
+		say("Removing timers from %s ...", filename);
+		unload_timers(filename);
 		say("Done.");
 	}
 }
