@@ -1,10 +1,10 @@
 """A URL shortening service running inside epic.
 """
+import logging
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 from epic import EPIC_COMMIT_ID, EPIC_RELEASE_NAME, EPIC_RELEASE_VERSION, \
-                 NOISE_QUIET, alias, command, on, xecho
-from _epic import callback_when_readable, cancel_callback
+                 NOISE_QUIET, SocketServerMixin, alias, command, on, xecho, register_listener_callback
 
 HOST_NAME = '127.0.0.1'
 PORT_NUMBER = 8080
@@ -14,8 +14,9 @@ REDIRECTIONS = []
 URL_FILE = 'irc_urls.txt'
 __version__ = '0.1'
 httpd = None
+log = logging.getLogger(__name__)
 
-# ---- creating shortened urls for the user ----
+
 def find_url(haystack):
     """Return any URL's within the haystack string.
     """
@@ -27,6 +28,7 @@ def find_url(haystack):
 
     return results
 
+
 @on('action', '*http:*', NOISE_QUIET)
 @on('action', '*https:*', NOISE_QUIET)
 @on('general_notice', '*http:*', NOISE_QUIET)
@@ -37,55 +39,16 @@ def find_url(haystack):
 def url_handler(args):
     """Extract URL's from messages and create short URLs.
     """
-    xecho('handling urls from %s' % (args,))
+    nick = args.split()[0]
+
     for url in find_url(args.split()):
         if url not in REDIRECTIONS:
             REDIRECTIONS.append(url)
 
-        xecho('http://%s:%s/%s' % (HOST_NAME, PORT_NUMBER, 
-                                   REDIRECTIONS.index(url)))
+        xecho('From %s: http://%s:%s/%s' % (nick, HOST_NAME, PORT_NUMBER, REDIRECTIONS.index(url)))
 
-# ----- handling the shortened urls from the user -----
-#
-# These two functions get called back by epic when httpd.fileno() 
-# is readable.  connection_dispatch() asks socketserver to do its
-# thing, and error_dispatch() cleans up after ourselves
-#
-# XXX TODO XXX There should probably be some kind of restart
-# mechanism.  In theory, this server should never quit.
-#
-def connection_dispatch(vfd):
-    global httpd
-    httpd._handle_request_noblock()
-    httpd.service_actions()
 
-def error_dispatch(vfd):
-    global httpd
-    cancel_callback(httpd.socket.fileno())
-    httpd.server_close()
-    httpd = None
-
-#
-# This is a socketserver callback.  
-#  When a physical connection comes in, it is handled by httpd._handle_request_nonblock().
-#  This creates an application level event, which is handled by httpd.service_actions().
-#  Because this class was hooked up the httpd as its application callback (see below)
-#  this gets called when we do httpd.service_actions()
-#
 class RedirectHandler(BaseHTTPRequestHandler):
-    def log_message(self, format, *args):
-        """Direct all log messages to the client.
-        """
-        xecho("%s - - [%s] %s" % (self.address_string(),
-                                  self.log_date_time_string(),
-                                  format % args))
-
-    def version_string(self):
-        return 'shortener.py %s epic5 %s (%s) (%s)' % (__version__,
-                                                       EPIC_RELEASE_VERSION,
-                                                       EPIC_RELEASE_NAME,
-                                                       EPIC_COMMIT_ID)
-
     def do_HEAD(self):
         if self.path in STATIC_URLS:
             location = STATIC_URLS.get(self.path)
@@ -106,10 +69,23 @@ class RedirectHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.do_HEAD()
 
+    def log_message(self, format, *args):
+        """Direct all log messages to the client.
+        """
+        message = format % args
+        log.info("%s - - [%s] %s", self.address_string(), self.log_date_time_string(), message)
+
+    def version_string(self):
+        """Returns the server version reported in headers.
+        """
+        return '%s %s epic5 %s (%s) (%s)' % (__name__, __version__, EPIC_RELEASE_VERSION, EPIC_RELEASE_NAME, EPIC_COMMIT_ID)
+
+
+class EPICHTTPServer(SocketServerMixin, HTTPServer):
+    pass
+
+
 # Start the HTTP Server
-httpd = HTTPServer((HOST_NAME, PORT_NUMBER), RedirectHandler)
+httpd = EPICHTTPServer((HOST_NAME, PORT_NUMBER), RedirectHandler)
 
-# Ask EPIC to tell us every time this socket is readable.
-callback_when_readable(httpd.socket.fileno(), connection_dispatch, error_dispatch, 0)
-
-#skullY'2020 (but blame hop for any bugs)
+#skullY'2021

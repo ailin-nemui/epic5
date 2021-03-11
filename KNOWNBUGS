@@ -2,7 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Zlonix would like to be able to /unload timers
+<none>
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -919,3 +919,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * If a Python callback fails, call the except; if that fails, give up on fd
 * /PYDIRECT without args needs a usage message
 * Support /timers with /unload (rb zlonix)
+* New version of epic.py and shortener.py from skully -- he asked for testing
