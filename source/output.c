@@ -255,7 +255,7 @@ static void 	vsay (const char *format, va_list args)
 {
 	if (window_display && format)
 	{
-		char *str;
+		const char *str;
 
 		*putbuf = 0;
 		if ((str = get_string_var(BANNER_VAR)))
@@ -344,7 +344,7 @@ void 	my_error (const char *format, ...)
  */
 static void     vsyserr (int server, const char *format, va_list args)
 {
-	char *  str;
+	const char *  str;
 	int     l, old_from_server = from_server;
 	int	i_set_from_server = 0;
 

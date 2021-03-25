@@ -144,6 +144,8 @@ void	fatal_malloc_check (void *ptr, const char *special, const char *fn, int lin
 		panic(1, "BE SURE TO INCLUDE THE ABOVE IMPORTANT INFORMATION! "
 			"-- new_free()'s magic check failed from [%s/%d].", 
 			fn, line);
+		/* NOTREACHED */
+		exit(1);
 	    }
 
 	    case ALREADY_FREED:
@@ -4678,7 +4680,7 @@ void	dequoter (char **str, size_t *clue, int full, int extended, const char *del
 	    else
 	    {
 		simple = 0;
-		what = 255;
+		what = -1;
 		if (x_debug & DEBUG_EXTRACTW_DEBUG)
 			yell("#### dequoter: Dequoting [%s] fully with delims [%s]", *str, delims);
 	    }
@@ -5595,13 +5597,12 @@ static ssize_t	enc_decoder (const char *orig, size_t orig_len, const void *meta,
 	if (orig_len == 0)
 		orig_len = strlen(orig);
 	dest_i = 0;
-	for (orig_i = 0; orig_i + 1 < orig_len; orig_i++)
+	for (orig_i = 0; orig_i + 1 < orig_len; orig_i += 2)
 	{
 	    if (dest_i < dest_len)
 		dest[dest_i++] = ((orig[orig_i] - 0x41) << 4) | 
 				  (orig[orig_i+1] - 0x41);
 	    count++;
-	    orig_i++;
 	}
 
 	if (dest_i >= dest_len)

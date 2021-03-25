@@ -143,7 +143,7 @@ static	long	last_milliday;
 
 void	reset_clock (void *stuff)
 {
-	char *	sclock;
+	const char *	sclock;
 
 	if (x_debug & DEBUG_BROKEN_CLOCK)
 		reset_broken_clock();

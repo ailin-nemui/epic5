@@ -3958,11 +3958,11 @@ static Window *window_describe (Window *window, char **args)
 	}
 #endif
 
-if (window->name)
-	say("Window %s (%u)", 
+        if (window->name)
+	    say("Window %s (%u)", 
 				window->name, window->refnum);
-else
-	say("Window %u", window->refnum);
+        else
+	    say("Window %u", window->refnum);
 
 	say("\tServer: %d - %s",
 				window->server, 
@@ -4022,10 +4022,10 @@ else
 
 	say("\tLogging is %s", 
 				onoff[window->log]);
-if (window->logfile)
-	say("\tLogfile is %s", window->logfile);
-else
-	say("\tNo logfile given");
+        if (window->logfile)
+	    say("\tLogfile is %s", window->logfile);
+        else
+	    say("\tNo logfile given");
 
 	say("\tNotification is %s", 
 				onoff[window->notify_when_hidden]);

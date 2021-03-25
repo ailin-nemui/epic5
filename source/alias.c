@@ -2553,7 +2553,7 @@ static char *	get_variable_with_args (const char *str, const char *args)
 		else if (alias->builtin_expando)
 			copy = 0, ret = alias->builtin_expando();
 		else if (alias->builtin_variable)
-			copy = 0, ret = make_string_var_bydata(alias->builtin_variable->type, alias->builtin_variable->data);
+			copy = 0, ret = make_string_var_bydata((const void *)alias->builtin_variable);
 	}
 /*
 	if (ret == NULL && (ret = make_string_var(str)))
@@ -3263,8 +3263,7 @@ int	stack_list_builtin_var_alias (const char *name)
 		else 
 		{
 		    char *s;
-		    s = make_string_var_bydata(sym->builtin_variable->type, 
-					(void *)sym->builtin_variable->data);
+		    s = make_string_var_bydata((const void *)sym->builtin_variable);
 		    if (!s)
 			s = malloc_strdup("<EMPTY>");
 
@@ -3596,13 +3595,15 @@ char    *symbolctl      (char *input)
 			default: RETURN_STR("???");
 		    }
 		} else if (!my_stricmp(attr, "DATA"))
-		    RETURN_MSTR(make_string_var_bydata(s->builtin_variable->type, s->builtin_variable->data));
+		    RETURN_MSTR(make_string_var_bydata((const void *)s->builtin_variable));
 		else if (!my_stricmp(attr, "FUNC"))
 		    RETURN_INT((long)s->builtin_variable->func);
 		else if (!my_stricmp(attr, "SCRIPT"))
 		    RETURN_STR(s->builtin_variable->script);
 		else if (!my_stricmp(attr, "FLAGS"))
-		    RETURN_INT(s->builtin_variable->flags);
+		    RETURN_INT(s->builtin_variable->pending);
+		else if (!my_stricmp(attr, "PENDING"))
+		    RETURN_INT(s->builtin_variable->pending);
 		else
 		    RETURN_EMPTY;
 	    } else
@@ -3694,7 +3695,7 @@ char    *symbolctl      (char *input)
 		    v->type = BOOL_VAR;
 		    v->data = new_malloc(sizeof(union builtin_variable));
 		    v->data->integer = 0;
-		    v->flags = 0;
+		    v->pending = 0;
 		    v->func = NULL;
 		    v->script = NULL;
 		    add_builtin_variable_alias(symbol, v);
@@ -3738,7 +3739,12 @@ char    *symbolctl      (char *input)
 		} else if (!my_stricmp(attr, "FLAGS")) {
 		    if (!is_number(input))
 			RETURN_EMPTY;
-		    v->flags = my_atol(input);
+		    v->pending = my_atol(input);
+		    RETURN_INT(1);
+		} else if (!my_stricmp(attr, "PENDING")) {
+		    if (!is_number(input))
+			RETURN_EMPTY;
+		    v->pending = my_atol(input);
 		    RETURN_INT(1);
 		} else
 		    RETURN_EMPTY;

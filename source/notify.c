@@ -522,7 +522,9 @@ void 	make_notify_list (int refnum)
 	s->notify_list.list = NULL;
 	s->notify_list.max = 0;
 	s->notify_list.max_alloc = 0;
-	s->notify_list.func = (alist_func)my_stricmp;
+	/* XXX - Which of these two is correct?  Neither? */
+	/* s->notify_list.func = (alist_func)my_strnicmp; */
+	s->notify_list.func = (alist_func)my_stricmp; 
 	s->notify_list.hash = HASH_INSENSITIVE;
 	s->notify_list.ison = NULL;
 

@@ -243,7 +243,7 @@ static int globexp2	(	const Char *ptr,
 
 	/* There are bugs in here that I can't get to the bottom of */
 	/* This just papers over a string overrun */
-	memset(patbuf, 0, PATH_MAX + 1);
+	memset(patbuf, 0, PATH_MAX + 1 * sizeof(Char));
 
 	/* copy part up to the brace */
 	for (lm = patbuf, pm = pattern; pm != ptr; *lm++ = *pm++)

@@ -806,11 +806,13 @@ static void	decifer_mode (const char *modes, Channel *chan)
 			break;
 		case 5:
 			if (!add) break;
+			FALLTHROUGH
 		case 4: case 3: case 2:
 			if ((arg = next_arg(rest, &rest)))
 				break;
 			yell("WARNING:  Mode parser or server is BROKE.  Mode=%c%c args: %s",
 					add ? '+' : '-', *mode_str, rest);
+			FALLTHROUGH
 		default:
 			yell("Defaulting %c%c to CHANMODE type D", add?'+':'-', *mode_str);
 	    }

@@ -106,7 +106,7 @@ static const char *	find_forward_character (const char *input, const char *start
 	else
 	{
 		simple = 0;
-		what = 255;
+		what = -1;
 	}
 
 	/*
@@ -176,7 +176,7 @@ static const char *	find_backward_quote (const char *input, const char *start, c
 	else
 	{
 		simple = 0;
-		what = 255;
+		what = -1;
 	}
 
 	/*
@@ -299,7 +299,7 @@ static int	move_to_prev_word (const char **str, const char *start, int extended,
 		if (x_debug & DEBUG_EXTRACTW_DEBUG)
 			yell(".... move_to_prev_word: Expensive processing");
 		simple = 0;
-		what = 255;
+		what = -1;
 	}
 
 	/* Overhead -- work out if we're doing "" support or not. */
@@ -490,7 +490,7 @@ static int	move_to_next_word (const char **str, const char *start, int extended,
 		if (x_debug & DEBUG_EXTRACTW_DEBUG)
 			yell(".... move_to_next_word: Expensive processing");
 		simple = 0;
-		what = 255;
+		what = -1;
 	}
 
 	/*

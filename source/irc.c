@@ -52,7 +52,7 @@ const char internal_version[] = "20200511";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1923;
+const unsigned long	commit_id = 1924;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -482,7 +482,8 @@ static	void	parse_args (int argc, char **argv)
 	int append_servers = 0;
 	struct passwd *entry;
 	char *ptr = (char *) 0;
-	char *tmp_hostname = NULL;
+	const char *cptr = NULL;
+	const char *tmp_hostname = NULL;
 	char *the_path = NULL;
 	int size;
 
@@ -519,8 +520,8 @@ static	void	parse_args (int argc, char **argv)
 	}
 
 
-	if ((ptr = getenv("IRCNICK")))
-		strlcpy(nickname, ptr, sizeof nickname);
+	if ((cptr = getenv("IRCNICK")))
+		strlcpy(nickname, cptr, sizeof nickname);
 
 	/*
 	 * We now allow users to use IRCUSER or USER if we couldnt get the
@@ -533,27 +534,27 @@ static	void	parse_args (int argc, char **argv)
 	 * reasonable way to handle this.
 	 */
 	if (empty(get_string_var(DEFAULT_USERNAME_VAR)))
-		if ((ptr = getenv("LOGNAME")) && *ptr)
-			set_var_value(DEFAULT_USERNAME_VAR, ptr, 0);
+		if ((cptr = getenv("LOGNAME")) && *cptr)
+			set_var_value(DEFAULT_USERNAME_VAR, cptr, 0);
 
 #ifndef ALLOW_USER_SPECIFIED_LOGIN
 	if (empty(get_string_var(DEFAULT_USERNAME_VAR)))
 #endif
-		if ((ptr = getenv("IRCUSER")) && *ptr) 
-			set_var_value(DEFAULT_USERNAME_VAR, ptr, 0);
+		if ((cptr = getenv("IRCUSER")) && *cptr) 
+			set_var_value(DEFAULT_USERNAME_VAR, cptr, 0);
 #ifdef ALLOW_USER_SPECIFIED_LOGIN
 		else if (empty(get_string_var(DEFAULT_USERNAME_VAR)))
 			;
 #endif
-		else if ((ptr = getenv("USER")) && *ptr) 
-			set_var_value(DEFAULT_USERNAME_VAR, ptr, 0);
-		else if ((ptr = getenv("HOME")) && *ptr)
+		else if ((cptr = getenv("USER")) && *cptr) 
+			set_var_value(DEFAULT_USERNAME_VAR, cptr, 0);
+		else if ((cptr = getenv("HOME")) && *cptr)
 		{
-			char *ptr2 = strrchr(ptr, '/');
-			if (ptr2)
-				set_var_value(DEFAULT_USERNAME_VAR, ptr2, 0);
+			const char *cptr2 = strrchr(cptr, '/');
+			if (cptr2)
+				set_var_value(DEFAULT_USERNAME_VAR, cptr2, 0);
 			else
-				set_var_value(DEFAULT_USERNAME_VAR, ptr, 0);
+				set_var_value(DEFAULT_USERNAME_VAR, cptr, 0);
 		}
 		else
 		{
@@ -563,57 +564,57 @@ static	void	parse_args (int argc, char **argv)
 			exit(1);
 		}
 
-	if ((ptr = getenv("IRCNAME")))
-		set_var_value(DEFAULT_REALNAME_VAR, ptr, 0);
-	else if ((ptr = getenv("NAME")))
-		set_var_value(DEFAULT_REALNAME_VAR, ptr, 0);
-	else if ((ptr = getenv("REALNAME")))
-		set_var_value(DEFAULT_REALNAME_VAR, ptr, 0);
+	if ((cptr = getenv("IRCNAME")))
+		set_var_value(DEFAULT_REALNAME_VAR, cptr, 0);
+	else if ((cptr = getenv("NAME")))
+		set_var_value(DEFAULT_REALNAME_VAR, cptr, 0);
+	else if ((cptr = getenv("REALNAME")))
+		set_var_value(DEFAULT_REALNAME_VAR, cptr, 0);
 	else
 	{
-		ptr = get_string_var(DEFAULT_REALNAME_VAR);
-		if (!ptr || !*ptr)
+		cptr = get_string_var(DEFAULT_REALNAME_VAR);
+		if (!cptr || !*cptr)
 			set_var_value(DEFAULT_REALNAME_VAR, "*Unknown*", 0);
 	}
 
-	if ((ptr = getenv("HOME")))
-		malloc_strcpy(&my_path, ptr);
+	if ((cptr = getenv("HOME")))
+		malloc_strcpy(&my_path, cptr);
 	else if (!my_path)
 		malloc_strcpy(&my_path, "/");
 
 
 
-	if ((ptr = getenv("IRCPORT")))
-		irc_port = my_atol(ptr);
+	if ((cptr = getenv("IRCPORT")))
+		irc_port = my_atol(cptr);
 
-	if ((ptr = getenv("EPICRC")))
-		epicrc_file = malloc_strdup(ptr);
+	if ((cptr = getenv("EPICRC")))
+		epicrc_file = malloc_strdup(cptr);
 	else
 		epicrc_file = malloc_strdup2(my_path, EPICRC_NAME);
 
-	if ((ptr = getenv("IRCRC")))
-		ircrc_file = malloc_strdup(ptr);
+	if ((cptr = getenv("IRCRC")))
+		ircrc_file = malloc_strdup(cptr);
 	else
 		ircrc_file = malloc_strdup2(my_path, IRCRC_NAME);
 
-	if ((ptr = getenv("IRCLIB")))
-		irc_lib = malloc_strdup2(ptr, "/");
+	if ((cptr = getenv("IRCLIB")))
+		irc_lib = malloc_strdup2(cptr, "/");
 	else
 		irc_lib = malloc_strdup(IRCLIB);
 
-	if ((ptr = getenv("IRCUMODE")))
-		send_umode = malloc_strdup(ptr);
+	if ((cptr = getenv("IRCUMODE")))
+		send_umode = malloc_strdup(cptr);
 
-	if ((ptr = getenv("IRCPATH")))
-		the_path = malloc_strdup(ptr);
+	if ((cptr = getenv("IRCPATH")))
+		the_path = malloc_strdup(cptr);
 	else
 		the_path = malloc_sprintf(NULL, DEFAULT_IRCPATH, irc_lib);
 
 	set_var_value(LOAD_PATH_VAR, the_path, 0);
 	new_free(&the_path);
 
-	if ((ptr = getenv("IRCHOST")) && *ptr)
-		tmp_hostname = ptr;
+	if ((cptr = getenv("IRCHOST")) && *cptr)
+		tmp_hostname = cptr;
 
 	/* The -S-option  / shebang tokeniser */
 	if (argc > 1 && ((argv[1][0] == '-' && argv[1][1] == 'S')
@@ -675,6 +676,7 @@ static	void	parse_args (int argc, char **argv)
 			case 'v':	/* Output ircII version */
 				show_version();
 				/* NOTREACHED */
+				exit(0);
 
 			case 'p': /* Default port to use */
 				irc_port = my_atol(optarg);
@@ -787,8 +789,13 @@ static	void	parse_args (int argc, char **argv)
 	/*
 	 * Find and build the server lists...
 	 */
-	if ((ptr = getenv("IRCSERVER")))
+	if ((cptr = getenv("IRCSERVER")))
+	{
+		/* add_servers() will modify ptr - don't pass in an env var */
+		ptr = malloc_strdup(cptr);
 		add_servers(ptr, NULL);
+		new_free(&ptr);
+	}
 
 	if (!server_list_size() || append_servers)
 	{

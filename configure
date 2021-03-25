@@ -6869,6 +6869,45 @@ else
 fi
 rm -f conftest*
 
+echo $ac_n "checking whether your compiler supports __attribute__((fallthrough))""... $ac_c" 1>&6
+echo "configure:6874: checking whether your compiler supports __attribute__((fallthrough))" >&5
+cat > conftest.$ac_ext <<EOF
+#line 6876 "configure"
+#include "confdefs.h"
+
+int main() {
+int x = 1; 
+	 switch (x) { 
+		case 1: 
+			x++; 
+			__attribute__((fallthrough));
+		case 0: 
+			x++; 
+	  }
+; return 0; }
+EOF
+if { (eval echo configure:6890: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+  rm -rf conftest*
+  have_attribute_fallthrough=1
+else
+  echo "configure: failed program was:" >&5
+  cat conftest.$ac_ext >&5
+  rm -rf conftest*
+  have_attribute_fallthrough=0
+fi
+rm -f conftest*
+
+if test "x$have_attribute_fallthrough" = "x1" ; then
+	echo "$ac_t""yes" 1>&6
+	cat >> confdefs.h <<\EOF
+#define HAVE_ATTRIBUTE_FALLTHROUGH 1
+EOF
+
+else
+	echo "$ac_t""no" 1>&6
+fi
+
+
 
 
 

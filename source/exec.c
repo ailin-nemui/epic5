@@ -327,7 +327,7 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 
 		/* XXX HACK -- Line contains only a newline.  */
 		*exec_buffer = 0;
-		/* FALLTHROUGH */
+		FALLTHROUGH
 	    }
 
 	    default:		/* We got a full line */
@@ -1079,8 +1079,8 @@ static int	start_process (Process *proc)
 {
 	int	p0[2], p1[2], p2[2],
 		pid, cnt;
-	char	*shell,
-		*arg;
+	const char *shell;
+	char	*arg;
 	char *	commands;
 
 	if (proc->commands == NULL)
@@ -1340,13 +1340,13 @@ static int	start_process (Process *proc)
 
 static void	execcmd_push_arg (char **arg_list, size_t arg_list_size, int arg_list_idx, char *flag)
 {
-	if (arg_list_idx < arg_list_size - 1)
+	if (arg_list_idx >= 0 && (unsigned long)arg_list_idx < arg_list_size - 1)
 	{
 		/* yell("Adding [%d] [%s] argument to list", arg_list_idx, flag); */
 		arg_list[arg_list_idx] = flag;
 	}
 	else
-		/* yell("Not adding [%s] argument to list - overflow", flag) */;
+		/* yell("Not adding [%s] argument to list - overflow", flag) */ (void) 0;
 }
 
 static char **	execcmd_tokenize_arguments (const char *args, Process **process, char **free_ptr, char **extra_args, int *numargs, int *flags_size)
@@ -1924,8 +1924,7 @@ char *  execctl (char *input)
 		}
 
         } else if (!my_strnicmp(listc, "SET", len)) {
-		char 	*desc, *field;
-		GET_FUNC_ARG(desc, input);
+		GET_INT_ARG(refnum, input);
 		GET_FUNC_ARG(field, input);
 
 		if (!(proc = get_process_by_refnum(refnum)))

@@ -3301,7 +3301,8 @@ static	void		process_dcc_raw_data (DCC_list *Client)
 	    {
 		if (Client->flags & DCC_QUOTED)
 			goto CLOSE;
-		/* FALL THRU */
+		/* FALLTHROUGH */
+		__attribute__((fallthrough));
 	    }
 	    default:
 	    {
@@ -3862,9 +3863,9 @@ void 	dcc_reject (const char *from, char *type, char *args)
 static void	DCC_close_filesend (DCC_list *Client, const char *info,
 		const char *errormsg)
 {
-	char	lame_ultrix[10];	/* should be plenty */
-	char	lame_ultrix2[10];
-	char	lame_ultrix3[10];
+	char	lame_ultrix[13];	/* should be plenty */
+	char	lame_ultrix2[13];
+	char	lame_ultrix3[13];
 	double 	xtime, xfer;
 	char	*encoded_description;
 

@@ -445,11 +445,11 @@ void	compile_status (Window *w, Status *s)
 		else
 		{
 			if (k == 0)
-			   s->line[k].raw = get_string_var(STATUS_FORMAT_VAR);
+			   malloc_strcpy(&s->line[k].raw, get_string_var(STATUS_FORMAT_VAR));
 			else if (k == 1)
-			   s->line[k].raw = get_string_var(STATUS_FORMAT1_VAR);
+			   malloc_strcpy(&s->line[k].raw, get_string_var(STATUS_FORMAT1_VAR));
 			else  /* (k == 2) */
-			   s->line[k].raw = get_string_var(STATUS_FORMAT2_VAR);
+			   malloc_strcpy(&s->line[k].raw, get_string_var(STATUS_FORMAT2_VAR));
 
 			build_status_format(s, k);
 		}
@@ -1338,7 +1338,7 @@ STATUS_FUNCTION(status_umode)
  */
 STATUS_FUNCTION(status_chanop)
 {
-	char	*text;
+	const char	*text;
 	const char *chan;
 
 	if (window->server == NOSERV ||
@@ -1361,7 +1361,7 @@ STATUS_FUNCTION(status_chanop)
  */
 STATUS_FUNCTION(status_ssl)
 {
-	char *text;
+	const char *text;
 
 	if (window->server != NOSERV && get_server_ssl_enabled(window->server) &&
 		(text = get_string_var(STATUS_SSL_ON_VAR)))
@@ -1438,7 +1438,7 @@ STATUS_FUNCTION(status_channel)
  */
 STATUS_FUNCTION(status_voice)
 {
-	char *text;
+	const char *text;
 	const char *chan;
 
 	if (window->server == NOSERV ||
@@ -1481,7 +1481,7 @@ STATUS_FUNCTION(status_mail)
  */
 STATUS_FUNCTION(status_insert_mode)
 {
-	char	*text;
+	const char	*text;
 
 	if (get_int_var(INSERT_MODE_VAR) && DISPLAY_ON_WINDOW &&
 	    (text = get_string_var(STATUS_INSERT_VAR)))
@@ -1495,7 +1495,7 @@ STATUS_FUNCTION(status_insert_mode)
  */
 STATUS_FUNCTION(status_overwrite_mode)
 {
-	char	*text;
+	const char	*text;
 
 	if (!get_int_var(INSERT_MODE_VAR) && DISPLAY_ON_WINDOW &&
 	    (text = get_string_var(STATUS_OVERWRITE_VAR)))
@@ -1510,7 +1510,7 @@ STATUS_FUNCTION(status_overwrite_mode)
  */
 STATUS_FUNCTION(status_away)
 {
-	char	*text;
+	const char	*text;
 
 	/*
 	 * If we're only on one server, only do this for the
@@ -1533,7 +1533,7 @@ STATUS_FUNCTION(status_away)
  */
 STATUS_FUNCTION(status_user)
 {
-	char *	text;
+	const char *	text;
 	int	i;
 
 	/* XXX Ick.  Oh well. */
@@ -1585,7 +1585,7 @@ STATUS_FUNCTION(status_user)
 
 STATUS_FUNCTION(status_hold)
 {
-	char *text;
+	const char *text;
 
 	if (window->holding_distance_from_display_ip > window->display_lines  ||
 	    window->scrollback_distance_from_display_ip > window->display_lines)
@@ -1596,7 +1596,7 @@ STATUS_FUNCTION(status_hold)
 
 STATUS_FUNCTION(status_holdmode)
 {
-	char *text;
+	const char *text;
 
 	/* If hold mode is on... */
 	if (window->holding_top_of_display)
@@ -1616,7 +1616,7 @@ STATUS_FUNCTION(status_holdmode)
 
 STATUS_FUNCTION(status_oper)
 {
-	char *text;
+	const char *text;
 
 	if (window->server != NOSERV && get_server_operator(window->server) &&
 	    (text = get_string_var(STATUS_OPER_VAR)) &&
@@ -1748,7 +1748,7 @@ STATUS_FUNCTION(status_position)
  */
 STATUS_FUNCTION(status_scrollback)
 {
-	char *stuff;
+	const char *stuff;
 
 	if (window->scrollback_top_of_display &&
 	    (stuff = get_string_var(STATUS_SCROLLBACK_VAR)))
@@ -1819,7 +1819,7 @@ STATUS_FUNCTION(status_test)
  */
 STATUS_FUNCTION(status_swappable)
 {
-	char *stuff;
+	const char *stuff;
 
 	if (!window->swappable && 
 	    (stuff = get_string_var(STATUS_NOSWAP_VAR)))

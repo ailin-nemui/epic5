@@ -685,6 +685,7 @@ static ssize_t	read_color_seq (const unsigned char *start, void *d, int blinkbol
 				break;
 			    }
 
+			    FALLTHROUGH
 			    /* FALLTHROUGH */
 			    /* 
 			     * Fallthrough if 1st digit is 0-5
@@ -704,6 +705,7 @@ static ssize_t	read_color_seq (const unsigned char *start, void *d, int blinkbol
 					break;
 				}
 
+				FALLTHROUGH
 				/* FALLTHROUGH */
 				/*
 				 * Fallthrough if 1st digit is 0-5
@@ -1436,7 +1438,7 @@ abnormal_char:
 				pc += 1;
 				break;
 			}
-
+			FALLTHROUGH
 			/* FALLTHROUGH */
 		}
 
@@ -1947,6 +1949,7 @@ const	unsigned char	*cont_ptr;
 			 * The above is only for non-whitespace.
 			 * whitespace is...
 			 */
+			FALLTHROUGH
 			/* FALLTHROUGH */
 		    }
 
@@ -2753,7 +2756,7 @@ void 	add_to_screen (const unsigned char *buffer)
  */
 static void 	add_to_window (Window *window, const unsigned char *str)
 {
-	char *		pend;
+	const char *	pend;
 	unsigned char *	strval;
 	unsigned char *	free_me = NULL;
         unsigned char **       my_lines;
@@ -3224,7 +3227,7 @@ Window	*create_additional_screen (void)
 	pid_t		child;
 	unsigned short 	port;
 	socklen_t	new_sock_size;
-	char *		wserv_path;
+	const char *	wserv_path;
 
 	char 		subcmd[128];
 	char *		opts;
@@ -3256,7 +3259,7 @@ Window	*create_additional_screen (void)
 	 */
 	if (getenv("STY") && getenv("DISPLAY"))
 	{
-		char *p = get_string_var(WSERV_TYPE_VAR);
+		const char *p = get_string_var(WSERV_TYPE_VAR);
 		if (p && !my_stricmp(p, "SCREEN"))
 			screen_type = ST_SCREEN;
 		else if (p && !my_stricmp(p, "TMUX"))
@@ -3268,7 +3271,7 @@ Window	*create_additional_screen (void)
 	}
 	else if (getenv("TMUX") && getenv("DISPLAY"))
 	{
-		char *p = get_string_var(WSERV_TYPE_VAR);
+		const char *p = get_string_var(WSERV_TYPE_VAR);
 		if (p && !my_stricmp(p, "SCREEN"))
 			screen_type = ST_TMUX;
 		else if (p && !my_stricmp(p, "TMUX"))
@@ -3441,6 +3444,7 @@ Window	*create_additional_screen (void)
 	    {
 		if ((errno == EINTR) || (errno == EAGAIN))
 			continue;
+		FALLTHROUGH
 		/* FALLTHROUGH */
 	    }
 	    case 0:
@@ -4181,5 +4185,117 @@ void	chop_final_columns (unsigned char **str, size_t num)
 			}
 		}
 	}
+}
+
+int	parse_mangle (const char *value, int nvalue, char **rv)
+{
+	char	*str1, *str2;
+	char	*copy;
+	char	*nv = NULL;
+
+	if (rv)
+		*rv = NULL;
+
+	if (!value)
+		return 0;
+
+	copy = LOCAL_COPY(value);
+
+	while ((str1 = new_next_arg(copy, &copy)))
+	{
+		while (*str1 && (str2 = next_in_comma_list(str1, &str1)))
+		{
+			     if (!my_strnicmp(str2, "ALL_OFF", 4))
+				nvalue |= STRIP_ALL_OFF;
+			else if (!my_strnicmp(str2, "-ALL_OFF", 5))
+				nvalue &= ~(STRIP_ALL_OFF);
+			else if (!my_strnicmp(str2, "ALL", 3))
+				nvalue = (0x7FFFFFFF ^ (MANGLE_ESCAPES) ^ (STRIP_OTHER) ^ (STRIP_UNPRINTABLE));
+			else if (!my_strnicmp(str2, "-ALL", 4))
+				nvalue = 0;
+			else if (!my_strnicmp(str2, "ALT_CHAR", 3))
+				nvalue |= STRIP_ALT_CHAR;
+			else if (!my_strnicmp(str2, "-ALT_CHAR", 4))
+				nvalue &= ~(STRIP_ALT_CHAR);
+			else if (!my_strnicmp(str2, "ANSI", 2))
+				nvalue |= NORMALIZE;
+			else if (!my_strnicmp(str2, "-ANSI", 3))
+				nvalue &= ~(NORMALIZE);
+			else if (!my_strnicmp(str2, "BLINK", 2))
+				nvalue |= STRIP_BLINK;
+			else if (!my_strnicmp(str2, "-BLINK", 3))
+				nvalue &= ~(STRIP_BLINK);
+			else if (!my_strnicmp(str2, "BOLD", 2))
+				nvalue |= STRIP_BOLD;
+			else if (!my_strnicmp(str2, "-BOLD", 3))
+				nvalue &= ~(STRIP_BOLD);
+			else if (!my_strnicmp(str2, "COLOR", 1))
+				nvalue |= STRIP_COLOR;
+			else if (!my_strnicmp(str2, "-COLOR", 2))
+				nvalue &= ~(STRIP_COLOR);
+			else if (!my_strnicmp(str2, "ESCAPE", 1))
+				nvalue |= MANGLE_ESCAPES;
+			else if (!my_strnicmp(str2, "-ESCAPE", 2))
+				nvalue &= ~(MANGLE_ESCAPES);
+			else if (!my_strnicmp(str2, "ND_SPACE", 2))
+				nvalue |= STRIP_ND_SPACE;
+			else if (!my_strnicmp(str2, "-ND_SPACE", 3))
+				nvalue &= ~(STRIP_ND_SPACE);
+			else if (!my_strnicmp(str2, "NORMALIZE", 3))
+				nvalue |= NORMALIZE;
+			else if (!my_strnicmp(str2, "-NORMALIZE", 4))
+				nvalue &= ~(NORMALIZE);
+			else if (!my_strnicmp(str2, "NONE", 2))
+				nvalue = 0;
+			else if (!my_strnicmp(str2, "OTHER", 2))
+				nvalue |= STRIP_OTHER;
+			else if (!my_strnicmp(str2, "-OTHER", 3))
+				nvalue &= ~(STRIP_OTHER);
+			else if (!my_strnicmp(str2, "REVERSE", 2))
+				nvalue |= STRIP_REVERSE;
+			else if (!my_strnicmp(str2, "-REVERSE", 3))
+				nvalue &= ~(STRIP_REVERSE);
+			else if (!my_strnicmp(str2, "UNDERLINE", 3))
+				nvalue |= STRIP_UNDERLINE;
+			else if (!my_strnicmp(str2, "-UNDERLINE", 4))
+				nvalue &= ~(STRIP_UNDERLINE);
+			else if (!my_strnicmp(str2, "UNPRINTABLE", 3))
+				nvalue |= STRIP_UNPRINTABLE;
+			else if (!my_strnicmp(str2, "-UNPRINTABLE", 4))
+				nvalue &= ~(STRIP_UNPRINTABLE);
+		}
+	}
+
+	if (rv)
+	{
+		if (nvalue & MANGLE_ESCAPES)
+			malloc_strcat_wordlist(&nv, space, "ESCAPE");
+		if (nvalue & NORMALIZE)
+			malloc_strcat_wordlist(&nv, space, "NORMALIZE");
+		if (nvalue & STRIP_COLOR)
+			malloc_strcat_wordlist(&nv, space, "COLOR");
+		if (nvalue & STRIP_REVERSE)
+			malloc_strcat_wordlist(&nv, space, "REVERSE");
+		if (nvalue & STRIP_UNDERLINE)
+			malloc_strcat_wordlist(&nv, space, "UNDERLINE");
+		if (nvalue & STRIP_BOLD)
+			malloc_strcat_wordlist(&nv, space, "BOLD");
+		if (nvalue & STRIP_BLINK)
+			malloc_strcat_wordlist(&nv, space, "BLINK");
+		if (nvalue & STRIP_ALT_CHAR)
+			malloc_strcat_wordlist(&nv, space, "ALT_CHAR");
+		if (nvalue & STRIP_ND_SPACE)
+			malloc_strcat_wordlist(&nv, space, "ND_SPACE");
+		if (nvalue & STRIP_ALL_OFF)
+			malloc_strcat_wordlist(&nv, space, "ALL_OFF");
+		if (nvalue & STRIP_UNPRINTABLE)
+			malloc_strcat_wordlist(&nv, space, "UNPRINTABLE");
+		if (nvalue & STRIP_OTHER)
+			malloc_strcat_wordlist(&nv, space, "OTHER");
+
+		*rv = nv;
+	}
+
+	return nvalue;
 }
 

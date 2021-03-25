@@ -458,3 +458,6 @@
 /* Define this if newlocale() doesn't appear to work properly */
 #undef NEWLOCALE_DOESNT_WORK
 
+/* Define this if your compiler supports __attribute__((fallthrough)) */
+#undef HAVE_ATTRIBUTE_FALLTHROUGH
+

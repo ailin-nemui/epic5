@@ -998,6 +998,7 @@ static void strip_modes (const char *from, const char *channel, const char *line
 			case 5:
 				if (mag == '-')
 					break;
+				FALLTHROUGH
 			case 4: case 3: case 2:
 				if (!(arg = next_arg(copy, &copy)))
 					arg = endstr(copy);

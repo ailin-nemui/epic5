@@ -503,4 +503,10 @@ typedef struct stat		Stat;
 #undef HAVE_NEWLOCALE
 #endif
 
+#ifdef HAVE_ATTRIBUTE_FALLTHROUGH
+#define FALLTHROUGH __attribute__((fallthrough));
+#else
+#define FALLTHROUGH 
+#endif
+
 #endif /* __irc_std_h */

@@ -700,7 +700,7 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 
 void	whoreply (int refnum, const char *from, const char *comm, const char **ArgList)
 {
-static	char	format[40];
+static	char	format[50];
 static	int	last_width = -1;
 	int	ok = 1;
 	const char	*channel,

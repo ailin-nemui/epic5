@@ -527,7 +527,10 @@ BUILT_IN_COMMAND(ctcp)
 			stag = LOCAL_COPY("VERSION");
 
 		if (get_server_doing_notice(from_server) > 0)
+		{
 			say("You may not use the CTCP command from a NOTICE!");
+			return;
+		}
 		else if (get_server_doing_privmsg(from_server))
 			request = 0;		/* XXX What about dcc chat? */
 		else
@@ -1698,7 +1701,7 @@ BUILT_IN_COMMAND(load)
 {
 	char *	filename;
 	char *	sargs;
-	char *	use_path;
+	const char *	use_path;
 	char *	expanded;
         struct epic_loadfile * elf;
 	int	display;

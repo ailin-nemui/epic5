@@ -164,7 +164,7 @@ void	logger (void *stuff)
 {
 	VARIABLE *v;
 	int	flag;
-	char *	logfile = NULL;
+	const char *	logfile = NULL;
 
 	v = (VARIABLE *)stuff;
 	flag = v->integer;

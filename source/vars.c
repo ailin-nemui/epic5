@@ -61,20 +61,44 @@
 #include "ifcmd.h"
 #include "ssl.h"
 
+
 /*
- * The VIF_* macros stand for "(V)ariable.(i)nt_(f)lags", and have been
- * used for the various possible values of the flags data member.
- * The first two are, the third one is not.  The third one is used in
- * the 'flags' data member, but its based on the same idea.
+ * About /SETs and BIVs
+ * 
+ * A /SET, is a persistent global variable.
+ * A /SET has a type 
+ *	Boolean -- ON or OFF
+ *	String
+ * 	Integer
+ * 	Character
+ * Much of the behavior of the client is controlled/configured by /SETs.
+ *
+ * Formally, /SETs are known as Built-In Variables ("BIVs") and you'll see that in 
+ * alias.c in the unified symbol table.
+ *
+ * But in this file here, BIVs refer to those /SETs that are hardcoded in the client,
+ * and not /SETs that are created by the user at runtime.   BIVs are created when the
+ * client boots.
+ *
+ * Because symbol lookups (by string) are expensive, and because /SETs are used so 
+ * extensively, BIVs have an optimization abstraction that lets C code get a /SET in 
+ * O(1) time.
+ * 
+ * Most of the things in this file are related to BIV /SETs.  There is also the /SET
+ * command, which applies to all SETs, builtin or hardcoded.
+ *
+ * You can always do a full name-to-object lookup with bucket_builtin_variables(),
+ * but you can only do a O(1) lookup on BIVs.
  */
-#define VIF_PENDING	0x04	/* A /set is pending for this variable */
 
-const char	*var_settings[] =
-{
-	"OFF", "ON", "TOGGLE"
-};
-
+/*
+ * This bucket contains ONLY THE HARDCODED /SETs
+ * This is duplicative of the master /SET list maintained by the symbol table.
+ * The routines that do O(1) mapping of /set's to (IrcVariable) objects
+ * will use this bucket for their lookups.
+ */
 	Bucket *var_bucket = NULL;
+
 
 static	void	set_mangle_inbound 	(void *);
 static	void	set_mangle_outbound 	(void *);
@@ -85,7 +109,32 @@ static	void	set_wserv_type		(void *);
 static	void	set_indent		(void *);
 
 
-/* BIV stands for "built in variable" */
+/*
+ * add_biv -- Create a Hard-coded /SET at client-startup.
+ *
+ * Arguments:
+ *	name 	- The name of the /SET
+ *	bucket 	- 1 to save the /SET in the optimization bucket, 0 if not
+ *	type	- STR_VAR - the /SET can be set to a string
+ *		  INT_VAR - The /SET can be set to an integer
+ *		  CHAR_VAR - The /SET can be set to a single character
+ *		  BOOL_VAR - The /SET can be set to OFF or ON
+ *	func	- A C function to call back when the /SET is changed
+ *		  This is used when you need to do something when the
+ *		  value is changed, or you need to constrain/QA the value
+ *	script	- Only NULL is supported.
+ *	...	- The initial value of the /SET (usually a #define DEFAULT_ in config.h)
+ *
+ * Return value:
+ *	> 0	If bucket == 1, the integer offset in the BIV bucket for this /SET
+ *	-1	If bucket == 0, the new /SET was not saved in the bucket.
+ *
+ * It is clear this function was originally intended to support creating user sets,
+ * but that should be done using $symbolctl() instead.
+ * 
+ * THIS IS AN INTERNAL FUNCTION - NOBODY SHOULD CALL IT EXCEPT THE BOOTSTRAP CODE
+ * (init_variables_stage1())
+ */
 static int	add_biv (const char *name, int bucket, int type, void (*func) (void *), const char *script, ...)
 {
 	IrcVariable *var;
@@ -102,7 +151,7 @@ static int	add_biv (const char *name, int bucket, int type, void (*func) (void *
 	var->func = func;
 
 	var->data = new_malloc(sizeof(union builtin_variable));
-	var->flags = 0;
+	var->pending = 0;
 
 	va_start(va, script);
 	switch (var->type) {
@@ -133,11 +182,19 @@ static int	add_biv (const char *name, int bucket, int type, void (*func) (void *
 }
 
 /* 
- * Create a clone of 'var' suitable for putting on the symbol table stack 
- * This does not create a new built in variable!
- * The new IrcVariable created here can be "used" by $symbolctl() but
- * can not be put into the bucket!  
- * Pass it to 'unclone_biv' later.
+ * clone_biv -- Create a deep copy of a /SET's object
+ * 
+ * Arguments:
+ * 	old	- Ptr to an existing/live (IrcVariable)
+ *
+ * Return value:
+ *	A ptr to a new (IrcVariable) that is a deep copy of 'old'
+ *	You can pass the return value to unclone_bov() later.
+ *
+ * This is used by /STACK PUSH SET <x> to create the copy of <x>
+ * that gets pushed onto the stack for restoration later.
+ *
+ * This can be called on any /SET
  */
 IrcVariable *	clone_biv (IrcVariable *old)
 {
@@ -155,7 +212,7 @@ IrcVariable *	clone_biv (IrcVariable *old)
 	var->func = old->func;
 
 	var->data = new_malloc(sizeof(union builtin_variable));
-	var->flags = 0;
+	var->pending = 0;
 
 	switch (old->type) {
 	    case BOOL_VAR:
@@ -175,8 +232,18 @@ IrcVariable *	clone_biv (IrcVariable *old)
 }
 
 /* 
- * Restore the value of a previously cloned biv.  This does not create
- * or remove a biv from the bucket!
+ * unclone_biv -- Restore a deep copy of an (IrcVariable) object
+ * 
+ * Arguments:
+ *	name	- The name of a /SET to be restored
+ *	clone	- Ptr to (IrcVariable) previously returned by clone_biv()
+ *
+ * This is used by /STACK POP SET <x> to restore the copy of <x>
+ * that was previously created by /STACK PUSH SET <x>.
+ *
+ * When this value gets reset, if the /SET has a callback, it is invoked
+ *
+ * This can be called on any /SET
  */
 void	unclone_biv (const char *name, IrcVariable *clone)
 {
@@ -197,7 +264,7 @@ void	unclone_biv (const char *name, IrcVariable *clone)
 		else
 			new_free(&var->script);
 
-		var->flags = clone->flags;
+		var->pending = clone->pending;
 
 		/*
 		 * XXX This should be unified with set_variable() somehow.
@@ -221,9 +288,9 @@ void	unclone_biv (const char *name, IrcVariable *clone)
 		 * XXX I copied this from set_variable(), but this
 		 * should be refactored and shared with that function.
 		 */
-		if ((var->func || var->script) && !(var->flags & VIF_PENDING))
+		if ((var->func || var->script) && !var->pending)
 		{
-			var->flags |= VIF_PENDING;
+			var->pending++;
 			if (var->func)
 			    (var->func)(var->data);
 			if (var->script)
@@ -231,13 +298,13 @@ void	unclone_biv (const char *name, IrcVariable *clone)
 			    char *s;
 			    int owd = window_display;
 
-			    s = make_string_var_bydata(var->type, (void *)var->data);
+			    s = make_string_var_bydata((const void *)var);
 			    window_display = 0;
 			    call_lambda_command("SET", var->script, s);
 			    window_display = owd;
 			    new_free(&s);
 			}
-			var->flags &= ~VIF_PENDING;
+			var->pending--;
 		}
 
 
@@ -248,6 +315,23 @@ void	unclone_biv (const char *name, IrcVariable *clone)
 	}
 }
 
+/*
+ * is_var_builtin -- Is a /SET a BIV, or is it user-created?
+ *
+ * Arguments:
+ *	varname	- The name of a /SET
+ *
+ * Return value:
+ *	0 - The named /SET is not a BIV, either:
+ *		- because it does not exist, or
+ *		- because it is a user-created /SET
+ *	1 - The named /SET is a BIV and must not be deleted
+ *
+ * This is used by $symbolctl() to determine if a /SET can be deleted.
+ * XXX Perhaps this info should be stored in the (IrcVariable)
+ *
+ * This can be called on any /SET.
+ */
 int	is_var_builtin (const char *varname)
 {
 	int	i;
@@ -263,8 +347,16 @@ int	is_var_builtin (const char *varname)
 #define VAR(x, y, z) x ## _VAR = add_biv( #x, 1, y ## _VAR, z,NULL, DEFAULT_ ## x);
 
 /*
- * init_variables: initializes the string variables that can't really be
- * initialized properly above 
+ * init_variables -- Bootstrap the Built In Variables (BIV) /SETs during client bootup
+ *
+ * When the client is bootstraping itself, it needs to create all the built-in-variable
+ * /SETs so things can start using them.   This is done before parsing command line 
+ * arguments, since you can change /SETs that way
+ *
+ * The default values for /SETs are #defined in include/config.h -- mostly.
+ * For those things not defined in config.h, a hardcoded default value is found here!
+ *
+ * This can only be called once, at client boostrap time.
  */
 void 	init_variables_stage1 (void)
 {
@@ -317,14 +409,14 @@ void 	init_variables_stage1 (void)
 	VAR(HIDE_PRIVATE_CHANNELS,	BOOL, update_all_status_wrapper);
 	VAR(HOLD_SLIDER,		INT,  NULL);
 	VAR(INDENT,			BOOL, set_indent);
-        VAR(INPUT_INDICATOR_LEFT,	STR, NULL);
-        VAR(INPUT_INDICATOR_RIGHT,	STR, NULL);
+        VAR(INPUT_INDICATOR_LEFT,	STR,  NULL);
+        VAR(INPUT_INDICATOR_RIGHT,	STR,  NULL);
         VAR(INPUT_PROMPT,		STR,  set_input_prompt);
 	VAR(INSERT_MODE,		BOOL, update_all_status_wrapper);
 	VAR(KEY_INTERVAL,		INT,  set_key_interval);
 	VAR(LASTLOG, 			INT,  set_lastlog_size);
 	VAR(LASTLOG_LEVEL,		STR,  set_lastlog_mask);
-	VAR(LASTLOG_REWRITE,		STR, NULL);
+	VAR(LASTLOG_REWRITE,		STR,  NULL);
 #define DEFAULT_LOAD_PATH NULL
 	VAR(LOAD_PATH,			STR,  NULL);
 	VAR(LOG,			BOOL, logger);
@@ -333,7 +425,7 @@ void 	init_variables_stage1 (void)
 	VAR(LOG_REWRITE,		STR,  NULL);
 	VAR(MAIL,			INT,  set_mail);
 	VAR(MAIL_INTERVAL,		INT,  set_mail_interval);
-	VAR(MAIL_TYPE,			STR, set_mail_type);
+	VAR(MAIL_TYPE,			STR,  set_mail_type);
 #define DEFAULT_MANGLE_DISPLAY "NORMALIZE"
 	VAR(MANGLE_DISPLAY,		STR,  set_mangle_display);
 #define DEFAULT_MANGLE_INBOUND NULL
@@ -352,114 +444,125 @@ void 	init_variables_stage1 (void)
 	VAR(NOTIFY_ON_TERMINATION,	BOOL, NULL);
 	VAR(NOTIFY_USERHOST_AUTOMATIC,	BOOL, NULL);
 	VAR(NO_CONTROL_LOG,		BOOL, NULL);	/* XXX /set mangle_logfile */
-	VAR(NO_CTCP_FLOOD, BOOL, NULL);
-	VAR(NO_FAIL_DISCONNECT, BOOL, NULL);
-	VAR(OLD_MATH_PARSER, BOOL, NULL);
-	VAR(OLD_SERVER_LASTLOG_LEVEL, STR,  set_old_server_lastlog_mask);
+	VAR(NO_CTCP_FLOOD,              BOOL, NULL);
+	VAR(NO_FAIL_DISCONNECT,         BOOL, NULL);
+	VAR(OLD_MATH_PARSER,            BOOL, NULL);
+	VAR(OLD_SERVER_LASTLOG_LEVEL,   STR,  set_old_server_lastlog_mask);
 #define DEFAULT_OUTPUT_REWRITE NULL
-	VAR(OUTPUT_REWRITE, STR,  NULL);
-	VAR(PAD_CHAR, CHAR, NULL);
-	VAR(QUIT_MESSAGE, STR,  NULL);
-	VAR(RANDOM_SOURCE, INT,  NULL);
-	VAR(SCREEN_OPTIONS, STR,  NULL);
-	VAR(SCROLLBACK, INT,  set_scrollback_size);
-	VAR(SCROLLBACK_RATIO, INT,  NULL);
-	VAR(SCROLL_LINES, INT,  set_scroll_lines);
-	VAR(SHELL, STR,  NULL);
-	VAR(SHELL_FLAGS, STR,  NULL);
-	VAR(SHELL_LIMIT, INT,  NULL);
-	VAR(SHOW_CHANNEL_NAMES, BOOL, NULL);
-	VAR(SHOW_NUMERICS, BOOL, NULL);
-	VAR(SHOW_STATUS_ALL, BOOL, update_all_status_wrapper);
+	VAR(OUTPUT_REWRITE,             STR,  NULL);
+	VAR(PAD_CHAR,                   CHAR, NULL);
+	VAR(QUIT_MESSAGE,               STR,  NULL);
+	VAR(RANDOM_SOURCE,              INT,  NULL);
+	VAR(SCREEN_OPTIONS,             STR,  NULL);
+	VAR(SCROLLBACK,                 INT,  set_scrollback_size);
+	VAR(SCROLLBACK_RATIO,           INT,  NULL);
+	VAR(SCROLL_LINES,               INT,  set_scroll_lines);
+	VAR(SHELL,                      STR,  NULL);
+	VAR(SHELL_FLAGS,                STR,  NULL);
+	VAR(SHELL_LIMIT,                INT,  NULL);
+	VAR(SHOW_CHANNEL_NAMES,         BOOL, NULL);
+	VAR(SHOW_NUMERICS,              BOOL, NULL);
+	VAR(SHOW_STATUS_ALL,            BOOL, update_all_status_wrapper);
 #ifdef HAVE_SSL
-	VAR(SSL_ROOT_CERTS_LOCATION, STR, set_ssl_root_certs_location);
+	VAR(SSL_ROOT_CERTS_LOCATION,    STR, set_ssl_root_certs_location);
 #endif
-	VAR(STATUS_AWAY, STR,  build_status);
-	VAR(STATUS_CHANNEL, STR,  build_status);
-	VAR(STATUS_CHANOP, STR,  build_status);
-	VAR(STATUS_CLOCK, STR,  build_status);
-	VAR(STATUS_CPU_SAVER, STR,  build_status);
+	VAR(STATUS_AWAY,                STR,  build_status);
+	VAR(STATUS_CHANNEL,             STR,  build_status);
+	VAR(STATUS_CHANOP,              STR,  build_status);
+	VAR(STATUS_CLOCK,               STR,  build_status);
+	VAR(STATUS_CPU_SAVER,           STR,  build_status);
 #define DEFAULT_STATUS_DOES_EXPANDOS 0
-	VAR(STATUS_DOES_EXPANDOS, BOOL, NULL);
-	VAR(STATUS_FORMAT, STR,  build_status);
-	VAR(STATUS_FORMAT1, STR,  build_status);
-	VAR(STATUS_FORMAT2, STR,  build_status);
-	VAR(STATUS_HALFOP, STR,  build_status);
-	VAR(STATUS_HOLD, STR,  build_status);
-	VAR(STATUS_HOLD_LINES, STR,  build_status);
-	VAR(STATUS_HOLDMODE, STR,  build_status);
-	VAR(STATUS_INSERT, STR,  build_status);
-	VAR(STATUS_MAIL, STR,  build_status);
-	VAR(STATUS_MODE, STR,  build_status);
-	VAR(STATUS_NICKNAME, STR,  build_status);
-	VAR(STATUS_NOSWAP, STR,  build_status);
-	VAR(STATUS_NOTIFY, STR,  build_status);
-	VAR(STATUS_NO_REPEAT, BOOL, build_status);
-	VAR(STATUS_OPER, STR,  build_status);
-	VAR(STATUS_OVERWRITE, STR,  build_status);
+	VAR(STATUS_DOES_EXPANDOS,       BOOL, NULL);
+	VAR(STATUS_FORMAT,              STR,  build_status);
+	VAR(STATUS_FORMAT1,             STR,  build_status);
+	VAR(STATUS_FORMAT2,             STR,  build_status);
+	VAR(STATUS_HALFOP,              STR,  build_status);
+	VAR(STATUS_HOLD,                STR,  build_status);
+	VAR(STATUS_HOLD_LINES,          STR,  build_status);
+	VAR(STATUS_HOLDMODE,            STR,  build_status);
+	VAR(STATUS_INSERT,              STR,  build_status);
+	VAR(STATUS_MAIL,                STR,  build_status);
+	VAR(STATUS_MODE,                STR,  build_status);
+	VAR(STATUS_NICKNAME,            STR,  build_status);
+	VAR(STATUS_NOSWAP,              STR,  build_status);
+	VAR(STATUS_NOTIFY,              STR,  build_status);
+	VAR(STATUS_NO_REPEAT,           BOOL, build_status);
+	VAR(STATUS_OPER,                STR,  build_status);
+	VAR(STATUS_OVERWRITE,           STR,  build_status);
 	VAR(STATUS_PREFIX_WHEN_CURRENT, STR,  build_status);
 	VAR(STATUS_PREFIX_WHEN_NOT_CURRENT, STR,  build_status);
-	VAR(STATUS_QUERY, STR,  build_status);
-	VAR(STATUS_SCROLLBACK, STR,  build_status);
-	VAR(STATUS_SERVER, STR,  build_status);
-	VAR(STATUS_SSL_OFF, STR,  build_status);
-	VAR(STATUS_SSL_ON, STR,  build_status);
-	VAR(STATUS_UMODE, STR,  build_status);
-	VAR(STATUS_USER, STR,  build_status);
-	VAR(STATUS_USER1, STR,  build_status);
-	VAR(STATUS_USER10, STR,  build_status);
-	VAR(STATUS_USER11, STR,  build_status);
-	VAR(STATUS_USER12, STR,  build_status);
-	VAR(STATUS_USER13, STR,  build_status);
-	VAR(STATUS_USER14, STR,  build_status);
-	VAR(STATUS_USER15, STR,  build_status);
-	VAR(STATUS_USER16, STR,  build_status);
-	VAR(STATUS_USER17, STR,  build_status);
-	VAR(STATUS_USER18, STR,  build_status);
-	VAR(STATUS_USER19, STR,  build_status);
-	VAR(STATUS_USER2, STR,  build_status);
-	VAR(STATUS_USER20, STR,  build_status);
-	VAR(STATUS_USER21, STR,  build_status);
-	VAR(STATUS_USER22, STR,  build_status);
-	VAR(STATUS_USER23, STR,  build_status);
-	VAR(STATUS_USER24, STR,  build_status);
-	VAR(STATUS_USER25, STR,  build_status);
-	VAR(STATUS_USER26, STR,  build_status);
-	VAR(STATUS_USER27, STR,  build_status);
-	VAR(STATUS_USER28, STR,  build_status);
-	VAR(STATUS_USER29, STR,  build_status);
-	VAR(STATUS_USER3, STR,  build_status);
-	VAR(STATUS_USER30, STR,  build_status);
-	VAR(STATUS_USER31, STR,  build_status);
-	VAR(STATUS_USER32, STR,  build_status);
-	VAR(STATUS_USER33, STR,  build_status);
-	VAR(STATUS_USER34, STR,  build_status);
-	VAR(STATUS_USER35, STR,  build_status);
-	VAR(STATUS_USER36, STR,  build_status);
-	VAR(STATUS_USER37, STR,  build_status);
-	VAR(STATUS_USER38, STR,  build_status);
-	VAR(STATUS_USER39, STR,  build_status);
-	VAR(STATUS_USER4, STR,  build_status);
-	VAR(STATUS_USER5, STR,  build_status);
-	VAR(STATUS_USER6, STR,  build_status);
-	VAR(STATUS_USER7, STR,  build_status);
-	VAR(STATUS_USER8, STR,  build_status);
-	VAR(STATUS_USER9, STR,  build_status);
-	VAR(STATUS_VOICE, STR,  build_status);
-	VAR(STATUS_WINDOW, STR,  build_status);
+	VAR(STATUS_QUERY,               STR,  build_status);
+	VAR(STATUS_SCROLLBACK,          STR,  build_status);
+	VAR(STATUS_SERVER,              STR,  build_status);
+	VAR(STATUS_SSL_OFF,             STR,  build_status);
+	VAR(STATUS_SSL_ON,              STR,  build_status);
+	VAR(STATUS_UMODE,               STR,  build_status);
+	VAR(STATUS_USER,                STR,  build_status);
+	VAR(STATUS_USER1,               STR,  build_status);
+	VAR(STATUS_USER10,              STR,  build_status);
+	VAR(STATUS_USER11,              STR,  build_status);
+	VAR(STATUS_USER12,              STR,  build_status);
+	VAR(STATUS_USER13,              STR,  build_status);
+	VAR(STATUS_USER14,              STR,  build_status);
+	VAR(STATUS_USER15,              STR,  build_status);
+	VAR(STATUS_USER16,              STR,  build_status);
+	VAR(STATUS_USER17,              STR,  build_status);
+	VAR(STATUS_USER18,              STR,  build_status);
+	VAR(STATUS_USER19,              STR,  build_status);
+	VAR(STATUS_USER2,               STR,  build_status);
+	VAR(STATUS_USER20,              STR,  build_status);
+	VAR(STATUS_USER21,              STR,  build_status);
+	VAR(STATUS_USER22,              STR,  build_status);
+	VAR(STATUS_USER23,              STR,  build_status);
+	VAR(STATUS_USER24,              STR,  build_status);
+	VAR(STATUS_USER25,              STR,  build_status);
+	VAR(STATUS_USER26,              STR,  build_status);
+	VAR(STATUS_USER27,              STR,  build_status);
+	VAR(STATUS_USER28,              STR,  build_status);
+	VAR(STATUS_USER29,              STR,  build_status);
+	VAR(STATUS_USER3,               STR,  build_status);
+	VAR(STATUS_USER30,              STR,  build_status);
+	VAR(STATUS_USER31,              STR,  build_status);
+	VAR(STATUS_USER32,              STR,  build_status);
+	VAR(STATUS_USER33,              STR,  build_status);
+	VAR(STATUS_USER34,              STR,  build_status);
+	VAR(STATUS_USER35,              STR,  build_status);
+	VAR(STATUS_USER36,              STR,  build_status);
+	VAR(STATUS_USER37,              STR,  build_status);
+	VAR(STATUS_USER38,              STR,  build_status);
+	VAR(STATUS_USER39,              STR,  build_status);
+	VAR(STATUS_USER4,               STR,  build_status);
+	VAR(STATUS_USER5,               STR,  build_status);
+	VAR(STATUS_USER6,               STR,  build_status);
+	VAR(STATUS_USER7,               STR,  build_status);
+	VAR(STATUS_USER8,               STR,  build_status);
+	VAR(STATUS_USER9,               STR,  build_status);
+	VAR(STATUS_VOICE,               STR,  build_status);
+	VAR(STATUS_WINDOW,              STR,  build_status);
 	VAR(SUPPRESS_FROM_REMOTE_SERVER, BOOL, NULL);
-	VAR(SWITCH_CHANNELS_BETWEEN_WINDOWS, BOOL, NULL);
-	VAR(TERM_DOES_BRIGHT_BLINK, BOOL, NULL);
-	VAR(TMUX_OPTIONS, STR,  NULL);
-	VAR(USER_INFORMATION, STR, NULL);
-	VAR(WORD_BREAK, STR,  NULL);
+	VAR(SWITCH_CHANNELS_BETWEEN_WINDOWS,  BOOL, NULL);
+	VAR(TERM_DOES_BRIGHT_BLINK,     BOOL, NULL);
+	VAR(TMUX_OPTIONS,               STR,  NULL);
+	VAR(USER_INFORMATION,           STR,  NULL);
+	VAR(WORD_BREAK,                 STR,  NULL);
 #define DEFAULT_WSERV_PATH WSERV_PATH
-	VAR(WSERV_PATH, STR,  NULL);
-	VAR(WSERV_TYPE, STR,  set_wserv_type);
-	VAR(XTERM, STR,  NULL);
-	VAR(XTERM_OPTIONS, STR,  NULL);
+	VAR(WSERV_PATH,                 STR,  NULL);
+	VAR(WSERV_TYPE,                 STR,  set_wserv_type);
+	VAR(XTERM,                      STR,  NULL);
+	VAR(XTERM_OPTIONS,              STR,  NULL);
 }
 
+/*
+ * init_variables_stage2 -- Complete the initialization of all BIV /SETs
+ *
+ * During the early part of the client bootstrap process, we created 
+ * the BIV /SETs.  But that's all we did, we just created them.  
+ * Many /SETs bootstrap themselves through a callback function, which 
+ * we haven't called yet.   This function goes through and calls the
+ * callback function for every /SET with its initial value.
+ *
+ * This can only be called once, at client boostrap time.
+ */
 void 	init_variables_stage2 (void)
 {
 	int 	i;
@@ -473,28 +576,47 @@ void 	init_variables_stage2 (void)
 
 		if (var->func)
 		{
+			/*
+			 * We don't call build_status() or update_all_status() here, 
+			 * because there is still more bootstrap that needs to be 
+			 * done before the status bar is ready to go.  So the bootstrap 
+			 * code calls build_status() for the first time after we return.
+			 */
 			if (var->func == build_status)
 				continue;
 			if (var->func == update_all_status_wrapper)
 				continue;
 
-			var->flags |= VIF_PENDING;
+			var->pending++;
 			var->func(var->data);
-			var->flags &= ~VIF_PENDING;
+			var->pending--;
 		}
 	}
 }
 
 /*
- * do_boolean: just a handy thing.  Returns 1 if the str is not ON, OFF, or
- * TOGGLE 
+ * do_boolean -- determine whether a string contains a boolean value and set it
+ *
+ * Arguments:
+ *	str	- A string that should contain "ON", "OFF", or "TOGGLE"
+ *	value	- A pointer to an existing boolean value.  It should be 0 or 1.
+ *
+ * Return value:
+ *	0 - The operation completed successfully
+ * 		If str is "ON", then *value is set to 1.
+ * 		If str is "OFF", then *value is set to 0.
+ * 		If str is "TOGGLE", then *value is set to the opposte of whatever it is 
+ *	1 - The operation failed (str did not contain a value boolean value)
+ *		*value is unchanged.
+ *
+ * XXX This is not /SET specific; it belongs somewhere else.
  */
 int 	do_boolean (char *str, int *value)
 {
 	upper(str);
-	if (strcmp(str, var_settings[ON]) == 0)
+	if (strcmp(str, "ON") == 0)
 		*value = 1;
-	else if (strcmp(str, var_settings[OFF]) == 0)
+	else if (strcmp(str, "OFF") == 0)
 		*value = 0;
 	else if (strcmp(str, "TOGGLE") == 0)
 	{
@@ -508,11 +630,21 @@ int 	do_boolean (char *str, int *value)
 	return (0);
 }
 
+/*
+ * show_var_value -- Convert a /SET's value to something human-readable
+ *
+ * Arguments:
+ *	name	- The name of a /SET 
+ *	var	- Ptr to the /SET's (IrcVariable) object
+ *	newval	- Whether this /SET is being changed or just read out
+ *
+ * This can be used for any /SET
+ */
 static void	show_var_value (const char *name, IrcVariable *var, int newval)
 {
 	char *value;
 
-	value = make_string_var_bydata(var->type, (void *)var->data);
+	value = make_string_var_bydata((const void *)var);
 
 	if (!value)
 		value = malloc_strdup("<EMPTY>");
@@ -523,10 +655,14 @@ static void	show_var_value (const char *name, IrcVariable *var, int newval)
 }
 
 /*
- * set_var_value: Given the variable structure and the string representation
- * of the value, this sets the value in the most verbose and error checking
- * of manors.  It displays the results of the set and executes the function
- * defined in the var structure 
+ * set_var_value - A wrapper for changing a BIV /SET
+ *
+ * Arguments:
+ *	svv_index - The index of the BIV 
+ *	value	  - The value the /SET should be changed to
+ *	noisy	  - 1 if the user should be told, 0 if not.
+ *
+ * You can only call this for a BIV /SET.
  */
 void 	set_var_value (int svv_index, const char *value, int noisy)
 {
@@ -537,20 +673,31 @@ void 	set_var_value (int svv_index, const char *value, int noisy)
 }
 
 /*
- * set_var_value: Given the variable structure and the string representation
- * of the value, this sets the value in the most verbose and error checking
- * of manors.  It displays the results of the set and executes the function
- * defined in the var structure 
+ * set_variable -- Change a /SET's value
+ *
+ * Arguments:
+ *	name	  - The name of the /SET being changed
+ *	var	  - The (IrcVariable) for that /SET
+ *	new_value - The value the /SET should be changed to
+ *	noisy	  - 1 if the user should be told, 0 if not.
+ *
+ * Return value:
+ *	 0	- The new value was set successfully.
+ *	-1	- Something went wrong; the /SET was not changed.
+ *
+ * You can call this for any /SET.
+ * However, you have already looked up the 'var' yourself.   
+ *    I recommend bucket_builtin_variables().
  */
-int 	set_variable (const char *name, IrcVariable *var, const char *orig_value, int noisy)
+int 	set_variable (const char *name, IrcVariable *var, const char *new_value, int noisy)
 {
 	char	*rest;
 	int	changed = 0;
 	unsigned char	*value;
 	int	retval = 0;
 
-	if (orig_value)
-		value = LOCAL_COPY(orig_value);
+	if (new_value)
+		value = LOCAL_COPY(new_value);
 	else
 		value = NULL;
 
@@ -610,8 +757,7 @@ int 	set_variable (const char *name, IrcVariable *var, const char *orig_value, i
 			    say("Value of %s must be numeric!", name);
 			    retval = -1;
 			} else if ((val = my_atol(value)) < 0) {
-			    say("Value of %s must be a non-negative number", 
-					name);
+			    say("Value of %s must be a non-negative number", name);
 			    retval = -1;
 			} else {
 			    var->data->integer = val;
@@ -638,9 +784,9 @@ int 	set_variable (const char *name, IrcVariable *var, const char *orig_value, i
 
 	if (changed)
 	{
-	    if ((var->func || var->script) && !(var->flags & VIF_PENDING))
+	    if ((var->func || var->script) && !var->pending)
 	    {
-		var->flags |= VIF_PENDING;
+		var->pending++;
 		if (var->func)
 		    (var->func)(var->data);
 		if (var->script)
@@ -648,13 +794,13 @@ int 	set_variable (const char *name, IrcVariable *var, const char *orig_value, i
 		    char *s;
 		    int owd = window_display;
 
-		    s = make_string_var_bydata(var->type, (void *)var->data);
+		    s = make_string_var_bydata((const void *)var);
 		    window_display = 0;
 		    call_lambda_command("SET", var->script, s);
 		    window_display = owd;
 		    new_free(&s);
 		}
-		var->flags &= ~VIF_PENDING;
+		var->pending--;
 	    }
 	}
 
@@ -665,7 +811,7 @@ int 	set_variable (const char *name, IrcVariable *var, const char *orig_value, i
 }
 
 /*
- * set_variable: The SET command sets one of the irc variables.  The args
+ * setcmd: The SET command sets one of the irc variables.  The args
  * should consist of "variable-name setting", where variable name can be
  * partial, but non-ambbiguous, and setting depends on the variable being set 
  */
@@ -749,10 +895,10 @@ BUILT_IN_COMMAND(setcmd)
 	 * STEP 1 -- We would Allow the user to overrule the /SET via /ON SET.
 	 * You can /SET a new value in the /ON SET!
 	 */
-	if (!thevar || !(thevar->flags & VIF_PENDING))
+	if (!thevar || !thevar->pending)
 	{
 		if (thevar)
-			thevar->flags |= VIF_PENDING;
+			thevar->pending++;
 
 		/*
 		 * Offer exactly what the user asked for
@@ -762,7 +908,7 @@ BUILT_IN_COMMAND(setcmd)
 		{
 			free_bucket(&b);
 			if (thevar)
-				thevar->flags &= ~VIF_PENDING;
+				thevar->pending--;
 			return;		/* Grabbed -- stop. */
 		}
 
@@ -777,13 +923,13 @@ BUILT_IN_COMMAND(setcmd)
 		    {
 			free_bucket(&b);
 			if (thevar)
-				thevar->flags &= ~VIF_PENDING;
+				thevar->pending--;
 			return;		/* Grabbed -- stop. */
 		    }
 		}
 
 		if (thevar)
-			thevar->flags &= ~VIF_PENDING;
+			thevar->pending--;
 	}
 
 	/*
@@ -836,24 +982,70 @@ BUILT_IN_COMMAND(setcmd)
 }
 
 /*
- * get_string_var: returns the value of the string variable given as an index
- * into the variable table.  Does no checking of variable types, etc 
+ * get_string_var -- Get the value of a BIV using its index
+ *
+ * Arguments:
+ *	var - An integer representing the offset of a BIV
+ *	      It must be a string typed /SET!
+ *
+ * Return value:
+ *	The value of that /SET as an string
+ *
+ * IMPORTANT: This O(1) function only works for /SETs that are hardcoded.
+ * You need to call make_string_var2() to look up user-created /SETs
+ *
+ * IMPORTANT:  This does not do any type checking.  If you call get_string_var()
+ * against a /SET that is not an integer /SET, you will get garbage!
+ * 
+ * IMPORTANT: The caller DOES NOT OWN the return value.  YOU MUST NOT 
+ * new_free() IT.  YOU MUST NOT CHANGE IT.  
  */
-char *	get_string_var (int var)
+const char *	get_string_var (int var)
 {
 	return ((IrcVariable *)var_bucket->list[var].stuff)->data->string;
 }
 
 /*
- * get_int_var: returns the value of the integer string given as an index
- * into the variable table.  Does no checking of variable types, etc 
+ * get_int_var -- Get the value of a BIV using its index
+ *
+ * Arguments:
+ *	var - An integer representing the offset of a BIV
+ *	      It must be an integer typed /SET!
+ *
+ * Return value:
+ *	The value of that /SET as an integer
+ *
+ * IMPORTANT: This O(1) function only works for /SETs that are hardcoded.
+ * You need to call make_string_var2() to look up user-created /SETs
+ *
+ * IMPORTANT:  This does not do any type checking.  If you call get_int_var()
+ * against a /SET that is not an integer /SET, you will get garbage!
  */
 int 	get_int_var (int var)
 {
 	return ((IrcVariable *)var_bucket->list[var].stuff)->data->integer;
 }
 
-char 	*make_string_var (const char *var_name)
+/*
+ * make_string_var -- Get the current value of any /SET by name
+ *
+ * Arguments:
+ *	var_name - The name of a /SET -- Must be in canonical format 
+ *
+ * Return Value:
+ *	NULL 	- The requested /SET does not exist,
+ *		  OR, the /SET does not have a value
+ *	_	- A new string containing a human-readable version of the /SET
+ *		  THE RETURN VALUE IS MALLOC()ed -- THE CALLER MUST NEW_FREE() it.
+ *
+ *
+ * You can call this against any /SET
+ *
+ * Because 'var_name' is looked up literally as a symbol, it must be in
+ * canonical format (dots, not []s) and uppercase.  This function will 
+ * uppercase what you pass it as a courtesy.
+ */
+char *	make_string_var (const char *var_name)
 {
 	char *	(*dummy) (void);
 	IrcVariable *thevar = NULL;
@@ -866,12 +1058,27 @@ char 	*make_string_var (const char *var_name)
 	if (thevar == NULL)
 		return NULL;
 
-	return make_string_var_bydata(thevar->type, thevar->data);
+	return make_string_var_bydata((const void *)thevar);
 }
 
 /*
- * Like 'make_string_var' but returns -1 if 'var_name' does not exist.
- * It returns 0 if 'var_name' does exist, and sets *retval.
+ * make_string_var2 -- Get the current value of any /SET by name with error code
+ *
+ * Arguments:
+ *	var_name - The name of a /SET -- Must be in canonical format 
+ *	retval	 - A ptr to a (char *) where we will return the string
+ *
+ * Return Value:
+ *	-1	- The requested /SET does not exist
+ *	 0	- A new string containing a human-readable version of the /SET
+ *		  has been placed in *retval.  YOU MUST NEW_FREE() THE STRING
+ *		  PLACED IN *retval.
+ *
+ * You can call this against any /SET
+ *
+ * Because 'var_name' is looked up literally as a symbol, it must be in
+ * canonical format (dots, not []s) and uppercase.  This function will 
+ * uppercase what you pass it as a courtesy.
  */
 int	make_string_var2 (const char *var_name, char **retval)
 {
@@ -886,13 +1093,30 @@ int	make_string_var2 (const char *var_name, char **retval)
 	if (thevar == NULL)
 		return -1;
 
-	*retval = make_string_var_bydata(thevar->type, thevar->data);
+	*retval = make_string_var_bydata((const void *)thevar);
 	return 0;
 }
-char 	*make_string_var_bydata (int type, void *vp)
+
+/*
+ * make_string_var_bydata -- Make a new string representing the value of an (IrcVariable)
+ *
+ * Arguments:
+ *	irc_variable	- A ptr to an (IrcVariable) object
+ *
+ * Return value:
+ *	A new string containing a human-readable version of the value in irc_variable.
+ *	THE RETURN VALUE IS MALLOC()ed -- THE CALLER MUST NEW_FREE() it.
+ *
+ * You can call this against any /SET
+ */
+char *	make_string_var_bydata (const void *irc_variable)
 {
+	int	type;
+const 	VARIABLE *data;
 	char	*ret = (char *) 0;
-	VARIABLE *data = (VARIABLE *)vp;
+
+	type = ((const IrcVariable *)irc_variable)->type;
+	data = (const VARIABLE *)(((const IrcVariable *)irc_variable)->data);
 
 	switch (type)
 	{
@@ -904,7 +1128,10 @@ char 	*make_string_var_bydata (int type, void *vp)
 			ret = malloc_strdup(ltoa(data->integer));
 			break;
 		case BOOL_VAR:
-			ret = malloc_strdup(var_settings[data->integer]);
+			if (data->integer)
+				ret = malloc_strdup("ON");
+			else
+				ret = malloc_strdup("OFF");
 			break;
 		case CHAR_VAR:
 		{
@@ -923,118 +1150,9 @@ char 	*make_string_var_bydata (int type, void *vp)
 
 
 /***************************************************************************/
-int	parse_mangle (const char *value, int nvalue, char **rv)
-{
-	char	*str1, *str2;
-	char	*copy;
-	char	*nv = NULL;
-
-	if (rv)
-		*rv = NULL;
-
-	if (!value)
-		return 0;
-
-	copy = LOCAL_COPY(value);
-
-	while ((str1 = new_next_arg(copy, &copy)))
-	{
-		while (*str1 && (str2 = next_in_comma_list(str1, &str1)))
-		{
-			     if (!my_strnicmp(str2, "ALL_OFF", 4))
-				nvalue |= STRIP_ALL_OFF;
-			else if (!my_strnicmp(str2, "-ALL_OFF", 5))
-				nvalue &= ~(STRIP_ALL_OFF);
-			else if (!my_strnicmp(str2, "ALL", 3))
-				nvalue = (0x7FFFFFFF ^ (MANGLE_ESCAPES) ^ (STRIP_OTHER) ^ (STRIP_UNPRINTABLE));
-			else if (!my_strnicmp(str2, "-ALL", 4))
-				nvalue = 0;
-			else if (!my_strnicmp(str2, "ALT_CHAR", 3))
-				nvalue |= STRIP_ALT_CHAR;
-			else if (!my_strnicmp(str2, "-ALT_CHAR", 4))
-				nvalue &= ~(STRIP_ALT_CHAR);
-			else if (!my_strnicmp(str2, "ANSI", 2))
-				nvalue |= NORMALIZE;
-			else if (!my_strnicmp(str2, "-ANSI", 3))
-				nvalue &= ~(NORMALIZE);
-			else if (!my_strnicmp(str2, "BLINK", 2))
-				nvalue |= STRIP_BLINK;
-			else if (!my_strnicmp(str2, "-BLINK", 3))
-				nvalue &= ~(STRIP_BLINK);
-			else if (!my_strnicmp(str2, "BOLD", 2))
-				nvalue |= STRIP_BOLD;
-			else if (!my_strnicmp(str2, "-BOLD", 3))
-				nvalue &= ~(STRIP_BOLD);
-			else if (!my_strnicmp(str2, "COLOR", 1))
-				nvalue |= STRIP_COLOR;
-			else if (!my_strnicmp(str2, "-COLOR", 2))
-				nvalue &= ~(STRIP_COLOR);
-			else if (!my_strnicmp(str2, "ESCAPE", 1))
-				nvalue |= MANGLE_ESCAPES;
-			else if (!my_strnicmp(str2, "-ESCAPE", 2))
-				nvalue &= ~(MANGLE_ESCAPES);
-			else if (!my_strnicmp(str2, "ND_SPACE", 2))
-				nvalue |= STRIP_ND_SPACE;
-			else if (!my_strnicmp(str2, "-ND_SPACE", 3))
-				nvalue &= ~(STRIP_ND_SPACE);
-			else if (!my_strnicmp(str2, "NORMALIZE", 3))
-				nvalue |= NORMALIZE;
-			else if (!my_strnicmp(str2, "-NORMALIZE", 4))
-				nvalue &= ~(NORMALIZE);
-			else if (!my_strnicmp(str2, "NONE", 2))
-				nvalue = 0;
-			else if (!my_strnicmp(str2, "OTHER", 2))
-				nvalue |= STRIP_OTHER;
-			else if (!my_strnicmp(str2, "-OTHER", 3))
-				nvalue &= ~(STRIP_OTHER);
-			else if (!my_strnicmp(str2, "REVERSE", 2))
-				nvalue |= STRIP_REVERSE;
-			else if (!my_strnicmp(str2, "-REVERSE", 3))
-				nvalue &= ~(STRIP_REVERSE);
-			else if (!my_strnicmp(str2, "UNDERLINE", 3))
-				nvalue |= STRIP_UNDERLINE;
-			else if (!my_strnicmp(str2, "-UNDERLINE", 4))
-				nvalue &= ~(STRIP_UNDERLINE);
-			else if (!my_strnicmp(str2, "UNPRINTABLE", 3))
-				nvalue |= STRIP_UNPRINTABLE;
-			else if (!my_strnicmp(str2, "-UNPRINTABLE", 4))
-				nvalue &= ~(STRIP_UNPRINTABLE);
-		}
-	}
-
-	if (rv)
-	{
-		if (nvalue & MANGLE_ESCAPES)
-			malloc_strcat_wordlist(&nv, space, "ESCAPE");
-		if (nvalue & NORMALIZE)
-			malloc_strcat_wordlist(&nv, space, "NORMALIZE");
-		if (nvalue & STRIP_COLOR)
-			malloc_strcat_wordlist(&nv, space, "COLOR");
-		if (nvalue & STRIP_REVERSE)
-			malloc_strcat_wordlist(&nv, space, "REVERSE");
-		if (nvalue & STRIP_UNDERLINE)
-			malloc_strcat_wordlist(&nv, space, "UNDERLINE");
-		if (nvalue & STRIP_BOLD)
-			malloc_strcat_wordlist(&nv, space, "BOLD");
-		if (nvalue & STRIP_BLINK)
-			malloc_strcat_wordlist(&nv, space, "BLINK");
-		if (nvalue & STRIP_ALT_CHAR)
-			malloc_strcat_wordlist(&nv, space, "ALT_CHAR");
-		if (nvalue & STRIP_ND_SPACE)
-			malloc_strcat_wordlist(&nv, space, "ND_SPACE");
-		if (nvalue & STRIP_ALL_OFF)
-			malloc_strcat_wordlist(&nv, space, "ALL_OFF");
-		if (nvalue & STRIP_UNPRINTABLE)
-			malloc_strcat_wordlist(&nv, space, "UNPRINTABLE");
-		if (nvalue & STRIP_OTHER)
-			malloc_strcat_wordlist(&nv, space, "OTHER");
-
-		*rv = nv;
-	}
-
-	return nvalue;
-}
-
+/*
+ * set_mangle_inbound -- update 'inbound_line_mangler' from /SET MANGLE_INBOUND
+ */
 static	void	set_mangle_inbound (void *stuff)
 {
 	VARIABLE *v;
@@ -1049,6 +1167,9 @@ static	void	set_mangle_inbound (void *stuff)
 	new_free(&nv);
 }
 
+/*
+ * set_mangle_outbound -- update 'outbound_line_mangler' from /SET MANGLE_OUTBOUND
+ */
 static	void	set_mangle_outbound (void *stuff)
 {
 	VARIABLE *v;
@@ -1063,6 +1184,9 @@ static	void	set_mangle_outbound (void *stuff)
 	new_free(&nv);
 }
 
+/*
+ * set_mangle_logfiles -- update 'logfile_line_mangler' from /SET MANGLE_LOGFILES
+ */
 static	void	set_mangle_logfiles (void *stuff)
 {
 	VARIABLE *v;
@@ -1077,6 +1201,9 @@ static	void	set_mangle_logfiles (void *stuff)
 	new_free(&nv);
 }
 
+/*
+ * set_mangle_display - update 'display_line_mangler' from /SET MANGLE_DISPLAY
+ */
 static	void	set_mangle_display (void *stuff)
 {
 	VARIABLE *v;
@@ -1091,11 +1218,22 @@ static	void	set_mangle_display (void *stuff)
 	new_free(&nv);
 }
 
+/*
+ * update_all_status_wrapper - call update_all_status() from a /SET callback
+ * 
+ * Several /SETs change what appears on the status bar, so update_all_status()
+ * recalculates the status bar and updates it
+ */
 static void	update_all_status_wrapper (void *stuff)
 {
 	update_all_status();
 }
 
+/*
+ * set_wserv_type -- callback for /SET WSERV_TYPE
+ *
+ * This constrains the value of /SET WSERV_TYPE to the supported values
+ */
 static void    set_wserv_type (void *stuff)
 {
 	VARIABLE *v;
@@ -1117,10 +1255,13 @@ static void    set_wserv_type (void *stuff)
 	new_free(&v->string);
 }
 
-/* 
- * set_lastlog_size: sets up a lastlog buffer of size given.  If the lastlog
- * has gotten larger than it was before, all newer lastlog entries remain.
- * If it get smaller, some are deleted from the end. 
+/*
+ * set_indent -- callback for /SET INDENT
+ *
+ * /SET INDENT is a wrapper around /WINDOW INDENT on every window.
+ *
+ * XXX Normally, these kinds of /SETs use the /WINDOW value if the user
+ *     set one, and the /SET as a fallback.  WHy is this different?
  */
 void    set_indent (void *stuff)
 {
@@ -1137,105 +1278,6 @@ void    set_indent (void *stuff)
 
 
 /***************************************************************************/
-/* XXX Apparantly this is dead code. */
-#if 0
-/*******/
-typedef struct	varstacklist
-{
-	char *	varname;
-	char *	value;
-	struct varstacklist *next;
-}	VarStack;
-
-VarStack *set_stack = NULL;
-
-void	do_stack_set (int type, char *args)
-{
-	VarStack *item;
-	char *varname = NULL;
-	char *(*dummy) (void) = NULL;
-	IrcVariable *var;
-
-	if (set_stack == NULL && (type == STACK_POP || type == STACK_LIST))
-	{
-		say("Set stack is empty!");
-		return;
-	}
-
-	if (STACK_PUSH == type)
-	{
-		varname = next_arg(args, &args);
-		if (!varname)
-		{
-			say("Must specify a variable name to stack");
-			return;
-		}
-		upper(varname);
-
-		item = (VarStack *)new_malloc(sizeof(VarStack));
-		item->varname = malloc_strdup(varname);
-		item->value = make_string_var(varname);
-
-		item->next = set_stack;
-		set_stack = item;
-		return;
-	}
-
-	else if (STACK_POP == type)
-	{
-	    VarStack *prev = NULL;
-	    int	owd = window_display;
-
-	    varname = next_arg(args, &args);
-	    if (!varname)
-	    {
-		say("Must specify a variable name to stack");
-		return;
-	    }
-	    upper(varname);
-
-	    for (item = set_stack; item; prev = item, item = item->next)
-	    {
-		/* If this is not it, go to the next one */
-		if (my_stricmp(varname, item->varname))
-			continue;
-
-		/* remove it from the list */
-		if (prev == NULL)
-			set_stack = item->next;
-		else
-			prev->next = item->next;
-
-		window_display = 0; 
-		get_var_alias(item->varname, &dummy, &var);
-		set_variable(item->varname, var, item->value, 1);
-		window_display = owd; 
-
-		new_free(&item->varname);
-		new_free(&item->value);
-		new_free(&item);
-		return;
-	    }
-
-	    say("%s is not on the Set stack!", varname);
-	    return;
-	}
-
-	else if (STACK_LIST == type)
-	{
-	    VarStack *prev = NULL;
-
-	    for (item = set_stack; item; prev = item, item = item->next)
-		say("Variable [%s] = %s", item->varname, item->value ? item->value : "<EMPTY>");
-
-	    return;
-	}
-
-	else
-		say("Unknown STACK type ??");
-}
-#endif
-
 #if 0
 void    help_topics_set (FILE *f)
 {                                                                               

@@ -920,3 +920,13 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * /PYDIRECT without args needs a usage message
 * Support /timers with /unload (rb zlonix)
 * New version of epic.py and shortener.py from skully -- he asked for testing
+* Improve the code in vars.c
+* - Change 'flags' to 'pending' since that's all it is used for
+* - Change $symbolctl() to support both FLAGS and PENDING for the symbols
+* - Make get_string_var() return a const ptr so people don't change it
+* - Make make_string_var_bydata() take an (IrcVariable) since that's easier
+* Crank up the warning flags and start addressing things
+* - Add a test in configure for __attribute__((fallthrough))
+* - This allows the use of FALLTHROUGH to shut up warnings.
+* - Improve a lot of const correctness issues
+* - Fix other bogons it pointed out (d'oh!)

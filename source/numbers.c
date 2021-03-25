@@ -65,7 +65,7 @@ static 	int	number_of_bans = 0;
 const char *	banner (void)
 {
 	static	char	thing[80];
-	char *str;
+	const char *str;
 
 	if (current_numeric > 0 && get_int_var(SHOW_NUMERICS_VAR))
 		snprintf(thing, sizeof thing, "%3.3d", current_numeric);
@@ -445,6 +445,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		if (!get_server_005(from_server, "USERIP"))
 			break;
 		/* FALLTHROUGH */
+		FALLTHROUGH
 	case 302:		/* #define RPL_USERHOST         302 */
 		userhost_returned(from_server, from, comm, ArgList);
 		goto END;
@@ -895,6 +896,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		 * Let the nickname reset numerics handle this mess.
 		 */
 		/* FALLTHROUGH */
+		FALLTHROUGH
 	}
 
 	case 432:		/* #define ERR_ERRONEUSNICKNAME 432 */
@@ -970,6 +972,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		if (ArgList[0] && *ArgList[0] == '+')
 			break;
 		/* FALLTHROUGH */
+		FALLTHROUGH
 	case 471:		/* #define ERR_CHANNELISFULL    471 */
 	case 473:		/* #define ERR_INVITEONLYCHAN   473 */
 	case 474:		/* #define ERR_BANNEDFROMCHAN   474 */
@@ -1193,7 +1196,7 @@ DISPLAY:
 
 	case 322:		/* #define RPL_LIST             322 */
 	{
-		static char format[25];
+		static char format[35];
 		static int last_width = -1;
 		const char *channel, *user_cnt, *line;
 
@@ -1209,7 +1212,7 @@ DISPLAY:
 		if (last_width != get_int_var(CHANNEL_NAME_WIDTH_VAR))
 		{
 			if ((last_width = get_int_var(CHANNEL_NAME_WIDTH_VAR)))
-				snprintf(format, 25, "%%-%u.%us %%-5s  %%s",
+				snprintf(format, 35, "%%-%u.%us %%-5s  %%s",
 				(unsigned) last_width,
 				(unsigned) last_width);
 			else

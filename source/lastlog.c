@@ -437,7 +437,7 @@ BUILT_IN_COMMAND(lastlog)
 	FILE *		outfp = NULL;
 	int		mangler = 0;
 	int		lc;
-	char *		rewrite = NULL;
+	const char *	rewrite = NULL;
 	Window *	window = current_window;
 	int		this_server = 0;
 	int		global = 0;

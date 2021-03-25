@@ -1511,6 +1511,27 @@ AC_TRY_COMPILE(, [exit(0);],
 	CFLAGS="$old_cflags"
 )
 
+AC_MSG_CHECKING(whether your compiler supports __attribute__((fallthrough)))
+AC_TRY_COMPILE(, 
+	[int x = 1; 
+	 switch (x) { 
+		case 1: 
+			x++; 
+			__attribute__((fallthrough));
+		case 0: 
+			x++; 
+	  }], 
+        have_attribute_fallthrough=1,
+        have_attribute_fallthrough=0)
+
+if test "x$have_attribute_fallthrough" = "x1" ; then
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(HAVE_ATTRIBUTE_FALLTHROUGH)
+else
+	AC_MSG_RESULT(no)
+fi
+
+
 AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)
 AC_SUBST(RUBYDOTOH)

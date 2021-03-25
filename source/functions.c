@@ -3309,12 +3309,15 @@ BUILT_IN_FUNCTION(function_which, word)
 {
 	char *file1;
 	Filename result;
+	const char *path;
 
 	GET_DWORD_ARG(file1, word);
-	if (!word || !*word)
-		word = get_string_var(LOAD_PATH_VAR);
+	if (word && *word)
+		path = word;
+	else
+		path = get_string_var(LOAD_PATH_VAR);
 
-	if (path_search(file1, word, result))
+	if (path_search(file1, path, result))
 		RETURN_EMPTY;
 
 	RETURN_STR(result);
@@ -5350,6 +5353,7 @@ char *	function_cparse (char *input)
 				break;
 			case 'X':
 				output[j++] = '\030';
+				break;
 
 			case 'N':
 				noappend = 1;
@@ -5755,6 +5759,8 @@ BUILT_IN_FUNCTION(function_pad, input)
 	}
 	else if (width > 0)
 		j = -1;
+	else
+		j = 0;
 
 	retval = fix_string_width(input, j, codepoint, width, 0);
 	RETURN_MSTR(retval);

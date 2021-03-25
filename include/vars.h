@@ -221,7 +221,7 @@ typedef struct
         VARIABLE *      data;           /* The value of the variable */
         void    (*func) (void *); 	/* func called when var is set */
 	char *		script;		/* script called when var is set */
-        unsigned short  flags;          /* flags for this variable */
+        unsigned short  pending;        /* set when it is being changed (prevents recursion) */
 }       IrcVariable;
 
 
@@ -231,7 +231,7 @@ typedef struct
 	int	do_boolean 		(char *, int *);
 	int	do_short_boolean 	(char *, short *);
 	int	get_int_var 		(int);
-	char *	get_string_var 		(int);
+const	char *	get_string_var 		(int);
 	void	set_var_value		(int, const char *, int);
 	int	is_var_builtin		(const char *);
 	void	init_variables_stage1	(void);
@@ -243,7 +243,7 @@ typedef struct
 	void	do_stack_set		(int, char *);
 	int	parse_mangle		(const char *, int, char **);
 	char	*get_set		(const char *);
-	char *	make_string_var_bydata	(int, void *);
+	char *	make_string_var_bydata	(const void *);
 	int	set_variable		(const char *, IrcVariable *, const char *, int);
 	IrcVariable *   clone_biv	(IrcVariable *);
 	void	unclone_biv		(const char *, IrcVariable *);
