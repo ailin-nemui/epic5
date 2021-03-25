@@ -521,10 +521,7 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 		if (do_hook(hook_type, "%s %s", from, message))
 		{
 		    if (away)
-		    {
-			time_t blah = time(NULL);
-			put_it("*%s* %s <%.16s>", from, message, ctime(&blah));
-		    }
+			put_it("*%s* %s <%.16s>", from, message, my_ctime(time(NULL)));
 		    else
 			put_it("*%s* %s", from, message);
 		}

@@ -1224,7 +1224,7 @@ BUILT_IN_FUNCTION(function_time, input)
 BUILT_IN_FUNCTION(function_stime, input)
 {
 	time_t	ltime;
-	char	*ret;
+	const char	*ret;
 
 	GET_INT_ARG(ltime, input);
 	ret = my_ctime(ltime);

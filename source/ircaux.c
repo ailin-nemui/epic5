@@ -2387,9 +2387,17 @@ const char *	plural (int number)
 	return (number != 1) ? "s" : empty_string;
 }
 
-char *	my_ctime (time_t when)
+char ctime_failure[] = "ctime failed";
+const char *	my_ctime (time_t when)
 {
-	return chop(ctime(&when), 1);
+	char *x;
+
+	if ((x = ctime(&when)))
+		chomp(x);
+	else
+		x = ctime_failure;
+
+	return x;
 }
 
 

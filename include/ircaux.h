@@ -63,7 +63,7 @@ char *	malloc_sprintf 		(char **, const char *, ...) __A(2);
 char *	malloc_vsprintf 	(char **, const char *, va_list);
 int	is_number 		(const char *);
 int	is_real_number 		(const char *);
-char *	my_ctime 		(time_t);
+const char *	my_ctime 	(time_t);
 
 int	my_table_strnicmp 	(const unsigned char *, const unsigned char *, size_t, int);
 #define my_table_stricmp(x, y, t) my_table_strnicmp(x, y, UINT_MAX, t)

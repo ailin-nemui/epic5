@@ -930,3 +930,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * - This allows the use of FALLTHROUGH to shut up warnings.
 * - Improve a lot of const correctness issues
 * - Fix other bogons it pointed out (d'oh!)
+* Fix my_ctime() to honor that ctime() can return NULL.
