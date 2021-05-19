@@ -932,3 +932,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * - Fix other bogons it pointed out (d'oh!)
 * Fix my_ctime() to honor that ctime() can return NULL.
 * EPIC5-2.1.3 released here (Redound) (Commit: 1926)
+* Fix configure on mac when you do --with-ssl=/path/to/somewhere (rb archon)
+* Fix configure for systems where "gcc" is c99-only
+* Add "verbose" flag to sanity_check_encoding()
+* This is needed in init_encodings() to not output too early. (rb wcarson)

@@ -188,6 +188,7 @@ typedef struct RecodeRule RecodeRule;
 RecodeRule **	recode_rules = NULL;
 static int	update_recoding_encoding (RecodeRule *r, const char *encoding);
 static	int	remove_encoding (int refnum);
+static int	sanity_check_encoding (const char *encodingx, int verbose);
 
 
 /* 
@@ -464,6 +465,7 @@ static const char *	check_recoding_iconv (RecodeRule *r, iconv_t *inbound, iconv
  *
  * NOTE -- THIS FUNCTION IS CALLED BEFORE SCREENS ARE SET UP
  * You must do printf() and fgets() to talk to the user.
+ * You must not call a function that calls say() or yell() or such.
  */ 
 void	init_recodings (void)
 {
@@ -481,7 +483,7 @@ void	init_recodings (void)
 	 */
 	console_encoding = nl_langinfo(CODESET);
 	reason = ENCODING_FROM_LOCALE;
-	if (sanity_check_encoding(console_encoding))
+	if (sanity_check_encoding(console_encoding, 0))
 	{
 		console_encoding = "ISO-8859-1";
 		reason = ENCODING_FALLBACK;
@@ -495,19 +497,19 @@ void	init_recodings (void)
 		recode_rules[x] = NULL;
 
 	/* XXX TODO - Sanity check the encodings first */
-	if (sanity_check_encoding(console_encoding))
+	if (sanity_check_encoding(console_encoding, 0))
 	{
 		fprintf(stderr, "Help!  Your system doesn't have the %s encoding\n", console_encoding);
 		help_me++;
 	}
 
-	if (sanity_check_encoding("ISO-8859-1"))
+	if (sanity_check_encoding("ISO-8859-1", 0))
 	{
 		fprintf(stderr, "Help!  Your system doesn't have the ISO-8859-1 encoding\n");
 		help_me++;
 	}
 
-	if (sanity_check_encoding("CP437"))
+	if (sanity_check_encoding("CP437", 0))
 	{
 		fprintf(stderr, "Help!  Your system doesn't have the CP437 encoding\n");
 		help_me++;
@@ -1144,7 +1146,7 @@ BUILT_IN_COMMAND(encoding)
 		return;
 	}
 
-	if ((reason = sanity_check_encoding(encodingx)))
+	if ((reason = sanity_check_encoding(encodingx, 1)))
 	{
 		if (reason == -1)
 		{
@@ -1240,6 +1242,7 @@ int	mklower_l (int codepoint)
  *
  * Arguments:
  * 	encoding 	- A new encoding user wants to use
+ *	verbose		- Output helpful error messages (or not)
  *
  * Return value:
  *	 0 - This encoding is suitable for use (exists, 8 bit clean)
@@ -1247,7 +1250,7 @@ int	mklower_l (int codepoint)
  *	-2 - The encoding exists but doesn't convert to UTF-8 at all
  *	-3 - The encoding exists but too many code points don't convert
  */
-int	sanity_check_encoding (const char *encodingx)
+static int	sanity_check_encoding (const char *encodingx, int verbose)
 {
 	iconv_t		ti;
 	unsigned char	c;
@@ -1256,7 +1259,6 @@ int	sanity_check_encoding (const char *encodingx)
 	char		utf8str[16], *x;
 	size_t		x_size;
 	int		i, n, errors;
-
 
 	/*
 	 * An encoding is acceptable IF AND ONLY IF:
@@ -1273,11 +1275,14 @@ int	sanity_check_encoding (const char *encodingx)
 	ti = iconv_open(encodingx, encodingx);
 	if (ti == (iconv_t)-1)
 	{
+	    if (verbose)
+	    {
 		say("Unfortunately, the encoding %s does not appear to be supported by your system", encodingx);
 		say("Possible causes:");
 		say(" 1. It might be mis-spelled");
 		say(" 2. It is not available on your system");
-		return -1;
+	    }
+	    return -1;
 	}
 	iconv_close(ti);
 
@@ -1285,8 +1290,9 @@ int	sanity_check_encoding (const char *encodingx)
 	ti = iconv_open("UTF-8", encodingx);
 	if (ti == (iconv_t)-1)
 	{
+	    if (verbose)
 		say("Unfortunately, your system does not know how to convert the encoding %s to UTF-8", encodingx);
-		return -2;
+	    return -2;
 	}
 
 	/* 3. Most of the characters convert */
@@ -1436,7 +1442,7 @@ char *	function_encodingctl (char *input)
 			int	sanity;
 
 			GET_FUNC_ARG(listc, input);
-			sanity = sanity_check_encoding(listc);
+			sanity = sanity_check_encoding(listc, 0);
 			if (sanity == 0 || sanity == -3)
 				update_recoding_encoding(r, listc);
 			RETURN_INT(sanity);
@@ -1460,7 +1466,7 @@ char *	function_encodingctl (char *input)
 		int	retval;
 
 		GET_FUNC_ARG(listc, input);
-		retval = sanity_check_encoding(listc);
+		retval = sanity_check_encoding(listc, 0);
 		RETURN_INT(retval);
 	} else if (!my_strnicmp(listc, "CREATE", len)) {
 		char 	*target, *encodingx;
@@ -1470,7 +1476,7 @@ char *	function_encodingctl (char *input)
 		GET_FUNC_ARG(encodingx, input);
 
 		/* First, sanity check the encoding */
-		sanity = sanity_check_encoding(encodingx);
+		sanity = sanity_check_encoding(encodingx, 0);
 		if (! (sanity == 0 || sanity == -3) )
 			RETURN_INT(-1);
 

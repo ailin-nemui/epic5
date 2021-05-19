@@ -304,33 +304,33 @@ else
 		AC_MSG_RESULT([no])	
 		AC_MSG_ERROR([I could not find the OpenSSL installed at $with_ssl you asked me to use with --with-ssl=$with_ssl.  Please ensure that directory contains the files 'include/openssl/ssl.h' and 'lib/libssl.a'.  If you are unsure, remove --with-ssl and just let me auto-detect it.])
 	    fi
-	fi
+	else
+		# Second, let's see if it just works by default
+		LIBS="$saved_LIBS -lssl -lcrypto"
+		CFLAGS="$saved_CFLAGS"
+		AC_TRY_LINK([#include <openssl/ssl.h>],
+			[SSL_accept(0);], [have_ssl="yes"])
 
-	# Second, let's see if it just works by default
-	LIBS="$saved_LIBS -lssl -lcrypto"
-	CFLAGS="$saved_CFLAGS"
-	AC_TRY_LINK([#include <openssl/ssl.h>],
-		[SSL_accept(0);], [have_ssl="yes"])
+		# Otherwise, go hunting for it.
+		if test "x$have_ssl" = "x" ; then
+		    for ssldir in $localdir/ssl $localdir/openssl; do
+			if test "x$have_ssl" != "x"; then
+				break;
+			fi
 
-	# Otherwise, go hunting for it.
-	if test "x$have_ssl" = "x" ; then
-	    for ssldir in $localdir/ssl $localdir/openssl; do
-		if test "x$have_ssl" != "x"; then
-			break;
+			if test "x$ssldir" = "x"; then
+				continue;
+			fi
+
+			if test -f "$ssldir/include/openssl/ssl.h" &&
+				test -f "$ssldir/lib/libssl.a"; then
+			    CFLAGS="$saved_CFLAGS -I$ssldir/include"
+			    LIBS="$saved_LIBS -L$ssldir/lib -lssl -lcrypto"
+			    AC_TRY_LINK([#include <openssl/ssl.h>],
+					[SSL_accept(0);], [have_ssl="yes"])
+			fi
+		    done
 		fi
-
-		if test "x$ssldir" = "x"; then
-			continue;
-		fi
-
-		if test -f "$ssldir/include/openssl/ssl.h" &&
-			test -f "$ssldir/lib/libssl.a"; then
-		    CFLAGS="$saved_CFLAGS -I$ssldir/include"
-		    LIBS="$saved_LIBS -L$ssldir/lib -lssl -lcrypto"
-		    AC_TRY_LINK([#include <openssl/ssl.h>],
-				[SSL_accept(0);], [have_ssl="yes"])
-		fi
-	    done
 	fi
 
 	# If we found it somewhere, great!  Otherwise, revert.
@@ -348,8 +348,9 @@ else
 		AC_MSG_CHECKING([whether your SSL is threading compatable])
 		AC_TRY_RUN([
 #define OPENSSL_THREAD_DEFINES
+#include <stdlib.h>
 #include <openssl/opensslconf.h>
-main ()
+int main (void)
 {
 #if defined(THREADS)
         exit(0);
@@ -462,8 +463,9 @@ dnl -- Because someone is trying to use CentOS 5.11...
 AC_MSG_CHECKING(whether you are using a gnu libc that is so old it needs a hack to use newlocale)
 AC_TRY_RUN([
 #include <locale.h>
+#include <stdlib.h>
 
-main()
+int main(void)
 {
 	locale_t utf8_locale;
 	utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
@@ -476,8 +478,9 @@ main()
    AC_TRY_RUN([
 #define _GNU_SOURCE
 #include <locale.h>
+#include <stdlib.h>
 
-main()
+int main(void)
 {
 	locale_t utf8_locale;
 	utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
@@ -494,8 +497,9 @@ dnl -- Oh why does this have to be so painful? --
 AC_MSG_CHECKING(whether term.h works by itself)
 AC_TRY_RUN([
 #include <term.h>
+#include <stdlib.h>
 
-main ()
+int main (void)
 {
        exit(0);
 }
@@ -507,8 +511,9 @@ main ()
 #include <termio.h>
 #include <curses.h>
 #include <term.h>
+#include <stdlib.h>
 
-main ()
+int main (void)
 {
        exit(0);
 }
@@ -592,7 +597,9 @@ AC_MSG_CHECKING(for useful SO_SNDLOWAT)
 AC_TRY_RUN([
 #include <sys/types.h>
 #include <sys/socket.h>
-main ()
+#include <stdlib.h>
+
+int main (void)
 {
 #ifndef SO_SNDLOWAT
         exit(1);
@@ -617,7 +624,8 @@ AC_MSG_CHECKING(for useful realpath)
 AC_TRY_RUN([
 #include <sys/param.h>
 #include <stdlib.h>
-main ()
+
+int main (void)
 {
 	char resolved_path[PATH_MAX];
 
@@ -641,7 +649,8 @@ AC_TRY_RUN([
 #include <sys/signal.h>
 #include <signal.h>
 #include <unistd.h>
-main()
+#include <stdlib.h>
+int main(void)
 {
 	char *s = sys_siglist[0];
 	exit(0);
@@ -762,7 +771,8 @@ AC_MSG_CHECKING([to see if your struct sockaddr includes a length field])
 AC_TRY_RUN([
 #include <sys/types.h>
 #include <sys/socket.h>
-main()
+#include <stdlib.h>
+int main(void)
 {
 	struct sockaddr sa;
 	sa.sa_len = 0;
@@ -821,8 +831,9 @@ AC_TRY_RUN([
 #include <netdb.h>
 #include <sys/un.h>
 #include <stdlib.h>
+#include <string.h>
 
-main()
+int main(void)
 {
 	struct addrinfo hints;
 	struct addrinfo *results;
