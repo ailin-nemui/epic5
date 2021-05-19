@@ -654,7 +654,7 @@ else
 #include "confdefs.h"
 
 int main() {
-return 0;
+exit(0);
 ; return 0; }
 EOF
 if { (eval echo configure:661: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
@@ -699,7 +699,7 @@ else
 #include "confdefs.h"
 
 int main() {
-return 0;
+exit(0);
 ; return 0; }
 EOF
 if { (eval echo configure:706: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
@@ -930,13 +930,13 @@ if test "$ac_test_CFLAGS" = set; then
   CFLAGS="$ac_save_CFLAGS"
 elif test $ac_cv_prog_cc_g = yes; then
   if test "$GCC" = yes; then
-    CFLAGS="-g -O2"
+    CFLAGS="-g -O"
   else
     CFLAGS="-g"
   fi
 else
   if test "$GCC" = yes; then
-    CFLAGS="-O2"
+    CFLAGS="-O"
   else
     CFLAGS=
   fi

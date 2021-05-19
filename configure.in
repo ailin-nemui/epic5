@@ -50,7 +50,7 @@ AC_TRY_COMPILE(, [exit(0);],
 	AC_MSG_RESULT(no -- yay!), [
 	 old_cflags="$CFLAGS"
 	 CFLAGS="$CFLAGS -Wno-error"
-	 AC_TRY_COMPILE(, [return 0;], 
+	 AC_TRY_COMPILE(, [exit(0);], 
 	  AC_MSG_RESULT(yes),
           AC_MSG_RESULT(no)
 	  CFLAGS="$old_cflags"
@@ -63,7 +63,7 @@ AC_TRY_COMPILE(, [exit(0);],
 	AC_MSG_RESULT(no -- yay!), [
 	 old_cflags="$CFLAGS"
 	 CFLAGS="$CFLAGS -Wno-error=implicit-function-declaration"
-	 AC_TRY_COMPILE(, [return 0;], 
+	 AC_TRY_COMPILE(, [exit(0);], 
 	  AC_MSG_RESULT(yes),
           AC_MSG_RESULT(no)
 	  CFLAGS="$old_cflags"
