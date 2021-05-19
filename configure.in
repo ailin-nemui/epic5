@@ -29,15 +29,15 @@ dnl
 
 AC_MSG_CHECKING(whether your compiler tolerates --std=c90)
 old_cflags="$CFLAGS"
-CFLAGS="$CFLAGS -Wno-error"
+CFLAGS="$CFLAGS --std=c90"
 AC_TRY_COMPILE(, [return 0;], 
 	AC_MSG_RESULT(yes),
-        AC_MSG_RESULT(no)
- 	CFLAGS="$old_cflags"
+	AC_MSG_RESULT(no)
+	CFLAGS="$old_cflags"
 )
 
 AC_MSG_CHECKING(whether your compiler requires -Wno-error)
-AC_TRY_COMPILE(, [return 0;], 
+AC_TRY_COMPILE(, [exit(0);], 
 	AC_MSG_RESULT(no, yay!), [
 	 old_cflags="$CFLAGS"
 	 CFLAGS="$CFLAGS -Wno-error"
@@ -373,9 +373,9 @@ else
 int main (void)
 {
 #if defined(THREADS)
-        exit(0);
+        return 0;
 #else
-        exit(1);
+        return 1;
 #endif
 }
 ],
@@ -431,7 +431,7 @@ dnl
 dnl Checking for headers, functions, and a type declarations
 dnl
 
-AC_CHECK_HEADERS(fcntl.h ieeefp.h inttypes.h math.h ndbm.h netdb.h regex.h stddef.h stdint.h sys/cdefs.h sys/fcntl.h sys/file.h sys/filio.h sys/select.h sys/sysctl.h sys/syslimits.h sys/time.h sys/un.h sys/param.h termios.h sys/termios.h xlocale.h,)
+AC_CHECK_HEADERS(fcntl.h ieeefp.h inttypes.h math.h ndbm.h netdb.h regex.h stdargs.h stddef.h stdint.h sys/cdefs.h sys/fcntl.h sys/file.h sys/filio.h sys/select.h sys/sysctl.h sys/syslimits.h sys/time.h sys/un.h sys/param.h termios.h sys/termios.h xlocale.h,)
 if test $termcap -eq 0 ; then
 	AC_CHECK_HEADERS(term.h,)
 else
@@ -479,6 +479,90 @@ AC_EGREP_HEADER(isfinite, math.h,
 AC_CHECK_FUNC(tparm, AC_DEFINE(HAVE_TPARM),)
 AC_CHECK_FUNC(newlocale, AC_DEFINE(HAVE_NEWLOCALE),)
 
+AC_MSG_CHECKING(for va_copy)
+	AC_TRY_RUN([
+		#include <stdarg.h>
+		#include <stdlib.h>
+		int b (const char *x, va_list y)
+		{
+			va_list z;
+			va_copy(z, y);
+		}
+
+		int a (const char *x, ...)
+		{
+			va_list y;
+			va_start(y, x);
+			b(x, y);
+		}
+
+		int main (void)
+		{
+			a("test", "test");
+			return 0;
+		}
+	],
+	AC_MSG_RESULT(yes)
+	  AC_DEFINE(HAVE_VA_COPY),
+	AC_MSG_RESULT(no; well...)
+	  AC_MSG_CHECKING(for __va_copy)
+	  AC_TRY_RUN([
+		#include <stdarg.h>
+		#include <stdlib.h>
+
+		int b (const char *x, va_list y)
+		{
+			va_list z;
+			__va_copy(z, y);
+		}
+
+		int a (const char *x, ...)
+		{
+			va_list y;
+			va_start(y, x);
+			b(x, y);
+		}
+
+		int main (void)
+		{
+			a("test", "test");
+			return 0;
+		}
+	  ],
+	  AC_MSG_RESULT(yes)
+	    AC_DEFINE(HAVE___VA_COPY),
+	  AC_MSG_RESULT(no; hrm...)
+            AC_MSG_CHECKING(whether va_lists can be assigned)
+	    AC_TRY_RUN([
+		#include <stdarg.h>
+		#include <stdlib.h>
+
+		int b (const char *x, va_list y)
+		{
+			va_list z;
+			z = y;
+		}
+
+		int a (const char *x, ...)
+		{
+			va_list y;
+			va_start(y, x);
+			b(x, y);
+		}
+
+		int main (void)
+		{
+			a("test", "test");
+			return 0;
+		}
+	    ],
+	    AC_MSG_RESULT(yes),
+	    AC_DEFINE(VA_LIST_ASSIGNABLE)
+	        AC_MSG_RESULT(no; well -- that is unfortunate)
+	    ,:)
+	  ,:)
+	,:)
+
 dnl -- Because someone is trying to use CentOS 5.11...
 AC_MSG_CHECKING(whether you are using a gnu libc that is so old it needs a hack to use newlocale)
 AC_TRY_RUN([
@@ -490,7 +574,7 @@ int main(void)
 {
 	locale_t utf8_locale;
 	utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
-	exit(0);
+	return 0;
 }
 ],
    AC_MSG_RESULT(no, good),
@@ -506,7 +590,7 @@ int main(void)
 {
 	locale_t utf8_locale;
 	utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
-	exit(0);
+	return 0;
 }
    ],
    AC_MSG_RESULT(yes),
@@ -523,7 +607,7 @@ AC_TRY_RUN([
 
 int main (void)
 {
-       exit(0);
+       return 0;
 }
 ],
   AC_MSG_RESULT(yes),
@@ -537,7 +621,7 @@ int main (void)
 
 int main (void)
 {
-       exit(0);
+       return 0;
 }
   ],
   AC_MSG_RESULT(yes)
@@ -624,13 +708,13 @@ AC_TRY_RUN([
 int main (void)
 {
 #ifndef SO_SNDLOWAT
-        exit(1);
+        return 1;
 #else
         int d = socket(AF_INET, SOCK_STREAM, 0);
         int size = 256;
         if (setsockopt(d, SOL_SOCKET, SO_SNDLOWAT, &size, sizeof(size)) < 0)
-                exit(1);
-        exit (0);
+                return 1;
+        return 0;
 #endif
 }
 ],
@@ -652,8 +736,8 @@ int main (void)
 	char resolved_path[PATH_MAX];
 
 	if (realpath("/etc/filethatdoesnotexist", resolved_path) == 0)
-		exit(1);
-	exit(0);
+		return 1;
+	return 0;
 }
 ],
   AC_MSG_RESULT(yes),
@@ -675,7 +759,7 @@ AC_TRY_RUN([
 int main(void)
 {
 	char *s = sys_siglist[0];
-	exit(0);
+	return 0;
 }
 ],
   AC_MSG_RESULT(yes) 
@@ -798,7 +882,7 @@ int main(void)
 {
 	struct sockaddr sa;
 	sa.sa_len = 0;
-	exit(0);
+	return 0;
 }
 ],
   AC_DEFINE([HAVE_SA_LEN])
@@ -869,9 +953,9 @@ int main(void)
 
 	retval = getaddrinfo(0, "/tmp/.ircd/6667", &hints, &results);
 	if (retval != 0)
-		exit(1);
+		return 1;
 	else
-		exit(0);
+		return 0;
 }
 ],
   AC_MSG_RESULT([yes]),
@@ -1134,7 +1218,7 @@ int startup_perl(int argc, char **argv, char **env)
 int main (int argc, char **argv, char **environ)
 {
 	startup_perl(argc, argv, environ);
-	exit(dummy_retval);
+	return dummy_retval;
 }
 ], 
 have_embedded_perl="yes",
@@ -1529,7 +1613,7 @@ AC_ARG_WITH(warns,
 AC_MSG_CHECKING(whether your compiler supports -Wno-pointer-sign)
 old_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -Wno-pointer-sign"
-AC_TRY_COMPILE(, [exit(0);], 
+AC_TRY_COMPILE(, [return 0;], 
 	AC_MSG_RESULT(yes),
         AC_MSG_RESULT(no)
 	CFLAGS="$old_cflags"
@@ -1538,7 +1622,7 @@ AC_TRY_COMPILE(, [exit(0);],
 AC_MSG_CHECKING(whether your compiler supports -fno-strict-aliasing)
 old_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -fno-strict-aliasing"
-AC_TRY_COMPILE(, [exit(0);], 
+AC_TRY_COMPILE(, [return 0;], 
 	AC_MSG_RESULT(yes),
         AC_MSG_RESULT(no)
 	CFLAGS="$old_cflags"

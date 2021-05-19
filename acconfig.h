@@ -461,3 +461,11 @@
 /* Define this if your compiler supports __attribute__((fallthrough)) */
 #undef HAVE_ATTRIBUTE_FALLTHROUGH
 
+/* Define this if you have va_copy */
+#undef HAVE_VA_COPY
+
+/* Define this if you have __va_copy */
+#undef HAVE___VA_COPY
+
+/* Define this if va_list is assignable */
+#undef VA_LIST_ASSIGNABLE

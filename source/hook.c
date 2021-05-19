@@ -733,9 +733,7 @@ static int 	do_hook_internal (int which, char **result, const char *format, va_l
 	int		serial_number;
 	struct Current_hook *hook;
 	Hookables *	h;
-	va_list		orig_args;
 
-	va_copy(orig_args, args);
 	*result = NULL;
 
 	if (!hook_functions_initialized)
@@ -750,7 +748,6 @@ static int 	do_hook_internal (int which, char **result, const char *format, va_l
 	if (!format)
 		panic(1, "do_hook: format is NULL (hook type %d)", which);
 
-	va_copy(args, orig_args);
 	malloc_vsprintf(&buffer, format, args);
 
 

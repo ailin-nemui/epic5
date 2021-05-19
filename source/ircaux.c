@@ -4495,10 +4495,17 @@ char *	malloc_vsprintf (char **ptr, const char *format, va_list args)
 		 * length of format */
 		buffer_size = strlen(format) * 2;
 		buffer = new_malloc(buffer_size + 1);
-		va_copy(orig_args, args);
 
+#ifdef HAVE_VA_COPY
+	        va_copy(orig_args, args);
+#else
+# ifdef HAVE___VA_COPY
+		 __va_copy(orig_args, args);
+# else
+		orig_args = args;
+# endif
+#endif
 		do {
-		    va_copy(args, orig_args);
 		    vsn_retval = vsnprintf(buffer, buffer_size, format, args);
 
 		    if (vsn_retval < 0)		/* DIE DIE DIE */
@@ -4508,6 +4515,16 @@ char *	malloc_vsprintf (char **ptr, const char *format, va_list args)
 		    else
 			buffer_size = vsn_retval + 1;
 		    RESIZE(buffer, char, buffer_size);
+
+#ifdef HAVE_VA_COPY
+	            va_copy(args, orig_args);
+#else
+# ifdef HAVE___VA_COPY
+		    __va_copy(args, orig_args);
+# else
+		    args = orig_args;
+# endif
+#endif
 		} while (1);
 
 	}
