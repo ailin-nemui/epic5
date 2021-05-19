@@ -27,6 +27,15 @@ dnl
 dnl initial stuff
 dnl
 
+AC_MSG_CHECKING(whether your compiler tolerates -std=c90)
+old_cflags="$CFLAGS"
+CFLAGS="$CFLAGS -std=c90"
+AC_TRY_COMPILE(, [return 0;], 
+	AC_MSG_RESULT(yes),
+	AC_MSG_RESULT(no)
+	CFLAGS="$old_cflags"
+)
+
 AC_MSG_CHECKING(whether your compiler tolerates --std=c90)
 old_cflags="$CFLAGS"
 CFLAGS="$CFLAGS --std=c90"
@@ -38,7 +47,7 @@ AC_TRY_COMPILE(, [return 0;],
 
 AC_MSG_CHECKING(whether your compiler requires -Wno-error)
 AC_TRY_COMPILE(, [exit(0);], 
-	AC_MSG_RESULT(no, yay!), [
+	AC_MSG_RESULT(no -- yay!), [
 	 old_cflags="$CFLAGS"
 	 CFLAGS="$CFLAGS -Wno-error"
 	 AC_TRY_COMPILE(, [return 0;], 
@@ -48,6 +57,20 @@ AC_TRY_COMPILE(, [exit(0);],
 	 )
 	]
 )
+
+AC_MSG_CHECKING(whether your compiler requires -Wno-error=implicit-function-declaration)
+AC_TRY_COMPILE(, [exit(0);], 
+	AC_MSG_RESULT(no -- yay!), [
+	 old_cflags="$CFLAGS"
+	 CFLAGS="$CFLAGS -Wno-error=implicit-function-declaration"
+	 AC_TRY_COMPILE(, [return 0;], 
+	  AC_MSG_RESULT(yes),
+          AC_MSG_RESULT(no)
+	  CFLAGS="$old_cflags"
+	 )
+	]
+)
+
 
 AC_PROG_CC
 AC_PROG_CPP
