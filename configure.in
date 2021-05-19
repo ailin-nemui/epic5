@@ -27,10 +27,30 @@ dnl
 dnl initial stuff
 dnl
 
+AC_MSG_CHECKING(whether your compiler tolerates --std=c90)
+old_cflags="$CFLAGS"
+CFLAGS="$CFLAGS -Wno-error"
+AC_TRY_COMPILE(, [return 0;], 
+	AC_MSG_RESULT(yes),
+        AC_MSG_RESULT(no)
+ 	CFLAGS="$old_cflags"
+)
+
+AC_MSG_CHECKING(whether your compiler requires -Wno-error)
+AC_TRY_COMPILE(, [return 0;], 
+	AC_MSG_RESULT(no, yay!), [
+	 old_cflags="$CFLAGS"
+	 CFLAGS="$CFLAGS -Wno-error"
+	 AC_TRY_COMPILE(, [return 0;], 
+	  AC_MSG_RESULT(yes),
+          AC_MSG_RESULT(no)
+	  CFLAGS="$old_cflags"
+	 )
+	]
+)
+
 AC_PROG_CC
 AC_PROG_CPP
-AC_ISC_POSIX
-AC_AIX
 
 dnl ----------------------------------------------------------
 AC_MSG_CHECKING([for an extra library directory])
@@ -411,7 +431,7 @@ dnl
 dnl Checking for headers, functions, and a type declarations
 dnl
 
-AC_CHECK_HEADERS(fcntl.h ieeefp.h inttypes.h math.h ndbm.h netdb.h regex.h stddef.h stdint.h sys/fcntl.h sys/file.h sys/filio.h sys/select.h sys/sysctl.h sys/syslimits.h sys/time.h sys/un.h sys/param.h termios.h sys/termios.h xlocale.h,)
+AC_CHECK_HEADERS(fcntl.h ieeefp.h inttypes.h math.h ndbm.h netdb.h regex.h stddef.h stdint.h sys/cdefs.h sys/fcntl.h sys/file.h sys/filio.h sys/select.h sys/sysctl.h sys/syslimits.h sys/time.h sys/un.h sys/param.h termios.h sys/termios.h xlocale.h,)
 if test $termcap -eq 0 ; then
 	AC_CHECK_HEADERS(term.h,)
 else
@@ -463,6 +483,7 @@ dnl -- Because someone is trying to use CentOS 5.11...
 AC_MSG_CHECKING(whether you are using a gnu libc that is so old it needs a hack to use newlocale)
 AC_TRY_RUN([
 #include <locale.h>
+#include <xlocale.h>
 #include <stdlib.h>
 
 int main(void)
@@ -478,6 +499,7 @@ int main(void)
    AC_TRY_RUN([
 #define _GNU_SOURCE
 #include <locale.h>
+#include <xlocale.h>
 #include <stdlib.h>
 
 int main(void)

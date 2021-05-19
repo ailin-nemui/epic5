@@ -1,12 +1,5 @@
 /* include/defs.h.in.  Generated automatically from configure.in by autoheader.  */
 
-/* Define if on AIX 3.
-   System headers sometimes define this.
-   We just want to avoid a redefinition error message.  */
-#ifndef _ALL_SOURCE
-#undef _ALL_SOURCE
-#endif
-
 /* Define if using alloca.c.  */
 #undef C_ALLOCA
 
@@ -37,9 +30,6 @@
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef pid_t
-
-/* Define if you need to in order for stat and other things to work.  */
-#undef _POSIX_SOURCE
 
 /* Define as the return type of signal handlers (int or void).  */
 #undef RETSIGTYPE
@@ -422,6 +412,9 @@
 
 /* Define if you have the <stdint.h> header file.  */
 #undef HAVE_STDINT_H
+
+/* Define if you have the <sys/cdefs.h> header file.  */
+#undef HAVE_SYS_CDEFS_H
 
 /* Define if you have the <sys/dir.h> header file.  */
 #undef HAVE_SYS_DIR_H
