@@ -473,6 +473,7 @@ void	init_recodings (void)
 	const char *	console_encoding;
 	int	help_me = 0;
 	int	reason;
+	int	cp437_encoding_invalid = 0;
 
 	/* 
 	 * By default use whatever the LC_ALL variable says.
@@ -512,7 +513,7 @@ void	init_recodings (void)
 	if (sanity_check_encoding("CP437", 0))
 	{
 		fprintf(stderr, "Help!  Your system doesn't have the CP437 encoding\n");
-		help_me++;
+		cp437_encoding_invalid = 1;
 	}
 
 	if (help_me)
@@ -530,7 +531,10 @@ void	init_recodings (void)
 	recode_rules[0] = create_recoding_rule("console", console_encoding, 1, reason);
 
 	/* Rule 1 is "scripts" */
-	recode_rules[1] = create_recoding_rule("scripts", "CP437", 1, ENCODING_FALLBACK);
+	if (!cp437_encoding_invalid)
+		recode_rules[1] = create_recoding_rule("scripts", "CP437", 1, ENCODING_FALLBACK);
+	else
+		recode_rules[1] = create_recoding_rule("scripts", "ISO-8859-1", 1, ENCODING_FALLBACK);
 
 	/* Rule 2 is "irc" */
 	recode_rules[2] = create_recoding_rule("irc", "ISO-8859-1", 1, ENCODING_FALLBACK);

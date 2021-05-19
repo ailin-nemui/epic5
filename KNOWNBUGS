@@ -936,3 +936,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix configure for systems where "gcc" is c99-only
 * Add "verbose" flag to sanity_check_encoding()
 * This is needed in init_encodings() to not output too early. (rb wcarson)
+* Don't make a lack of CP437 locale a boot failure (rb wcarson)
