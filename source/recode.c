@@ -534,7 +534,11 @@ void	init_recodings (void)
 	if (!cp437_encoding_invalid)
 		recode_rules[1] = create_recoding_rule("scripts", "CP437", 1, ENCODING_FALLBACK);
 	else
-		recode_rules[1] = create_recoding_rule("scripts", "ISO-8859-1", 1, ENCODING_FALLBACK);
+#if 0
+		recode_rules[1] = create_recoding_rule("scripts", "CP437_BUILTIN", 1, ENCODING_FALLBACK);
+#else
+		recode_rules[1] = create_recoding_rule("scripts", "ISO8859-1", 1, ENCODING_FALLBACK);
+#endif
 
 	/* Rule 2 is "irc" */
 	recode_rules[2] = create_recoding_rule("irc", "ISO-8859-1", 1, ENCODING_FALLBACK);
@@ -1271,7 +1275,7 @@ static int	sanity_check_encoding (const char *encodingx, int verbose)
 	 * 3. Most of the characters convert
 	 */
 
-	/* 1. It is "UTF-8" */
+	/* 1. It is "UTF-8"  */
 	if (!strcmp(encodingx, "UTF-8"))
 		return 0;
 
@@ -1519,81 +1523,3 @@ char *	function_encodingctl (char *input)
 	RETURN_EMPTY;
 }
 
-#if 0
-/*
- * I sourced this from https://en.wikipedia.org/wiki/Code_page_437
- */
-static	u_32int_t	cp437map[256] = {
-/* 00-07 */	0x0000,	0x263a,	0x263b,	0x2665,	0x2666,	0x2663,	0x2660, 0x2022,
-/* 08-0F */	0x25D8,	0x25CB,	0x25D9,	0x2642,	0x2640,	0x266a,	0x266b,	0x263c,
-/* 10-17 */	0x25ba,	0x25c4,	0x2195,	0x203c,	0x00b6,	0x0017,	0x25ac,	0x21a8,
-/* 18-1F */	0x2191,	0x2193,	0x2192,	0x2190,	0x221f,	0x2194,	0x25b2,	0x25bc,
-/* 20-27 */	0x0020,	0x0021,	0x0022,	0x0023,	0x0024,	0x0025,	0x0026,	0x0027,
-/* 28-2F */	0x0028,	0x0029,	0x002a,	0x002b,	0x002c,	0x002d,	0x002e,	0x002f,
-/* 30-37 */	0x0030,	0x0031,	0x0032,	0x0033,	0x0034,	0x0035,	0x0036,	0x0037,
-/* 38-3F */	0x0038,	0x0039,	0x003a,	0x003b,	0x003c,	0x003d,	0x003e,	0x003f,
-/* 40-47 */	0x0040,	0x0041,	0x0042,	0x0043,	0x0044,	0x0045,	0x0046,	0x0047,
-/* 48-4F */	0x0048,	0x0049,	0x004a,	0x004b,	0x004c,	0x004d,	0x004e,	0x004f,
-/* 50-57 */	0x0050,	0x0051,	0x0052,	0x0053,	0x0054,	0x0055,	0x0056,	0x0057,
-/* 58-5F */	0x0058,	0x0059,	0x005a,	0x005b,	0x005c,	0x005d,	0x005e,	0x005f,
-/* 60-67 */	0x0060,	0x0061,	0x0062,	0x0063,	0x0064,	0x0065,	0x0066,	0x0067,
-/* 68-6F */	0x0068,	0x0069,	0x006a,	0x006b,	0x006c,	0x006d,	0x006e,	0x006f,
-/* 70-77 */	0x0070,	0x0071,	0x0072,	0x0073,	0x0074,	0x0075,	0x0076,	0x0077,
-/* 78-7F */	0x0078,	0x0079,	0x007a,	0x007b,	0x007c,	0x007d,	0x007e,	0x2302,
-/* 80-87 */
-/* 88-8F */
-/* 90-97 */
-/* 98-9F */
-/* A0-A7 */
-/* A8-AF */
-/* B0-B7 */
-/* B8-BF */
-/* C0-C7 */
-/* C8-CF */
-/* D0-D7 */
-/* D8-DF */
-/* E0-E7 */
-/* E8-EF */
-/* F0-F7 */
-/* F8-FF */
-};
-
-/*
- * cp437_to_ucs - Convert a CP437 byte to a unicode code point.
- *
- * Arguments:
- *	key	- A unicode code point
- *	utf8str	- Where to put the code point in the user's encoding
- *	utf8strsiz - How big utf8str is.
- */
-u_32int_t	cp437_to_ucs (unsigned char cp437_byte)
-{
-	char	utf8str[16];
-	size_t	utf8strsiz;
-	iconv_t	xlat = (iconv_t)-1;
-	int	n;
-	char *	source;
-	char *	dest;
-
-	utf8strsiz = ucs_to_utf8(codepoint, utf8str, 16) + 1;
-	source = utf8str;
-
-	find_recoding("console", NULL, &xlat);
-	/* XXX What to do is 'xlat' is (iconv_t)-1? */
-	if (xlat == (iconv_t)-1)
-		return -1;	/* What to do? */
-
-	dest = deststr;
-
-	if ((n = iconv(xlat, &source, &utf8strsiz, &dest, &deststrsiz)) != 0)
-	{
-		if (errno == EINVAL || errno == EILSEQ)
-		{
-			/* What to do? */
-			return -1;
-		}
-	}
-	return 0;
-}
-
-#endif

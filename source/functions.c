@@ -437,7 +437,8 @@ static	char
 	*function_write 	(char *),
 	*function_writeb	(char *),
 	*function_xform		(char *),
-	*function_yn		(char *);
+	*function_yn		(char *),
+	*function_cp437test	(char *);
 
 char	*wrapper_pattern	(char *, int),
 	*wrapper_rpattern	(char *, int);
@@ -511,6 +512,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "COS",		function_cos		},
 	{ "COSH",		function_cosh		},
 	{ "COUNT",		function_count		},
+	{ "CP437TEST",		function_cp437test	},
 	{ "CPARSE",		function_cparse		},
 	{ "CRYPT",		function_crypt		},
 	{ "CTCPCTL",		function_ctcpctl	},
@@ -8127,5 +8129,23 @@ BUILT_IN_FUNCTION(function_execctl, input)
 	char *retval;
 	retval = execctl(input);	
 	RETURN_MSTR(retval);	/* Never pass function call to RETURN_* */
+}
+
+BUILT_IN_FUNCTION(function_cp437test, input)
+{
+	unsigned char 	my_string[257];
+	size_t		my_string_len;
+	char *		result;
+	size_t		resultlen = 0;
+	unsigned int	i;
+
+	for (i = 0; i < 256; i++)
+		my_string[i] = (unsigned char) i + 1;
+	my_string[256] = 0;
+
+	my_string_len = 257;
+	result = cp437_to_utf8(my_string, my_string_len, &resultlen);
+	say("%s", result);
+	RETURN_MSTR(result);
 }
 

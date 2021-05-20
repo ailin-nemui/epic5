@@ -6826,55 +6826,64 @@ int	recode_with_iconv (const char *from, const char *to, char **data, size_t *nu
 	if (!data || !*data)
 		return 0;
 
-	if (!to)
-		to = "UTF-8";	/* For now, convert to UTF8 is the default */
-
- 	/*
-	 * So iconv(3) says I need to create an iconv_t with iconv_open
-	 */
-	if ((iref = iconv_open(to, from)) == (iconv_t)-1)
+	if (!my_stricmp(from, "CP437_BUILTIN"))
 	{
-		yell("Iconv_open %s/%s failed; %s",
-			to, from, strerror(errno));
-		return 0;	/* Don't change anything */
+		size_t 	dd_len = 0;
+		retstr = cp437_to_utf8(*data, *numbytes, &dd_len);
+		*numbytes = dd_len;
 	}
+	else
+	{
+		if (!to)
+			to = "UTF-8";	/* For now, convert to UTF8 is the default */
 
-	dest_size = *numbytes;
-	dest_left = *numbytes;
-	RESIZE(retstr, char, dest_size);
-
-	work_data = *data;
-	dest_ptr = retstr;
-
-        while ((n = iconv(iref, &work_data, numbytes, &dest_ptr, &dest_left)) != 0)
-        {
-                /* I *THINK* this is a hack. */ 
-                if (errno == EINVAL || errno == EILSEQ)
-                {
-                        work_data++;
-                        (*numbytes)--;
-                        continue;
-                }
-
-		if (dest_left < 8)
+		/*
+		 * So iconv(3) says I need to create an iconv_t with iconv_open
+		 */
+		if ((iref = iconv_open(to, from)) == (iconv_t)-1)
 		{
-			size_t	offset;
-			offset = dest_ptr - retstr;
-
-			dest_size += 64;
-			dest_left += 64;
-			RESIZE(retstr, char, dest_size);
-			dest_ptr = retstr + offset;
-			continue;
+			yell("Iconv_open %s/%s failed; %s",
+				to, from, strerror(errno));
+			return 0;	/* Don't change anything */
 		}
 
-                break;
-        }
-	iconv_close (iref);
+		dest_size = *numbytes;
+		dest_left = *numbytes;
+		RESIZE(retstr, char, dest_size);
+
+		work_data = *data;
+		dest_ptr = retstr;
+
+		while ((n = iconv(iref, &work_data, numbytes, &dest_ptr, &dest_left)) != 0)
+		{
+			/* I *THINK* this is a hack. */ 
+			if (errno == EINVAL || errno == EILSEQ)
+			{
+				work_data++;
+				(*numbytes)--;
+				continue;
+			}
+
+			if (dest_left < 8)
+			{
+				size_t	offset;
+				offset = dest_ptr - retstr;
+
+				dest_size += 64;
+				dest_left += 64;
+				RESIZE(retstr, char, dest_size);
+				dest_ptr = retstr + offset;
+				continue;
+			}
+
+			break;
+		}
+		iconv_close (iref);
+		*numbytes = (dest_size - dest_left);
+	}
 
 	new_free(data);
 	*data = retstr;
-	*numbytes = (dest_size - dest_left);
 	return (*numbytes);
 }
 
@@ -7422,4 +7431,129 @@ static const char *chars = "0123456789abcdef";
 }
 
 /* End of stuff from from https://github.com/rxi/uuid4/blob/master/src/uuid4.c */
+
+/*
+ * I sourced this from https://en.wikipedia.org/wiki/Code_page_437
+ */
+static  u_32int_t       cp437map[256] = {
+#if 0
+/* 00-07 */     0x0000, 0x263a, 0x263b, 0x2665, 0x2666, 0x2663, 0x2660, 0x2022,
+/* 08-0F */     0x25D8, 0x25CB, 0x25D9, 0x2642, 0x2640, 0x266a, 0x266b, 0x263c,
+/* 10-17 */     0x25ba, 0x25c4, 0x2195, 0x203c, 0x00b6, 0x0017, 0x25ac, 0x21a8,
+/* 18-1F */     0x2191, 0x2193, 0x2192, 0x2190, 0x221f, 0x2194, 0x25b2, 0x25bc,
+#else
+/* 00-07 */     0x0000, 0x0001, 0x0002, 0x0003, 0x0004, 0x0005, 0x0006, 0x0007,
+/* 08-0F */     0x0008, 0x0009, 0x000A, 0x000B, 0x000C, 0x000D, 0x000E, 0x000F,
+/* 10-17 */     0x0010, 0x0011, 0x0012, 0x0013, 0x0014, 0x0015, 0x0016, 0x0017,
+/* 18-1F */     0x0018, 0x0019, 0x001A, 0x001B, 0x001C, 0x001D, 0x001E, 0x001F,
+#endif
+/* 20-27 */     0x0020, 0x0021, 0x0022, 0x0023, 0x0024, 0x0025, 0x0026, 0x0027,
+/* 28-2F */     0x0028, 0x0029, 0x002a, 0x002b, 0x002c, 0x002d, 0x002e, 0x002f,
+/* 30-37 */     0x0030, 0x0031, 0x0032, 0x0033, 0x0034, 0x0035, 0x0036, 0x0037,
+/* 38-3F */     0x0038, 0x0039, 0x003a, 0x003b, 0x003c, 0x003d, 0x003e, 0x003f,
+/* 40-47 */     0x0040, 0x0041, 0x0042, 0x0043, 0x0044, 0x0045, 0x0046, 0x0047,
+/* 48-4F */     0x0048, 0x0049, 0x004a, 0x004b, 0x004c, 0x004d, 0x004e, 0x004f,
+/* 50-57 */     0x0050, 0x0051, 0x0052, 0x0053, 0x0054, 0x0055, 0x0056, 0x0057,
+/* 58-5F */     0x0058, 0x0059, 0x005a, 0x005b, 0x005c, 0x005d, 0x005e, 0x005f,
+/* 60-67 */     0x0060, 0x0061, 0x0062, 0x0063, 0x0064, 0x0065, 0x0066, 0x0067,
+/* 68-6F */     0x0068, 0x0069, 0x006a, 0x006b, 0x006c, 0x006d, 0x006e, 0x006f,
+/* 70-77 */     0x0070, 0x0071, 0x0072, 0x0073, 0x0074, 0x0075, 0x0076, 0x0077,
+/* 78-7F */     0x0078, 0x0079, 0x007a, 0x007b, 0x007c, 0x007d, 0x007e, 0x2302,
+/* 80-87 */     0x00c7, 0x00fc, 0x00e9, 0x00e2, 0x00e4, 0x00e0, 0x00e5, 0x00e7,
+/* 88-8F */     0x00ea, 0x00eb, 0x00e8, 0x00ef, 0x00ee, 0x00ec, 0x00c4, 0x00c5,
+/* 90-97 */     0x00c9, 0x00e6, 0x00c6, 0x00f4, 0x00f6, 0x00f2, 0x00fb, 0x00f9,
+/* 98-9F */     0x00ff, 0x00d6, 0x00dc, 0x00a2, 0x00a3, 0x00a5, 0x20a7, 0x0192,
+/* A0-A7 */     0x00e1, 0x00ed, 0x00f3, 0x00fa, 0x00f1, 0x00d1, 0x00aa, 0x00ba,
+/* A8-AF */     0x00bf, 0x2310, 0x00ac, 0x00bd, 0x00bc, 0x00a1, 0x00ab, 0x00bb,
+/* B0-B7 */     0x2591, 0x2592, 0x2593, 0x2502, 0x2524, 0x2561, 0x2562, 0x2556,
+/* B8-BF */     0x2555, 0x2563, 0x2551, 0x2557, 0x255d, 0x255c, 0x255b, 0x2510,
+/* C0-C7 */     0x2514, 0x2534, 0x252c, 0x251c, 0x2500, 0x253c, 0x255e, 0x255f,
+/* C8-CF */     0x255a, 0x2554, 0x2569, 0x2566, 0x2560, 0x2550, 0x256c, 0x2567,
+/* D0-D7 */     0x2568, 0x2564, 0x2565, 0x2559, 0x2558, 0x2552, 0x2553, 0x256b,
+/* D8-DF */     0x256a, 0x2518, 0x250c, 0x2588, 0x2584, 0x258c, 0x2590, 0x2580,
+/* E0-E7 */     0x03b1, 0x00df, 0x0393, 0x03c0, 0x03a3, 0x03c3, 0x00b5, 0x03c4,
+/* E8-EF */     0x03a6, 0x0398, 0x03a9, 0x03b4, 0x221e, 0x03c6, 0x03b5, 0x2229,
+/* F0-F7 */     0x2261, 0x00b1, 0x2265, 0x2264, 0x2320, 0x2321, 0x00f7, 0x2248,
+/* F8-FF */     0x00b0, 0x2219, 0x00b7, 0x221a, 0x207f, 0x00b2, 0x25a0, 0x00a0
+};
+
+/*
+ * cp437_to_ucs - Convert a CP437 byte to a unicode code point.
+ *
+ * Arguments:
+ *      key     - A unicode code point
+ *      utf8str - Where to put the code point in the user's encoding
+ *      utf8strsiz - How big utf8str is.
+ */
+static u_32int_t       cp437_to_ucs (unsigned char cp437_byte)
+{
+	return cp437map[cp437_byte];
+}
+
+
+/*
+ * cp437_to_utf8 - Convert a CP437 string to UTF8 when the locale is missing
+ *
+ * Arguments:
+ *	input	 - A CP437-encoded string
+ *	inputlen - A pointer to how many bytes are in 'input'
+ *	destlen	 - A pointer where to store the number of output bytes
+ *
+ * Return value:
+ *	A nul-terminated, malloced UTF8 string whose length is stored in *destlen
+ *
+ * Notes:
+ *	Some systems don't have the CP437 locale (*cough*mac*cough*).  
+ *	But we really need to support CP437 for ascii art scripts.  
+ *	So this hack is the result
+ */
+unsigned char *  cp437_to_utf8 (const unsigned char *input, size_t inputlen, size_t *destlen)
+{
+	unsigned char *	dest;
+	size_t		dest_len;
+	size_t		s, d;
+	unsigned char *	y;
+	u_32int_t	codepoint;
+	char 		utf8str[16];
+
+	/*
+	 * We are going to convert 'src' to 'dest'.
+	 * No code points results in more than 6 bytes.
+	 * So 6 * numbytes plus one for nul is big enough
+	 */
+	dest_len = inputlen * 6 + 1;
+	dest = new_malloc(dest_len);
+
+	/*
+	 * Now let's walk each byte in the (cp437-encoded) source.
+	 * We convert the cp437 byte into a unicode code point.
+	 * Then we convert the code point to utf8.
+	 * Then we append that utf8 to the destination string.
+	 */
+	for (s = d = 0; s < inputlen; s++)
+	{
+		codepoint = cp437_to_ucs(input[s]);
+		ucs_to_utf8(codepoint, utf8str, sizeof(utf8str));
+		y = utf8str;
+		while (*y)
+		{
+			if (d >= dest_len)
+				break;
+			dest[d++] = *y++;
+		}
+	}
+
+	/* now nul-terminate the string, and return its length */
+	if (d < dest_len)
+	{
+		dest[d] = 0;
+		dest_len = d + 1;
+	}
+	else
+		dest[dest_len - 1] = 0;
+
+	*destlen = dest_len;
+	return dest;
+}
+
 

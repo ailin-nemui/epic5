@@ -327,6 +327,7 @@ extern	void    create_utf8_locale (void);
 extern	int	mkupper_l	(int);
 extern	int	mklower_l	(int);
 /* extern	int	sanity_check_encoding (const char *); */
+extern	unsigned char *  cp437_to_utf8 (const unsigned char *input, size_t inputlen, size_t *destlen);
 
 /******* recode.c ******/
 extern	void		init_recodings	(void);
