@@ -80,6 +80,7 @@ struct	channel_stru *	prev;		/* pointer to previous channel */
 
 	/* Channel stuff */
 	int		claimable;	/* Currently up for claiming */
+	int		claiming_window; /* What window claims us */
 	int		waiting;	/* Syncing, waiting for names/who */
 	NickList	nicks;		/* alist of nicks on channel */
 	char 		base_modes[54];	/* Just the modes w/o args */
@@ -161,6 +162,8 @@ static Channel *create_channel (const char *name, int server)
 	new_c->server = server;
 	new_c->waiting = 0;
 	new_c->winref = -1;
+	new_c->claimable = 0;
+	new_c->claiming_window = -1;
 	new_c->nicks.max_alloc = new_c->nicks.max = 0;
 	new_c->nicks.list = NULL;
 	if (get_server_stricmp_table(server) == 0)
@@ -242,6 +245,8 @@ static void 	destroy_channel (Channel *chan)
 	new_free(&chan->channel);
 	chan->server = NOSERV;
 	chan->winref = -1;
+	chan->claimable = -1;
+	chan->claiming_window = -1;
 
 	if (chan->nicks.max_alloc)
 		clear_channel(chan);
@@ -282,12 +287,13 @@ void 	add_channel (const char *name, int server)
 	if (was_window == -1)
 		was_window = get_winref_by_servref(server);
 
-	window_prepare_channel_claim(name, server);
 	new_c->claimable = 1;
+	new_c->claiming_window = -1;
 	do_hook(CHANNEL_CLAIM_LIST, "%d %s %d", server, name, was_window);
-	if ((claim_window = window_claimed_channel(name, server)) != -1)
-		was_window = claim_window;
+	if (new_c->claiming_window != -1)
+		was_window = new_c->claiming_window;
 	new_c->claimable = 0;
+	new_c->claiming_window = -1;
 
 	set_channel_window(name, from_server, was_window, 1);
 	update_all_windows();
@@ -1744,6 +1750,35 @@ void	channels_merge_winrefs (int oldref, int newref)
 	{
 		if (tmp->winref == oldref)
 			tmp->winref = newref;
+	}
+}
+
+int	window_claims_channel (int winref, int winserv, const char *channel)
+{
+	Channel *tmp = NULL;
+
+	for (tmp = channel_list; tmp; tmp = tmp->next)
+	{
+		/* 
+		 * If i'm being honest, only one channel can be claimable at a time.
+		 * The checks for server and channel are just a sanity check for now, 
+		 * to avoid referential integrity errors.  It's not like I don't know
+		 * exactly which channel is claimable at this moment: i just want to 
+		 * make sure you are claiming what you think you are claiming.
+		 */
+		if (tmp->claimable)
+		{
+			/* Make sure you think you're claiming the correct channel */
+			if (my_stricmp(tmp->channel, channel))
+				continue;
+
+			/* Make sure you think you're on the correct server */
+			if (tmp->server != winserv)
+				continue;
+
+			/* Hey, I'm satisfied! */
+			tmp->claiming_window = winref;
+		}
 	}
 }
 

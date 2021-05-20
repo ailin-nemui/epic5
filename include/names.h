@@ -56,7 +56,8 @@
 	int	auto_rejoin_callback	(void *);
 	void	channel_server_delete	(int);
 	void	channel_check_windows	(void);
-	void    channels_swap_winrefs (int oldref, int newref);
-	void    channels_merge_winrefs (int oldref, int newref);
+	void    channels_swap_winrefs 	(int oldref, int newref);
+	void    channels_merge_winrefs 	(int oldref, int newref);
+	int     window_claims_channel 	(int winref, int winserv, Char *channel);
 
 #endif /* _NAMES_H_ */

@@ -219,7 +219,6 @@ Window	*new_window (Screen *screen)
 	new_w->waiting_chans = NULL;
 	new_w->nicks = NULL;
 	new_w->query_counter = 0;
-	new_w->claimed_channel = NULL;
 
 	/* Internal flags */
 	new_w->top = 0;			/* Filled in later */
@@ -2345,12 +2344,14 @@ Window *get_window_by_desc (const char *stuff)
 {
 	Window	*w = NULL;	/* bleh */
 
+	w = NULL;
 	while (traverse_all_windows(&w))
 	{
 		if (w->uuid && !my_stricmp(w->uuid, stuff))
 			return w;
 	}
 
+	w = NULL;
 	while (traverse_all_windows(&w))
 	{
 		if (w->name && !my_stricmp(w->name, stuff))
@@ -2813,35 +2814,6 @@ int	claim_waiting_channel (const char *chan, int servref)
 	}
 
 	return retval;		/* Not found */
-}
-
-
-/* ***** */
-/*
- * These are used by /on channel_claim and /window claim
- */
-void	window_prepare_channel_claim (const char *name, int servref)
-{
-	Window *w = NULL;
-
-	while (traverse_all_windows(&w))
-	{
-		if (w->claimed_channel)
-			new_free(&w->claimed_channel);
-	}
-}
-
-int	window_claimed_channel (const char *name, int servref)
-{
-	Window *w = NULL;
-
-	while (traverse_all_windows(&w))
-	{
-		/* XXX In the future, we shouldn't enforce w->server == servref */
-		if (w->server == servref && !my_stricmp(w->claimed_channel, name))
-			return w->refnum;
-	}
-	return -1;	/* Nobody claimed the channel */
 }
 
 
@@ -3930,7 +3902,10 @@ static Window *window_claim (Window *window, char **args)
 	}
 
 	channel = new_next_arg(*args, args);
-	malloc_strcpy(&window->claimed_channel, channel);
+	if (window_claims_channel(window->refnum, window->server, channel))
+		yell("Window %d could not successfully claim channel %s", window->refnum, channel);
+
+	return window;
 }
 
 /* WINDOW CLEAR -- should be obvious, right? */

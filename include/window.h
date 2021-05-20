@@ -1,5 +1,5 @@
 /*
- * window.h: header file for window.c 
+ 6 window.h: header file for window.c 
  *
  * Copyright 1990 Michael Sandrof
  * Copyright 1997 EPIC Software Labs

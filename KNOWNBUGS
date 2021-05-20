@@ -944,4 +944,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $uuid4(NODASHES) to get uuids without dashes
 * $windowctl(GET x UUID) -- every window has a hash-free UUID now
 * Allow windows to be reffed by their UUID in /window
-
+* Revamp how channels get claimed (I like this better) to be channel-driven
+* Fix get_window_by_desc() (rb Harzilein)
