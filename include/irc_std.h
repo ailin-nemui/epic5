@@ -239,6 +239,17 @@ extern	char	*sys_errlist[];
 #endif
 
 /*
+ * NSIG is a pain in my [censored]
+ */
+#ifndef NSIG
+# ifdef _NSIG
+#  define NSIG _NSIG
+# else
+#  define NSIG 32
+# endif
+#endif
+
+/*
  * Define generic macros for signal handlers and built in commands.
  */
 typedef RETSIGTYPE sigfunc (int);
@@ -467,17 +478,6 @@ typedef struct stat		Stat;
  */
 #ifdef __INTERIX
 # define GETPGRP_VOID
-#endif
-
-/*
- * NSIG is a pain in my [censored]
- */
-#ifndef NSIG
-# ifdef _NSIG
-#  define NSIG _NSIG
-# else
-#  define NSIG 32
-# endif
 #endif
 
 /*

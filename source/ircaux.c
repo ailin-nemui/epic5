@@ -7389,9 +7389,10 @@ int	get_signal_by_name (const char *signame)
  * under the terms of the MIT license. See LICENSE for details.
  */
 
-char *	uuid4_generate (void)
+static char *	uuid4_generate_internal (int dashes)
 {
-static const char *template = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";
+static const char *template_with_dashes = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";
+static const char *template_without_dashes = "xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx";
 static const char *chars = "0123456789abcdef";
 	union { unsigned char b[16]; uint32_t word[4]; } s;
 	const char *	p;
@@ -7407,7 +7408,12 @@ static const char *chars = "0123456789abcdef";
 	memset(retval, 0, 64);
 
 	/* build string */
-	for (i = 0, p = template; *p; p++, dst++)
+	if (dashes)
+		p = template_with_dashes;
+	else
+		p = template_without_dashes;
+
+	for (i = 0; *p; p++, dst++)
 	{
 		n = s.b[i >> 1];
 		n = (i & 1) ? (n >> 4) : (n & 0xf);
@@ -7428,6 +7434,16 @@ static const char *chars = "0123456789abcdef";
 	}
 	*dst = 0;
 	return retval;
+}
+
+char *	uuid4_generate (void)
+{
+	return uuid4_generate_internal(1);
+}
+
+char *	uuid4_generate_no_dashes (void)
+{
+	return uuid4_generate_internal(0);
 }
 
 /* End of stuff from from https://github.com/rxi/uuid4/blob/master/src/uuid4.c */

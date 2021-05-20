@@ -51,6 +51,7 @@ typedef	struct	WindowStru
 {
 	unsigned refnum;		/* Unique refnum for window */
 	char *	name;			/* Logical name for window */
+	char *	uuid;			/* UUID4 for window (never changes) */
 	unsigned priority;		/* "Current window Priority" */
 
 	/* Output rule stuff */
@@ -63,7 +64,7 @@ typedef	struct	WindowStru
 					 */
 	WNickList *nicks;		/* List of nick-queries for this win */
 	int	query_counter;		/* Is there a query anyways? */
-
+	char *	claimed_channel;	/* A /WINDOW CLAIM claim */
 
 	/* Internal flags */
 	short	top;			/* SCREEN line for top of window */
@@ -248,6 +249,8 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	char	*get_channel_by_refnum		(unsigned);
 	void	destroy_waiting_channels	(int);
 	int     claim_waiting_channel (const char *chan, int servref);
+	void	window_prepare_channel_claim	(const char *, int);
+	int	window_claimed_channel		(const char *, int);
 	int	get_window_server		(unsigned);
 	void	change_window_server		(int, int);
 	void	window_check_servers		(void);

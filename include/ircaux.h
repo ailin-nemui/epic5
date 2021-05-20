@@ -75,7 +75,8 @@ int	ascii_strnicmp 		(const unsigned char *, const unsigned char *, size_t);
 int	ascii_stricmp 		(const unsigned char *, const unsigned char *);
 int	rfc1459_strnicmp 	(const unsigned char *, const unsigned char *, size_t);
 int	rfc1459_stricmp 	(const unsigned char *, const unsigned char *);
-char *  uuid4_generate (void);
+char *  uuid4_generate 		(void);
+char *	uuid4_generate_no_dashes	(void);
 
 
 void	really_free 		(int);

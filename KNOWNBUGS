@@ -938,3 +938,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * This is needed in init_encodings() to not output too early. (rb wcarson)
 * Don't make a lack of CP437 locale a boot failure (rb wcarson)
 * A lot of work was done on configure to support macports better.
+* Fix where NSIG was decld in irc_std.h (caf) (rb CE)
+* Add /ON CHANNEL_CLAIM and /WINDOW CLAIM (see UPDATES)
+* Exempt claimable channels from referential integrity checks
+* Add $uuid4(NODASHES) to get uuids without dashes
+* $windowctl(GET x UUID) -- every window has a hash-free UUID now
+* Allow windows to be reffed by their UUID in /window
+

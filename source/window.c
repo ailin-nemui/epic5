@@ -202,6 +202,7 @@ Window	*new_window (Screen *screen)
 	/* XXX refnum is changed here XXX */
 	new_w->refnum = new_refnum;
 	new_w->name = NULL;
+	new_w->uuid = uuid4_generate_no_dashes();	/* THIS NEVER CHANGES */
 	new_w->priority = -1;		/* Filled in later */
 
 	/* Output rule stuff */
@@ -218,6 +219,7 @@ Window	*new_window (Screen *screen)
 	new_w->waiting_chans = NULL;
 	new_w->nicks = NULL;
 	new_w->query_counter = 0;
+	new_w->claimed_channel = NULL;
 
 	/* Internal flags */
 	new_w->top = 0;			/* Filled in later */
@@ -551,6 +553,7 @@ delete_window_contents:
 	/* Various things... */
 	new_free(&window->logfile);
 	new_free(&window->name);
+	new_free(&window->uuid);
 
 	/* Delete the indicator if it's not already in the logical display */
 	if (window->scrollback_indicator->prev == NULL &&
@@ -2344,6 +2347,12 @@ Window *get_window_by_desc (const char *stuff)
 
 	while (traverse_all_windows(&w))
 	{
+		if (w->uuid && !my_stricmp(w->uuid, stuff))
+			return w;
+	}
+
+	while (traverse_all_windows(&w))
+	{
 		if (w->name && !my_stricmp(w->name, stuff))
 			return w;
 	}
@@ -2354,6 +2363,21 @@ Window *get_window_by_desc (const char *stuff)
 	return NULL;
 }
 
+/*
+ * get_window_by_uuid: Given either a refnum or a name, find that window
+ */
+Window *get_window_by_uuid (const char *uuid)
+{
+	Window	*w = NULL;	/* bleh */
+
+	while (traverse_all_windows(&w))
+	{
+		if (w->uuid && !my_stricmp(w->uuid, uuid))
+			return w;
+	}
+
+	return NULL;
+}
 
 /*
  * get_window_by_refnum: Given a reference number to a window, this returns a
@@ -2789,6 +2813,35 @@ int	claim_waiting_channel (const char *chan, int servref)
 	}
 
 	return retval;		/* Not found */
+}
+
+
+/* ***** */
+/*
+ * These are used by /on channel_claim and /window claim
+ */
+void	window_prepare_channel_claim (const char *name, int servref)
+{
+	Window *w = NULL;
+
+	while (traverse_all_windows(&w))
+	{
+		if (w->claimed_channel)
+			new_free(&w->claimed_channel);
+	}
+}
+
+int	window_claimed_channel (const char *name, int servref)
+{
+	Window *w = NULL;
+
+	while (traverse_all_windows(&w))
+	{
+		/* XXX In the future, we shouldn't enforce w->server == servref */
+		if (w->server == servref && !my_stricmp(w->claimed_channel, name))
+			return w->refnum;
+	}
+	return -1;	/* Nobody claimed the channel */
 }
 
 
@@ -3865,6 +3918,20 @@ static Window *window_check (Window *window, char **args)
 	return window;
 }
 
+
+/* WINDOW CLAIM - claim a channel should go "here" */
+static Window *window_claim (Window *window, char **args)
+{
+	char *channel;
+
+	if (!args)
+	{
+		return window;
+	}
+
+	channel = new_next_arg(*args, args);
+	malloc_strcpy(&window->claimed_channel, channel);
+}
 
 /* WINDOW CLEAR -- should be obvious, right? */
 static Window *window_clear (Window *window, char **args)
@@ -6412,6 +6479,7 @@ static const window_ops options [] = {
 	{ "CHANNEL",		window_channel 		},
 	{ "CHECK",		window_check		},
 	{ "CLEAR",		window_clear		},
+	{ "CLAIM",		window_claim		},
 	{ "CREATE",		window_create 		},
 	{ "DELETE",		window_delete 		},
 	{ "DELETE_KILL",	window_delete_kill	},
@@ -7903,6 +7971,8 @@ char 	*windowctl 	(char *input)
 		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "SERVER_STRING", len)) {
 		RETURN_STR(w->original_server_string);
+	    } else if (!my_strnicmp(listc, "UUID", len)) {
+		RETURN_STR(w->uuid);
 	    } else
 		RETURN_EMPTY;
 	} else if (!my_strnicmp(listc, "SET", len)) {

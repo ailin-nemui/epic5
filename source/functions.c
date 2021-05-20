@@ -8120,7 +8120,13 @@ BUILT_IN_FUNCTION(function_json_implode, input)
 BUILT_IN_FUNCTION(function_uuid4, input)
 {
 	char *retval;
-	retval = uuid4_generate();
+	char *var;
+
+	if (!my_stricmp(input, "NODASHES"))
+		retval = uuid4_generate_no_dashes();
+	else
+		retval = uuid4_generate();
+
 	RETURN_MSTR(retval);	/* Never pass function call to RETURN_* */
 }
 

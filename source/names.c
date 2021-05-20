@@ -79,6 +79,7 @@ struct	channel_stru *	prev;		/* pointer to previous channel */
 	int		curr_count;	/* Current channel precedence */
 
 	/* Channel stuff */
+	int		claimable;	/* Currently up for claiming */
 	int		waiting;	/* Syncing, waiting for names/who */
 	NickList	nicks;		/* alist of nicks on channel */
 	char 		base_modes[54];	/* Just the modes w/o args */
@@ -260,6 +261,7 @@ void 	add_channel (const char *name, int server)
 {
 	Channel *new_c;
 	int	was_window = -1;
+	int	claim_window = -1;
 
 	if ((new_c = find_channel(name, server)))
 	{
@@ -278,7 +280,14 @@ void 	add_channel (const char *name, int server)
 		was_window = claim_waiting_channel(name, server);
 
 	if (was_window == -1)
-		was_window = get_winref_by_servref(from_server);
+		was_window = get_winref_by_servref(server);
+
+	window_prepare_channel_claim(name, server);
+	new_c->claimable = 1;
+	do_hook(CHANNEL_CLAIM_LIST, "%d %s %d", server, name, was_window);
+	if ((claim_window = window_claimed_channel(name, server)) != -1)
+		was_window = claim_window;
+	new_c->claimable = 0;
 
 	set_channel_window(name, from_server, was_window, 1);
 	update_all_windows();
@@ -1428,7 +1437,10 @@ void 	set_channel_window (const char *channel, int server, int winref, int as_cu
 		 * of the target window, then don't do anything more.
 		 */
 		if (is_current_now && tmp->winref == winref && as_current)
+		{
+			yell("%d:%s is already current window of %d", server, channel, winref);
 			return;
+		}
 
 		/*
 		 * We need to know the present current channel of the new
@@ -1630,7 +1642,7 @@ void	channel_check_windows (void)
 	{
 		reset = 0;
 
-		if (tmp->winref > 0)
+		if (tmp->winref > 0 || tmp->claimable)
 			continue;
 
 		w = NULL;
@@ -1666,6 +1678,9 @@ void	channel_check_windows (void)
 	for (tmp = channel_list; tmp; 
 		reset ? (tmp = channel_list) : (tmp = tmp->next))
 	{
+		if (tmp->claimable)
+			continue;
+
 		if (tmp->winref <= 0)
 			panic(1, "I thought we just checked for this! [1]");
 
@@ -1685,6 +1700,9 @@ void	channel_check_windows (void)
 	for (tmp = channel_list; tmp; 
 		reset ? (tmp = channel_list) : (tmp = tmp->next))
 	{
+		if (tmp->claimable)
+			continue;
+
 		if (tmp->winref <= 0)
 			panic(1, "I thought we just checked for this! [2]");
 

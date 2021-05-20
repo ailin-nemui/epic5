@@ -1,5 +1,79 @@
 EPIC5-2.2
 
+*** News 05/20/2021 -- Windows have UUIDs ($windowctl(GET x UUID))
+	Every window now receives an immutable UUID when it is 
+	created.  This UUID is globally unique and cannot be changed.
+
+	Although the UUID is not user-facing (as in /window list),
+	you can get it with $windowctl(GET refnum UUID).
+
+	The UUID is an lval (that is, it does not contain hyphens),
+	so you can use it as part of a variable name if you wish.
+
+*** News 05/20/2021 -- New concept, "claiming channels"
+	When EPIC receives a protocol JOIN message for a channel, 
+	it has to decide what window to put the channel in.  
+	A common request has been the opportunity to let scripts 
+	decide where new channels should go, rather than it being 
+	hardcoded.
+
+	So now when a JOIN is received, an /ON will be thrown 
+	(see below) which is an invitiation for your script to do
+	whatever preparatory work for the channel you see fit.
+
+	One thing in particular is /WINDOW CLAIM (see below), which
+	tells EPIC which window the channel should be put into.
+	As part of this process, EPIC will suggest a window the 
+	channel should go into, unless you choose to overrule that.
+
+	*** NONE OF THIS APPLIES TO /JOIN or /WINDOW CHANNEL
+	    when the user is deliberately moving a channel they are
+	    already on between windows.  You can't stop that.
+
+*** News 05/20/2021 -- New /ON, /ON CHANNEL_CLAIM 
+	The /ON CHANNEL_CLAIM is thrown when a JOIN is received,
+	but before the client has assigned the channel to a window.
+		$0 - The server refnum 
+		$1 - The channel being joined
+		$2 - The window refnum epic proposes to put the
+		     window into.
+
+	If your handler does /WINDOW CLAIM in any particular window,
+	then the channel will go to that window that you specify.
+
+	At this time, you can only do /WINDOW CLAIM in a window that
+	is connected to the server in $0. In the future, this will
+	probably change.  But for now, a /WINDOW BIND in a "window
+	connected to the wrong server" is treated as invalid.
+
+	If you do not do a valid /WINDOW CLAIM, then the channel will
+	go into the window proposed by EPIC.
+
+*** News 05/20/2021 -- New /WINDOW operation. /WINDOW CLAIM #channel
+	During the handling of an /ON CHANNEL_CLAIM, you may perform
+	the /WINDOW CLAIM operation to direct EPIC to put the new
+	channel into a particular window.
+
+	You must pass the name of the channel as a paraemter.
+	It is available as $1 in the /on.
+
+	You may only claim the channel in a window that is connected
+	to the correct server (from $0).  Attempting to claim a 
+	channel in a window connected to the wrong server is invalid
+	and has no effect.   This will change in the future.
+
+*** News 05/20/2021 -- $uuid4() can now return lvals (NODASHES)
+	You can now get a uuid4 that is valid as an lval if you
+	supply NODASHES as the only argument
+		@ a.$uuid4(NODASHES) = [whatever]
+
+	ALL ARGUMENTS TO THIS FUNCTION ARE RESERVED FOR FUTURE EXPANSION.
+	There are now two defined behaviors:
+		$uuid4()	 - UUID4 with dashes
+		$uuid4(NODASHES) - UUID4 without dashes
+	EVERYTHING ELSE IS UNDEFINED BEHAVIOR (ie, other arguments may 
+	do something today, but forwards compatability is not guaranteed)
+
 *** News 02/13/2021 -- /UNLOAD now supports /TIMERs
 	If you create a /TIMER in a script you /LOAD with /PACKAGE
 	the timer will be tagged just like any aliases or assigns
