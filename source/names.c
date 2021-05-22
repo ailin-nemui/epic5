@@ -1778,7 +1778,9 @@ int	window_claims_channel (int winref, int winserv, const char *channel)
 
 			/* Hey, I'm satisfied! */
 			tmp->claiming_window = winref;
+			return 0;
 		}
 	}
+	return -1;
 }
 

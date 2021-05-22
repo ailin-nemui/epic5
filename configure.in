@@ -27,49 +27,49 @@ dnl
 dnl initial stuff
 dnl
 
-AC_MSG_CHECKING(whether your compiler tolerates -std=c90)
+AC_MSG_CHECKING(whether your compiler tolerates -std=gnu89)
 old_cflags="$CFLAGS"
-CFLAGS="$CFLAGS -std=c90"
+CFLAGS="$CFLAGS -std=gnu89"
 AC_TRY_COMPILE(, [return 0;], 
 	AC_MSG_RESULT(yes),
 	AC_MSG_RESULT(no)
 	CFLAGS="$old_cflags"
 )
 
-AC_MSG_CHECKING(whether your compiler tolerates --std=c90)
+AC_MSG_CHECKING(whether your compiler tolerates --std=gnu89)
 old_cflags="$CFLAGS"
-CFLAGS="$CFLAGS --std=c90"
+CFLAGS="$CFLAGS --std=gnu89"
 AC_TRY_COMPILE(, [return 0;], 
 	AC_MSG_RESULT(yes),
 	AC_MSG_RESULT(no)
 	CFLAGS="$old_cflags"
 )
 
-AC_MSG_CHECKING(whether your compiler requires -Wno-error)
-AC_TRY_COMPILE(, [exit(0);], 
-	AC_MSG_RESULT(no -- yay!), [
-	 old_cflags="$CFLAGS"
-	 CFLAGS="$CFLAGS -Wno-error"
-	 AC_TRY_COMPILE(, [exit(0);], 
-	  AC_MSG_RESULT(yes),
-          AC_MSG_RESULT(no)
-	  CFLAGS="$old_cflags"
-	 )
-	]
-)
+dnl AC_MSG_CHECKING(whether your compiler requires -Wno-error)
+dnl AC_TRY_COMPILE(, [exit(0);], 
+dnl	AC_MSG_RESULT(no -- yay!), [
+dnl	 old_cflags="$CFLAGS"
+dnl	 CFLAGS="$CFLAGS -Wno-error"
+dnl	 AC_TRY_COMPILE(, [exit(0);], 
+dnl	  AC_MSG_RESULT(yes),
+dnl       AC_MSG_RESULT(no)
+dnl	  CFLAGS="$old_cflags"
+dnl	 )
+dnl	]
+dnl )
 
-AC_MSG_CHECKING(whether your compiler requires -Wno-error=implicit-function-declaration)
-AC_TRY_COMPILE(, [exit(0);], 
-	AC_MSG_RESULT(no -- yay!), [
-	 old_cflags="$CFLAGS"
-	 CFLAGS="$CFLAGS -Wno-error=implicit-function-declaration"
-	 AC_TRY_COMPILE(, [exit(0);], 
-	  AC_MSG_RESULT(yes),
-          AC_MSG_RESULT(no)
-	  CFLAGS="$old_cflags"
-	 )
-	]
-)
+dnl AC_MSG_CHECKING(whether your compiler requires -Wno-error=implicit-function-declaration)
+dnl AC_TRY_COMPILE(, [exit(0);], 
+dnl	AC_MSG_RESULT(no -- yay!), [
+dnl	 old_cflags="$CFLAGS"
+dnl	 CFLAGS="$CFLAGS -Wno-error=implicit-function-declaration"
+dnl	 AC_TRY_COMPILE(, [exit(0);], 
+dnl	  AC_MSG_RESULT(yes),
+dnl       AC_MSG_RESULT(no)
+dnl	  CFLAGS="$old_cflags"
+dnl	 )
+dnl	]
+dnl)
 
 
 AC_PROG_CC
