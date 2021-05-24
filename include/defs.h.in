@@ -1,222 +1,227 @@
-/* include/defs.h.in.  Generated automatically from configure.in by autoheader.  */
+/* include/defs.h.in.  Generated from configure.in by autoheader.  */
 
-/* Define if using alloca.c.  */
-#undef C_ALLOCA
+/* Define to 1 if the `closedir' function returns void instead of `int'. */
+#undef CLOSEDIR_VOID
 
-/* Define to one of _getb67, GETB67, getb67 for Cray-2 and Cray-YMP systems.
-   This function is required for alloca.c support on those systems.  */
+/* Define to one of `_getb67', `GETB67', `getb67' for Cray-2 and Cray-YMP
+   systems. This function is required for `alloca.c' support on those systems.
+   */
 #undef CRAY_STACKSEG_END
 
-/* Define if the `getpgrp' function takes no argument.  */
-#undef GETPGRP_VOID
+/* Define to 1 if using `alloca.c'. */
+#undef C_ALLOCA
 
-/* Define to `int' if <sys/types.h> doesn't define.  */
-#undef gid_t
+/* Same as `HAVE_DIRENT_H', don't depend on me. */
+#undef DIRENT
 
-/* Define if you have alloca, as a function or macro.  */
+/* Define if <term.h> should be avoided */
+#undef DONT_USE_TERM_H
+
+/* Define this if ipv6 was forbidden by user */
+#undef DO_NOT_USE_IPV6
+
+/* Define this if your getaddrinfo() does not support AF_UNIX */
+#undef GETADDRINFO_DOES_NOT_DO_AF_UNIX
+
+/* Define to 1 if you have `alloca', as a function or macro. */
 #undef HAVE_ALLOCA
 
-/* Define if you have <alloca.h> and it should be used (not on Ultrix).  */
+/* Define to 1 if you have <alloca.h> and it should be used (not on Ultrix).
+   */
 #undef HAVE_ALLOCA_H
 
-/* Define to `int' if <sys/types.h> doesn't define.  */
-#undef mode_t
+/* Define this if you have arc4random() */
+#undef HAVE_ARC4RANDOM
 
-/* Define if your C compiler doesn't accept -c and -o together.  */
-#undef NO_MINUS_C_MINUS_O
+/* Define if you can use __attribute__((fallthrough)) */
+#undef HAVE_ATTRIBUTE_FALLTHROUGH
 
-/* Define if your Fortran 77 compiler doesn't accept -c and -o together. */
-#undef F77_NO_MINUS_C_MINUS_O
+/* Define this if your realpath() doesn't work for nonexistant files */
+#undef HAVE_BROKEN_REALPATH
 
-/* Define to `int' if <sys/types.h> doesn't define.  */
-#undef pid_t
+/* Define if you have clock_gettime() */
+#undef HAVE_CLOCK_GETTIME
 
-/* Define as the return type of signal handlers (int or void).  */
-#undef RETSIGTYPE
+/* Define to 1 if you have the <dirent.h> header file, and it defines `DIR'.
+   */
+#undef HAVE_DIRENT_H
 
-/* Define to the type of arg1 for select(). */
-#undef SELECT_TYPE_ARG1
-
-/* Define to the type of args 2, 3 and 4 for select(). */
-#undef SELECT_TYPE_ARG234
-
-/* Define to the type of arg5 for select(). */
-#undef SELECT_TYPE_ARG5
-
-/* Define to `unsigned' if <sys/types.h> doesn't define.  */
-#undef size_t
-
-/* If using the C implementation of alloca, define if you know the
-   direction of stack growth for your system; otherwise it will be
-   automatically deduced at run-time.
- STACK_DIRECTION > 0 => grows toward higher addresses
- STACK_DIRECTION < 0 => grows toward lower addresses
- STACK_DIRECTION = 0 => direction of growth unknown
- */
-#undef STACK_DIRECTION
-
-/* Define if you have the ANSI C header files.  */
-#undef STDC_HEADERS
-
-/* Define if you can safely include both <sys/time.h> and <time.h>.  */
-#undef TIME_WITH_SYS_TIME
-
-/* Define to `int' if <sys/types.h> doesn't define.  */
-#undef uid_t
-
-/* Define this if you have fpathconf(2) */
-#undef HAVE_FPATHCONF
-
-/* define this if you have getpass(3) */
-#undef HAVE_GETPASS
-
-/* define this if you have getpgid(2) */
-#undef HAVE_GETPGID
-
-/* define this if you have gettimeofday(2) */
-#undef HAVE_GETTIMEOFDAY
-
-/* Define this if you have killpg(2) */
-#undef HAVE_KILLPG
-
-/* define this if you have memmove(3) */
-#undef HAVE_MEMMOVE
-
-/* define this if you have setenv(3) */
-#undef HAVE_SETENV
-
-/* define this if you have unsetenv(3) */
-#undef HAVE_UNSETENV
-
-/* define this if you have setsid(2) */
-#undef HAVE_SETSID
-
-/* define this if you have snprintf(3) */
-#undef HAVE_SNPRINTF
-
-/* define this if you have strerror(3) */
-#undef HAVE_STRERROR
-
-/* define if you have strtoul(3) */
-#undef HAVE_STRTOUL
-
-/* define this if you have sysconf(3) */
-#undef HAVE_SYSCONF
-
-/* define this if you have uname(2) */
-#undef HAVE_UNAME
-
-/* define this if you have vsnprintf(3) */
-#undef HAVE_VSNPRINTF
-
-/* define if you have sys_siglist */
-#undef HAVE_SYS_SIGLIST
-
-/* define this if you don't have struct linger */
-#undef NO_STRUCT_LINGER
-
-/* define if allow sys/time.h with time.h */
-#undef TIME_WITH_SYS_TIME
-
-/* Define this if your getpgrp is broken posix */
-#undef GETPGRP_VOID
-
-/* define this if an unsigned long is 32 bits */
-#undef UNSIGNED_LONG32
-
-/* define this if an unsigned int is 32 bits */
-#undef UNSIGNED_INT32
-
-/* define this if you are unsure what is is 32 bits */
-#undef UNKNOWN_32INT
-
-/* Define this if you need to include sys/select.h */
-#undef NEED_SYS_SELECT_H
-
-/*
- * SOCKS 4 && 5 support.
- */
-#undef SOCKS
-#undef USE_SOCKS
-#undef USE_SOCKS5
-#undef connect
-#undef getsockname
-#undef bind
-#undef accept
-#undef listen
-#undef select
-#undef dup
-#undef dup2
-#undef fclose
-#undef gethostbyname
-#undef read
-#undef recv
-#undef recvfrom
-#undef rresvport
-#undef send
-#undef sendto
-#undef shutdown
-#undef write
-#undef Rconnect
-#undef Rgetsockname
-#undef Rgetpeername
-#undef Rbind
-#undef Raccept
-#undef Rlisten
-#undef Rselect
-
-/*
- *  Perl support.
- */
-#undef HAVE_PERL
-
-/* Define this if you have setsid() */
-#undef HAVE_SETSID
-
-/* Define this if you have tparm(2) */
-#undef HAVE_TPARM
-
-/* Define this if you have getlogin(3) */
-#undef HAVE_GETLOGIN
-
-/* Define this if you have terminfo support */
-#undef HAVE_TERMINFO
-
-/* Define this if you have fchdir() */
+/* Define if you have fchdir() */
 #undef HAVE_FCHDIR
 
-/* Define this if you have realpath() */
+/* Define to 1 if you have the <fcntl.h> header file. */
+#undef HAVE_FCNTL_H
+
+/* Define if you have finite() */
+#undef HAVE_FINITE
+
+/* Define if you have fpathconf() */
+#undef HAVE_FPATHCONF
+
+/* Define if you have getaddrinfo() */
+#undef HAVE_GETADDRINFO
+
+/* Define if you have getlogin() */
+#undef HAVE_GETLOGIN
+
+/* Define if you have getnameinfo() */
+#undef HAVE_GETNAMEINFO
+
+/* Define if you have getpass() */
+#undef HAVE_GETPASS
+
+/* Define if you have getpgid() */
+#undef HAVE_GETPGID
+
+/* Define if you have getservbyport() */
+#undef HAVE_GETSERVBYPORT
+
+/* Define if you have gettimeofday() */
+#undef HAVE_GETTIMEOFDAY
+
+/* Define this if you have a useful iconv() */
+#undef HAVE_ICONV
+
+/* Define to 1 if you have the <ieeefp.h> header file. */
+#undef HAVE_IEEEFP_H
+
+/* Define this if we should use (long) for your (intmax_t) */
+#undef HAVE_INTMAX_LONG
+
+/* Define this if we should use (long long) for your (intmax_t) */
+#undef HAVE_INTMAX_LONG_LONG
+
+/* Define this if your (intmax_t) is native */
+#undef HAVE_INTMAX_NATIVE
+
+/* Define this if we should use (quad_t) for your (intmax_t) */
+#undef HAVE_INTMAX_QUADT
+
+/* Define if you have intmax_t */
+#undef HAVE_INTMAX_T
+
+/* Define to 1 if the system has the type `intptr_t'. */
+#undef HAVE_INTPTR_T
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Define if you have isfinite() */
+#undef HAVE_ISFINITE
+
+/* Define if you have killpg() */
+#undef HAVE_KILLPG
+
+/* Define this if you have a working libarchive */
+#undef HAVE_LIBARCHIVE
+
+/* Define to 1 if the system has the type `long long int'. */
+#undef HAVE_LONG_LONG_INT
+
+/* Define to 1 if you have the <math.h> header file. */
+#undef HAVE_MATH_H
+
+/* Define if you have have_memmove() */
+#undef HAVE_MEMMOVE
+
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* Define if you have nanosleep() */
+#undef HAVE_NANOSLEEP
+
+/* Define to 1 if you have the <ndbm.h> header file. */
+#undef HAVE_NDBM_H
+
+/* Define to 1 if you have the <ndir.h> header file, and it defines `DIR'. */
+#undef HAVE_NDIR_H
+
+/* Define to 1 if you have the <netdb.h> header file. */
+#undef HAVE_NETDB_H
+
+/* Define if you have newlocale() */
+#undef HAVE_NEWLOCALE
+
+/* Define this if you have perl */
+#undef HAVE_PERL
+
+/* Define this to support python */
+#undef HAVE_PYTHON
+
+/* Define if you have realpath() */
 #undef HAVE_REALPATH
 
-/* Define this if you have strlcpy() */
-#undef HAVE_STRLCPY
+/* Define to 1 if you have the <regex.h> header file. */
+#undef HAVE_REGEX_H
 
-/* Define this if you have strlcat() */
-#undef HAVE_STRLCAT
+/* Define this if you want to suppor ruby */
+#undef HAVE_RUBY
 
-/* Define this if you want OPENSSL support */
-#undef HAVE_SSL
+/* Define this if your struct sockaddr has a sa_len field */
+#undef HAVE_SA_LEN
 
-/* Define this if you have sysctlbyname() */
-#undef HAVE_SYSCTLBYNAME
+/* Define if you have setenv() */
+#undef HAVE_SETENV
+
+/* Define if you have setsid() */
+#undef HAVE_SETSID
+
+/* Define if you have snprintf() */
+#undef HAVE_SNPRINTF
+
+/* Define if you have socklen_t */
+#undef HAVE_SOCKLEN_T
 
 /* Define this if you have SO_SNDLOWAT */
 #undef HAVE_SO_SNDLOWAT
 
-/* Define this if you have struct sockaddr_storage */
-#undef HAVE_STRUCT_SOCKADDR_STORAGE
+/* Define this if you have a working ssl */
+#undef HAVE_SSL
 
-/* Define this if your system has SA_LEN in its sockaddrs */
-#undef HAVE_SA_LEN
+/* Define to 1 if you have the <stdargs.h> header file. */
+#undef HAVE_STDARGS_H
 
-/* Define this if you don't have siglen_t */
-#undef HAVE_SOCKLEN_T
+/* Define to 1 if you have the <stddef.h> header file. */
+#undef HAVE_STDDEF_H
 
-/* Define this if you have a getaddrinfo() with missing functionality */
-#undef GETADDRINFO_DOES_NOT_DO_AF_UNIX
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
 
-/* Define this if you do not want INET6 support */
-#undef DO_NOT_USE_IPV6
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define if you have strerror() */
+#undef HAVE_STRERROR
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define if you have strlcat() */
+#undef HAVE_STRLCAT
+
+/* Define if you have strlcpy() */
+#undef HAVE_STRLCPY
+
+/* Define if you have strptime() */
+#undef HAVE_STRPTIME
+
+/* Define this if you have strtoimax() */
+#undef HAVE_STRTOIMAX
+
+/* Define if you have strtoimax_t */
+#undef HAVE_STRTOIMAX_T
+
+/* Define this if you have strtoll() */
+#undef HAVE_STRTOLL
+
+/* Define this if you have strtoq() */
+#undef HAVE_STRTOQ
+
+/* Define if you have strtoul() */
+#undef HAVE_STRTOUL
 
 /* Define this if you have struct addrinfo */
 #undef HAVE_STRUCT_ADDRINFO
@@ -224,257 +229,338 @@
 /* Define this if you have struct sockaddr_in6 */
 #undef HAVE_STRUCT_SOCKADDR_IN6
 
-/* Define this if you have getservbyport() */
-#undef HAVE_GETSERVBYPORT
+/* Define this if you have struct sockaddr_storage */
+#undef HAVE_STRUCT_SOCKADDR_STORAGE
 
-/* Define this if you have getaddrinfo */
-#undef HAVE_GETADDRINFO
+/* Define if you have sysconf() */
+#undef HAVE_SYSCONF
 
-/* Define this if you have getnameinfo */
-#undef HAVE_GETNAMEINFO
+/* Define if you have sysctlbyname() */
+#undef HAVE_SYSCTLBYNAME
 
-/* Define this if you have a broken realpath */
-#undef HAVE_BROKEN_REALPATH
+/* Define to 1 if you have the <sys/cdefs.h> header file. */
+#undef HAVE_SYS_CDEFS_H
 
-/* Define this if you have TCL */
+/* Define to 1 if you have the <sys/dir.h> header file, and it defines `DIR'.
+   */
+#undef HAVE_SYS_DIR_H
+
+/* Define to 1 if you have the <sys/fcntl.h> header file. */
+#undef HAVE_SYS_FCNTL_H
+
+/* Define to 1 if you have the <sys/file.h> header file. */
+#undef HAVE_SYS_FILE_H
+
+/* Define to 1 if you have the <sys/filio.h> header file. */
+#undef HAVE_SYS_FILIO_H
+
+/* Define to 1 if you have the <sys/ndir.h> header file, and it defines `DIR'.
+   */
+#undef HAVE_SYS_NDIR_H
+
+/* Define to 1 if you have the <sys/param.h> header file. */
+#undef HAVE_SYS_PARAM_H
+
+/* Define to 1 if you have the <sys/select.h> header file. */
+#undef HAVE_SYS_SELECT_H
+
+/* Define if you have sys_siglist */
+#undef HAVE_SYS_SIGLIST
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/sysctl.h> header file. */
+#undef HAVE_SYS_SYSCTL_H
+
+/* Define to 1 if you have the <sys/syslimits.h> header file. */
+#undef HAVE_SYS_SYSLIMITS_H
+
+/* Define to 1 if you have the <sys/termios.h> header file. */
+#undef HAVE_SYS_TERMIOS_H
+
+/* Define to 1 if you have the <sys/time.h> header file. */
+#undef HAVE_SYS_TIME_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <sys/un.h> header file. */
+#undef HAVE_SYS_UN_H
+
+/* Define this if you want to add tcl support */
 #undef HAVE_TCL
 
-/* Define this if you have RUBY */
-#undef HAVE_RUBY
+/* Define if you have tcsetpgrp() */
+#undef HAVE_TCSETPGRP
 
-/* Define this if you have clock_gettime() */
-#undef HAVE_CLOCK_GETTIME
+/* Define to 1 if you have the <termcap.h> header file. */
+#undef HAVE_TERMCAP_H
 
-/* Define this if you have intptr_t */
-#undef HAVE_INTPTR_T
+/* Define if you have terminfo() */
+#undef HAVE_TERMINFO
 
-/* Define this if you have strtoll() */
-#undef HAVE_STRTOLL
+/* Define to 1 if you have the <termios.h> header file. */
+#undef HAVE_TERMIOS_H
 
-/* Define this to use select() */
-#undef USE_SELECT
+/* Define to 1 if you have the <term.h> header file. */
+#undef HAVE_TERM_H
 
-/* Define this to use poll() */
-#undef USE_POLL
+/* Define if you have tparm() */
+#undef HAVE_TPARM
 
-/* Define this to use kqueue() */
-#undef USE_FREEBSD_KQUEUE
+/* Define to 1 if the system has the type `uintmax_t'. */
+#undef HAVE_UINTMAX_T
 
-/* Define this to use pthreads */
-#undef USE_PTHREAD
+/* Define if you have uname() */
+#undef HAVE_UNAME
 
-/* Define this if you have arc4random() */
-#undef HAVE_ARC4RANDOM
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
 
-/* Define this if you have solaris ports */
-#undef USE_SOLARIS_PORTS
+/* Define if you have unsetenv() */
+#undef HAVE_UNSETENV
 
-/* Define this if your largest int is (long) */
-#undef HAVE_INTMAX_LONG
+/* Define to 1 if the system has the type `unsigned long long int'. */
+#undef HAVE_UNSIGNED_LONG_LONG_INT
 
-/* Define this if your largest int is (quad_t) */
-#undef HAVE_INTMAX_QUADT
+/* Define to 1 if you have the <valgrind/memcheck.h> header file. */
+#undef HAVE_VALGRIND_MEMCHECK_H
 
-/* Define this if your largest int is (long long) */
-#undef HAVE_INTMAX_LONG_LONG
+/* Define if you have vsnprintf() */
+#undef HAVE_VSNPRINTF
 
-/* Define this if your largest int is (intmax_t) */
-#undef HAVE_INTMAX_NATIVE
+/* Define to 1 if you have the <xlocale.h> header file. */
+#undef HAVE_XLOCALE_H
 
-/* Define this if you have a strtoimax() */
-#undef HAVE_STRTOIMAX
+/* Same as `HAVE_NDIR_H', don't depend on me. */
+#undef NDIR
 
-/* Define this if you have a strtoq() */
-#undef HAVE_STRTOQ
+/* Define this if we need strtoll() */
+#undef NEED_STRTOLL
 
-/* Define this if you have ruby and stuff */
-#undef RUBYCFLAGS
+/* Define if you need to include <sys/select.h> */
+#undef NEED_SYS_SELECT_H
 
-/* Define this if you have ruby and stuff */
-#undef RUBYLIBS
+/* Define this if newlocale() doesn't work the way I expect */
+#undef NEWLOCALE_DOESNT_WORK
 
-/* Define this if you have tcl and stuff */
-#undef TCLCFLAGS
+/* Define this if newlocale() requires #define __GNU_SOURCE to work */
+#undef NEWLOCALE_REQUIRES__GNU_SOURCE
 
-/* Define this if you have tcl and stuff */
-#undef TCLLIBS
+/* Define this if you don't have job control */
+#undef NO_JOB_CONTROL
 
-/* Define this if you have perl and stuff */
+/* Define this if you do not have struct linger */
+#undef NO_STRUCT_LINGER
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* Add this to CLFAGS for perl support */
 #undef PERLCFLAGS
 
-/* Define this if you have perl and stuff */
+/* Add this to LDFLAGS for perl support */
 #undef PERLLIBS
 
-/* Define this if you have finite() */
-#undef HAVE_FINITE
+/* Stuff to add to CFLAGS to support python */
+#undef PYTHON_CFLAGS
 
-/* Define this if you have isfinite() */
-#undef HAVE_ISFINITE
+/* Stuff to add to LDFLAGS to support python */
+#undef PYTHON_LDFLAGS
+
+/* Define this add stuff.... */
+#undef PYTHON_O
+
+/* Define as the return type of signal handlers (`int' or `void'). */
+#undef RETSIGTYPE
+
+/* Stuff to add to CFLAGS to support ruby */
+#undef RUBYCFLAGS
+
+/* Stuff to add to LDFLAGS to support ruby */
+#undef RUBYLIBS
+
+/* The size of `long long', as computed by sizeof. */
+#undef SIZEOF_LONG_LONG
+
+/* The size of `quad_t', as computed by sizeof. */
+#undef SIZEOF_QUAD_T
+
+/* The size of `unsigned int', as computed by sizeof. */
+#undef SIZEOF_UNSIGNED_INT
+
+/* The size of `unsigned long', as computed by sizeof. */
+#undef SIZEOF_UNSIGNED_LONG
+
+/* Define this if you wanted to use SOCKS */
+#undef SOCKS
+
+/* If using the C implementation of alloca, define if you know the
+   direction of stack growth for your system; otherwise it will be
+   automatically deduced at runtime.
+	STACK_DIRECTION > 0 => grows toward higher addresses
+	STACK_DIRECTION < 0 => grows toward lower addresses
+	STACK_DIRECTION = 0 => direction of growth unknown */
+#undef STACK_DIRECTION
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
+
+/* Same as `HAVE_SYS_DIR_H', don't depend on me. */
+#undef SYSDIR
+
+/* Same as `HAVE_SYS_NDIR_H', don't depend on me. */
+#undef SYSNDIR
+
+/* Stuff to add to CFLAGS to support tcl */
+#undef TCLCFLAGS
+
+/* Stuff to add to LDFLAGS to support tcl */
+#undef TCLLIBS
+
+/* Define if <term.h> requires <curses.h> to be included first */
+#undef TERM_H_REQUIRES_CURSES_H
+
+/* Define if you don't know what is 32 bits */
+#undef UNKNOWN_32INT
+
+/* Define if unsigned int is 32 bits */
+#undef UNSIGNED_INT32
+
+/* Define if unsigned long is 32 bits */
+#undef UNSIGNED_LONG32
+
+/* Define this if you want to use freebsd kqueue() as the multiplexer */
+#undef USE_FREEBSD_KQUEUE
+
+/* Define this if you want to use poll as the multiplexer */
+#undef USE_POLL
+
+/* Define this if you want to use pthreads as the multiplexer */
+#undef USE_PTHREAD
+
+/* Define this if you want to use select as the multiplexer */
+#undef USE_SELECT
+
+/* Define this if you wanted to use SOCKS5 */
+#undef USE_SOCKS5
+
+/* Define this if you want to use Solaris ports as the multiplexer */
+#undef USE_SOLARIS_PORTS
 
 /* Define this if you want to use threaded stdout */
 #undef WITH_THREADED_STDOUT
 
-/* Define this if you have nanosleep() */
-#undef HAVE_NANOSLEEP
+/* Define for Solaris 2.5.1 so the uint32_t typedef from <sys/synch.h>,
+   <pthread.h>, or <semaphore.h> is not used. If the typedef were allowed, the
+   #define below would cause a syntax error. */
+#undef _UINT32_T
 
-/* Define this if you have <iconv.h> */
-#undef HAVE_ICONV_H
+/* Define for Solaris 2.5.1 so the uint64_t typedef from <sys/synch.h>,
+   <pthread.h>, or <semaphore.h> is not used. If the typedef were allowed, the
+   #define below would cause a syntax error. */
+#undef _UINT64_T
 
-/* Define this if you have iconv_open() */
-#undef HAVE_ICONV
+/* Define for Solaris 2.5.1 so the uint8_t typedef from <sys/synch.h>,
+   <pthread.h>, or <semaphore.h> is not used. If the typedef were allowed, the
+   #define below would cause a syntax error. */
+#undef _UINT8_T
 
-/* Define this if you have iconv_open() */
-#undef HAVE_LIBARCHIVE
+/* Defined when using SOCKS */
+#undef accept
 
-/* Define this if you have strptime() */
-#undef HAVE_STRPTIME
+/* Defined when using SOCKS */
+#undef bind
 
-/* Define this if your <term.h> requires <curses.h> (x/open curses) */
-#undef TERM_H_REQUIRES_CURSES_H
+/* Defined when using SOCKS */
+#undef connect
 
-/* Define this if your <term.h> can't be used */
-#undef DONT_USE_TERM_H
+/* Defined when using SOCKS */
+#undef getsockname
 
-/* Define this if you have tcsetpgrp() */
-#undef HAVE_TCSETPGRP
+/* Define to `int' if <sys/types.h> doesn't define. */
+#undef gid_t
 
-/* Define this if you have no posix-like job control */
-#undef NO_JOB_CONTROL
+/* Define to the type of a signed integer type of width exactly 16 bits if
+   such a type exists and the standard includes do not define it. */
+#undef int16_t
 
-/* Define this if you need strtoll() */
-#undef NEED_STRTOLL
+/* Define to the type of a signed integer type of width exactly 32 bits if
+   such a type exists and the standard includes do not define it. */
+#undef int32_t
 
-/* Define this if you have newlocale() */
-#undef HAVE_NEWLOCALE
+/* Define to the type of a signed integer type of width exactly 64 bits if
+   such a type exists and the standard includes do not define it. */
+#undef int64_t
 
-/* Define this if you have embeddable python */
-#undef HAVE_PYTHON
+/* Define to the type of a signed integer type of width exactly 8 bits if such
+   a type exists and the standard includes do not define it. */
+#undef int8_t
 
-/* Define this if you have ldflags to link python */
-#undef PYTHON_LDFLAGS
+/* Define to the widest signed integer type if <stdint.h> and <inttypes.h> do
+   not define. */
+#undef intmax_t
 
-/* Define this if you have cflags to link python */
-#undef PYTHON_CFLAGS
+/* Define to the type of a signed integer type wide enough to hold a pointer,
+   if such a type exists, and if the system does not define it. */
+#undef intptr_t
 
-/* Define this if you have python */
-#undef PYTHON_O
+/* Defined when using SOCKS */
+#undef listen
 
-/* Define this if newlocale() requires #define _GNU_SOURCE to work */
-#undef NEWLOCALE_REQUIRES__GNU_SOURCE
+/* Define to `int' if <sys/types.h> does not define. */
+#undef mode_t
 
-/* Define this if newlocale() doesn't appear to work properly */
-#undef NEWLOCALE_DOESNT_WORK
+/* Define to `long int' if <sys/types.h> does not define. */
+#undef off_t
 
-/* Define this if your compiler supports __attribute__((fallthrough)) */
-#undef HAVE_ATTRIBUTE_FALLTHROUGH
+/* Define to `int' if <sys/types.h> does not define. */
+#undef pid_t
 
-/* Define this if you have va_copy */
-#undef HAVE_VA_COPY
+/* Defined when using SOCKS */
+#undef select
 
-/* Define this if you have __va_copy */
-#undef HAVE___VA_COPY
+/* Define to `unsigned int' if <sys/types.h> does not define. */
+#undef size_t
 
-/* Define this if va_list is assignable */
-#undef VA_LIST_ASSIGNABLE
+/* Define to `int' if <sys/types.h> does not define. */
+#undef ssize_t
 
-/* The number of bytes in a long long.  */
-#undef SIZEOF_LONG_LONG
+/* Define to `int' if <sys/types.h> doesn't define. */
+#undef uid_t
 
-/* The number of bytes in a quad_t.  */
-#undef SIZEOF_QUAD_T
+/* Define to the type of an unsigned integer type of width exactly 16 bits if
+   such a type exists and the standard includes do not define it. */
+#undef uint16_t
 
-/* The number of bytes in a unsigned int.  */
-#undef SIZEOF_UNSIGNED_INT
+/* Define to the type of an unsigned integer type of width exactly 32 bits if
+   such a type exists and the standard includes do not define it. */
+#undef uint32_t
 
-/* The number of bytes in a unsigned long.  */
-#undef SIZEOF_UNSIGNED_LONG
+/* Define to the type of an unsigned integer type of width exactly 64 bits if
+   such a type exists and the standard includes do not define it. */
+#undef uint64_t
 
-/* Define if you have the <dirent.h> header file.  */
-#undef HAVE_DIRENT_H
+/* Define to the type of an unsigned integer type of width exactly 8 bits if
+   such a type exists and the standard includes do not define it. */
+#undef uint8_t
 
-/* Define if you have the <fcntl.h> header file.  */
-#undef HAVE_FCNTL_H
-
-/* Define if you have the <ieeefp.h> header file.  */
-#undef HAVE_IEEEFP_H
-
-/* Define if you have the <inttypes.h> header file.  */
-#undef HAVE_INTTYPES_H
-
-/* Define if you have the <math.h> header file.  */
-#undef HAVE_MATH_H
-
-/* Define if you have the <ndbm.h> header file.  */
-#undef HAVE_NDBM_H
-
-/* Define if you have the <ndir.h> header file.  */
-#undef HAVE_NDIR_H
-
-/* Define if you have the <netdb.h> header file.  */
-#undef HAVE_NETDB_H
-
-/* Define if you have the <regex.h> header file.  */
-#undef HAVE_REGEX_H
-
-/* Define if you have the <stdargs.h> header file.  */
-#undef HAVE_STDARGS_H
-
-/* Define if you have the <stddef.h> header file.  */
-#undef HAVE_STDDEF_H
-
-/* Define if you have the <stdint.h> header file.  */
-#undef HAVE_STDINT_H
-
-/* Define if you have the <sys/cdefs.h> header file.  */
-#undef HAVE_SYS_CDEFS_H
-
-/* Define if you have the <sys/dir.h> header file.  */
-#undef HAVE_SYS_DIR_H
-
-/* Define if you have the <sys/fcntl.h> header file.  */
-#undef HAVE_SYS_FCNTL_H
-
-/* Define if you have the <sys/file.h> header file.  */
-#undef HAVE_SYS_FILE_H
-
-/* Define if you have the <sys/filio.h> header file.  */
-#undef HAVE_SYS_FILIO_H
-
-/* Define if you have the <sys/ndir.h> header file.  */
-#undef HAVE_SYS_NDIR_H
-
-/* Define if you have the <sys/param.h> header file.  */
-#undef HAVE_SYS_PARAM_H
-
-/* Define if you have the <sys/select.h> header file.  */
-#undef HAVE_SYS_SELECT_H
-
-/* Define if you have the <sys/sysctl.h> header file.  */
-#undef HAVE_SYS_SYSCTL_H
-
-/* Define if you have the <sys/syslimits.h> header file.  */
-#undef HAVE_SYS_SYSLIMITS_H
-
-/* Define if you have the <sys/termios.h> header file.  */
-#undef HAVE_SYS_TERMIOS_H
-
-/* Define if you have the <sys/time.h> header file.  */
-#undef HAVE_SYS_TIME_H
-
-/* Define if you have the <sys/un.h> header file.  */
-#undef HAVE_SYS_UN_H
-
-/* Define if you have the <term.h> header file.  */
-#undef HAVE_TERM_H
-
-/* Define if you have the <termcap.h> header file.  */
-#undef HAVE_TERMCAP_H
-
-/* Define if you have the <termios.h> header file.  */
-#undef HAVE_TERMIOS_H
-
-/* Define if you have the <valgrind/memcheck.h> header file.  */
-#undef HAVE_VALGRIND_MEMCHECK_H
-
-/* Define if you have the <xlocale.h> header file.  */
-#undef HAVE_XLOCALE_H
+/* Define to the widest unsigned integer type if <stdint.h> and <inttypes.h>
+   do not define. */
+#undef uintmax_t

@@ -1,76 +1,23 @@
 dnl ----------------------------------------------------------
-dnl configure.in for ircii, 2.3.  copyright (c) matthew green, 1993,
+6nl configure.in for ircii, 2.3.  copyright (c) matthew green, 1993,
 dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
 dnl
-dnl @(#)$Id: configure.in,v 1.103 2014/12/26 15:26:42 jnelson Exp $
 
-AC_REVISION([$Revision: 1.103 $])dnl
-AC_INIT([source/irc.c])
+AC_INIT([epic5],[2])
+AC_CONFIG_SRCDIR([source/irc.c])
 AC_CONFIG_HEADER([include/defs.h])
-
-unset GREP_OPTIONS
+AC_LANG(C)
 
 dnl ----------------------------------------------------------
 dnl
 dnl grok the version number - from source/irc.c
 dnl
-
 VERSION=`sed -n -e 's/";$//' -e '/const char irc_version.. = .EPIC.-/s///p' -e '/const char irc_version/q' < $srcdir/source/irc.c` 
+AC_SUBST([VERSION])
 echo this is EPIC5 version $VERSION
 echo
-AC_SUBST([VERSION])
-
-dnl ----------------------------------------------------------
-dnl
-dnl initial stuff
-dnl
-
-AC_MSG_CHECKING(whether your compiler tolerates -std=gnu89)
-old_cflags="$CFLAGS"
-CFLAGS="$CFLAGS -std=gnu89"
-AC_TRY_COMPILE(, [return 0;], 
-	AC_MSG_RESULT(yes),
-	AC_MSG_RESULT(no)
-	CFLAGS="$old_cflags"
-)
-
-AC_MSG_CHECKING(whether your compiler tolerates --std=gnu89)
-old_cflags="$CFLAGS"
-CFLAGS="$CFLAGS --std=gnu89"
-AC_TRY_COMPILE(, [return 0;], 
-	AC_MSG_RESULT(yes),
-	AC_MSG_RESULT(no)
-	CFLAGS="$old_cflags"
-)
-
-dnl AC_MSG_CHECKING(whether your compiler requires -Wno-error)
-dnl AC_TRY_COMPILE(, [exit(0);], 
-dnl	AC_MSG_RESULT(no -- yay!), [
-dnl	 old_cflags="$CFLAGS"
-dnl	 CFLAGS="$CFLAGS -Wno-error"
-dnl	 AC_TRY_COMPILE(, [exit(0);], 
-dnl	  AC_MSG_RESULT(yes),
-dnl       AC_MSG_RESULT(no)
-dnl	  CFLAGS="$old_cflags"
-dnl	 )
-dnl	]
-dnl )
-
-dnl AC_MSG_CHECKING(whether your compiler requires -Wno-error=implicit-function-declaration)
-dnl AC_TRY_COMPILE(, [exit(0);], 
-dnl	AC_MSG_RESULT(no -- yay!), [
-dnl	 old_cflags="$CFLAGS"
-dnl	 CFLAGS="$CFLAGS -Wno-error=implicit-function-declaration"
-dnl	 AC_TRY_COMPILE(, [exit(0);], 
-dnl	  AC_MSG_RESULT(yes),
-dnl       AC_MSG_RESULT(no)
-dnl	  CFLAGS="$old_cflags"
-dnl	 )
-dnl	]
-dnl)
-
 
 AC_PROG_CC
 AC_PROG_CPP
@@ -135,36 +82,6 @@ dnl
 dnl ----------------------------------------------------------
 dnl ----------------------------------------------------------
 
-dnl
-dnl Checking for solaris cc
-dnl
-AC_MSG_CHECKING([for solaris cc])
-( $CC -V 2>&1 | grep 'Sun C' > /dev/null ) && \
-	sun_compiler="yes" \
-	CFLAGS="$CFLAGS -erroff=E_ARG_INCOMPATIBLE_WITH_ARG,E_ASSIGNMENT_TYPE_MISMATCH"
-AC_MSG_RESULT([ok])
-
-dnl
-dnl checking for svr4's /usr/ccs/lib
-dnl
-if test -d /usr/ccs/lib; then
-	LIBS="-L/usr/ccs/lib $LIBS"
-fi
-
-dnl
-dnl Checking for HP-UX's porting kit (from twincest)
-dnl
-dnl <twincest> hop: please change configure to look for setenv in -lcext
-dnl <twincest> and with -I/usr/include/ep
-dnl <twincest> (that's where setenv from the hp-ux porting kit lives)
-dnl <twincest> in fact, perhaps just check for /usr/include/ep and -lcext, 
-dnl +and use them unconditionally if present
-dnl
-dnl -- Do not use /usr/include/ep/.
-dnl
-dnl if test -d /usr/include/ep; then
-dnl	CFLAGS="-I/usr/include/ep $CFLAGS"
-dnl fi
 AC_CHECK_LIB([cext], [setenv], [LIBS="$LIBS -lcext"],)
 
 dnl
@@ -181,7 +98,7 @@ AC_MSG_RESULT([ok])
 
 
 dnl ----------------------------------------------------------
-AC_MSG_CHECKING(if you want threaded stdout)
+AC_MSG_CHECKING([if you want threaded stdout])
 AC_ARG_WITH(threaded-stdout,
 [  --with-threaded-stdout[=yes]      Threaded stdout so the client doesn't block when gnu screen malfunctions.],[
 	if test "x$withval" = "x" ; then
@@ -222,14 +139,14 @@ AC_ARG_WITH(threaded-stdout,
 ])
 AC_MSG_RESULT($with_threaded_stdout)
 if test "x$with_threaded_stdout" = "xyes" ; then
-	AC_DEFINE(WITH_THREADED_STDOUT)
+	AC_DEFINE([WITH_THREADED_STDOUT], 1, [Define this if you want to use threaded stdout])
 	threading=1
 fi
 
 
 dnl ----------------------------------------------------------
 dnl   Where does this belong?
-AC_MSG_CHECKING(which multiplexer function to use)
+AC_MSG_CHECKING([which multiplexer function to use])
 AC_ARG_WITH(multiplex,
 [  --with-multiplex[=TYPE]           Multiplexer type (select,poll,freebsd-kqueue,pthread,solaris-ports)],[
 	if test "x$withval" = "x"; then
@@ -258,23 +175,23 @@ AC_ARG_WITH(multiplex,
 AC_MSG_RESULT($with_multiplex)
 AC_CHECK_FUNC($with_multiplex, [
 	if test "x$with_multiplex" = "xselect" ; then
-		AC_DEFINE(USE_SELECT)
+		AC_DEFINE([USE_SELECT], 1, [Define this if you want to use select as the multiplexer])
 		threading=0
 	elif test "x$with_multiplex" = "xpoll" ; then
-		AC_DEFINE(USE_POLL)
+		AC_DEFINE([USE_POLL], 1, [Define this if you want to use poll as the multiplexer])
 		threading=0
 	elif test "x$with_multiplex" = "xkqueue" ; then
-		AC_DEFINE(USE_FREEBSD_KQUEUE)
+		AC_DEFINE([USE_FREEBSD_KQUEUE], 1, [Define this if you want to use freebsd kqueue() as the multiplexer])
 		threading=0
 	elif test "x$with_multiplex" = "xport_create" ; then
-		AC_DEFINE(USE_SOLARIS_PORTS)
+		AC_DEFINE([USE_SOLARIS_PORTS], 1, [Define this if you want to use Solaris ports as the multiplexer])
 		threading=0
 	elif test "x$with_multiplex" = "xpthread_create" ; then
-		AC_DEFINE(USE_PTHREAD)
+		AC_DEFINE([USE_PTHREAD], 1, [Define this if you want to use pthreads as the multiplexer])
 		threading=1
 	fi
 ],[
-	AC_DEFINE(USE_SELECT)
+	AC_DEFINE([USE_SELECT], 1, [Define this if you want to use select as the multiplexer])
 	threading=0
 ])
 
@@ -297,13 +214,17 @@ if test "x$with_libarchive" != "xno" ; then
 	orig_LIBS="$LIBS"
 	AC_CHECK_LIB(archive, archive_read_new, [LIBS="$LIBS -larchive"])
 	AC_MSG_CHECKING(whether libarchive works the way I expect)
-	AC_TRY_LINK([#include <archive.h>], [
-		struct archive *x; 
-		const char *s = "bogus.zip";
-		x = archive_read_new();
-		archive_read_support_format_all(x);
-		archive_read_open_file(x, s, 10240);
-	], have_libarchive="yes")
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+			#include <archive.h>
+		]], [[
+			struct archive *x; 
+			const char *s = "bogus.zip";
+			x = archive_read_new();
+			archive_read_support_format_all(x);
+			archive_read_open_file(x, s, 10240);
+		]])],
+		[have_libarchive="yes"])
+
 	if test "x$have_libarchive" = "x"; then
 		LIBS="$orig_LIBS"
 		AC_MSG_RESULT(no)
@@ -312,7 +233,7 @@ if test "x$with_libarchive" != "xno" ; then
                 fi
 	else
 		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_LIBARCHIVE)
+		AC_DEFINE([HAVE_LIBARCHIVE], 1, [Define this if you have a working libarchive])
 	fi
 fi
 
@@ -339,8 +260,12 @@ else
 			test -f "$ssldir/lib/libssl.a"; then
 		LIBS="$saved_LIBS -L$ssldir/lib -lssl -lcrypto"
 	        CFLAGS="$saved_CFLAGS -I$ssldir/include"
-		AC_TRY_LINK([#include <openssl/ssl.h>],
-			    [SSL_accept(0);], [have_ssl="yes"])
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+				#include <openssl/ssl.h>
+			]], [[
+				SSL_accept(0);
+			]])],
+			[have_ssl="yes"])
 	    fi
 
 	    if test "x$have_ssl" != "xyes"; then
@@ -351,8 +276,12 @@ else
 		# Second, let's see if it just works by default
 		LIBS="$saved_LIBS -lssl -lcrypto"
 		CFLAGS="$saved_CFLAGS"
-		AC_TRY_LINK([#include <openssl/ssl.h>],
-			[SSL_accept(0);], [have_ssl="yes"])
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+				#include <openssl/ssl.h>
+			]], [[
+				SSL_accept(0);
+			]])],
+			[have_ssl="yes"])
 
 		# Otherwise, go hunting for it.
 		if test "x$have_ssl" = "x" ; then
@@ -369,8 +298,12 @@ else
 				test -f "$ssldir/lib/libssl.a"; then
 			    CFLAGS="$saved_CFLAGS -I$ssldir/include"
 			    LIBS="$saved_LIBS -L$ssldir/lib -lssl -lcrypto"
-			    AC_TRY_LINK([#include <openssl/ssl.h>],
-					[SSL_accept(0);], [have_ssl="yes"])
+			    AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+					#include <openssl/ssl.h>
+				]], [[
+					SSL_accept(0);
+				]])],
+				[have_ssl="yes"])
 			fi
 		    done
 		fi
@@ -389,38 +322,36 @@ else
 	    if test "x$threading" = "x1" ; then
 		AC_MSG_RESULT([yes])
 		AC_MSG_CHECKING([whether your SSL is threading compatable])
-		AC_TRY_RUN([
+		AC_RUN_IFELSE([AC_LANG_PROGRAM([[
 #define OPENSSL_THREAD_DEFINES
 #include <stdlib.h>
 #include <openssl/opensslconf.h>
-int main (void)
-{
+]],[[
 #if defined(THREADS)
         return 0;
 #else
         return 1;
 #endif
-}
-],
+]])],
 		AC_MSG_RESULT([yes])
-		AC_DEFINE([HAVE_SSL]),
+		AC_DEFINE([HAVE_SSL], 1, [Define this if you have a working ssl]),
 		AC_MSG_RESULT([no. Your system can not do SSL with pthreads]),:)
 	    else
-		AC_DEFINE([HAVE_SSL])
+		AC_DEFINE([HAVE_SSL], 1, [Define this if you have a working ssl])
 		AC_MSG_RESULT([yes])
 	    fi
 	fi
 fi
 
 
-dnl this is for isc.  need the nsl_s library as well.
-if test -z "$libinet"; then
-	AC_CHECK_LIB(inet, socket, libnsl=1; LIBS="$LIBS -linet -lnsl_s",)
-fi
-
-if test -z "$libnsl"; then
-	AC_CHECK_LIB(nsl, gethostname, LIBS="$LIBS -lnsl",)
-fi
+dnl	dnl this is for isc.  need the nsl_s library as well.
+dnl	if test -z "$libinet"; then
+dnl		AC_CHECK_LIB(inet, socket, libnsl=1; LIBS="$LIBS -linet -lnsl_s",)
+dnl	fi
+dnl	
+dnl	if test -z "$libnsl"; then
+dnl		AC_CHECK_LIB(nsl, gethostname, LIBS="$LIBS -lnsl",)
+dnl	fi
 
 AC_CHECK_LIB(sun, getpwnam, LIBS="$LIBS -lsun",)
 AC_CHECK_LIB(dgc, inet_addr, LIBS="$LIBS -ldgc",)
@@ -461,205 +392,121 @@ else
 	AC_CHECK_HEADERS(termcap.h,)
 fi
 
-AC_CHECK_FUNC(arc4random, AC_DEFINE(HAVE_ARC4RANDOM),)
-AC_CHECK_FUNC(clock_gettime, AC_DEFINE(HAVE_CLOCK_GETTIME),)
-AC_CHECK_FUNC(fchdir, AC_DEFINE(HAVE_FCHDIR),)
-AC_CHECK_FUNC(fpathconf, AC_DEFINE(HAVE_FPATHCONF),)
-AC_CHECK_FUNC(getlogin, AC_DEFINE(HAVE_GETLOGIN),)
-AC_CHECK_FUNC(getaddrinfo, AC_DEFINE(HAVE_GETADDRINFO),)
-AC_CHECK_FUNC(getnameinfo, AC_DEFINE(HAVE_GETNAMEINFO),)
-AC_CHECK_FUNC(getpass, AC_DEFINE(HAVE_GETPASS),)
-AC_CHECK_FUNC(getpgid, AC_DEFINE(HAVE_GETPGID),)
-AC_CHECK_FUNC(getpgrp, AC_FUNC_GETPGRP,)
-AC_CHECK_FUNC(getservbyport, AC_DEFINE(HAVE_GETSERVBYPORT),)
-AC_CHECK_FUNC(gettimeofday, AC_DEFINE(HAVE_GETTIMEOFDAY),)
-AC_CHECK_FUNC(killpg, AC_DEFINE(HAVE_KILLPG),)
-AC_CHECK_FUNC(memmove, AC_DEFINE(HAVE_MEMMOVE),)
-AC_CHECK_FUNC(nanosleep, AC_DEFINE(HAVE_NANOSLEEP),)
-AC_CHECK_FUNC(uname, AC_DEFINE(HAVE_UNAME),)
-AC_CHECK_FUNC(realpath, AC_DEFINE(HAVE_REALPATH),)
-AC_CHECK_FUNC(setenv, AC_DEFINE(HAVE_SETENV),)
-AC_CHECK_FUNC(setsid, AC_DEFINE(HAVE_SETSID),) 
-AC_CHECK_FUNC(tcsetpgrp, AC_DEFINE(HAVE_TCSETPGRP),)
+AC_CHECK_FUNC(arc4random, AC_DEFINE([HAVE_ARC4RANDOM], 1, [Define this if you have arc4random()]),)
+AC_CHECK_FUNC(clock_gettime, AC_DEFINE([HAVE_CLOCK_GETTIME], 1, [Define if you have clock_gettime()]),)
+AC_CHECK_FUNC(fchdir, AC_DEFINE([HAVE_FCHDIR], 1, [Define if you have fchdir()]),)
+AC_CHECK_FUNC(fpathconf, AC_DEFINE([HAVE_FPATHCONF], 1, [Define if you have fpathconf()] ),)
+AC_CHECK_FUNC(getlogin, AC_DEFINE([HAVE_GETLOGIN], 1, [Define if you have getlogin()]),)
+AC_CHECK_FUNC(getaddrinfo, AC_DEFINE([HAVE_GETADDRINFO], 1, [Define if you have getaddrinfo()]),)
+AC_CHECK_FUNC(getnameinfo, AC_DEFINE([HAVE_GETNAMEINFO], 1, [Define if you have getnameinfo()]),)
+AC_CHECK_FUNC(getpass, AC_DEFINE([HAVE_GETPASS], 1, [Define if you have getpass()]),)
+AC_CHECK_FUNC(getpgid, AC_DEFINE([HAVE_GETPGID], 1, [Define if you have getpgid()]),)
+AC_CHECK_FUNC(getservbyport, AC_DEFINE([HAVE_GETSERVBYPORT], 1, [Define if you have getservbyport()]),)
+AC_CHECK_FUNC(gettimeofday, AC_DEFINE([HAVE_GETTIMEOFDAY], 1, [Define if you have gettimeofday()]),)
+AC_CHECK_FUNC(killpg, AC_DEFINE([HAVE_KILLPG], 1, [Define if you have killpg()]),)
+AC_CHECK_FUNC(memmove, AC_DEFINE([HAVE_MEMMOVE], 1, [Define if you have have_memmove()]),)
+AC_CHECK_FUNC(nanosleep, AC_DEFINE([HAVE_NANOSLEEP], 1, [Define if you have nanosleep()]),)
+AC_CHECK_FUNC(uname, AC_DEFINE([HAVE_UNAME], 1, [Define if you have uname()]),)
+AC_CHECK_FUNC(realpath, AC_DEFINE([HAVE_REALPATH], 1, [Define if you have realpath()]),)
+AC_CHECK_FUNC(setenv, AC_DEFINE([HAVE_SETENV], 1, [Define if you have setenv()]),)
+AC_CHECK_FUNC(setsid, AC_DEFINE([HAVE_SETSID], 1, [Define if you have setsid()]),) 
+AC_CHECK_FUNC(tcsetpgrp, AC_DEFINE([HAVE_TCSETPGRP], 1, [Define if you have tcsetpgrp()]),)
 if test $termcap -eq 0 ; then
-	AC_CHECK_FUNC(setupterm, AC_DEFINE(HAVE_TERMINFO),)
+	AC_CHECK_FUNC(setupterm, AC_DEFINE([HAVE_TERMINFO], 1, [Define if you have terminfo()]),)
 fi
-AC_CHECK_FUNC(snprintf, AC_DEFINE(HAVE_SNPRINTF),)
-AC_CHECK_FUNC(strerror, AC_DEFINE(HAVE_STRERROR),)
-AC_CHECK_FUNC(strlcat, AC_DEFINE(HAVE_STRLCAT),)
-AC_CHECK_FUNC(strlcpy, AC_DEFINE(HAVE_STRLCPY),)
-AC_CHECK_FUNC(strptime, AC_DEFINE(HAVE_STRPTIME),)
-AC_CHECK_FUNC(strtoul, AC_DEFINE(HAVE_STRTOUL),)
-AC_CHECK_FUNC(sysconf, AC_DEFINE(HAVE_SYSCONF),)
-AC_CHECK_FUNC(sysctlbyname, AC_DEFINE(HAVE_SYSCTLBYNAME),)
-AC_CHECK_FUNC(unsetenv, AC_DEFINE(HAVE_UNSETENV),)
-AC_CHECK_FUNC(vsnprintf, AC_DEFINE(HAVE_VSNPRINTF),)
-AC_CHECK_FUNC(finite, AC_DEFINE(HAVE_FINITE),)
+AC_CHECK_FUNC(snprintf, AC_DEFINE([HAVE_SNPRINTF], 1, [Define if you have snprintf()]),)
+AC_CHECK_FUNC(strerror, AC_DEFINE([HAVE_STRERROR], 1, [Define if you have strerror()]),)
+AC_CHECK_FUNC(strlcat, AC_DEFINE([HAVE_STRLCAT], 1, [Define if you have strlcat()]),)
+AC_CHECK_FUNC(strlcpy, AC_DEFINE([HAVE_STRLCPY], 1, [Define if you have strlcpy()]),)
+AC_CHECK_FUNC(strptime, AC_DEFINE([HAVE_STRPTIME], 1, [Define if you have strptime()]),)
+AC_CHECK_FUNC(strtoul, AC_DEFINE([HAVE_STRTOUL], 1, [Define if you have strtoul()]),)
+AC_CHECK_FUNC(sysconf, AC_DEFINE([HAVE_SYSCONF], 1, [Define if you have sysconf()]),)
+AC_CHECK_FUNC(sysctlbyname, AC_DEFINE([HAVE_SYSCTLBYNAME], 1, [Define if you have sysctlbyname()]),)
+AC_CHECK_FUNC(unsetenv, AC_DEFINE([HAVE_UNSETENV], 1, [Define if you have unsetenv()]),)
+AC_CHECK_FUNC(vsnprintf, AC_DEFINE([HAVE_VSNPRINTF], 1, [Define if you have vsnprintf()]),)
+AC_CHECK_FUNC(finite, AC_DEFINE([HAVE_FINITE], 1, [Define if you have finite()]),)
 AC_MSG_CHECKING(for isfinite macro in math.h)
 AC_EGREP_HEADER(isfinite, math.h, 
-	AC_DEFINE(HAVE_ISFINITE) AC_MSG_RESULT(yes),
+	AC_DEFINE([HAVE_ISFINITE], 1, [Define if you have isfinite()]) AC_MSG_RESULT(yes),
 	AC_MSG_RESULT(no))
-AC_CHECK_FUNC(tparm, AC_DEFINE(HAVE_TPARM),)
-AC_CHECK_FUNC(newlocale, AC_DEFINE(HAVE_NEWLOCALE),)
-
-AC_MSG_CHECKING(for va_copy)
-	AC_TRY_RUN([
-		#include <stdarg.h>
-		#include <stdlib.h>
-		int b (const char *x, va_list y)
-		{
-			va_list z;
-			va_copy(z, y);
-		}
-
-		int a (const char *x, ...)
-		{
-			va_list y;
-			va_start(y, x);
-			b(x, y);
-		}
-
-		int main (void)
-		{
-			a("test", "test");
-			return 0;
-		}
-	],
-	AC_MSG_RESULT(yes)
-	  AC_DEFINE(HAVE_VA_COPY),
-	AC_MSG_RESULT(no; well...)
-	  AC_MSG_CHECKING(for __va_copy)
-	  AC_TRY_RUN([
-		#include <stdarg.h>
-		#include <stdlib.h>
-
-		int b (const char *x, va_list y)
-		{
-			va_list z;
-			__va_copy(z, y);
-		}
-
-		int a (const char *x, ...)
-		{
-			va_list y;
-			va_start(y, x);
-			b(x, y);
-		}
-
-		int main (void)
-		{
-			a("test", "test");
-			return 0;
-		}
-	  ],
-	  AC_MSG_RESULT(yes)
-	    AC_DEFINE(HAVE___VA_COPY),
-	  AC_MSG_RESULT(no; hrm...)
-            AC_MSG_CHECKING(whether va_lists can be assigned)
-	    AC_TRY_RUN([
-		#include <stdarg.h>
-		#include <stdlib.h>
-
-		int b (const char *x, va_list y)
-		{
-			va_list z;
-			z = y;
-		}
-
-		int a (const char *x, ...)
-		{
-			va_list y;
-			va_start(y, x);
-			b(x, y);
-		}
-
-		int main (void)
-		{
-			a("test", "test");
-			return 0;
-		}
-	    ],
-	    AC_MSG_RESULT(yes),
-	    AC_DEFINE(VA_LIST_ASSIGNABLE)
-	        AC_MSG_RESULT(no; well -- that is unfortunate)
-	    ,:)
-	  ,:)
-	,:)
+AC_CHECK_FUNC(tparm, AC_DEFINE([HAVE_TPARM], 1, [Define if you have tparm()]),)
+AC_CHECK_FUNC(newlocale, AC_DEFINE([HAVE_NEWLOCALE], 1, [Define if you have newlocale()]),)
 
 dnl -- Because someone is trying to use CentOS 5.11...
 AC_MSG_CHECKING(whether you are using a gnu libc that is so old it needs a hack to use newlocale)
-AC_TRY_RUN([
-#include <locale.h>
-#include <xlocale.h>
-#include <stdlib.h>
-
-int main(void)
-{
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+	#include <locale.h>
+	#include <xlocale.h>
+	#include <stdlib.h>
+]],[[
 	locale_t utf8_locale;
 	utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
 	return 0;
-}
-],
+]])],
    AC_MSG_RESULT(no, good),
    AC_MSG_RESULT(yes, ugh.)
    AC_MSG_CHECKING(whether we can fix that with _GNU_SOURCE)
-   AC_TRY_RUN([
-#define _GNU_SOURCE
-#include <locale.h>
-#include <xlocale.h>
-#include <stdlib.h>
-
-int main(void)
-{
+   AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+	#define _GNU_SOURCE
+	#include <locale.h>
+	#include <xlocale.h>
+	#include <stdlib.h>
+]],[[
 	locale_t utf8_locale;
 	utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
 	return 0;
-}
-   ],
+]])],
    AC_MSG_RESULT(yes),
-   AC_DEFINE(NEWLOCALE_REQUIRES__GNU_SOURCE)
+   AC_DEFINE(NEWLOCALE_REQUIRES__GNU_SOURCE, 1, [Define this if newlocale() requires #define __GNU_SOURCE to work])
    AC_MSG_RESULT(no.  bummer for you)
-   AC_DEFINE(NEWLOCALE_DOESNT_WORK), :), :)
+   AC_DEFINE(NEWLOCALE_DOESNT_WORK, 1, [Define this if newlocale() doesn't work the way I expect]), :), :)
 
 
 dnl -- Oh why does this have to be so painful? --
 AC_MSG_CHECKING(whether term.h works by itself)
-AC_TRY_RUN([
-#include <term.h>
-#include <stdlib.h>
-
-int main (void)
-{
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+	#include <term.h>
+	#include <stdlib.h>
+]],[[
        return 0;
-}
-],
+]])],
   AC_MSG_RESULT(yes),
   AC_MSG_RESULT(no)
   AC_MSG_CHECKING(whether term.h requires termio.h and curses.h)
-  AC_TRY_RUN([
-#include <termio.h>
-#include <curses.h>
-#include <term.h>
-#include <stdlib.h>
-
-int main (void)
-{
+  AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+	#include <termio.h>
+	#include <curses.h>
+	#include <term.h>
+	#include <stdlib.h>
+]],[[
        return 0;
-}
-  ],
+]])],
   AC_MSG_RESULT(yes)
-  AC_DEFINE(TERM_H_REQUIRES_CURSES_H),
+  AC_DEFINE([TERM_H_REQUIRES_CURSES_H], 1, [Define if <term.h> requires <curses.h> to be included first]),
   AC_MSG_RESULT(no, ugh)
-  AC_DEFINE(DONT_USE_TERM_H), :), :)
+  AC_DEFINE([DONT_USE_TERM_H], 1, [Define if <term.h> should be avoided]), :), :)
 
 
-AC_HEADER_STDC
-AC_HEADER_TIME
+dnl AC_HEADER_STDC
+dnl AC_HEADER_TIME
+dnl AC_HEADER_DIRENT
+dnl AC_TYPE_SIGNAL
+dnl AC_TYPE_MODE_T
+dnl AC_TYPE_PID_T
+dnl AC_TYPE_SIZE_T
+dnl AC_TYPE_UID_T
+dnl AC_FUNC_ALLOCA
+
 AC_HEADER_DIRENT
+dnl AC_DIR_HEADER is obsolete https://www.gnu.org/software/autoconf/manual/autoconf-2.69/html_node/Obsolete-Macros.html#Obsolete-Macros
+AC_DIR_HEADER
+dnl AC_TYPE_SIGNAL is obsolete, see above.
 AC_TYPE_SIGNAL
 AC_TYPE_MODE_T
+AC_TYPE_OFF_T
 AC_TYPE_PID_T
 AC_TYPE_SIZE_T
+AC_TYPE_SSIZE_T
 AC_TYPE_UID_T
 AC_FUNC_ALLOCA
 
@@ -668,12 +515,20 @@ dnl Check to see if we can find intptr_t.
 dnl
 have_intptr_t=""
 AC_MSG_CHECKING(for intptr_t in inttypes.h or stdint.h)
-AC_TRY_LINK([#include <inttypes.h>],
-	    [intptr_t x; x = 0;], AC_DEFINE(HAVE_INTPTR_T) 
-				    have_intptr_t="yes")
-AC_TRY_LINK([#include <stdint.h>],
-	    [intptr_t x; x = 0;], AC_DEFINE(HAVE_INTPTR_T) 
-				    have_intptr_t="yes")
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+		#include <inttypes.h>
+	]], [[
+		intptr_t x; x = 0;
+	]])], 
+	AC_DEFINE([HAVE_INTPTR_T], 1, [Define if you have intptr_t]) 
+	have_intptr_t="yes")
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+		#include <stdint.h>
+	]], [[
+		intptr_t x; x = 0;
+	]])], 
+	AC_DEFINE([HAVE_INTPTR_T], 1, [Define if you have intptr_t]) 
+	have_intptr_t="yes")
 if test "x$have_intptr_t" = "x"; then
 	AC_MSG_RESULT(no)
 else
@@ -686,7 +541,7 @@ dnl
 AC_MSG_CHECKING(for socklen_t)
 AC_EGREP_HEADER(socklen_t, sys/socket.h,
   AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_SOCKLEN_T),
+  AC_DEFINE([HAVE_SOCKLEN_T], 1, [Define if you have socklen_t]),
   AC_MSG_RESULT(no))
 
 dnl ----------------------------------------------------------
@@ -701,7 +556,7 @@ AC_EGREP_HEADER(fd_set, sys/types.h,
   AC_MSG_CHECKING(whether sys/select.h defines fd_set)
   AC_EGREP_HEADER(fd_set, sys/select.h,
     AC_MSG_RESULT(yes)
-    AC_DEFINE(NEED_SYS_SELECT_H),
+    AC_DEFINE([NEED_SYS_SELECT_H], 1, [Define if you need to include <sys/select.h>]),
     AC_MSG_RESULT(no. ugh.))) 
 
 dnl ----------------------------------------------------------
@@ -712,7 +567,7 @@ dnl
 AC_MSG_CHECKING(for struct linger)
 AC_EGREP_HEADER([struct( |	)*linger], sys/socket.h, 
   AC_MSG_RESULT(yes), 
-  AC_DEFINE(NO_STRUCT_LINGER) 
+  AC_DEFINE([NO_STRUCT_LINGER], 1, [Define this if you do not have struct linger]) 
   AC_MSG_RESULT(no. ugh.))
 
 dnl ---------------------------------------------------------
@@ -723,26 +578,23 @@ dnl but can't be bothered to implement it, instead returning an error.
 dnl How completely bogus.  Don't #define it if you don't support it!
 dnl
 AC_MSG_CHECKING(for useful SO_SNDLOWAT)
-AC_TRY_RUN([
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <stdlib.h>
-
-int main (void)
-{
-#ifndef SO_SNDLOWAT
-        return 1;
-#else
-        int d = socket(AF_INET, SOCK_STREAM, 0);
-        int size = 256;
-        if (setsockopt(d, SOL_SOCKET, SO_SNDLOWAT, &size, sizeof(size)) < 0)
-                return 1;
-        return 0;
-#endif
-}
-],
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+	#include <sys/types.h>
+	#include <sys/socket.h>
+	#include <stdlib.h>
+]],[[
+	#ifndef SO_SNDLOWAT
+		return 1;
+	#else
+		int d = socket(AF_INET, SOCK_STREAM, 0);
+		int size = 256;
+		if (setsockopt(d, SOL_SOCKET, SO_SNDLOWAT, &size, sizeof(size)) < 0)
+			return 1;
+		return 0;
+	#endif
+]])],
   AC_MSG_RESULT(yes, your SO_SNDLOWAT is useful)
-  AC_DEFINE(HAVE_SO_SNDLOWAT),
+  AC_DEFINE([HAVE_SO_SNDLOWAT], 1, [Define this if you have SO_SNDLOWAT]),
   AC_MSG_RESULT(no, your SO_SNDLOWAT is broken and/or worthless), :)
 
 dnl ----------------------------------------------------------
@@ -750,22 +602,19 @@ dnl
 dnl Check for a realpath() that works.
 dnl
 AC_MSG_CHECKING(for useful realpath)
-AC_TRY_RUN([
-#include <sys/param.h>
-#include <stdlib.h>
-
-int main (void)
-{
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+	#include <sys/param.h>
+	#include <stdlib.h>
+]],[[
 	char resolved_path[PATH_MAX];
 
 	if (realpath("/etc/filethatdoesnotexist", resolved_path) == 0)
 		return 1;
 	return 0;
-}
-],
+]])],
   AC_MSG_RESULT(yes),
   AC_MSG_RESULT(no, your realpath is broken and/or worthless)
-  AC_DEFINE(HAVE_BROKEN_REALPATH), :)
+  AC_DEFINE([HAVE_BROKEN_REALPATH], 1, [Define this if your realpath() doesn't work for nonexistant files]), :)
 
 dnl ----------------------------------------------------------
 dnl
@@ -773,21 +622,19 @@ dnl Check for sys_siglist declaration
 dnl
 
 AC_MSG_CHECKING(for sys_siglist declaration)
-AC_TRY_RUN([
-#include <sys/types.h>
-#include <sys/signal.h>
-#include <signal.h>
-#include <unistd.h>
-#include <stdlib.h>
-int main(void)
-{
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+	#include <sys/types.h>
+	#include <sys/signal.h>
+	#include <signal.h>
+	#include <unistd.h>
+	#include <stdlib.h>
+]],[[
 	char *s = sys_siglist[0];
 	return 0;
-}
-],
+]])],
   AC_MSG_RESULT(yes) 
   sys_siglist="1"
-  AC_DEFINE(HAVE_SYS_SIGLIST),
+  AC_DEFINE([HAVE_SYS_SIGLIST], 1, [Define if you have sys_siglist]),
   AC_MSG_RESULT(no), :)
 
 dnl ---------------------------------------------------------
@@ -795,16 +642,38 @@ dnl Check for NSIG vs sys_nsig vs __sys_nsig
 dnl
 dnl ......
 
+AC_TYPE_INT8_T
+AC_TYPE_UINT8_T
+AC_TYPE_INT16_T
+AC_TYPE_UINT16_T
+AC_TYPE_INT32_T
+AC_TYPE_UINT32_T
+AC_TYPE_INT64_T
+AC_TYPE_UINT64_T
+AC_TYPE_INTMAX_T
+AC_TYPE_UINTMAX_T
+AC_TYPE_INTPTR_T
+
 dnl ----------------------------------------------------------
 dnl Check for 'intmax_t'
 dnl
 have_intmax_t=""
 have_strtoimax_t=""
 AC_MSG_CHECKING(for intmax_t in inttypes.h or stdint.h)
-AC_TRY_LINK([#include <inttypes.h>],
-	    [intmax_t x; x = 0;], have_intmax_t="yes")
-AC_TRY_LINK([#include <stdint.h>],
-	    [intmax_t x; x = 0;], have_intmax_t="yes")
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+		#include <inttypes.h>
+	]], [[
+		intmax_t x; x = 0;
+	]])], 
+	AC_DEFINE([HAVE_INTMAX_T], 1, [Define if you have intmax_t]) 
+	have_intmax_t="yes")
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+		#include <stdint.h>
+	]], [[
+		intmax_t x; x = 0;
+	]])], 
+	AC_DEFINE([HAVE_INTMAX_T], 1, [Define if you have intmax_t]) 
+	have_intmax_t="yes")
 if test "x$have_intmax_t" = "x"; then
 	AC_MSG_RESULT(no)
 else
@@ -812,25 +681,32 @@ else
 fi
 
 AC_MSG_CHECKING(for strtoimax in inttypes.h or stdint.h)
-AC_TRY_LINK([#include <inttypes.h>],
-	    [char *ptr="1";strtoimax(ptr, &ptr, 10)], 
-				    have_strtoimax="yes")
-AC_TRY_LINK([#include <stdint.h>],
-	    [char *ptr="1";strtoimax(ptr, &ptr, 10)], 
-				    have_strtoimax="yes")
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+		#include <inttypes.h>
+	]], [[
+		char *ptr="1";strtoimax(ptr, &ptr, 10)
+	]])], 
+	AC_DEFINE([HAVE_STRTOIMAX_T], 1, [Define if you have strtoimax_t]) 
+	have_strtoimax_t="yes")
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+		#include <stdint.h>
+	]], [[
+		char *ptr="1";strtoimax(ptr, &ptr, 10)
+	]])], 
+	AC_DEFINE([HAVE_STRTOIMAX_T], 1, [Define if you have strtoimax_t]) 
+	have_strtoimax_t="yes")
 if test "x$have_strtoimax" = "x"; then
 	AC_MSG_RESULT(no)
 else
 	AC_MSG_RESULT(yes)
 fi
 
-
 AC_MSG_CHECKING(whether I can use intmax_t for intmax_t)
 dnl Can we use (intmax_t) for (intmax_t)?
 if test "x$have_intmax_t" != "x" ; then
   if test "x$have_strtoimax" != "x" ; then
-    AC_DEFINE(HAVE_STRTOIMAX)
-    AC_DEFINE(HAVE_INTMAX_NATIVE)
+    AC_DEFINE([HAVE_STRTOIMAX], 1, [Define this if you have strtoimax()])
+    AC_DEFINE([HAVE_INTMAX_NATIVE], 1, [Define this if your (intmax_t) is native])
     AC_MSG_RESULT(yes)
   else
     AC_MSG_RESULT(no)
@@ -842,20 +718,21 @@ fi
 dnl Can we use (long long) for (intmax_t) ?
 AC_CHECK_SIZEOF([long long], 0)
 if test "$ac_cv_sizeof_long_long" != 0; then
-   AC_DEFINE([HAVE_INTMAX_LONG_LONG])
-   AC_CHECK_FUNC([strtoll], AC_DEFINE([HAVE_STRTOLL]), 
-			    AC_DEFINE([NEED_STRTOLL]))
+   AC_DEFINE([HAVE_INTMAX_LONG_LONG], 1, [Define this if we should use (long long) for your (intmax_t)])
+   AC_CHECK_FUNC([strtoll], AC_DEFINE([HAVE_STRTOLL], 1, [Define this if you have strtoll()]), 
+			    AC_DEFINE([NEED_STRTOLL], 1, [Define this if we need strtoll()]))
 fi
 
 dnl Can we use (quad_t) for (intmax_t) ?
 AC_CHECK_SIZEOF([quad_t], 0)
 if test "$ac_cv_sizeof_quad_t" != 0; then
-   AC_CHECK_FUNC([strtoq], AC_DEFINE([HAVE_STRTOQ])
-			   AC_DEFINE([HAVE_INTMAX_QUADT]),)
+   AC_CHECK_FUNC([strtoq], AC_DEFINE([HAVE_STRTOQ], 1, [Define this if you have strtoq()])
+			   AC_DEFINE([HAVE_INTMAX_QUADT], 1, [Define this if we should use (quad_t) for your (intmax_t)]),)
 fi
 
 dnl Can we use (long) for (intmax_t)?  (Yes. always, if we must)
-AC_DEFINE([HAVE_INTMAX_LONG])
+AC_DEFINE([HAVE_INTMAX_LONG], 1, [Define this if we should use (long) for your (intmax_t)])
+
 
 dnl ----------------------------------------------------------
 dnl
@@ -864,13 +741,13 @@ dnl
 
 AC_CHECK_SIZEOF([unsigned int], 4)
 if test "$ac_cv_sizeof_unsigned_int" = 4; then
-	AC_DEFINE([UNSIGNED_INT32])
+	AC_DEFINE([UNSIGNED_INT32], 1, [Define if unsigned int is 32 bits])
 else
 	AC_CHECK_SIZEOF([unsigned long], 4)
 	if test "$ac_cv_sizeof_unsigned_long" = 4; then
-		AC_DEFINE([UNSIGNED_LONG32])
+		AC_DEFINE([UNSIGNED_LONG32], 1, [Define if unsigned long is 32 bits])
 	else
-		AC_DEFINE([UNKNOWN_32INT])
+		AC_DEFINE([UNKNOWN_32INT], 1, [Define if you don't know what is 32 bits])
 	fi
 fi
 
@@ -897,18 +774,16 @@ dnl
 dnl -----------------------------------------------------------
 
 AC_MSG_CHECKING([to see if your struct sockaddr includes a length field])
-AC_TRY_RUN([
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <stdlib.h>
-int main(void)
-{
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+	#include <sys/types.h>
+	#include <sys/socket.h>
+	#include <stdlib.h>
+]],[[
 	struct sockaddr sa;
 	sa.sa_len = 0;
 	return 0;
-}
-],
-  AC_DEFINE([HAVE_SA_LEN])
+]])],
+  AC_DEFINE([HAVE_SA_LEN], 1, [Define this if your struct sockaddr has a sa_len field])
   AC_MSG_RESULT([yes]),
   AC_MSG_RESULT([no]), :)
 
@@ -922,7 +797,7 @@ AC_ARG_WITH(ipv6,
 [  --without-ipv6                    Refuse to support IPv6],[
 	if test "x$withval" = "xno" ; then
 		AC_MSG_RESULT([no])
-		AC_DEFINE([DO_NOT_USE_IPV6])
+		AC_DEFINE([DO_NOT_USE_IPV6], 1, [Define this if ipv6 was forbidden by user])
 	else
 		AC_MSG_RESULT([yes])
 	fi
@@ -931,19 +806,19 @@ AC_ARG_WITH(ipv6,
 AC_MSG_CHECKING([for struct sockaddr_storage])
 AC_EGREP_HEADER([struct( |	)*sockaddr_storage], sys/socket.h, 
   AC_MSG_RESULT(yes) 
-  AC_DEFINE(HAVE_STRUCT_SOCKADDR_STORAGE),
+  AC_DEFINE([HAVE_STRUCT_SOCKADDR_STORAGE], 1, [Define this if you have struct sockaddr_storage]),
   AC_MSG_RESULT(no))
 
 AC_MSG_CHECKING([for struct sockaddr_in6])
 AC_EGREP_HEADER([struct( |	)*sockaddr_in6], netinet/in.h,
   AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_STRUCT_SOCKADDR_IN6),
+  AC_DEFINE([HAVE_STRUCT_SOCKADDR_IN6], 1, [Define this if you have struct sockaddr_in6]),
   AC_MSG_RESULT(no))
 
 AC_MSG_CHECKING([for struct addrinfo])
 AC_EGREP_HEADER([struct( |	)*addrinfo], netdb.h,
   AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_STRUCT_ADDRINFO),
+  AC_DEFINE([HAVE_STRUCT_ADDRINFO], 1, [Define this if you have struct addrinfo]),
   AC_MSG_RESULT(no))
 
 dnl ----------------------------------------------------------
@@ -954,16 +829,14 @@ dnl implementations, we must add our own support in a wrapper.
 dnl
 
 AC_MSG_CHECKING([to see if your getaddrinfo supports AF_UNIX])
-AC_TRY_RUN([
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <sys/un.h>
-#include <stdlib.h>
-#include <string.h>
-
-int main(void)
-{
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+	#include <sys/types.h>
+	#include <sys/socket.h>
+	#include <netdb.h>
+	#include <sys/un.h>
+	#include <stdlib.h>
+	#include <string.h>
+]],[[
 	struct addrinfo hints;
 	struct addrinfo *results;
 	int	retval;
@@ -979,10 +852,9 @@ int main(void)
 		return 1;
 	else
 		return 0;
-}
-],
+]])],
   AC_MSG_RESULT([yes]),
-  AC_DEFINE(GETADDRINFO_DOES_NOT_DO_AF_UNIX)
+  AC_DEFINE([GETADDRINFO_DOES_NOT_DO_AF_UNIX], 1, [Define this if your getaddrinfo() does not support AF_UNIX])
   AC_MSG_RESULT([no. ugh]), :)
 
 dnl ----------------------------------------------------------
@@ -1004,13 +876,13 @@ AC_ARG_WITH(socks,
 
 	AC_MSG_RESULT(yes)
 	LIBS="$LIBS -lsocks"
-	AC_DEFINE(SOCKS)
-	AC_DEFINE(connect, Rconnect)
-	AC_DEFINE(getsockname, Rgetsockname)
-	AC_DEFINE(bind, Rbind)
-	AC_DEFINE(accept, Raccept)
-	AC_DEFINE(listen, Rlisten)
-	AC_DEFINE(select, Rselect)
+	AC_DEFINE([SOCKS], 1, [Define this if you wanted to use SOCKS])
+	AC_DEFINE([connect], [Rconnect], [Defined when using SOCKS])
+	AC_DEFINE([getsockname], [Rgetsockname], [Defined when using SOCKS])
+	AC_DEFINE([bind], [Rbind], [Defined when using SOCKS])
+	AC_DEFINE([accept], [Raccept], [Defined when using SOCKS])
+	AC_DEFINE([listen], [Rlisten], [Defined when using SOCKS])
+	AC_DEFINE([select], [Rselect], [Defined when using SOCKS])
 	;;
   esac ],
   AC_MSG_RESULT(no)
@@ -1031,8 +903,8 @@ AC_ARG_WITH(socks5,
 
 	AC_MSG_RESULT(yes)
 	LIBS="$LIBS -lsocks"
-	AC_DEFINE(SOCKS)
-	AC_DEFINE(USE_SOCKS5)
+	AC_DEFINE([SOCKS], 1, [Define this if you wanted to use SOCKS])
+	AC_DEFINE([USE_SOCKS5], 1, [Define this if you wanted to use SOCKS5])
 	;;
   esac ],
   AC_MSG_RESULT(no)
@@ -1061,15 +933,23 @@ fi
 	saved_CFLAGS="$CFLAGS"
 
 	dnl First try to see if it's in libc
-	AC_TRY_LINK([#include <iconv.h>],
-		[iconv_open(0, 0);], have_iconv="yes")
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+		#include <iconv.h>
+	]],[[
+		iconv_open(0, 0);
+	]])], 
+		have_iconv="yes")
 
 	dnl If it's not in libc, look in -liconv
 	if test "x$have_iconv" = "x"; then
 	   LIBS="$saved_LIBS -liconv"
 	   CFLAGS="$saved_CFLAGS"
-	   AC_TRY_LINK([#include <iconv.h>],
-		[iconv_open(0, 0);], have_iconv="yes")
+	   AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+		#include <iconv.h>
+	   ]],[[
+		iconv_open(0, 0);
+	   ]])], 
+		have_iconv="yes")
 	fi
 
 	dnl whatever.
@@ -1093,8 +973,12 @@ dnl			test -f "$iconvdir/lib/libiconv.a"; then
 		if test -f "$iconvdir/include/iconv.h" ; then
 		    CFLAGS="$saved_CFLAGS -I$iconvdir/include"
 		    LIBS="$saved_LIBS -L$iconvdir/lib -liconv"
-		    AC_TRY_LINK([#include <iconv.h>],
-				[iconv_open(0, 0);], have_iconv="yes")
+		    AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+			#include <iconv.h>
+	   	    ]],[[
+			iconv_open(0, 0);
+	   	    ]])], 
+			have_iconv="yes")
 		fi
 
 		if test "x$with_iconv" != "x"; then
@@ -1115,11 +999,11 @@ if test "x$have_iconv" = "x"; then
 	fi
 else
 	AC_MSG_RESULT(yes)
-	AC_DEFINE(HAVE_ICONV)
+	AC_DEFINE([HAVE_ICONV], 1, [Define this if you have a useful iconv()])
 fi
 
 dnl #sigh#
-dnl AC_CHECK_FUNC(iconv_open, AC_DEFINE(HAVE_ICONV),)
+dnl AC_CHECK_FUNC(iconv_open, AC_DEFINE([HAVE_ICONV], 1, [Define this if you have a useful iconv())],)
 
 
 dnl ----------------------------------------------------------
@@ -1131,7 +1015,7 @@ if test "x$ac_cv_func_tcsetpgrp" = "xyes" -a "x$ac_cv_func_setsid" = "xyes"; the
 	AC_MSG_RESULT(yes)
 else
 	AC_MSG_RESULT(no)
-	AC_DEFINE(NO_JOB_CONTROL)
+	AC_DEFINE([NO_JOB_CONTROL], 1, [Define this if you don't have job control])
 	no_job_control=1
 fi
 
@@ -1211,7 +1095,7 @@ else
 		old_LIBS="$LIBS"
 		CFLAGS="$CFLAGS $PERLCFLAGS"
 		LIBS="$LIBS $PERLLIBS"
-		AC_TRY_RUN([
+		AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <EXTERN.h>
 #include <perl.h>
 #include <XSUB.h>
@@ -1238,12 +1122,13 @@ int startup_perl(int argc, char **argv, char **env)
 	dummy_retval = 0;
 	return 0;
 }
+
 int main (int argc, char **argv, char **environ)
 {
 	startup_perl(argc, argv, environ);
 	return dummy_retval;
 }
-], 
+]])], 
 have_embedded_perl="yes",
 have_embedded_perl="no",:)
 
@@ -1251,9 +1136,9 @@ have_embedded_perl="no",:)
 		LIBS="$old_LIBS"
 		if test $have_embedded_perl = "yes" ; then
 			AC_MSG_RESULT(yes)
-			AC_DEFINE(HAVE_PERL)
-			AC_DEFINE(PERLCFLAGS)
-			AC_DEFINE(PERLLIBS)
+			AC_DEFINE([HAVE_PERL], 1, [Define this if you have perl])
+			AC_DEFINE([PERLCFLAGS], 1, [Add this to CLFAGS for perl support])
+			AC_DEFINE([PERLLIBS], 1, [Add this to LDFLAGS for perl support])
 			PERLDOTOH="perl.o"
 		else
 			if test "x$with_perl" != "xmaybe"; then
@@ -1309,28 +1194,29 @@ else
 		old_LIBS="$LIBS"
 		CFLAGS="$CFLAGS $TCLCFLAGS"
 		LIBS="$LIBS $TCLLIBS"
-		AC_TRY_LINK([
-#include <tcl.h>
-	   Tcl_Interp *my_tcl;
-	   int Tcl_echoCmd (ClientData clientData, Tcl_Interp *interp, int objc, const char **objv)
-	   {
-		return TCL_OK;
-	   }
-], [
-	my_tcl = Tcl_CreateInterp();
-	Tcl_Init(my_tcl);
-	Tcl_CreateCommand(my_tcl, "echo", Tcl_echoCmd,
-		(ClientData)NULL, (void (*)()) NULL);
-	Tcl_DeleteInterp(my_tcl);
-], have_embedded_tcl="yes")
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+			#include <tcl.h>
+			Tcl_Interp *my_tcl;
+			int Tcl_echoCmd (ClientData clientData, Tcl_Interp *interp, int objc, const char **objv)
+			{
+				return TCL_OK;
+			}
+		]],[[
+			my_tcl = Tcl_CreateInterp();
+			Tcl_Init(my_tcl);
+			Tcl_CreateCommand(my_tcl, "echo", Tcl_echoCmd,
+				(ClientData)NULL, (void (*)()) NULL);
+			Tcl_DeleteInterp(my_tcl);
+		]])],
+			have_embedded_tcl="yes")
 
 		CFLAGS="$old_CFLAGS"
 		LIBS="$old_LIBS"
 		if test $have_embedded_tcl = "yes" ; then
 		    AC_MSG_RESULT(yes)
-		    AC_DEFINE(HAVE_TCL)
-		    AC_DEFINE(TCLCFLAGS)
-		    AC_DEFINE(TCLLIBS)
+		    AC_DEFINE([HAVE_TCL], 1, [Define this if you want to add tcl support])
+		    AC_DEFINE([TCLCFLAGS], 1, [Stuff to add to CFLAGS to support tcl])
+		    AC_DEFINE([TCLLIBS], 1, [Stuff to add to LDFLAGS to support tcl])
 		else
 			if test "$with_tcl" != "xmaybe" ; then
 				AC_MSG_ERROR([$with_tcl_errormsg])
@@ -1396,25 +1282,26 @@ else
 	    old_LIBS="$LIBS"
 	    CFLAGS="$CFLAGS $RUBYCFLAGS"
 	    LIBS="$LIBS $RUBYLIBS"
-	    AC_TRY_LINK([
-#include <ruby.h>
-    VALUE epic_echo (VALUE module, VALUE string)
-    {
-	VALUE x;
-	char *my_string;
-	x = rb_obj_as_string(string);
-	my_string = StringValuePtr(x);
-	return Qnil;
-    }
-], [
-	VALUE rubyclass;
+	    AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+		#include <ruby.h>
+		VALUE epic_echo (VALUE module, VALUE string)
+		{
+			VALUE x;
+			char *my_string;
+			x = rb_obj_as_string(string);
+			my_string = StringValuePtr(x);
+			return Qnil;
+		}
+	    ]], [[
+		VALUE rubyclass;
 
-	ruby_init();
-	ruby_init_loadpath();
-	rubyclass = rb_define_class("EPIC", rb_cObject);
-	rb_define_singleton_method(rubyclass, "echo", epic_echo, 1);
-	rb_gc_register_address(&rubyclass);
-], have_embedded_ruby="yes")
+		ruby_init();
+		ruby_init_loadpath();
+		rubyclass = rb_define_class("EPIC", rb_cObject);
+		rb_define_singleton_method(rubyclass, "echo", epic_echo, 1);
+		rb_gc_register_address(&rubyclass);
+	    ]])],
+		have_embedded_ruby="yes")
 
 	    if ! test $have_embedded_ruby = "yes" ; then
 		AC_MSG_RESULT(no)
@@ -1424,35 +1311,35 @@ else
 		CFLAGS="$old_CFLAGS $RUBYCFLAGS"
 		LIBS="$old_LIBS $RUBYLIBS"
 
-	        AC_TRY_LINK([
-#include <ruby.h>
-    VALUE epic_echo (VALUE module, VALUE string)
-    {
-	VALUE x;
-	char *my_string;
-	x = rb_obj_as_string(string);
-	my_string = STR2CSTR(x);
-	return Qnil;
-    }
-], [
-	VALUE rubyclass;
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+			#include <ruby.h>
+			VALUE epic_echo (VALUE module, VALUE string)
+			{
+				VALUE x;
+				char *my_string;
+				x = rb_obj_as_string(string);
+				my_string = StringValuePtr(x);
+				return Qnil;
+			}
+		]], [[
+			VALUE rubyclass;
 
-	ruby_init();
-	ruby_init_loadpath();
-	rubyclass = rb_define_class("EPIC", rb_cObject);
-	rb_define_singleton_method(rubyclass, "echo", epic_echo, 1);
-	rb_gc_register_address(&rubyclass);
-], have_embedded_ruby="yes")
-
+			ruby_init();
+			ruby_init_loadpath();
+			rubyclass = rb_define_class("EPIC", rb_cObject);
+			rb_define_singleton_method(rubyclass, "echo", epic_echo, 1);
+			rb_gc_register_address(&rubyclass);
+		]])],
+			have_embedded_ruby="yes")
 	    fi
 
 	    CFLAGS="$old_CFLAGS"
 	    LIBS="$old_LIBS"
 	    if test $have_embedded_ruby = "yes" ; then
 		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_RUBY)
-		AC_DEFINE(RUBYCFLAGS)
-		AC_DEFINE(RUBYLIBS)
+		AC_DEFINE([HAVE_RUBY], 1, [Define this if you want to suppor ruby])
+		AC_DEFINE([RUBYCFLAGS], 1, [Stuff to add to CFLAGS to support ruby])
+		AC_DEFINE([RUBYLIBS], 1, [Stuff to add to LDFLAGS to support ruby])
 	    else
 		if test "x$with_ruby" != "xmaybe" ; then
 			AC_MSG_ERROR([$with_ruby_errormsg])
@@ -1509,43 +1396,44 @@ else
 	    old_LIBS="$LIBS"
 	    CFLAGS="$CFLAGS $PYTHON_CFLAGS"
 	    LIBS="$LIBS $PYTHON_LDFLAGS"
-	    AC_TRY_LINK([
-#include <Python.h>
-static  PyObject *      epic_null (PyObject *self, PyObject *args)
-{
-        char *  str;
-        if (!PyArg_ParseTuple(args, "s", &str)) {
-                return PyLong_FromLong(-1);
-        }
-        return Py_BuildValue("s", "");
-}
+	    AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+		#include <Python.h>
+		static  PyObject *      epic_null (PyObject *self, PyObject *args)
+		{
+			char *  str;
+			if (!PyArg_ParseTuple(args, "s", &str)) {
+				return PyLong_FromLong(-1);
+			}
+			return Py_BuildValue("s", "");
+		}
 
-static  PyMethodDef     epicMethods[] = {
-        { "null",       epic_null,      METH_VARARGS,   "null" },
-        { NULL,         NULL,           0,              NULL }
-};
+		static  PyMethodDef     epicMethods[] = {
+			{ "null",       epic_null,      METH_VARARGS,   "null" },
+			{ NULL,         NULL,           0,              NULL }
+		};
 
-static  PyModuleDef     epicModule = {
-        PyModuleDef_HEAD_INIT,  
-        "_epic",        NULL,           -1,             epicMethods,
-        NULL,           NULL,           NULL,           NULL
-};
+		static  PyModuleDef     epicModule = {
+			PyModuleDef_HEAD_INIT,  
+			"_epic",        NULL,           -1,             epicMethods,
+			NULL,           NULL,           NULL,           NULL
+		};
 
-static  PyObject *      PyInit_epic (void)
-{
-        return PyModule_Create(&epicModule);
-}
-], [
-        PyImport_AppendInittab("_epic", &PyInit_epic);
-        Py_Initialize();
-], have_embedded_python="yes")
+		static  PyObject *      PyInit_epic (void)
+		{
+			return PyModule_Create(&epicModule);
+		}
+	    ]], [[
+		PyImport_AppendInittab("_epic", &PyInit_epic);
+		Py_Initialize();
+	    ]])],
+		have_embedded_python="yes")
 
 	    if test $have_embedded_python = "yes" ; then
 		AC_MSG_RESULT(yes)
-		AC_DEFINE(PYTHON_O)
-		AC_DEFINE(HAVE_PYTHON)
-		AC_DEFINE(PYTHON_CFLAGS)
-		AC_DEFINE(PYTHON_LDFLAGS)
+		AC_DEFINE([PYTHON_O], 1, [Define this add stuff....])
+		AC_DEFINE([HAVE_PYTHON], 1, [Define this to support python])
+		AC_DEFINE([PYTHON_CFLAGS], 1, [Stuff to add to CFLAGS to support python])
+		AC_DEFINE([PYTHON_LDFLAGS], 1, [Stuff to add to LDFLAGS to support python])
             else
 		if test "x$with_python" != "xmaybe" ; then
 			AC_MSG_ERROR([$with_python_errormsg])
@@ -1594,79 +1482,78 @@ if test "$program_prefix" = "NONE" ; then
 	program_prefix=
 fi
 
-AC_MSG_CHECKING(whether to support bounds checking gcc)
-AC_ARG_WITH(bc,
-[  --with-bc[=PATH_TO_GCC]           You have bounds checking gcc and want to use it.],
-[   case "$withval" in
-   no)
-        AC_MSG_RESULT(no);
-        ;;
-   *)
-        if test "x$withval" != "xyes" ; then
-                CC="$withval"
-        fi
+dnl	AC_MSG_CHECKING(whether to support bounds checking gcc)
+dnl	AC_ARG_WITH(bc,
+dnl	[  --with-bc[=PATH_TO_GCC]           You have bounds checking gcc and want to use it.],
+dnl	[   case "$withval" in
+dnl	   no)
+dnl	        AC_MSG_RESULT(no);
+dnl	        ;;
+dnl	   *)
+dnl	        if test "x$withval" != "xyes" ; then
+dnl	                CC="$withval"
+dnl	        fi
+dnl	
+dnl	        CFLAGS="$CFLAGS -Wall -fbounds-checking"
+dnl	        LDFLAGS="$LDFLAGS -static"
+dnl	        AC_MSG_RESULT(yes)
+dnl	        ;;
+dnl	   esac ],
+dnl	   AC_MSG_RESULT(no)
+dnl	)
 
-        CFLAGS="$CFLAGS -Wall -fbounds-checking"
-        LDFLAGS="$LDFLAGS -static"
-        AC_MSG_RESULT(yes)
-        ;;
-   esac ],
-   AC_MSG_RESULT(no)
-)
-
-AC_MSG_CHECKING(whether to turn on FreeBSD WARNS-like compiler warnings)
-AC_ARG_WITH(warns,
-[  --with-warns                      You wish to use FreeBSD WARNS-like compiler warnings.],
-[   case "$withval" in
-   no)
-        AC_MSG_RESULT(no);
-        ;;
-   *)
-        if test "x$withval" != "xyes" ; then
-                CFLAGS="$CFLAGS $withval"
-        fi
-
-        CFLAGS="$CFLAGS -W -Wall -Wstrict-prototypes -Wmissing-prototypes -Wuninitialized -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch -Wshadow -Wformat-extra-args -Wno-unused -ansi -fno-builtin"
-        AC_MSG_RESULT(yes)
-        ;;
-   esac ],
-   AC_MSG_RESULT(no)
-)
+dnl	AC_MSG_CHECKING(whether to turn on FreeBSD WARNS-like compiler warnings)
+dnl	AC_ARG_WITH(warns,
+dnl	[  --with-warns                      You wish to use FreeBSD WARNS-like compiler warnings.],
+dnl	[   case "$withval" in
+dnl	   no)
+dnl	        AC_MSG_RESULT(no);
+dnl	        ;;
+dnl	   *)
+dnl	        if test "x$withval" != "xyes" ; then
+dnl	                CFLAGS="$CFLAGS $withval"
+dnl	        fi
+dnl	
+dnl	        CFLAGS="$CFLAGS -W -Wall -Wstrict-prototypes -Wmissing-prototypes -Wuninitialized -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch -Wshadow -Wformat-extra-args -Wno-unused -ansi -fno-builtin"
+dnl	        AC_MSG_RESULT(yes)
+dnl	        ;;
+dnl	   esac ],
+dnl	   AC_MSG_RESULT(no)
+dnl	)
 
 AC_MSG_CHECKING(whether your compiler supports -Wno-pointer-sign)
 old_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -Wno-pointer-sign"
-AC_TRY_COMPILE(, [return 0;], 
-	AC_MSG_RESULT(yes),
-        AC_MSG_RESULT(no)
-	CFLAGS="$old_cflags"
-)
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]],[[ return 0; ]])],
+	[AC_MSG_RESULT(yes)],
+        [AC_MSG_RESULT(no)
+	CFLAGS="$old_cflags"])
 
 AC_MSG_CHECKING(whether your compiler supports -fno-strict-aliasing)
 old_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -fno-strict-aliasing"
-AC_TRY_COMPILE(, [return 0;], 
-	AC_MSG_RESULT(yes),
-        AC_MSG_RESULT(no)
-	CFLAGS="$old_cflags"
-)
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM( [[]],[[ return 0; ]])],
+	[AC_MSG_RESULT(yes)],
+        [AC_MSG_RESULT(no)])
 
 AC_MSG_CHECKING(whether your compiler supports __attribute__((fallthrough)))
-AC_TRY_COMPILE(, 
-	[int x = 1; 
-	 switch (x) { 
-		case 1: 
-			x++; 
-			__attribute__((fallthrough));
-		case 0: 
-			x++; 
-	  }], 
-        have_attribute_fallthrough=1,
-        have_attribute_fallthrough=0)
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[ 
+	]],[[
+		int x = 1; 
+		switch (x) { 
+			case 1: 
+				x++; 
+				__attribute__((fallthrough));
+			case 0: 
+				x++; 
+		}
+	]])],
+        [have_attribute_fallthrough=1],
+        [have_attribute_fallthrough=0])
 
 if test "x$have_attribute_fallthrough" = "x1" ; then
 	AC_MSG_RESULT(yes)
-	AC_DEFINE(HAVE_ATTRIBUTE_FALLTHROUGH)
+	AC_DEFINE([HAVE_ATTRIBUTE_FALLTHROUGH], 1, [Define if you can use __attribute__((fallthrough))])
 else
 	AC_MSG_RESULT(no)
 fi
@@ -1698,6 +1585,7 @@ AC_SUBST(program_transform_name)
 AC_SUBST(program_prefix)
 AC_SUBST(mandir)
 
+dnl AC_OUTPUT with arguments is obsolete, see https://www.gnu.org/software/autoconf/manual/autoconf-2.69/html_node/Obsolete-Macros.html#Obsolete-Macros
 AC_OUTPUT(Makefile source/Makefile source/info.c.sh)
 
 dnl ----------------------------------------------------------

@@ -19,6 +19,7 @@
 #	make installepic	- Installs just the epic binary
 #	make installscript 	- Installs just the standard script library
 #
+# @configure_input@
 
 CC = @CC@
 DEFS = @DEFS@

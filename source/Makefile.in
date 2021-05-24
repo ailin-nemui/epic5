@@ -3,6 +3,8 @@
 # Copyright 1993 Matthew Green, All rights reserved
 # Coypright 1995, 1998 EPIC Software Labs
 #
+# @configure_input@
+#
 
 LIBS	= @LIBS@
 CC	= @CC@
@@ -18,7 +20,7 @@ OBJECTS = alias.o alist.o array.o cJSON.o clock.o commands.o compat.o \
 	mail.o names.o network.o newio.o notify.o numbers.o output.o parse.o \
 	@PERLDOTOH@ @PYTHON_O@ queue.o recode.o reg.o @RUBYDOTOH@ screen.o \
 	sdbm.o server.o sha2.o ssl.o status.o @TCLDOTOH@ term.o timer.o \
-	vars.o wcwidth.o who.o window.o words.o @ALLOCA@
+	vars.o wcwidth.o who.o window.o words.o 
 
 INCLUDES = -I@srcdir@/../include -I../include
 

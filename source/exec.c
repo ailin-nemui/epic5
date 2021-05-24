@@ -845,11 +845,7 @@ static void 	kill_process (Process *proc, int sig)
 #ifdef HAVE_GETPGID
 	pgid = getpgid(proc->pid);
 #else
-#  ifndef GETPGRP_VOID
-	pgid = getpgrp(proc->pid);
-#  else
-	pgid = proc->pid;
-#  endif
+	pgid = proc->pid;	/* Oh well.... */
 #endif
 
 #ifndef HAVE_KILLPG
