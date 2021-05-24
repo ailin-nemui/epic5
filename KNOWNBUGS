@@ -947,3 +947,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Revamp how channels get claimed (I like this better) to be channel-driven
 * Fix get_window_by_desc() (rb Harzilein)
 * Migrate configure to autoconf-2.69.
+* Round two of getting configure working with 2.69

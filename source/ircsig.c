@@ -62,7 +62,7 @@ volatile int    signals_caught[NSIG];
 /* grand unified signal handler, which sets flags for scriptable signals
  * - pegasus
  */
-static RETSIGTYPE signal_handler (int sig_no)
+static void	signal_handler (int sig_no)
 {
 	signals_caught[0] = 1;
 	signals_caught[sig_no]++;

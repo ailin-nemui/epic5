@@ -634,7 +634,7 @@ int	tputs_x(char *);
 #define term_clear_to_eol()	term_clreol()
 #define term_all_off()          tputs_x(current_term->TI_normal);
 
-	RETSIGTYPE 	term_cont 		(int);
+	void		term_cont 		(int);
 	void 		term_beep 		(void);
 	int		term_echo 		(int);
 	int		term_init 		(void);

@@ -147,7 +147,7 @@
 # define __A(x)
 # define __N
 #else
-# if (__GNUC__ >= 2) && (__GNUC_MINOR__ >= 7)
+# if ((__GNUC__ > 2) || (__GNUC__ >= 2) && (__GNUC_MINOR__ >= 7))
 #  define __A(x) __attribute__ ((format (printf, x, x + 1)))
 #  define __N    __attribute__ ((noreturn))
 # else
@@ -252,12 +252,11 @@ extern	char	*sys_errlist[];
 /*
  * Define generic macros for signal handlers and built in commands.
  */
-typedef RETSIGTYPE sigfunc (int);
+typedef void sigfunc (int);
 int	block_signal (int);
 int	unblock_signal (int);
 sigfunc *my_signal (int, sigfunc *);
-#define SIGNAL_HANDLER(x) \
-	RETSIGTYPE x (int unused)
+#define SIGNAL_HANDLER(x) void x (int unused)
 sigfunc *init_signals (void);
 void	init_signal_names (void);
 const char *get_signal_name (int);

@@ -1,8 +1,5 @@
 /* include/defs.h.in.  Generated from configure.in by autoheader.  */
 
-/* Define to 1 if the `closedir' function returns void instead of `int'. */
-#undef CLOSEDIR_VOID
-
 /* Define to one of `_getb67', `GETB67', `getb67' for Cray-2 and Cray-YMP
    systems. This function is required for `alloca.c' support on those systems.
    */
@@ -10,9 +7,6 @@
 
 /* Define to 1 if using `alloca.c'. */
 #undef C_ALLOCA
-
-/* Same as `HAVE_DIRENT_H', don't depend on me. */
-#undef DIRENT
 
 /* Define if <term.h> should be avoided */
 #undef DONT_USE_TERM_H
@@ -211,9 +205,6 @@
 /* Define this if you have strtoimax() */
 #undef HAVE_STRTOIMAX
 
-/* Define if you have strtoimax_t */
-#undef HAVE_STRTOIMAX_T
-
 /* Define this if you have strtoll() */
 #undef HAVE_STRTOLL
 
@@ -333,9 +324,6 @@
 /* Define to 1 if you have the <xlocale.h> header file. */
 #undef HAVE_XLOCALE_H
 
-/* Same as `HAVE_NDIR_H', don't depend on me. */
-#undef NDIR
-
 /* Define this if we need strtoll() */
 #undef NEED_STRTOLL
 
@@ -387,9 +375,6 @@
 /* Define this add stuff.... */
 #undef PYTHON_O
 
-/* Define as the return type of signal handlers (`int' or `void'). */
-#undef RETSIGTYPE
-
 /* Stuff to add to CFLAGS to support ruby */
 #undef RUBYCFLAGS
 
@@ -421,12 +406,6 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
-
-/* Same as `HAVE_SYS_DIR_H', don't depend on me. */
-#undef SYSDIR
-
-/* Same as `HAVE_SYS_NDIR_H', don't depend on me. */
-#undef SYSNDIR
 
 /* Stuff to add to CFLAGS to support tcl */
 #undef TCLCFLAGS
