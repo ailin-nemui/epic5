@@ -170,7 +170,7 @@ static	PyObject *	epic_echo (PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	yell(str);
+	yell("%s", str);
 	return PyLong_FromLong(0L);
 }
 
@@ -198,7 +198,7 @@ static	PyObject *	epic_say (PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	say(str);
+	say("%s", str);
 	return PyLong_FromLong(0L);
 }
 
@@ -854,7 +854,7 @@ void	do_python_fd (int vfd)
 			{
 				if ((call_python_function_1arg(callback->except_callback, vfd)))
 				{
-					yell("do_python_fd: FD %d failed: both ordinary and error callback failed.");
+					yell("do_python_fd: FD %d failed: both ordinary and error callback failed.", vfd);
 					new_close(vfd);
 				}
 			}
@@ -866,7 +866,7 @@ void	do_python_fd (int vfd)
 			{
 				if ((call_python_function_1arg(callback->except_callback, vfd)))
 				{
-					yell("do_python_fd: FD %d failed: both ordinary and error callback failed.");
+					yell("do_python_fd: FD %d failed: both ordinary and error callback failed.", vfd);
 					new_close(vfd);
 				}
 			}
@@ -879,7 +879,7 @@ void	do_python_fd (int vfd)
 		{
 			if ((call_python_function_1arg(callback->except_callback, vfd)))
 			{
-				yell("do_python_fd: FD %d failed: both ordinary and error callback failed.");
+				yell("do_python_fd: FD %d failed: both ordinary and error callback failed.", vfd);
 				new_close(vfd);
 			}
 		}
