@@ -497,6 +497,7 @@ dnl AC_TYPE_SIZE_T
 dnl AC_TYPE_UID_T
 dnl AC_FUNC_ALLOCA
 
+AC_HEADER_TIME
 AC_HEADER_DIRENT
 dnl AC_DIR_HEADER is obsolete https://www.gnu.org/software/autoconf/manual/autoconf-2.69/html_node/Obsolete-Macros.html#Obsolete-Macros
 AC_DIR_HEADER

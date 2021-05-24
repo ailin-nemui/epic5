@@ -437,6 +437,9 @@
 /* Define if <term.h> requires <curses.h> to be included first */
 #undef TERM_H_REQUIRES_CURSES_H
 
+/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
+#undef TIME_WITH_SYS_TIME
+
 /* Define if you don't know what is 32 bits */
 #undef UNKNOWN_32INT
 
