@@ -229,7 +229,7 @@ if test "x$with_libarchive" != "xno" ; then
 		LIBS="$orig_LIBS"
 		AC_MSG_RESULT(no)
 		if test "x$with_libarchive" = "xyes" ; then
-			AC_MSG_ERROR([--with-libarchive was specified but libarchive could not be found. Please do not specify --with-libarchive or install libarchive.])
+			AC_MSG_ERROR([--with-libarchive was specified but libarchive could not be found.  Please install libarchive, or do not specify --with-libarchive.])
                 fi
 	else
 		AC_MSG_RESULT(yes)
@@ -343,16 +343,6 @@ else
 	fi
 fi
 
-
-dnl	dnl this is for isc.  need the nsl_s library as well.
-dnl	if test -z "$libinet"; then
-dnl		AC_CHECK_LIB(inet, socket, libnsl=1; LIBS="$LIBS -linet -lnsl_s",)
-dnl	fi
-dnl	
-dnl	if test -z "$libnsl"; then
-dnl		AC_CHECK_LIB(nsl, gethostname, LIBS="$LIBS -lnsl",)
-dnl	fi
-
 AC_CHECK_LIB(sun, getpwnam, LIBS="$LIBS -lsun",)
 AC_CHECK_LIB(dgc, inet_addr, LIBS="$LIBS -ldgc",)
 AC_CHECK_LIB(resolv, gethostbyname, LIBS="$LIBS -lresolv",)
@@ -424,11 +414,16 @@ AC_CHECK_FUNC(sysconf, AC_DEFINE([HAVE_SYSCONF], 1, [Define if you have sysconf(
 AC_CHECK_FUNC(sysctlbyname, AC_DEFINE([HAVE_SYSCTLBYNAME], 1, [Define if you have sysctlbyname()]),)
 AC_CHECK_FUNC(unsetenv, AC_DEFINE([HAVE_UNSETENV], 1, [Define if you have unsetenv()]),)
 AC_CHECK_FUNC(vsnprintf, AC_DEFINE([HAVE_VSNPRINTF], 1, [Define if you have vsnprintf()]),)
+AC_MSG_CHECKING(for isfinite)
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+	#include <math.h>
+]],[[
+	int x = isfinite(0.0);
+	return 0;
+]])],
+   AC_MSG_RESULT(yes),
+   AC_MSG_RESULT(no))
 AC_CHECK_FUNC(finite, AC_DEFINE([HAVE_FINITE], 1, [Define if you have finite()]),)
-AC_MSG_CHECKING(for isfinite macro in math.h)
-AC_EGREP_HEADER(isfinite, math.h, 
-	AC_DEFINE([HAVE_ISFINITE], 1, [Define if you have isfinite()]) AC_MSG_RESULT(yes),
-	AC_MSG_RESULT(no))
 AC_CHECK_FUNC(tparm, AC_DEFINE([HAVE_TPARM], 1, [Define if you have tparm()]),)
 AC_CHECK_FUNC(newlocale, AC_DEFINE([HAVE_NEWLOCALE], 1, [Define if you have newlocale()]),)
 
@@ -461,7 +456,6 @@ AC_RUN_IFELSE([AC_LANG_PROGRAM([[
    AC_MSG_RESULT(no.  bummer for you)
    AC_DEFINE(NEWLOCALE_DOESNT_WORK, 1, [Define this if newlocale() doesn't work the way I expect]), :), :)
 
-
 dnl -- Oh why does this have to be so painful? --
 AC_MSG_CHECKING(whether term.h works by itself)
 AC_RUN_IFELSE([AC_LANG_PROGRAM([[
@@ -486,17 +480,6 @@ AC_RUN_IFELSE([AC_LANG_PROGRAM([[
   AC_MSG_RESULT(no, ugh)
   AC_DEFINE([DONT_USE_TERM_H], 1, [Define if <term.h> should be avoided]), :), :)
 
-
-dnl AC_HEADER_STDC
-dnl AC_HEADER_TIME
-dnl AC_HEADER_DIRENT
-dnl AC_TYPE_SIGNAL
-dnl AC_TYPE_MODE_T
-dnl AC_TYPE_PID_T
-dnl AC_TYPE_SIZE_T
-dnl AC_TYPE_UID_T
-dnl AC_FUNC_ALLOCA
-
 AC_HEADER_TIME
 AC_HEADER_DIRENT
 AC_TYPE_MODE_T
@@ -506,66 +489,6 @@ AC_TYPE_SIZE_T
 AC_TYPE_SSIZE_T
 AC_TYPE_UID_T
 AC_FUNC_ALLOCA
-
-dnl ----------------------------------------------------------
-dnl Check to see if we can find intptr_t.
-dnl
-have_intptr_t=""
-AC_MSG_CHECKING(for intptr_t in inttypes.h or stdint.h)
-AC_LINK_IFELSE([AC_LANG_PROGRAM([[
-		#include <inttypes.h>
-	]], [[
-		intptr_t x; x = 0;
-	]])], 
-	AC_DEFINE([HAVE_INTPTR_T], 1, [Define if you have intptr_t]) 
-	have_intptr_t="yes")
-AC_LINK_IFELSE([AC_LANG_PROGRAM([[
-		#include <stdint.h>
-	]], [[
-		intptr_t x; x = 0;
-	]])], 
-	AC_DEFINE([HAVE_INTPTR_T], 1, [Define if you have intptr_t]) 
-	have_intptr_t="yes")
-if test "x$have_intptr_t" = "x"; then
-	AC_MSG_RESULT(no)
-else
-	AC_MSG_RESULT(yes)
-fi
-
-dnl ----------------------------------------------------------
-dnl Check to see if we have socklen_t
-dnl
-AC_MSG_CHECKING(for socklen_t)
-AC_EGREP_HEADER(socklen_t, sys/socket.h,
-  AC_MSG_RESULT(yes)
-  AC_DEFINE([HAVE_SOCKLEN_T], 1, [Define if you have socklen_t]),
-  AC_MSG_RESULT(no))
-
-dnl ----------------------------------------------------------
-dnl
-dnl Check to see if we have to include <sys/select.h>
-dnl 
-dnl
-AC_MSG_CHECKING(whether sys/types.h defines fd_set)
-AC_EGREP_HEADER(fd_set, sys/types.h,
-  AC_MSG_RESULT(yes),
-  AC_MSG_RESULT(no)
-  AC_MSG_CHECKING(whether sys/select.h defines fd_set)
-  AC_EGREP_HEADER(fd_set, sys/select.h,
-    AC_MSG_RESULT(yes)
-    AC_DEFINE([NEED_SYS_SELECT_H], 1, [Define if you need to include <sys/select.h>]),
-    AC_MSG_RESULT(no. ugh.))) 
-
-dnl ----------------------------------------------------------
-dnl
-dnl check for struct linger
-dnl
-
-AC_MSG_CHECKING(for struct linger)
-AC_EGREP_HEADER([struct( |	)*linger], sys/socket.h, 
-  AC_MSG_RESULT(yes), 
-  AC_DEFINE([NO_STRUCT_LINGER], 1, [Define this if you do not have struct linger]) 
-  AC_MSG_RESULT(no. ugh.))
 
 dnl ---------------------------------------------------------
 dnl
@@ -634,10 +557,7 @@ AC_RUN_IFELSE([AC_LANG_PROGRAM([[
   AC_DEFINE([HAVE_SYS_SIGLIST], 1, [Define if you have sys_siglist]),
   AC_MSG_RESULT(no), :)
 
-dnl ---------------------------------------------------------
-dnl Check for NSIG vs sys_nsig vs __sys_nsig
-dnl
-dnl ......
+dnl ------------------------------------------------------------------
 
 AC_TYPE_INT8_T
 AC_TYPE_UINT8_T
@@ -651,102 +571,13 @@ AC_TYPE_INTMAX_T
 AC_TYPE_UINTMAX_T
 AC_TYPE_INTPTR_T
 
-dnl ----------------------------------------------------------
-dnl Check for 'intmax_t'
-dnl
-have_intmax_t=""
-have_strtoimax_t=""
-AC_MSG_CHECKING(for intmax_t in inttypes.h or stdint.h)
-AC_LINK_IFELSE([AC_LANG_PROGRAM([[
-		#include <inttypes.h>
-	]], [[
-		intmax_t x; x = 0;
-	]])], 
-	AC_DEFINE([HAVE_INTMAX_T], 1, [Define if you have intmax_t]) 
-	have_intmax_t="yes")
-AC_LINK_IFELSE([AC_LANG_PROGRAM([[
-		#include <stdint.h>
-	]], [[
-		intmax_t x; x = 0;
-	]])], 
-	AC_DEFINE([HAVE_INTMAX_T], 1, [Define if you have intmax_t]) 
-	have_intmax_t="yes")
-if test "x$have_intmax_t" = "x"; then
-	AC_MSG_RESULT(no)
-else
-	AC_MSG_RESULT(yes)
-fi
+AC_CHECK_TYPE([socklen_t], 
+	[AC_DEFINE([HAVE_SOCKLEN_T], 1, [Define if you have socklen_t])], ,
+	[[ #include <sys/socket.h> ]])
 
-AC_MSG_CHECKING(for strtoimax in inttypes.h or stdint.h)
-AC_LINK_IFELSE([AC_LANG_PROGRAM([[
-		#include <inttypes.h>
-	]], [[
-		char *ptr="1";strtoimax(ptr, &ptr, 10)
-	]])], 
-	AC_DEFINE([HAVE_STRTOIMAX], 1, [Define if you have strtoimax_t]) 
-	have_strtoimax="yes")
-AC_LINK_IFELSE([AC_LANG_PROGRAM([[
-		#include <stdint.h>
-	]], [[
-		char *ptr="1";strtoimax(ptr, &ptr, 10)
-	]])], 
-	AC_DEFINE([HAVE_STRTOIMAX], 1, [Define if you have strtoimax_t]) 
-	have_strtoimax="yes")
-if test "x$have_strtoimax" = "x"; then
-	AC_MSG_RESULT(no)
-else
-	AC_MSG_RESULT(yes)
-fi
-
-AC_MSG_CHECKING(whether I can use intmax_t for intmax_t)
-dnl Can we use (intmax_t) for (intmax_t)?
-if test "x$have_intmax_t" != "x" ; then
-  if test "x$have_strtoimax" != "x" ; then
-    AC_DEFINE([HAVE_STRTOIMAX], 1, [Define this if you have strtoimax()])
-    AC_DEFINE([HAVE_INTMAX_NATIVE], 1, [Define this if your (intmax_t) is native])
-    AC_MSG_RESULT(yes)
-  else
-    AC_MSG_RESULT(no)
-  fi
-else
-  AC_MSG_RESULT(no)
-fi
-
-dnl Can we use (long long) for (intmax_t) ?
-AC_CHECK_SIZEOF([long long], 0)
-if test "$ac_cv_sizeof_long_long" != 0; then
-   AC_DEFINE([HAVE_INTMAX_LONG_LONG], 1, [Define this if we should use (long long) for your (intmax_t)])
-   AC_CHECK_FUNC([strtoll], AC_DEFINE([HAVE_STRTOLL], 1, [Define this if you have strtoll()]), 
-			    AC_DEFINE([NEED_STRTOLL], 1, [Define this if we need strtoll()]))
-fi
-
-dnl Can we use (quad_t) for (intmax_t) ?
-AC_CHECK_SIZEOF([quad_t], 0)
-if test "$ac_cv_sizeof_quad_t" != 0; then
-   AC_CHECK_FUNC([strtoq], AC_DEFINE([HAVE_STRTOQ], 1, [Define this if you have strtoq()])
-			   AC_DEFINE([HAVE_INTMAX_QUADT], 1, [Define this if we should use (quad_t) for your (intmax_t)]),)
-fi
-
-dnl Can we use (long) for (intmax_t)?  (Yes. always, if we must)
-AC_DEFINE([HAVE_INTMAX_LONG], 1, [Define this if we should use (long) for your (intmax_t)])
-
-
-dnl ----------------------------------------------------------
-dnl
-dnl need this for dcc stuff
-dnl
-
-AC_CHECK_SIZEOF([unsigned int], 4)
-if test "$ac_cv_sizeof_unsigned_int" = 4; then
-	AC_DEFINE([UNSIGNED_INT32], 1, [Define if unsigned int is 32 bits])
-else
-	AC_CHECK_SIZEOF([unsigned long], 4)
-	if test "$ac_cv_sizeof_unsigned_long" = 4; then
-		AC_DEFINE([UNSIGNED_LONG32], 1, [Define if unsigned long is 32 bits])
-	else
-		AC_DEFINE([UNKNOWN_32INT], 1, [Define if you don't know what is 32 bits])
-	fi
-fi
+AC_CHECK_TYPE([struct linger], ,
+	[AC_DEFINE([NO_STRUCT_LINGER], 1, [Define if you do not have struct linger])],
+	[[ #include <sys/socket.h> ]])
 
 dnl ----------------------------------------------------------
 dnl
@@ -800,23 +631,15 @@ AC_ARG_WITH(ipv6,
 	fi
 ],[AC_MSG_RESULT([yes])])
 
-AC_MSG_CHECKING([for struct sockaddr_storage])
-AC_EGREP_HEADER([struct( |	)*sockaddr_storage], sys/socket.h, 
-  AC_MSG_RESULT(yes) 
-  AC_DEFINE([HAVE_STRUCT_SOCKADDR_STORAGE], 1, [Define this if you have struct sockaddr_storage]),
-  AC_MSG_RESULT(no))
-
-AC_MSG_CHECKING([for struct sockaddr_in6])
-AC_EGREP_HEADER([struct( |	)*sockaddr_in6], netinet/in.h,
-  AC_MSG_RESULT(yes)
-  AC_DEFINE([HAVE_STRUCT_SOCKADDR_IN6], 1, [Define this if you have struct sockaddr_in6]),
-  AC_MSG_RESULT(no))
-
-AC_MSG_CHECKING([for struct addrinfo])
-AC_EGREP_HEADER([struct( |	)*addrinfo], netdb.h,
-  AC_MSG_RESULT(yes)
-  AC_DEFINE([HAVE_STRUCT_ADDRINFO], 1, [Define this if you have struct addrinfo]),
-  AC_MSG_RESULT(no))
+AC_CHECK_TYPE([struct sockaddr_storage], 
+	[AC_DEFINE([HAVE_STRUCT_SOCKADDR_STORAGE], 1, [Define if you have struct sockaddr_storage])], ,
+	[[ #include <sys/socket.h> ]])
+AC_CHECK_TYPE([struct sockaddr_in6], 
+	[AC_DEFINE([HAVE_STRUCT_SOCKADDR_IN6], 1, [Define if you have struct sockaddr_in6])], ,
+	[[ #include <netinet/in.h> ]])
+AC_CHECK_TYPE([struct addrinfo], 
+	[AC_DEFINE([HAVE_STRUCT_ADDRINFO], 1, [Define if you have struct addrinfo])], ,
+	[[ #include <netdb.h> ]])
 
 dnl ----------------------------------------------------------
 dnl
@@ -1478,45 +1301,6 @@ epic5=`echo "epic5" | sed -e "$program_transform_name"`
 if test "$program_prefix" = "NONE" ; then
 	program_prefix=
 fi
-
-dnl	AC_MSG_CHECKING(whether to support bounds checking gcc)
-dnl	AC_ARG_WITH(bc,
-dnl	[  --with-bc[=PATH_TO_GCC]           You have bounds checking gcc and want to use it.],
-dnl	[   case "$withval" in
-dnl	   no)
-dnl	        AC_MSG_RESULT(no);
-dnl	        ;;
-dnl	   *)
-dnl	        if test "x$withval" != "xyes" ; then
-dnl	                CC="$withval"
-dnl	        fi
-dnl	
-dnl	        CFLAGS="$CFLAGS -Wall -fbounds-checking"
-dnl	        LDFLAGS="$LDFLAGS -static"
-dnl	        AC_MSG_RESULT(yes)
-dnl	        ;;
-dnl	   esac ],
-dnl	   AC_MSG_RESULT(no)
-dnl	)
-
-dnl	AC_MSG_CHECKING(whether to turn on FreeBSD WARNS-like compiler warnings)
-dnl	AC_ARG_WITH(warns,
-dnl	[  --with-warns                      You wish to use FreeBSD WARNS-like compiler warnings.],
-dnl	[   case "$withval" in
-dnl	   no)
-dnl	        AC_MSG_RESULT(no);
-dnl	        ;;
-dnl	   *)
-dnl	        if test "x$withval" != "xyes" ; then
-dnl	                CFLAGS="$CFLAGS $withval"
-dnl	        fi
-dnl	
-dnl	        CFLAGS="$CFLAGS -W -Wall -Wstrict-prototypes -Wmissing-prototypes -Wuninitialized -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch -Wshadow -Wformat-extra-args -Wno-unused -ansi -fno-builtin"
-dnl	        AC_MSG_RESULT(yes)
-dnl	        ;;
-dnl	   esac ],
-dnl	   AC_MSG_RESULT(no)
-dnl	)
 
 AC_MSG_CHECKING(whether your compiler supports -Wno-pointer-sign)
 old_cflags="$CFLAGS"

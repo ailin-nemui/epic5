@@ -303,79 +303,27 @@ typedef int intptr_t;
 
 /*
  * Figure out our intmax_t
- *
- * XXX -- Configure cheats for us a little bit.  It checks a few types to 
- * see if we have both the type and the strto*() function.  For all of those
- * types that are function, the corresponding #define is set
- *	HAVE_INTMAX_NATIVE
- *	HAVE_INTMAX_LONG_LONG
- *	HAVE_INTMAX_QUADT
- *	HAVE_INTMAX_LONG
- * We will use whichever one is first on the list.
  */
-#ifdef HAVE_INTMAX_NATIVE
-# ifdef PRIdMAX
-#  define INTMAX_FORMAT "%" PRIdMAX
-#  define UINTMAX_FORMAT "%" PRIuMAX
-# else
-#  define INTMAX_FORMAT "%jd"
-#  define UINTMAX_FORMAT "%ju"
-# endif
+#ifdef PRIdMAX
+# define INTMAX_FORMAT "%" PRIdMAX
+# define UINTMAX_FORMAT "%" PRIuMAX
 #else
-# ifdef HAVE_INTMAX_LONG_LONG
-#  define intmax_t long long
-#  define uintmax_t unsigned long long
-#  define strtoimax strtoll
-#  define strtouimax strtoull
-#  define INTMAX_FORMAT "%lld"
-#  define UINTMAX_FORMAT "%llu"
-# else
-#  ifdef HAVE_INTMAX_QUADT
-#   define intmax_t quad_t
-#   define uintmax_t uquad_t
-#   define strtoimax strtoq
-#   define strtouimax strtouq
-#   define INTMAX_FORMAT "%qd"
-#   define UINTMAX_FORMAT "%qu"
-#  else
-#   ifdef HAVE_INTMAX_LONG
-#    define intmax_t long
-#    define uintmax_t unsigned long
-#    define strtoimax strtol
-#    define strtouimax strtoul
-#    define INTMAX_FORMAT "%ld"
-#    define UINTMAX_FORMAT "%lu"
-#   endif
-#  endif
-# endif
+# define INTMAX_FORMAT "%jd"
+# define UINTMAX_FORMAT "%ju"
 #endif
 
 /*
  * DCC specification requires exactly a 32 bit checksum.
  * Kind of lame, actually.
  */
-#ifdef UNSIGNED_LONG32
-  typedef		unsigned long		u_32int_t;
-#else
-# ifdef UNSIGNED_INT32
-  typedef		unsigned int		u_32int_t;
-# else
-  typedef		unsigned long		u_32int_t;
-# endif
-#endif
+typedef		uint32_t		u_32int_t;
 
 #ifdef Char
 #undef Char
 #endif
 #define Char const char
 
-/*
- * Some systems (AIX) have sys/select.h, but dont include it from sys/types.h
- * Some systems (Solaris) have sys/select.h, but include it from sys/types.h
- * and dont want you to do it again.  Some systems dont have sys/select.h
- * Configure has this all figured out for us already.
- */
-#if defined(HAVE_SYS_SELECT_H) && defined(NEED_SYS_SELECT_H)
+#if defined(HAVE_SYS_SELECT_H) 
 #include <sys/select.h>
 #endif
 
