@@ -1,5 +1,5 @@
 dnl ----------------------------------------------------------
-6nl configure.in for ircii, 2.3.  copyright (c) matthew green, 1993,
+4nl configure.in for ircii, 2.3.  copyright (c) matthew green, 1993,
 dnl except those bits attributed otherwise.
 dnl thanks to the screen 3.3 configure.in for giving me examples to
 dnl work from and steal ;)
@@ -415,21 +415,22 @@ AC_CHECK_FUNC(sysctlbyname, AC_DEFINE([HAVE_SYSCTLBYNAME], 1, [Define if you hav
 AC_CHECK_FUNC(unsetenv, AC_DEFINE([HAVE_UNSETENV], 1, [Define if you have unsetenv()]),)
 AC_CHECK_FUNC(vsnprintf, AC_DEFINE([HAVE_VSNPRINTF], 1, [Define if you have vsnprintf()]),)
 AC_MSG_CHECKING(for isfinite)
-AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 	#include <math.h>
 ]],[[
 	int x = isfinite(0.0);
 	return 0;
 ]])],
-   AC_MSG_RESULT(yes),
-   AC_MSG_RESULT(no))
+   [ AC_MSG_RESULT(yes)
+     AC_DEFINE([HAVE_ISFINITE], 1, [Define if you have isfinite()]) ],
+   [ AC_MSG_RESULT(no) ])
 AC_CHECK_FUNC(finite, AC_DEFINE([HAVE_FINITE], 1, [Define if you have finite()]),)
 AC_CHECK_FUNC(tparm, AC_DEFINE([HAVE_TPARM], 1, [Define if you have tparm()]),)
 AC_CHECK_FUNC(newlocale, AC_DEFINE([HAVE_NEWLOCALE], 1, [Define if you have newlocale()]),)
 
 dnl -- Because someone is trying to use CentOS 5.11...
 AC_MSG_CHECKING(whether you are using a gnu libc that is so old it needs a hack to use newlocale)
-AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 	#include <locale.h>
 	#include <xlocale.h>
 	#include <stdlib.h>
@@ -438,47 +439,47 @@ AC_RUN_IFELSE([AC_LANG_PROGRAM([[
 	utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
 	return 0;
 ]])],
-   AC_MSG_RESULT(no, good),
-   AC_MSG_RESULT(yes, ugh.)
-   AC_MSG_CHECKING(whether we can fix that with _GNU_SOURCE)
-   AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+   [ AC_MSG_RESULT(no, good) ],
+   [ AC_MSG_RESULT(yes, ugh.)
+     AC_MSG_CHECKING(whether we can fix that with _GNU_SOURCE)
+     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 	#define _GNU_SOURCE
 	#include <locale.h>
 	#include <xlocale.h>
 	#include <stdlib.h>
-]],[[
+     ]],[[
 	locale_t utf8_locale;
 	utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
 	return 0;
-]])],
-   AC_MSG_RESULT(yes),
-   AC_DEFINE(NEWLOCALE_REQUIRES__GNU_SOURCE, 1, [Define this if newlocale() requires #define __GNU_SOURCE to work])
-   AC_MSG_RESULT(no.  bummer for you)
-   AC_DEFINE(NEWLOCALE_DOESNT_WORK, 1, [Define this if newlocale() doesn't work the way I expect]), :), :)
+     ]])],
+     [ AC_MSG_RESULT(yes) 
+       AC_DEFINE(NEWLOCALE_REQUIRES__GNU_SOURCE, 1, [Define this if newlocale() requires #define __GNU_SOURCE to work]) ],
+     [ AC_MSG_RESULT(no.  bummer for you) 
+       AC_DEFINE(NEWLOCALE_DOESNT_WORK, 1, [Define this if newlocale() doesn't work the way I expect]) ], :), ], :)
 
 dnl -- Oh why does this have to be so painful? --
 AC_MSG_CHECKING(whether term.h works by itself)
-AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 	#include <term.h>
 	#include <stdlib.h>
 ]],[[
        return 0;
 ]])],
-  AC_MSG_RESULT(yes),
-  AC_MSG_RESULT(no)
-  AC_MSG_CHECKING(whether term.h requires termio.h and curses.h)
-  AC_RUN_IFELSE([AC_LANG_PROGRAM([[
-	#include <termio.h>
-	#include <curses.h>
-	#include <term.h>
-	#include <stdlib.h>
-]],[[
-       return 0;
-]])],
-  AC_MSG_RESULT(yes)
-  AC_DEFINE([TERM_H_REQUIRES_CURSES_H], 1, [Define if <term.h> requires <curses.h> to be included first]),
-  AC_MSG_RESULT(no, ugh)
-  AC_DEFINE([DONT_USE_TERM_H], 1, [Define if <term.h> should be avoided]), :), :)
+	[ AC_MSG_RESULT(yes) ],
+	[ AC_MSG_RESULT(no)
+	  AC_MSG_CHECKING(whether term.h requires termio.h and curses.h)
+	  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+		#include <termio.h>
+		#include <curses.h>
+		#include <term.h>
+		#include <stdlib.h>
+	  ]],[[
+	       return 0;
+	  ]])],
+  	  [ AC_MSG_RESULT(yes) 
+  	    AC_DEFINE([TERM_H_REQUIRES_CURSES_H], 1, [Define if <term.h> requires <curses.h> to be included first]) ],
+  	  [ AC_MSG_RESULT(no, ugh)
+  	    AC_DEFINE([DONT_USE_TERM_H], 1, [Define if <term.h> should be avoided]) ], :), ] :)
 
 AC_HEADER_TIME
 AC_HEADER_DIRENT
@@ -542,7 +543,7 @@ dnl Check for sys_siglist declaration
 dnl
 
 AC_MSG_CHECKING(for sys_siglist declaration)
-AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 	#include <sys/types.h>
 	#include <sys/signal.h>
 	#include <signal.h>
@@ -552,10 +553,9 @@ AC_RUN_IFELSE([AC_LANG_PROGRAM([[
 	char *s = sys_siglist[0];
 	return 0;
 ]])],
-  AC_MSG_RESULT(yes) 
-  sys_siglist="1"
-  AC_DEFINE([HAVE_SYS_SIGLIST], 1, [Define if you have sys_siglist]),
-  AC_MSG_RESULT(no), :)
+	[ AC_MSG_RESULT(yes) 
+  	  AC_DEFINE([HAVE_SYS_SIGLIST], 1, [Define if you have sys_siglist]) ],
+  	[ AC_MSG_RESULT(no) ], :)
 
 dnl ------------------------------------------------------------------
 
@@ -602,7 +602,7 @@ dnl
 dnl -----------------------------------------------------------
 
 AC_MSG_CHECKING([to see if your struct sockaddr includes a length field])
-AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 	#include <sys/types.h>
 	#include <sys/socket.h>
 	#include <stdlib.h>
@@ -611,9 +611,9 @@ AC_RUN_IFELSE([AC_LANG_PROGRAM([[
 	sa.sa_len = 0;
 	return 0;
 ]])],
-  AC_DEFINE([HAVE_SA_LEN], 1, [Define this if your struct sockaddr has a sa_len field])
-  AC_MSG_RESULT([yes]),
-  AC_MSG_RESULT([no]), :)
+  	[ AC_DEFINE([HAVE_SA_LEN], 1, [Define this if your struct sockaddr has a sa_len field])
+	  AC_MSG_RESULT([yes]) ],
+  	[ AC_MSG_RESULT([no]) ], :)
 
 dnl ----------------------------------------------------------
 dnl
@@ -1204,10 +1204,21 @@ else
 			AC_MSG_ERROR([$with_python_errormsg])
 		fi
 	else
+	    dnl ---
+            dnl First, we have to determine if this is 3.7 or lower; or 3.8 or higher
+	    dnl The 3.8 or higher versions require --embed and 3.7 or lower versions
+	    dnl forbid it.  What fun!
+	    dnl
+	    if $python_cfg_exe --cflags --embed > /dev/null ; then
+		use_embed="--embed"
+	    else
+		use_embed=""
+	    fi
+
 	    dnl ---- 
 	    dnl Look first for Python 3
-            PYTHON_CFLAGS=`$python_cfg_exe --cflags`
-            PYTHON_LDFLAGS=`$python_cfg_exe --ldflags`
+            PYTHON_CFLAGS=`$python_cfg_exe --cflags $use_embed`
+            PYTHON_LDFLAGS=`$python_cfg_exe --ldflags $use_embed`
 	    PYTHON_O="python.o"
 
 	    AC_MSG_CHECKING(whether embedded Python works the way I expect)

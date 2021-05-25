@@ -88,6 +88,9 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define if you have isfinite() */
+#undef HAVE_ISFINITE
+
 /* Define if you have killpg() */
 #undef HAVE_KILLPG
 

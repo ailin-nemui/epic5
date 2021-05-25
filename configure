@@ -4975,13 +4975,7 @@ fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for isfinite" >&5
 $as_echo_n "checking for isfinite... " >&6; }
-if test "$cross_compiling" = yes; then :
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "cannot run test program while cross compiling
-See \`config.log' for more details" "$LINENO" 5; }
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 	#include <math.h>
@@ -4997,17 +4991,17 @@ main ()
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+if ac_fn_c_try_compile "$LINENO"; then :
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
+
+$as_echo "#define HAVE_ISFINITE 1" >>confdefs.h
+
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 ac_fn_c_check_func "$LINENO" "finite" "ac_cv_func_finite"
 if test "x$ac_cv_func_finite" = xyes; then :
 
@@ -5032,10 +5026,7 @@ fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether you are using a gnu libc that is so old it needs a hack to use newlocale" >&5
 $as_echo_n "checking whether you are using a gnu libc that is so old it needs a hack to use newlocale... " >&6; }
-if test "$cross_compiling" = yes; then :
-  :
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 	#include <locale.h>
@@ -5054,18 +5045,15 @@ main ()
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+if ac_fn_c_try_compile "$LINENO"; then :
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we can fix that with _GNU_SOURCE" >&5
+     { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we can fix that with _GNU_SOURCE" >&5
 $as_echo_n "checking whether we can fix that with _GNU_SOURCE... " >&6; }
-   if test "$cross_compiling" = yes; then :
-  :
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 	#define _GNU_SOURCE
@@ -5085,35 +5073,26 @@ main ()
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+if ac_fn_c_try_compile "$LINENO"; then :
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-else
 
 $as_echo "#define NEWLOCALE_REQUIRES__GNU_SOURCE 1" >>confdefs.h
 
+else
    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no.  bummer for you" >&5
 $as_echo "no.  bummer for you" >&6; }
 
 $as_echo "#define NEWLOCALE_DOESNT_WORK 1" >>confdefs.h
 
 fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext,
 fi
-
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether term.h works by itself" >&5
 $as_echo_n "checking whether term.h works by itself... " >&6; }
-if test "$cross_compiling" = yes; then :
-  :
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 	#include <term.h>
@@ -5129,57 +5108,48 @@ main ()
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+if ac_fn_c_try_compile "$LINENO"; then :
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether term.h requires termio.h and curses.h" >&5
+	  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether term.h requires termio.h and curses.h" >&5
 $as_echo_n "checking whether term.h requires termio.h and curses.h... " >&6; }
-  if test "$cross_compiling" = yes; then :
-  :
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-	#include <termio.h>
-	#include <curses.h>
-	#include <term.h>
-	#include <stdlib.h>
+		#include <termio.h>
+		#include <curses.h>
+		#include <term.h>
+		#include <stdlib.h>
 
 int
 main ()
 {
 
-       return 0;
+	       return 0;
 
   ;
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+if ac_fn_c_try_compile "$LINENO"; then :
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
 $as_echo "#define TERM_H_REQUIRES_CURSES_H 1" >>confdefs.h
 
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
 $as_echo "#define DONT_USE_TERM_H 1" >>confdefs.h
 
 fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext,  :
 fi
-
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether time.h and sys/time.h may both be included" >&5
 $as_echo_n "checking whether time.h and sys/time.h may both be included... " >&6; }
@@ -5734,10 +5704,7 @@ fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for sys_siglist declaration" >&5
 $as_echo_n "checking for sys_siglist declaration... " >&6; }
-if test "$cross_compiling" = yes; then :
-  :
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 	#include <sys/types.h>
@@ -5757,21 +5724,17 @@ main ()
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+if ac_fn_c_try_compile "$LINENO"; then :
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-  sys_siglist="1"
 
 $as_echo "#define HAVE_SYS_SIGLIST 1" >>confdefs.h
 
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
 ac_fn_c_find_intX_t "$LINENO" "8" "ac_cv_c_int8_t"
@@ -6087,10 +6050,7 @@ fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking to see if your struct sockaddr includes a length field" >&5
 $as_echo_n "checking to see if your struct sockaddr includes a length field... " >&6; }
-if test "$cross_compiling" = yes; then :
-  :
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 	#include <sys/types.h>
@@ -6109,20 +6069,17 @@ main ()
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
+if ac_fn_c_try_compile "$LINENO"; then :
 
 $as_echo "#define HAVE_SA_LEN 1" >>confdefs.h
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+	  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to support ipv6" >&5
@@ -7055,8 +7012,14 @@ fi
 			as_fn_error $? "$with_python_errormsg" "$LINENO" 5
 		fi
 	else
-	    	                PYTHON_CFLAGS=`$python_cfg_exe --cflags`
-            PYTHON_LDFLAGS=`$python_cfg_exe --ldflags`
+	                	    	    	    	    if $python_cfg_exe --cflags --embed > /dev/null ; then
+		use_embed="--embed"
+	    else
+		use_embed=""
+	    fi
+
+	    	                PYTHON_CFLAGS=`$python_cfg_exe --cflags $use_embed`
+            PYTHON_LDFLAGS=`$python_cfg_exe --ldflags $use_embed`
 	    PYTHON_O="python.o"
 
 	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether embedded Python works the way I expect" >&5
