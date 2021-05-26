@@ -3682,7 +3682,7 @@ int
 main ()
 {
 
-				SSL_accept(0);
+				SSL_library_init();
 
   ;
   return 0;
@@ -3713,7 +3713,7 @@ int
 main ()
 {
 
-				SSL_accept(0);
+				SSL_library_init();
 
   ;
   return 0;
@@ -3749,7 +3749,7 @@ int
 main ()
 {
 
-					SSL_accept(0);
+					SSL_library_init();
 
   ;
   return 0;
@@ -3771,8 +3771,7 @@ rm -f core conftest.err conftest.$ac_objext \
 		CFLAGS="$saved_CFLAGS"
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-		if test "x$with_ssl" != "x"; then
-			as_fn_error $? "You requested SSL support, but OpenSSL was not found. Please supply a pathname to OpenSSL" "$LINENO" 5
+		if test "x$with_ssl" != "x"; then as_fn_error $? "You requested SSL support, but OpenSSL was not found. Please supply a pathname to OpenSSL" "$LINENO" 5
 		fi
 		as_fn_error $? "I was unable to find OpenSSL.  If it is not installed, please install it.  If it is installed, please help me find it using --with-ssl=/usr/local or similar." "$LINENO" 5
 	else

@@ -263,7 +263,7 @@ else
 		AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 				#include <openssl/ssl.h>
 			]], [[
-				SSL_accept(0);
+				SSL_library_init();
 			]])],
 			[have_ssl="yes"])
 	    fi
@@ -279,7 +279,7 @@ else
 		AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 				#include <openssl/ssl.h>
 			]], [[
-				SSL_accept(0);
+				SSL_library_init();
 			]])],
 			[have_ssl="yes"])
 
@@ -301,7 +301,7 @@ else
 			    AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 					#include <openssl/ssl.h>
 				]], [[
-					SSL_accept(0);
+					SSL_library_init();
 				]])],
 				[have_ssl="yes"])
 			fi
@@ -314,8 +314,7 @@ else
 		LIBS="$saved_LIBS"
 		CFLAGS="$saved_CFLAGS"
 		AC_MSG_RESULT([no])
-		if test "x$with_ssl" != "x"; then
-			AC_MSG_ERROR([You requested SSL support, but OpenSSL was not found. Please supply a pathname to OpenSSL])
+		if test "x$with_ssl" != "x"; then AC_MSG_ERROR([You requested SSL support, but OpenSSL was not found. Please supply a pathname to OpenSSL])
 		fi
 		AC_MSG_ERROR([I was unable to find OpenSSL.  If it is not installed, please install it.  If it is installed, please help me find it using --with-ssl=/usr/local or similar.])
 	else

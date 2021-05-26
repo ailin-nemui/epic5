@@ -22,7 +22,6 @@ def find_url(haystack):
     """
     results = []
     for word in haystack:
-        xecho('trying ' + word)
         if word.startswith('http:') or word.startswith('https:'):
             results.append(word)
 

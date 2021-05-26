@@ -1,5 +1,9 @@
 EPIC5-2.2
 
+*** News 05/25/2021 -- Updated configure to autoconf-2.69
+	We upgraded configure from autoconf-2.13 to 2.69 here.
+	Along the way, we fixed the support for python3.8+
+
 *** News 05/20/2021 -- Windows have UUIDs ($windowctl(GET x UUID))
 	Every window now receives an immutable UUID when it is 
 	created.  This UUID is globally unique and cannot be changed.
