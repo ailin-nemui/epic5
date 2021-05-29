@@ -951,3 +951,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Round three of getting configure working with 2.69
 * Round four of getting configure working with 2.69
 * Get configure to support Python 3.8+
+* EPIC5-2.1.5 released here (Fecund) (Commit: 1945)

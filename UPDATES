@@ -95,7 +95,7 @@ EPIC5-2.2
 	WHy not? Anyways...
 
 *** News 02/07/2021 -- Low level operations on cutbuffer - $inputctl()
-	Harzelein asked if there was a way to manipulate the cutbuffer
+	Harzilein asked if there was a way to manipulate the cutbuffer
 	without having to put something in the input line.  As it happens,
 	that has never been requested before.  So here we go!
 
