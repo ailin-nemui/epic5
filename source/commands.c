@@ -2358,7 +2358,9 @@ BUILT_IN_COMMAND(pretend_cmd)
 	char *args_copy;
 	int	s = from_server;
 
-	args_copy = alloca(IO_BUFFER_SIZE + 1);
+	if (!(args_copy = alloca(IO_BUFFER_SIZE + 1)))
+		return;
+
 	strlcpy(args_copy, args, IO_BUFFER_SIZE);
 	parse_server(args_copy, IO_BUFFER_SIZE);
 	from_server = s;

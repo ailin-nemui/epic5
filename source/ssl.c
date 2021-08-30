@@ -43,6 +43,7 @@
 
 #include <openssl/crypto.h>
 #include <openssl/x509.h>
+#include <openssl/x509v3.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
@@ -273,6 +274,7 @@ typedef struct ssl_metadata {
 	char *	issuer;
 	char *	u_cert_issuer;
 	char *	ssl_version;
+	int	checkhost_result;
 } ssl_metadata;
 
 typedef struct	ssl_info_T {
@@ -284,6 +286,7 @@ typedef struct	ssl_info_T {
 	SSL_CTX	*ctx;		/* All our SSLs have their own ConTeXt */
 	SSL *	ssl_fd;		/* Each of our SSLs have their own (SSL *) */
 	ssl_metadata	md;	/* Plain text info about SSL connection */
+	char *	hostname;	/* The hostname we connected to (for hostname checking) */
 } ssl_info;
 
 ssl_info *ssl_list = NULL;
@@ -338,9 +341,11 @@ static ssl_info *	new_ssl_info (int vfd)
 	x->channel = -1;
 	x->ctx = NULL;
 	x->ssl_fd = NULL;
+	x->hostname = NULL;
 
 	x->md.vfd = vfd;
 	x->md.verify_result = 0;
+	x->md.checkhost_result = 0;
 	x->md.pem = NULL;
 	x->md.cert_hash = NULL;
 	x->md.pkey_bits = 0;
@@ -401,7 +406,7 @@ static ssl_info *	unlink_ssl_info (int vfd)
  *	 0	SSL negotiation is pending
  *	 1	SSL negotiation is complete
  */
-int	ssl_startup (int vfd, int channel)
+int	ssl_startup (int vfd, int channel, const char *hostname)
 {
 	ssl_info *	x;
 	SSL *		ssl;
@@ -415,6 +420,7 @@ int	ssl_startup (int vfd, int channel)
 		return -1;
 	}
 
+	malloc_strcpy(&x->hostname, hostname);
 	say("SSL negotiation for channel [%d] in progress...", channel);
 	x->channel = channel;
 	x->ctx = SSL_CTX_init(0);
@@ -470,6 +476,7 @@ int	ssl_shutdown (int vfd)
 
 	x->md.vfd = -1;
 	x->md.verify_result = 0;
+	x->md.checkhost_result = 0;
 	new_free(&x->md.pem);
 	new_free(&x->md.cert_hash);
 	x->md.pkey_bits = 0;
@@ -478,6 +485,7 @@ int	ssl_shutdown (int vfd)
 	new_free(&x->md.issuer);
 	new_free(&x->md.u_cert_issuer);
 	new_free(&x->md.ssl_version);
+	new_free(&x->hostname);
 	new_free(&x);
 	return 0;
 }
@@ -814,6 +822,13 @@ int	ssl_connected (int vfd)
 	 */
 	x->md.ssl_version = malloc_strdup(SSL_get_version(x->ssl_fd));	
 
+	/*
+	 * STEP 4i:	Check hostname validity
+	 */
+	if (x->hostname)
+		x->md.checkhost_result = X509_check_host(server_cert, x->hostname, strlen(x->hostname), 0, NULL);
+	else
+		x->md.checkhost_result = 1;
 
 	/* ==== */
 	/*
@@ -825,19 +840,21 @@ int	ssl_connected (int vfd)
 	 *	$1 - The "subject" (ie, server name)
 	 *	$2 - The "Issuer" 
 	 *	$3 - How many bits does the public key use?
-	 *	$4 - The verification result (0 = pass; not 0 = fail)
+	 *	$4 - The verification result (OK = "YES"; not OK = "NO")
 	 *	$5 - What ssl are we using? (SSLv3 or TLSv1)
 	 *	$6 - What is the digest of the certificate?
+	 * 	$7 - The hostname verification result (
 	 *
 	 * It's expected from here that a script could stash this in
 	 * a file somewhere and use it to detect if the certificate
 	 * changed between connections.   Or something clever.
 	 */
-	if (do_hook(SSL_SERVER_CERT_LIST, "%d %s %s %d %d %s %s", 
+	if (do_hook(SSL_SERVER_CERT_LIST, "%d %s %s %d %d %s %s %d", 
 			x->md.vfd, 
 			x->md.u_cert_subject, x->md.u_cert_issuer, 
 			x->md.pkey_bits, x->md.verify_result, 
-			x->md.ssl_version, x->md.cert_hash))
+			x->md.ssl_version, x->md.cert_hash,
+			x->md.checkhost_result))
 	{
 		say("SSL negotiation complete using %s (%s)", 
 			x->md.ssl_version, SSL_get_cipher(x->ssl_fd));
@@ -852,6 +869,8 @@ int	ssl_connected (int vfd)
 		);
 		say("SSL certificate digest: %s", 
 						   x->md.cert_hash);
+		say("SSL Hostname Verification: %s",
+			x->md.checkhost_result == 1 ? "PASS": "FAIL");
 	}
 
 	/*
@@ -875,7 +894,17 @@ int	client_ssl_enabled (void)
 	return 1;
 }
 
+int	get_ssl_checkhost_status (int vfd, int *retval)
+{
+	ssl_info *	x;		/* EPIC info about the conn */
 
+	if (!(x = find_ssl(vfd)))
+		return 0;
+	if (!x->md.subject)
+		return 0;
+	*retval = x->md.checkhost_result;
+	return 1;
+}
 
 
 #define LOOKUP_SSL(vfd, missingval)	\
@@ -1036,7 +1065,7 @@ const char *	get_ssl_u_cert_subject (int vfd) { return empty_string; }
 const char *	get_ssl_issuer (int vfd) { return empty_string; }
 const char *	get_ssl_u_cert_issuer (int vfd) { return empty_string; }
 const char *	get_ssl_ssl_version (int vfd) { return empty_string; }
-
+int		get_ssl_checkhost_status (int vfd, int *retval) {return 0; }
 
 #endif
 

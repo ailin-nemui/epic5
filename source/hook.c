@@ -224,7 +224,7 @@ Hookables hook_function_templates[] =
 	{ "SIGNAL",		NULL,	1,	0,	0,	NULL, 0 },
 	{ "SIGNOFF",		NULL,	1,	0,	0,	NULL, 0 },
 	{ "SILENCE",		NULL,	2,	0,	0,	NULL, 0 },
-	{ "SSL_SERVER_CERT",	NULL,	3,	0,	0,	NULL, 0 },
+	{ "SSL_SERVER_CERT",	NULL,	9,	0,	0,	NULL, 0 },
 	{ "STATUS_UPDATE",	NULL,	3,	0,	0,	NULL, 0 },
 	{ "SWITCH_CHANNELS",	NULL,	3,	0,	0,	NULL, 0 },
 	{ "SWITCH_QUERY",	NULL,	3,	0,	0,	NULL, 0 },

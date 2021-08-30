@@ -45,6 +45,7 @@ typedef struct ServerInfo
         const char *  server_type;
         const char *  proto_type;
 	const char *  vhost;
+	int	ssl_checkhost;
 } ServerInfo;
 typedef ServerInfo SI;
 

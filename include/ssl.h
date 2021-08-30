@@ -28,7 +28,7 @@ typedef struct ssl_metadata {
 
 	void	set_ssl_root_certs_location (void *);
 
-	int	ssl_startup (int nfd, int channel);
+	int	ssl_startup (int nfd, int channel, const char *hostname);
 	int	ssl_shutdown (int nfd);
 	int	ssl_write (int nfd, const void *, size_t);
 	int	ssl_read (int nfd, int quiet);
@@ -48,5 +48,6 @@ typedef struct ssl_metadata {
 	const char *	get_ssl_issuer (int vfd);
 	const char *	get_ssl_u_cert_issuer (int vfd);
 	const char *	get_ssl_ssl_version (int vfd);
+	int     	get_ssl_checkhost_status (int vfd, int *retval);
 
 #endif

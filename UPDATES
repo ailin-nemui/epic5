@@ -1,5 +1,18 @@
 EPIC5-2.2
 
+*** News 08/30/2021 -- New server description field "ssl-checkhost"
+	When ypu have set "proto=irc-ssl", the client will do 
+	an SSL connection to an irc server.  However, the client
+	has never done "hostname validation" where it verifies
+	that the SSL certificate is for the hostname we connected
+	to (hint: it usually doesn't).  You can use this flag to
+	turn on hostname checking.   If you try to connect to an
+	SSL server whose certificate is not for the hostname you
+	connected to, the client will treat it as a failure.
+
+	For right now, you have to explicitly turn this on.
+	Maybe in the future we might turn it on by default.
+	
 *** News 05/25/2021 -- Updated configure to autoconf-2.69
 	We upgraded configure from autoconf-2.13 to 2.69 here.
 	Along the way, we fixed the support for python3.8+
