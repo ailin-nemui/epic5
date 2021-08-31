@@ -962,4 +962,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove the "ENCODING" field from server descs which went away long ago
 * Ensure "ssl-checkhost" is preserved through serverinfo changes/updates
 * Perform hostname checking on ssl server connections and abort if failed
-
+* Change "ssl-checkhost" to "ssl-strict"
+* Make ssl strict checking require both the cert and hostname pass muster

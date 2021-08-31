@@ -174,7 +174,7 @@ int	clear_serverinfo (ServerInfo *s)
 	s->vhost = NULL;
 	s->freestr = NULL;		/* XXX ? */
 	s->fulldesc = NULL;		/* XXX ? */
-	s->ssl_checkhost = 0;
+	s->ssl_strict = 0;
 	s->clean = 1;
 	return 0;
 }
@@ -194,7 +194,7 @@ int	clear_serverinfo (ServerInfo *s)
  * 'type'     is the server protocol type, either "IRC" or "IRC-SSL"
  * 'proto'    is the socket protocol type, either 'tcp4' or 'tcp6' or neither.
  * 'vhost'    is the virtual hostname to use for this connection.
- * 'ssl-checkhost' is wheher you want hostname checking for ssl connection
+ * 'ssl-strict' is whether you require ssl server to have a bona fide ssl cert
  *
  * --
  * A new-style server description is a colon separated list of values:
@@ -202,10 +202,10 @@ int	clear_serverinfo (ServerInfo *s)
  *   host=HOST	   port=PORTNUM   pass=PASSWORD 
  *   nick=NICK     group=GROUP    type=PROTOCOL_TYPE
  *   proto=SOCKETYPE  vhost=HOST  
- *   ssl-checkhost=NO
+ *   ssl-strict=NO
  *
  * for example:
- *	host=irc.server.com:group=efnet:type=IRC-SSL:ssl-checkhost=NO
+ *	host=irc.server.com:group=efnet:type=IRC-SSL:ssl-strict=NO
  * 
  * The command type ("host", "port") can be abbreviated as long as it's
  * not ambiguous:
@@ -218,7 +218,7 @@ int	clear_serverinfo (ServerInfo *s)
  *	 irc.server.com:group=efnet:IRC-SSL
  */
 
-enum serverinfo_fields { HOST, PORT, PASS, NICK, GROUP, TYPE, PROTO, VHOST, CHECKHOST, LASTFIELD };
+enum serverinfo_fields { HOST, PORT, PASS, NICK, GROUP, TYPE, PROTO, VHOST, SSL_STRICT, LASTFIELD };
 
 /*
  * str_to_serverinfo:  Create or Modify a temporary ServerInfo based on string.
@@ -313,8 +313,8 @@ int	str_to_serverinfo (char *str, ServerInfo *s)
 				fieldnum = PROTO;
 			else if (!my_strnicmp(descstr, "VHOST", 1))
 				fieldnum = VHOST;
-			else if (!my_strnicmp(descstr, "SSL-CHECKHOST", 5))
-				fieldnum = CHECKHOST;
+			else if (!my_strnicmp(descstr, "SSL_STRICT", 5))
+				fieldnum = SSL_STRICT;
 			else
 			{
 				say("Server desc field type [%s] not recognized.", 
@@ -389,8 +389,8 @@ int	str_to_serverinfo (char *str, ServerInfo *s)
 		    else
 			s->vhost = descstr;
 		}
-		else if (fieldnum == CHECKHOST)
-			s->ssl_checkhost = atol(descstr);
+		else if (fieldnum == SSL_STRICT)
+			s->ssl_strict = atol(descstr);
 
 		/*
 		 * We go one past "type" because we want to allow
@@ -454,7 +454,7 @@ static	int	preserve_serverinfo (ServerInfo *si)
 	}
         else
 	   malloc_strcat2_c(&resultstr, si->vhost, ":", &clue);
-	malloc_strcat2_c(&resultstr, ltoa(si->ssl_checkhost), ":", &clue);
+	malloc_strcat2_c(&resultstr, ltoa(si->ssl_strict), ":", &clue);
 
 	new_free(&si->freestr);
 	new_free(&si->fulldesc);
@@ -518,8 +518,8 @@ static	void	update_serverinfo (ServerInfo *old_si, ServerInfo *new_si)
 		old_si->proto_type = new_si->proto_type;
 	if (new_si->vhost)
 		old_si->vhost = new_si->vhost;
-	if (new_si->ssl_checkhost)
-		old_si->ssl_checkhost = new_si->ssl_checkhost;
+	if (new_si->ssl_strict)
+		old_si->ssl_strict = new_si->ssl_strict;
 
 	preserve_serverinfo(old_si);
 	return;
@@ -1647,10 +1647,7 @@ something_broke:
 				/* (ie, on systems where vfd != channel) */
 				int	ssl_err;
 
-				if (s->info->ssl_checkhost)
-					ssl_err =  ssl_startup(des, des, get_server_name(i));
-				else
-					ssl_err =  ssl_startup(des, des, NULL);
+				ssl_err =  ssl_startup(des, des, get_server_name(i));
 
 				/* SSL connection failed */
 				if (ssl_err == -1)
@@ -1703,7 +1700,7 @@ return_from_ssl_detour:
 		else if (s->state == SERVER_SSL_CONNECTING)
 		{
 			ssize_t c;
-			int	checkhost_retval = 0;
+			int	strict_retval = 0;
 
 			if (x_debug & DEBUG_SERVER_CONNECT)
 				yell("do_server: server [%d] finished ssl setup", i);
@@ -1725,14 +1722,14 @@ return_from_ssl_detour:
 				goto something_broke;
 			}
 
-			/* Check to see if there was a checkhost test, and if it succeeded */
-			if (s->info->ssl_checkhost)
+			/* Check to see if there was a ssl strict test, and if it succeeded */
+			if (s->info->ssl_strict)
 			{
-			    if (get_ssl_checkhost_status(des, &checkhost_retval))
+			    if (get_ssl_strict_status(des, &strict_retval))
 			    {
-				if (checkhost_retval != 1)
+				if (strict_retval != 1)
 				{
-					syserr(i, "SSL Hostname Verification failed with error code %d", checkhost_retval);
+					syserr(i, "SSL Certificate Strict Verification failed with error code %d", strict_retval);
 					goto something_broke;
 				}
 			    }

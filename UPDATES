@@ -1,17 +1,31 @@
 EPIC5-2.2
 
-*** News 08/30/2021 -- New server description field "ssl-checkhost"
+*** News 08/30/2021 -- New server description field "ssl-strict"
 	When ypu have set "proto=irc-ssl", the client will do 
 	an SSL connection to an irc server.  However, the client
-	has never done "hostname validation" where it verifies
-	that the SSL certificate is for the hostname we connected
-	to (hint: it usually doesn't).  You can use this flag to
-	turn on hostname checking.   If you try to connect to an
-	SSL server whose certificate is not for the hostname you
-	connected to, the client will treat it as a failure.
+	has never done mandatory SSL certificate verification, 
+	where it takes any action if the SSL certificate is invalid.
+
+	There are two ways an SSL certificate might be invalid:
+	1. The SSL certificate is not issued properly from a root ca
+	   in your /set ssl_root_certs_location
+	   (ie, it might be self-signed)
+	2. The SSL certificate might be issued to a hostname other
+	   than the one you connected to with /server
+	   (ie, it might be a cname or a round robin dns)
+
+	If you set "ssl-strict=1" server description flag, then any
+	server presenting an invalid SSL certificate will be treated
+	as a connection error.
 
 	For right now, you have to explicitly turn this on.
 	Maybe in the future we might turn it on by default.
+
+	example:
+		/server irc.efnet.org:6697:type=irc-ssl:ssl-strict=1
+	will fail to connect to any server because none of the
+	servers in the "irc.efnet.org" round robin dns have an ssl 
+	certificate issued to "irc.efnet.org"
 	
 *** News 05/25/2021 -- Updated configure to autoconf-2.69
 	We upgraded configure from autoconf-2.13 to 2.69 here.

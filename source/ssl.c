@@ -894,7 +894,7 @@ int	client_ssl_enabled (void)
 	return 1;
 }
 
-int	get_ssl_checkhost_status (int vfd, int *retval)
+int	get_ssl_strict_status (int vfd, int *retval)
 {
 	ssl_info *	x;		/* EPIC info about the conn */
 
@@ -902,7 +902,17 @@ int	get_ssl_checkhost_status (int vfd, int *retval)
 		return 0;
 	if (!x->md.subject)
 		return 0;
+
+	/* If the SSL cert failed outright, that's it. */
+	if (x->md.verify_result != X509_V_OK)
+	{
+		*retval = 0;
+		return 1;
+	}
+
+	/* If the SSL Hostname verification failed outright, that's it. */
 	*retval = x->md.checkhost_result;
+
 	return 1;
 }
 
