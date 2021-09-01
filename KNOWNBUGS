@@ -9,7 +9,9 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Wcarson wants these things for ssl support
    - Be able to map an SSL certificate to a server
 	(ie, as in /set server_ssl_cert)
+	-- Done -- $serverctl(GET -1 ....)  in the /ON.
    - Be able to get the SAN from an SSL certificate
+	-- Done
    - Be able to call SSL_CTX_set_cipher_list() and control what it gets
 
 EPIC5-3.0 MAJOR PROJECTS
@@ -971,3 +973,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make ssl strict checking require both the cert and hostname pass muster
 * Change ssl_info.ssl_fd to "ssl" to confuse me less
 * Check for self-signed certificates and pass it in /on ssl_server_cert
+* Add support for getting SANs out of an SSL certificate (rb wcarson)
+* Add $serverctl(GET x SSL_STRICT_STATUS)
+* Add $serverctl(GET x SSL_SANS)
+

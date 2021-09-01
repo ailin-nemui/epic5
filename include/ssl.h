@@ -49,5 +49,6 @@ typedef struct ssl_metadata {
 	const char *	get_ssl_u_cert_issuer (int vfd);
 	const char *	get_ssl_ssl_version (int vfd);
 	int     	get_ssl_strict_status (int vfd, int *retval);
+	const char *	get_ssl_sans (int vfd);
 
 #endif

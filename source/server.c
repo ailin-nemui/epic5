@@ -4560,6 +4560,13 @@ char 	*serverctl 	(char *input)
 				RETURN_STR(get_ssl_u_cert_issuer(s->des));
 			} else if (!my_strnicmp(listc, "SSL_VERSION", len)) {
 				RETURN_STR(get_ssl_ssl_version(s->des));
+			} else if (!my_strnicmp(listc, "SSL_STICT_STATUS", len)) {
+				int j;
+				if ((get_ssl_strict_status(s->des, &j)) == 0)
+					RETURN_INT(0);
+				RETURN_INT(j);
+			} else if (!my_strnicmp(listc, "SSL_SANS", len)) {
+				RETURN_STR(get_ssl_sans(s->des));
 			}
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {

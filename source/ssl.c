@@ -57,6 +57,8 @@
 
 static	int	firsttime = 1;
 static void	ssl_setup_locking (void);
+/* XXX */
+static char *	internal_get_x509_sans (X509 * const cert);
 
 static	char *	x509_default_cert_location_file = NULL;
 static	char *	x509_default_cert_location_dir = NULL;
@@ -276,6 +278,7 @@ typedef struct ssl_metadata {
 	char *	ssl_version;
 	int	checkhost_result;
 	int	self_signed;
+	char *	sans;
 } ssl_metadata;
 
 typedef struct	ssl_info_T {
@@ -356,6 +359,7 @@ static ssl_info *	new_ssl_info (int vfd)
 	x->md.u_cert_issuer = NULL;
 	x->md.ssl_version = NULL;
 	x->md.self_signed = 0;
+	x->md.sans = NULL;
 
 	return x;
 }
@@ -488,6 +492,7 @@ int	ssl_shutdown (int vfd)
 	new_free(&x->md.issuer);
 	new_free(&x->md.u_cert_issuer);
 	new_free(&x->md.ssl_version);
+	new_free(&x->md.sans);
 	new_free(&x->hostname);
 	new_free(&x);
 	return 0;
@@ -841,6 +846,11 @@ int	ssl_connected (int vfd)
 	else
 		x->md.self_signed = 0;
 
+	/*
+	 * STEP 4k:	Get the list of SANs
+	 */
+	x->md.sans = internal_get_x509_sans(server_cert);
+
 	/* ==== */
 	/*
 	 * STEP 5: Tell the user about the connection
@@ -884,6 +894,7 @@ int	ssl_connected (int vfd)
 			x->md.checkhost_result == 1 ? "PASS": "FAIL");
 		say("SSL certificate was self-signed: %s",
 			x->md.self_signed == 1 ? "YES": "NO");
+		say("SSL certificate SANs: %s", x->md.sans);
 	}
 
 	/*
@@ -999,6 +1010,73 @@ const char *	get_ssl_ssl_version (int vfd)
 {
 	LOOKUP_SSL(vfd, empty_string)
 	return x->md.ssl_version;
+}
+
+const char *	get_ssl_sans (int vfd)
+{
+	LOOKUP_SSL(vfd, empty_string)
+	return x->md.sans;
+}
+
+
+
+/* 
+ * I started from code at
+ *    https://newbedev.com/how-to-check-subject-alternative-names-for-a-ssl-tls-certificate 
+ */
+static char *	internal_get_x509_sans (X509 *const cert)
+{
+	int		success = 0;
+	GENERAL_NAMES *	names = NULL;
+	unsigned char *	utf8 = NULL;
+	int		i, count;
+	char *		retval = NULL;
+	size_t		rvclue = 0;
+
+        if (!cert) 
+		return malloc_strdup(empty_string);
+
+        if (!(names = X509_get_ext_d2i(cert, NID_subject_alt_name, 0, 0 )))
+		return malloc_strdup(empty_string);
+
+	if (!(count = sk_GENERAL_NAME_num(names)))
+		return malloc_strdup(empty_string);
+
+        for (i = 0; i < count; i++)
+        {
+		GENERAL_NAME*	entry;
+
+		if (!(entry = sk_GENERAL_NAME_value(names, i)))
+			continue;
+
+		if (entry->type == GEN_DNS)
+		{
+			int 	len1;
+			size_t	len2;
+			unsigned char *utf8 = NULL;
+
+			/*
+			 * 'len1' is the number of bytes in the ASN1 string.
+			 * The man page says < 0 means an error.
+			 */
+			if ((len1 = ASN1_STRING_to_UTF8(&utf8, entry->d.dNSName)) >= 0)
+			{
+				/*
+				 * If the ASN1 string was not a proper C string, i call shenanigans!
+				 */
+				if ((size_t)len1 == strlen((const char *)utf8))
+					malloc_strcat_word_c(&retval, space, utf8, DWORD_NO, &rvclue);
+			}
+
+			if (utf8)
+				OPENSSL_free(utf8);
+		}
+        }
+
+	if (names)
+		GENERAL_NAMES_free(names);
+
+	return retval ? retval : malloc_strdup(empty_string);
 }
 
 # ifdef USE_PTHREAD
