@@ -275,6 +275,7 @@ typedef struct ssl_metadata {
 	char *	u_cert_issuer;
 	char *	ssl_version;
 	int	checkhost_result;
+	int	self_signed;
 } ssl_metadata;
 
 typedef struct	ssl_info_T {
@@ -284,7 +285,7 @@ typedef struct	ssl_info_T {
 	int	channel;	/* The physical connection for the vfd */
 
 	SSL_CTX	*ctx;		/* All our SSLs have their own ConTeXt */
-	SSL *	ssl_fd;		/* Each of our SSLs have their own (SSL *) */
+	SSL *	ssl;		/* Each of our SSLs have their own (SSL *) */
 	ssl_metadata	md;	/* Plain text info about SSL connection */
 	char *	hostname;	/* The hostname we connected to (for hostname checking) */
 } ssl_info;
@@ -319,7 +320,7 @@ static ssl_info *	find_ssl (int vfd)
  *	vfd -- A virtual file descriptor, previously returned by new_open().
  * RETURN VALUE:
  *	If the vfd has never been previously set up to use SSL, a pointer to
- *		metadata for the vfd.  The 'channel', 'ctx' and 'ssl_fd'
+ *		metadata for the vfd.  The 'channel', 'ctx' and 'ssl_obj'
  *		fields will not be filled in yet!
  *	If the vfd has previously been set up to use SSL, a pointer to the
  *		metadata for that vfd.  Existing information about the SSL
@@ -340,7 +341,7 @@ static ssl_info *	new_ssl_info (int vfd)
 	x->vfd = vfd;
 	x->channel = -1;
 	x->ctx = NULL;
-	x->ssl_fd = NULL;
+	x->ssl = NULL;
 	x->hostname = NULL;
 
 	x->md.vfd = vfd;
@@ -354,6 +355,7 @@ static ssl_info *	new_ssl_info (int vfd)
 	x->md.issuer = NULL;
 	x->md.u_cert_issuer = NULL;
 	x->md.ssl_version = NULL;
+	x->md.self_signed = 0;
 
 	return x;
 }
@@ -424,7 +426,7 @@ int	ssl_startup (int vfd, int channel, const char *hostname)
 	say("SSL negotiation for channel [%d] in progress...", channel);
 	x->channel = channel;
 	x->ctx = SSL_CTX_init(0);
-	if (!(x->ssl_fd = SSL_new(x->ctx)))
+	if (!(x->ssl = SSL_new(x->ctx)))
 	{
 		/* Get rid of the 'x' we just created */
 		ssl_shutdown(vfd);
@@ -435,7 +437,7 @@ int	ssl_startup (int vfd, int channel, const char *hostname)
 		return -1;
 	}
 
-	SSL_set_fd(x->ssl_fd, channel);
+	SSL_set_fd(x->ssl, channel);
 	set_non_blocking(channel);
 	ssl_connect(vfd, 0);
 	return 0;
@@ -460,23 +462,24 @@ int	ssl_shutdown (int vfd)
 	x->active = 0;
 	x->vfd = -1;
 	x->channel = -1;
-	if (x->ssl_fd)
-		SSL_shutdown(x->ssl_fd);
+	if (x->ssl)
+		SSL_shutdown(x->ssl);
 
 	if (x->ctx)
 	{
 		SSL_CTX_free(x->ctx);
 		x->ctx = NULL;
 	}
-	if (x->ssl_fd)
+	if (x->ssl)
 	{
-		SSL_free(x->ssl_fd);
-		x->ssl_fd = NULL;
+		SSL_free(x->ssl);
+		x->ssl = NULL;
 	}
 
 	x->md.vfd = -1;
 	x->md.verify_result = 0;
 	x->md.checkhost_result = 0;
+	x->md.self_signed = 0;
 	new_free(&x->md.pem);
 	new_free(&x->md.cert_hash);
 	x->md.pkey_bits = 0;
@@ -513,15 +516,15 @@ int	ssl_write (int vfd, const void *data, size_t len)
 		return -1;
 	}
 
-	if (x->ssl_fd == NULL)
+	if (x->ssl == NULL)
 	{
 		errno = EINVAL;
 		say("SSL write error - ssl socket = 0");
 		return -1;
 	}
 
-	err = SSL_write(x->ssl_fd, data, len);
-	BIO_flush(SSL_get_wbio(x->ssl_fd));
+	err = SSL_write(x->ssl, data, len);
+	BIO_flush(SSL_get_wbio(x->ssl));
 	return err;
 }
 
@@ -560,10 +563,10 @@ int	ssl_read (int vfd, int quiet)
 		if (failsafe++ > 1000)
 			panic(1, "Caught in SSL_pending() loop! (%d)", vfd);
 
-		c = SSL_read(x->ssl_fd, buffer, sizeof(buffer));
+		c = SSL_read(x->ssl, buffer, sizeof(buffer));
 		if (c < 0)
 		{
-		    int ssl_error = SSL_get_error(x->ssl_fd, c);
+		    int ssl_error = SSL_get_error(x->ssl, c);
 		    if (ssl_error == SSL_ERROR_NONE)
 			if (!quiet)
 			   syserr(SRV(vfd), "SSL_read failed with [%d]/[%d]", 
@@ -577,7 +580,7 @@ int	ssl_read (int vfd, int quiet)
 		else
 			return c;		/* Some error */
 	}
-	while (SSL_pending(x->ssl_fd) > 0);
+	while (SSL_pending(x->ssl) > 0);
 
 	return c;
 }
@@ -595,10 +598,10 @@ int	ssl_connect (int vfd, int quiet)
 		return -1;
 	}
 
-	errcode = SSL_connect(x->ssl_fd);
+	errcode = SSL_connect(x->ssl);
 	if (errcode <= 0)
 	{
-		ssl_err = SSL_get_error(x->ssl_fd, errcode);
+		ssl_err = SSL_get_error(x->ssl, errcode);
 		if (ssl_err == SSL_ERROR_WANT_READ || 
 		    ssl_err == SSL_ERROR_WANT_WRITE)
 			return 1;
@@ -736,12 +739,12 @@ int	ssl_connected (int vfd)
 	 * If we are unable to get the certificate, then something
 	 * failed and we should just bail right here. 
 	 */
-	if (!(server_cert = SSL_get_peer_certificate(x->ssl_fd)))
+	if (!(server_cert = SSL_get_peer_certificate(x->ssl)))
 	{
 		syserr(SRV(vfd), "SSL negotiation failed - reporting as error");
 		SSL_CTX_free(x->ctx);
 		x->ctx = NULL;
-		x->ssl_fd = NULL;
+		x->ssl = NULL;
 		if (!write(x->channel, empty_string, 1)) /* XXX Is this correct? */
 			(void) 0;
 		return -1;
@@ -758,7 +761,7 @@ int	ssl_connected (int vfd)
 	 * where your mozilla CA file is.
 	 * (See SSL_get_verify_results() for more info on that)
 	 */
-	x->md.verify_result = SSL_get_verify_result(x->ssl_fd);
+	x->md.verify_result = SSL_get_verify_result(x->ssl);
 
 	/* * */
 	/*
@@ -820,7 +823,7 @@ int	ssl_connected (int vfd)
 	/*
 	 * STEP 4h:	The connection's SSL protocol (ie, TLSv1 or SSLv3)
 	 */
-	x->md.ssl_version = malloc_strdup(SSL_get_version(x->ssl_fd));	
+	x->md.ssl_version = malloc_strdup(SSL_get_version(x->ssl));
 
 	/*
 	 * STEP 4i:	Check hostname validity
@@ -829,6 +832,14 @@ int	ssl_connected (int vfd)
 		x->md.checkhost_result = X509_check_host(server_cert, x->hostname, strlen(x->hostname), 0, NULL);
 	else
 		x->md.checkhost_result = 1;
+
+	/*
+	 * STEP 4j:	Check for self-signed certificates
+	 */
+	if (X509_check_issued(server_cert, server_cert) == X509_V_OK) 
+		x->md.self_signed = 1;
+	else
+		x->md.self_signed = 0;
 
 	/* ==== */
 	/*
@@ -843,21 +854,21 @@ int	ssl_connected (int vfd)
 	 *	$4 - The verification result (OK = "YES"; not OK = "NO")
 	 *	$5 - What ssl are we using? (SSLv3 or TLSv1)
 	 *	$6 - What is the digest of the certificate?
-	 * 	$7 - The hostname verification result (
+	 * 	$7 - The hostname verification result 
 	 *
 	 * It's expected from here that a script could stash this in
 	 * a file somewhere and use it to detect if the certificate
 	 * changed between connections.   Or something clever.
 	 */
-	if (do_hook(SSL_SERVER_CERT_LIST, "%d %s %s %d %d %s %s %d", 
+	if (do_hook(SSL_SERVER_CERT_LIST, "%d %s %s %d %d %s %s %d %d", 
 			x->md.vfd, 
 			x->md.u_cert_subject, x->md.u_cert_issuer, 
 			x->md.pkey_bits, x->md.verify_result, 
 			x->md.ssl_version, x->md.cert_hash,
-			x->md.checkhost_result))
+			x->md.checkhost_result, x->md.self_signed))
 	{
 		say("SSL negotiation complete using %s (%s)", 
-			x->md.ssl_version, SSL_get_cipher(x->ssl_fd));
+			x->md.ssl_version, SSL_get_cipher(x->ssl));
 		say("SSL certificate subject: %s", x->md.subject);
 		say("SSL certificate issuer: %s",  x->md.issuer);
 		say("SSL certificate public key length: %d bits", 
@@ -871,6 +882,8 @@ int	ssl_connected (int vfd)
 						   x->md.cert_hash);
 		say("SSL Hostname Verification: %s",
 			x->md.checkhost_result == 1 ? "PASS": "FAIL");
+		say("SSL certificate was self-signed: %s",
+			x->md.self_signed == 1 ? "YES": "NO");
 	}
 
 	/*
@@ -922,7 +935,7 @@ int	get_ssl_strict_status (int vfd, int *retval)
 					\
 	if (!(x = find_ssl(vfd)))	\
 		return missingval ;	\
-	if (!x->ssl_fd)			\
+	if (!x->ssl)			\
 		return missingval ;	\
 
 
@@ -931,7 +944,7 @@ const char *	get_ssl_cipher (int vfd)
 {
 	LOOKUP_SSL(vfd, empty_string)
 
-	return SSL_get_cipher(x->ssl_fd);
+	return SSL_get_cipher(x->ssl);
 }
 
 int	get_ssl_verify_result (int vfd)
@@ -987,7 +1000,6 @@ const char *	get_ssl_ssl_version (int vfd)
 	LOOKUP_SSL(vfd, empty_string)
 	return x->md.ssl_version;
 }
-
 
 # ifdef USE_PTHREAD
 #include <pthread.h>
