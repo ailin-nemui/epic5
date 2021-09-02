@@ -976,4 +976,12 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add support for getting SANs out of an SSL certificate (rb wcarson)
 * Add $serverctl(GET x SSL_STRICT_STATUS)
 * Add $serverctl(GET x SSL_SANS)
+* Remove $serverctl(GET x SSL_STRICT_STATUS)
+* Add /on SERVER_SSL_EVAL (see UPDATES)
+* Add /set ACCEPT_INVALID_SSL_CERT (see UPDATES)
+* Remove per-server server "strict status" in server desc
+* Add "accept_cert" per server, to track whether we accept the ssl cert
+* Add $serverctl(GET x SSL_CHECKHOST_RESULT)
+* Add $serverctl(GET x SSL_SELF_SIGNED)
+* Add $serverctl(GET|SET x SSL_ACCEPT_CERT) (see UPDATES)
 

@@ -31,6 +31,7 @@
  *
  * $Id: sha2.c,v 1.8 2014/04/01 18:11:14 jnelson Exp $
  */
+#define NO_SSL
 #include "irc.h"
 #include "ircaux.h"
 #include "sedcrypt.h"

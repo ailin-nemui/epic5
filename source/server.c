@@ -145,6 +145,8 @@ static	void	make_005 (int refnum);
 static	void	destroy_005 (int refnum);
 static 	int	server_addrs_left (int refnum);
 static const char *	get_server_type (int servref);
+static	int	get_server_accept_cert (int refnum);
+static	void	set_server_accept_cert (int refnum, int val);
 
 /*
  * clear_serverinfo: Initialize/Reset a ServerInfo object
@@ -174,7 +176,6 @@ int	clear_serverinfo (ServerInfo *s)
 	s->vhost = NULL;
 	s->freestr = NULL;		/* XXX ? */
 	s->fulldesc = NULL;		/* XXX ? */
-	s->ssl_strict = 0;
 	s->clean = 1;
 	return 0;
 }
@@ -389,8 +390,6 @@ int	str_to_serverinfo (char *str, ServerInfo *s)
 		    else
 			s->vhost = descstr;
 		}
-		else if (fieldnum == SSL_STRICT)
-			s->ssl_strict = atol(descstr);
 
 		/*
 		 * We go one past "type" because we want to allow
@@ -454,7 +453,6 @@ static	int	preserve_serverinfo (ServerInfo *si)
 	}
         else
 	   malloc_strcat2_c(&resultstr, si->vhost, ":", &clue);
-	malloc_strcat2_c(&resultstr, ltoa(si->ssl_strict), ":", &clue);
 
 	new_free(&si->freestr);
 	new_free(&si->fulldesc);
@@ -518,8 +516,6 @@ static	void	update_serverinfo (ServerInfo *old_si, ServerInfo *new_si)
 		old_si->proto_type = new_si->proto_type;
 	if (new_si->vhost)
 		old_si->vhost = new_si->vhost;
-	if (new_si->ssl_strict)
-		old_si->ssl_strict = new_si->ssl_strict;
 
 	preserve_serverinfo(old_si);
 	return;
@@ -1712,6 +1708,9 @@ return_from_ssl_detour:
 				goto something_broke;
 			}
 
+			/* By default, we don't accept SSL Cert */
+			s->accept_cert = -1;
+
 			/* 
 			 * This throws the /ON SSL_SERVER_CERT_LIST and makes
 			 * the socket blocking again.
@@ -1722,18 +1721,62 @@ return_from_ssl_detour:
 				goto something_broke;
 			}
 
-			/* Check to see if there was a ssl strict test, and if it succeeded */
-			if (s->info->ssl_strict)
+			/* 
+			 * For backwards compatability, if the user has already set accept_cert
+			 * by here (they hooked /on server_ssl_cert) we just accept that.
+			 * Otherwise, we decide what WE think.
+			 */
+			if (s->accept_cert == -1)
 			{
-			    if (get_ssl_strict_status(des, &strict_retval))
-			    {
-				if (strict_retval != 1)
+#ifdef HAVE_SSL
+				int 	verify_result, 
+					checkhost_result,
+					self_signed;
+
+				verify_result = get_ssl_verify_result(des);
+				checkhost_result = get_ssl_checkhost_result(des);
+				self_signed = get_ssl_self_signed(des);
+
+				/*
+				 * By default, we don't intend to accept certs that
+				 * are invalid or issued to third parties.
+				 */
+				if (verify_result != X509_V_OK || checkhost_result != 1)
 				{
-					syserr(i, "SSL Certificate Strict Verification failed with error code %d", strict_retval);
+					syserr(i, "The SSL certificate for server %d does not appear to be acceptable", i);
+					s->accept_cert = 0;
+				}
+
+				/*
+				 * Now IF AND ONLY IF the cert is invalid for 
+				 * being self signed, we can exempt that.
+				 */
+				if (verify_result == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT)
+				{
+					if (get_int_var(ACCEPT_INVALID_SSL_CERT_VAR))
+					{
+						syserr(i, "The SSL certificate for server %d is invalid because it is self-signed, but /SET ACCEPT_INVALID_SSL_CERT is ON", i);
+						s->accept_cert = 1;
+					}
+				}
+
+				/*
+				 * Let a script have a chance to overrule us
+				 */
+				do_hook(SERVER_SSL_EVAL_LIST, "%d %s %d %d %d %d",
+								i, get_server_name(i),
+								verify_result,
+								checkhost_result,
+								self_signed,
+								s->accept_cert);
+
+				if (s->accept_cert == 0)
+				{
+					syserr(i, "SSL Certificate Verification for server %d failed: (verify: %d, checkhost: %d, self_signed: %d)", i, verify_result, checkhost_result, self_signed);
 					goto something_broke;
 				}
 			    }
-			}
+#endif
 
 			goto return_from_ssl_detour;	/* All is well! */
 		}
@@ -3406,6 +3449,7 @@ IACCESSOR(v, ison_max)
 IACCESSOR(v, userhost_max)
 IACCESSOR(v, stricmp_table)
 IACCESSOR(v, autoclose)
+IACCESSOR(v, accept_cert)
 SACCESSOR(chan, invite_channel, NULL)
 SACCESSOR(nick, last_notify_nick, NULL)
 SACCESSOR(nick, joined_nick, NULL)
@@ -4560,13 +4604,14 @@ char 	*serverctl 	(char *input)
 				RETURN_STR(get_ssl_u_cert_issuer(s->des));
 			} else if (!my_strnicmp(listc, "SSL_VERSION", len)) {
 				RETURN_STR(get_ssl_ssl_version(s->des));
-			} else if (!my_strnicmp(listc, "SSL_STICT_STATUS", len)) {
-				int j;
-				if ((get_ssl_strict_status(s->des, &j)) == 0)
-					RETURN_INT(0);
-				RETURN_INT(j);
+			} else if (!my_strnicmp(listc, "SSL_CHECKHOST_RESULT", len)) {
+				RETURN_INT(get_ssl_checkhost_result(s->des));
+			} else if (!my_strnicmp(listc, "SSL_SELF_SIGNED", len)) {
+				RETURN_INT(get_ssl_self_signed(s->des));
 			} else if (!my_strnicmp(listc, "SSL_SANS", len)) {
 				RETURN_STR(get_ssl_sans(s->des));
+			} else if (!my_strnicmp(listc, "SSL_ACCEPT_CERT", len)) {
+				RETURN_INT(get_server_accept_cert(refnum));
 			}
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {
@@ -4665,9 +4710,21 @@ char 	*serverctl 	(char *input)
 			RETURN_INT(1);
 		} else if (!my_strnicmp(listc, "REALNAME", len)) {
 			set_server_default_realname(refnum, input);
-		}
-		else if (!my_strnicmp(listc, "DEFAULT_REALNAME", len)) {
+		} else if (!my_strnicmp(listc, "DEFAULT_REALNAME", len)) {
 			set_server_default_realname(refnum, input);
+		} else if (!my_strnicmp(listc, "SSL_", 4)) {
+			Server *s;
+			int	des;
+
+			if (!(s = get_server(refnum)) || !get_server_ssl_enabled(refnum))
+				RETURN_EMPTY;
+
+			if (!my_strnicmp(listc, "SSL_ACCEPT_CERT", len)) {
+				int	val = 0;
+				val = my_atol(input);
+				set_server_accept_cert(refnum, val);
+			}
+			RETURN_INT(1);
 		}
 	} else if (!my_strnicmp(listc, "OMATCH", len)) {
 		int	i;

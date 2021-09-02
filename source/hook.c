@@ -218,6 +218,7 @@ Hookables hook_function_templates[] =
 	{ "SERVER_ESTABLISHED",	NULL,	2,	0,	0,	NULL, 0 },
 	{ "SERVER_LOST",	NULL,	2,	0,	0,	NULL, 0 },
 	{ "SERVER_NOTICE",	NULL,	1,	0,	0,	NULL, 0 },
+	{ "SERVER_SSL_EVAL",	NULL,	6,	0,	0,	NULL, 0 },
 	{ "SERVER_STATE",	NULL,	3,	0,	0,	NULL, 0 },
 	{ "SERVER_STATUS",	NULL,	3,	0,	0,	NULL, 0 },
 	{ "SET",		NULL,	2,	0,	0,	NULL, 0 },

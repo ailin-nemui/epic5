@@ -264,6 +264,7 @@
  * remove them.  They are default values for variables and are required for
  * proper compilation.
  */
+#define DEFAULT_ACCEPT_INVALID_SSL_CERT 1
 #define DEFAULT_ALLOW_C1_CHARS 0
 #define DEFAULT_ALT_CHARSET 1
 #define DEFAULT_ALWAYS_SPLIT_BIGGEST 1

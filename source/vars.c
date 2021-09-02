@@ -362,6 +362,7 @@ void 	init_variables_stage1 (void)
 {
 	var_bucket = new_bucket();
 
+	VAR(ACCEPT_INVALID_SSL_CERT,	BOOL, NULL)
 	VAR(ALLOW_C1_CHARS, 		BOOL, NULL)
 	VAR(ALWAYS_SPLIT_BIGGEST, 	BOOL, NULL)
 	VAR(BANNER, 			STR,  NULL)

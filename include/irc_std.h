@@ -456,4 +456,16 @@ typedef struct stat		Stat;
 #define FALLTHROUGH 
 #endif
 
+#ifndef NO_SSL
+/* Everybody needs these OpenSSL headers */
+#include <openssl/crypto.h>
+#include <openssl/x509.h>
+#include <openssl/x509v3.h>
+#include <openssl/evp.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/opensslconf.h>
+#endif
+
 #endif /* __irc_std_h */

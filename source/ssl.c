@@ -348,8 +348,8 @@ static ssl_info *	new_ssl_info (int vfd)
 	x->hostname = NULL;
 
 	x->md.vfd = vfd;
-	x->md.verify_result = 0;
-	x->md.checkhost_result = 0;
+	x->md.verify_result = -1;
+	x->md.checkhost_result = -1;
 	x->md.pem = NULL;
 	x->md.cert_hash = NULL;
 	x->md.pkey_bits = 0;
@@ -358,7 +358,7 @@ static ssl_info *	new_ssl_info (int vfd)
 	x->md.issuer = NULL;
 	x->md.u_cert_issuer = NULL;
 	x->md.ssl_version = NULL;
-	x->md.self_signed = 0;
+	x->md.self_signed = -1;
 	x->md.sans = NULL;
 
 	return x;
@@ -481,9 +481,9 @@ int	ssl_shutdown (int vfd)
 	}
 
 	x->md.vfd = -1;
-	x->md.verify_result = 0;
-	x->md.checkhost_result = 0;
-	x->md.self_signed = 0;
+	x->md.verify_result = -1;
+	x->md.checkhost_result = -1;
+	x->md.self_signed = -1;
 	new_free(&x->md.pem);
 	new_free(&x->md.cert_hash);
 	x->md.pkey_bits = 0;
@@ -1016,6 +1016,18 @@ const char *	get_ssl_sans (int vfd)
 {
 	LOOKUP_SSL(vfd, empty_string)
 	return x->md.sans;
+}
+
+int	get_ssl_checkhost_result (int vfd)
+{
+	LOOKUP_SSL(vfd, -1);
+	return x->md.checkhost_result;
+}
+
+int	get_ssl_self_signed (int vfd)
+{
+	LOOKUP_SSL(vfd, -1)
+	return x->md.self_signed;
 }
 
 

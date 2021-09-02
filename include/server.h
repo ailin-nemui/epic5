@@ -45,7 +45,6 @@ typedef struct ServerInfo
         const char *  server_type;
         const char *  proto_type;
 	const char *  vhost;
-	int	ssl_strict;
 } ServerInfo;
 typedef ServerInfo SI;
 
@@ -71,6 +70,7 @@ const	AI *		next_addr;		/* The next one to try upon failure */
 	SS		remote_sockname; 	/* sockname of this connection */
 
 	/* state = SSL_CONNECTING */
+	int		accept_cert;		/* Whether we accept the SSL certificate */
 
 	/* state = REGISTERING */
 	char *		nickname;		/* Authoritative nickname for us */

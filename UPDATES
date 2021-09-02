@@ -1,32 +1,83 @@
 EPIC5-2.2
 
+*** News 09/02/2021 -- SSL Handling improvements
+	When connecting to an IRC server using SSL, the client 
+	has to evaluate the SSL certificate the server presents.
+	Unlike when you use https, irc ssl certificates can be
+	messy and have two problems.
+
+	1. Self-signed certificates
+	2. "Third-party" certificates
+
+	Self-signed certificates are not verified according to
+	the PKI that underlies the web, so you can't be sure
+	whether the person you're talking to is who they say
+	they are, or if they're a MITM attacker.  There are 
+	some defenses for this like caching previous hashes
+
+	"Third-party" certificates happen when you connect to 
+	a round-robin DNS (eg, irc.efnet.org) and you connect
+	to a server that does not have an SSL certificate for 
+	"irc.efnet.org" but rather for its real name.  Under
+	normal circumstances, this SSL certificate is *not* ok.
+
+	When the client receives an SSL certificate from an IRC
+	server over a TLS socket, it now performs these steps:
+
+	1. It calls SSL_get_verify_result() which returns 0 for
+	   "everything is ok" or 18 for "self-signed certificate"
+	   or something else if something went wrong.  This tests
+	   for whether the *certificate* is trusted. (ie,
+	   "self-signed certificate")
+	2. It calls X509_check_host, which returns 1 on success
+	   and 0 for failure.  This tests whether the certificate
+	   *was issued to this server* (ie, "third party certificate")
+
+	This results in a "pass/fail" decision on whether to accept
+	the certificate.
+
+	If the certificate would "fail" because it is self-signed,
+	and you have /SET ACCEPT_INVALID_SSL_CERT ON, then it will
+	"pass".
+
+	The client then calls /ON SERVER_SSL_EVAL and passes it the
+	following information
+		$0 - server refnum
+		$1 - the server "ourname"
+		$2 - return value of SSL_get_verify_result()
+		$3 - return value of X509_check_host()
+		$4 - whether the cert is self-signed (1) or not (0)
+		$5 - whether the client intends to pass (1) or fail (0)
+
+	In your /ON handler, you can use all of these $serverctl()
+	values to get information
+		Usage: $serverctl(GET $0 <item>)
+	where <item> is one of:
+		SSL_CIPHER
+		SSL_PEM
+		SSL_CERT_HASH
+		SSL_PKEY_BITS
+		SSL_SUBJECT
+		SSL_SUBJECT_URL
+		SSL_ISSUER
+		SSL_ISSUER_URL
+		SSL_VERSION
+		SSL_SANS
+		SSL_CHECKHOST_RESULT
+		SSL_VERIFY_RESULT
+		SSL_SELF_SIGNED
+		SSL_ACCEPT_CERT
+
+	The last one (SSL_ACCEPT_CERT) is the "pass or fail" decider.
+	Your handler can change that
+		@serverctl(SET $0 SSL_ACCEPT_CERT 0)
+
+	Whatever the value is when your handler returns, that is what
+	the client will use to decide whether to pass or fail.
+
 *** News 08/30/2021 -- New server description field "ssl-strict"
-	When ypu have set "proto=irc-ssl", the client will do 
-	an SSL connection to an irc server.  However, the client
-	has never done mandatory SSL certificate verification, 
-	where it takes any action if the SSL certificate is invalid.
+	[this feature was removed]
 
-	There are two ways an SSL certificate might be invalid:
-	1. The SSL certificate is not issued properly from a root ca
-	   in your /set ssl_root_certs_location
-	   (ie, it might be self-signed)
-	2. The SSL certificate might be issued to a hostname other
-	   than the one you connected to with /server
-	   (ie, it might be a cname or a round robin dns)
-
-	If you set "ssl-strict=1" server description flag, then any
-	server presenting an invalid SSL certificate will be treated
-	as a connection error.
-
-	For right now, you have to explicitly turn this on.
-	Maybe in the future we might turn it on by default.
-
-	example:
-		/server irc.efnet.org:6697:type=irc-ssl:ssl-strict=1
-	will fail to connect to any server because none of the
-	servers in the "irc.efnet.org" round robin dns have an ssl 
-	certificate issued to "irc.efnet.org"
-	
 *** News 05/25/2021 -- Updated configure to autoconf-2.69
 	We upgraded configure from autoconf-2.13 to 2.69 here.
 	Along the way, we fixed the support for python3.8+
