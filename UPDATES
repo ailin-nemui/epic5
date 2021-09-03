@@ -1,5 +1,14 @@
 EPIC5-2.2
 
+*** News 09/02/2021 -- Configuring SSL Ciphers
+	Now, if you know what you are doing, you can set
+	the SSL Ciphersuites that the client will use for
+	SSL connections, via
+		/SET SSL_CIPHERS <stuff>
+	If you don't know what you're doing, don't touch.
+	The default value is "unset", which means we let
+	openssl choose the ciphers for us.
+
 *** News 09/02/2021 -- SSL Handling improvements
 	When connecting to an IRC server using SSL, the client 
 	has to evaluate the SSL certificate the server presents.

@@ -878,7 +878,7 @@ int	ssl_connected (int vfd)
 			x->md.checkhost_result, x->md.self_signed))
 	{
 		say("SSL negotiation complete using %s (%s)", 
-			x->md.ssl_version, SSL_get_cipher(x->ssl));
+			x->md.ssl_version, SSL_get_cipher_name(x->ssl));
 		say("SSL certificate subject: %s", x->md.subject);
 		say("SSL certificate issuer: %s",  x->md.issuer);
 		say("SSL certificate public key length: %d bits", 
@@ -955,7 +955,7 @@ const char *	get_ssl_cipher (int vfd)
 {
 	LOOKUP_SSL(vfd, empty_string)
 
-	return SSL_get_cipher(x->ssl);
+	return SSL_get_cipher_name(x->ssl);
 }
 
 int	get_ssl_verify_result (int vfd)

@@ -55,6 +55,13 @@
 #define DEFAULT_SSL_ROOT_CERTS_LOCATION NULL
 
 /*
+ * By default we let OpenSSL choose the ciphers we wnat to use.
+ * But if you were really bent on overruling that, you could do it here.
+ * If you change this, you are expected to know what you are doing.
+ */
+#define DEFAULT_SSL_CIPHERS NULL
+
+/*
  * This is an experimental feature to thwart infinite recursion.  It is not
  * very sophisticated so it's not turned on by default.  In the future I 
  * will probably do something less lame.
