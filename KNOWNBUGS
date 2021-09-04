@@ -6,15 +6,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   But when widening a window, if the new contents don't take up all the lines
   available, it just leaves blank lines.  -- ie, it "pins the top" rather 
   than "pinning the bottom"
-* Wcarson wants these things for ssl support
-   - Be able to map an SSL certificate to a server
-	(ie, as in /set server_ssl_cert)
-	-- Done -- $serverctl(GET -1 ....)  in the /ON.
-	-- Done -- /ON SERVER_SSL_EVAL *
-   - Be able to get the SAN from an SSL certificate
-	-- Done
-   - Be able to call SSL_CTX_set_cipher_list() and control what it gets
-	-- Done
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -987,3 +978,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $serverctl(GET x SSL_SELF_SIGNED)
 * Add $serverctl(GET|SET x SSL_ACCEPT_CERT) (see UPDATES)
 * Add /SET SSL_CIPHERS (see UPDATES)
+* I forgot to implement the use of /SET SSL_CIPHERS. oops

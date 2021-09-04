@@ -238,7 +238,7 @@ void	set_ssl_root_certs_location (void *stuff)
 static SSL_CTX	*SSL_CTX_init (int server)
 {
 	SSL_CTX	*ctx;
-	
+
 	if (firsttime)
 	{
 		ssl_setup_locking();
@@ -260,7 +260,10 @@ static SSL_CTX	*SSL_CTX_init (int server)
 		x509_default_cert_location_file ? x509_default_cert_location_file : "<none>");
 	SSL_CTX_load_verify_locations(ctx, x509_default_cert_location_file,
 					   x509_default_cert_location_dir);
-	
+
+	if (get_string_var(SSL_CIPHERS_VAR))
+		SSL_CTX_set_cipher_list(ctx, get_string_var(SSL_CIPHERS_VAR));
+
 	return ctx;
 }
 
