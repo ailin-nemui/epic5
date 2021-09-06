@@ -11,6 +11,15 @@
 #ifndef __ssl_h__
 #define __ssl_h__
 
+#define MAX_ONELINE 256
+
+typedef	struct	ssl_cert_error {
+	struct ssl_cert_error *next;
+	int	err;
+	int	depth;
+	char 	oneline[MAX_ONELINE];
+} ssl_cert_error;
+
 #if 0
 typedef struct ssl_metadata {
 	int	vfd;
@@ -28,18 +37,17 @@ typedef struct ssl_metadata {
 
 	void	set_ssl_root_certs_location (void *);
 
-	int	ssl_startup (int nfd, int channel, const char *hostname);
-	int	ssl_shutdown (int nfd);
-	int	ssl_write (int nfd, const void *, size_t);
-	int	ssl_read (int nfd, int quiet);
+	int     ssl_startup (int vfd, int channel, const char *hostname);
 	int	ssl_connect (int nfd, int quiet);
 	int	ssl_connected (int nfd);
+	int	ssl_write (int nfd, const void *, size_t);
+	int	ssl_read (int nfd, int quiet);
+	int	ssl_shutdown (int nfd);
 
 	int	is_fd_ssl_enabled (int nfd);
 	int	client_ssl_enabled (void);
 
 	const char *	get_ssl_cipher (int nfd);
-	int		get_ssl_verify_result (int vfd); 
 	const char *	get_ssl_pem (int vfd);
 	const char *	get_ssl_cert_hash (int vfd);
 	int		get_ssl_pkey_bits (int vfd);
@@ -50,8 +58,10 @@ typedef struct ssl_metadata {
 	const char *	get_ssl_ssl_version (int vfd);
 	int     	get_ssl_strict_status (int vfd, int *retval);
 	const char *	get_ssl_sans (int vfd);
-	int		get_ssl_verify_result (int vfd);
-	int		get_ssl_checkhost_result (int vfd);
-	int		get_ssl_self_signed (int vfd);
+	int		get_ssl_verify_error (int vfd); 
+	int		get_ssl_checkhost_error (int vfd);
+	int		get_ssl_self_signed_error (int vfd);
+	int		get_ssl_other_error (int vfd);
+	int		get_ssl_most_serious_error (int vfd);
 
 #endif

@@ -1729,50 +1729,59 @@ return_from_ssl_detour:
 			if (s->accept_cert == -1)
 			{
 #ifdef HAVE_SSL
-				int 	verify_result, 
-					checkhost_result,
-					self_signed;
+				int 	verify_error,
+					checkhost_error,
+					self_signed_error,
+					other_error;
 
-				verify_result = get_ssl_verify_result(des);
-				checkhost_result = get_ssl_checkhost_result(des);
-				self_signed = get_ssl_self_signed(des);
-
-				/*
-				 * By default, we don't intend to accept certs that
-				 * are invalid or issued to third parties.
-				 */
-				if (verify_result != X509_V_OK || checkhost_result != 1)
-				{
-					syserr(i, "The SSL certificate for server %d does not appear to be acceptable", i);
-					s->accept_cert = 0;
-				}
+				verify_error = get_ssl_verify_error(des);
+				checkhost_error = get_ssl_checkhost_error(des);
+				self_signed_error = get_ssl_self_signed_error(des);
+				other_error = get_ssl_other_error(des);
 
 				/*
-				 * Now IF AND ONLY IF the cert is invalid for 
-				 * being self signed, we can exempt that.
+				 * Policy checks for invalid ssl certs.
+				 * If an SSL cert is invalid (verify_error != 0)
+				 * It is for one of the three reasons
+				 *   (self-signed, bad host, or other)
 				 */
-				if (verify_result == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT)
+				if (verify_error)
 				{
-					if (get_int_var(ACCEPT_INVALID_SSL_CERT_VAR))
+
+					/*
+					 * If "other_error" is 0, then all of the errors
+					 * were either self-signed or checkhost errors.
+					 * We forgive those if the user said to
+					 */
+					if (!other_error && get_int_var(ACCEPT_INVALID_SSL_CERT_VAR))
 					{
-						syserr(i, "The SSL certificate for server %d is invalid because it is self-signed, but /SET ACCEPT_INVALID_SSL_CERT is ON", i);
+						syserr(i, "The SSL certificate for server %d has problems, "
+							  "but /SET ACCEPT_INVALID_SSL_CERT is ON", i);
 						s->accept_cert = 1;
 					}
+					else
+					{
+						syserr(i, "The SSL certificate for server %d is not "
+							  "acceptable", i);
+						s->accept_cert = 0;
+					}
 				}
+				s->accept_cert = 1;
 
 				/*
 				 * Let a script have a chance to overrule us
 				 */
-				do_hook(SERVER_SSL_EVAL_LIST, "%d %s %d %d %d %d",
+				do_hook(SERVER_SSL_EVAL_LIST, "%d %s %d %d %d %d %d",
 								i, get_server_name(i),
-								verify_result,
-								checkhost_result,
-								self_signed,
+								verify_error,
+								checkhost_error,
+								self_signed_error,
+								other_error,
 								s->accept_cert);
 
 				if (s->accept_cert == 0)
 				{
-					syserr(i, "SSL Certificate Verification for server %d failed: (verify: %d, checkhost: %d, self_signed: %d)", i, verify_result, checkhost_result, self_signed);
+					syserr(i, "SSL Certificate Verification for server %d failed: (verify error: %d, checkhost error: %d, self_signed error: %d, other error: %d)", i, verify_error, checkhost_error, self_signed_error, other_error);
 					goto something_broke;
 				}
 			    }
@@ -4587,7 +4596,9 @@ char 	*serverctl 	(char *input)
 			if (!my_strnicmp(listc, "SSL_CIPHER", len)) {
 				RETURN_STR(get_ssl_cipher(s->des));
 			} else if (!my_strnicmp(listc, "SSL_VERIFY_RESULT", len)) {
-				RETURN_INT(get_ssl_verify_result(s->des));
+				RETURN_EMPTY;	/* XXX :( */
+			} else if (!my_strnicmp(listc, "SSL_VERIFY_ERROR", len)) {
+				RETURN_INT(get_ssl_verify_error(s->des));
 			} else if (!my_strnicmp(listc, "SSL_PEM", len)) {
 				RETURN_STR(get_ssl_pem(s->des));
 			} else if (!my_strnicmp(listc, "SSL_CERT_HASH", len)) {
@@ -4605,9 +4616,17 @@ char 	*serverctl 	(char *input)
 			} else if (!my_strnicmp(listc, "SSL_VERSION", len)) {
 				RETURN_STR(get_ssl_ssl_version(s->des));
 			} else if (!my_strnicmp(listc, "SSL_CHECKHOST_RESULT", len)) {
-				RETURN_INT(get_ssl_checkhost_result(s->des));
+				RETURN_EMPTY;	/* XXX :( */
+			} else if (!my_strnicmp(listc, "SSL_CHECKHOST_ERROR", len)) {
+				RETURN_INT(get_ssl_checkhost_error(s->des));
 			} else if (!my_strnicmp(listc, "SSL_SELF_SIGNED", len)) {
-				RETURN_INT(get_ssl_self_signed(s->des));
+				RETURN_EMPTY;	/* XXX :( */
+			} else if (!my_strnicmp(listc, "SSL_SELF_SIGNED_ERROR", len)) {
+				RETURN_INT(get_ssl_self_signed_error(s->des));
+			} else if (!my_strnicmp(listc, "SSL_OTHER_ERROR", len)) {
+				RETURN_INT(get_ssl_other_error(s->des));
+			} else if (!my_strnicmp(listc, "SSL_MOST_SERIOUS_ERROR", len)) {
+				RETURN_INT(get_ssl_most_serious_error(s->des));
 			} else if (!my_strnicmp(listc, "SSL_SANS", len)) {
 				RETURN_STR(get_ssl_sans(s->des));
 			} else if (!my_strnicmp(listc, "SSL_ACCEPT_CERT", len)) {

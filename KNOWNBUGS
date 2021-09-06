@@ -979,3 +979,34 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $serverctl(GET|SET x SSL_ACCEPT_CERT) (see UPDATES)
 * Add /SET SSL_CIPHERS (see UPDATES)
 * I forgot to implement the use of /SET SSL_CIPHERS. oops
+* I made signficant changes, so the above probably obsolete now
+* Create an object (ssl_cert_error) 
+* Start tracking *every* ssl cert verification error
+* Treat ssl verification errors as tiered problems
+* ie, self-signed is not as bad as bad-hostname not as bad as others
+* Revamp things like "verify_result", "self_signed", etc to errors
+* ie, verify_error, checkhost_error, self_signed_error
+* Add a new "other_error" and "most_serious_error"
+* Try to emulate the old policy behavior (pending more work)
+* I need to document the flow and /on's and /set's in UPDATES
+* Change $serverctl()s 
+* serverctl change: SSL_VERIFY_RESULT -> SSL_VERIFY_ERROR
+* serverctl change: SSL_CHECKHOST_RESULT -> SSL_CHECKHOST_ERROR
+* serverctl change: SSL_SELF_SIGNED -> SSL_SELF_SIGNED_ERROR
+* serverctl change: new: SSL_OTHER_ERROR
+* serverctl change: new: SSL_MOST_SERIOUS_ERROR
+* Reorg ssl.c because it was getting too jumbled to follow
+* Ensure every function is decld static or is in header file
+* Group functions by their subject area
+* Only create on (SSL_CTX) for all global use now
+* Don't bother pretending we support being an SSL server.
+* Create a SSL verification callback that tracks/sorts every error
+* This allows us to catch multiple problems (self-signed, bad hostname)
+* We see multiple errors on efnet, for example
+* Change find_ssl() to get_ssl_info() so its named after data type
+* Roll Bad Hostname check into main SSL verification instead of extra step
+* (OpenSSL discourages you from doing it as an extra step)
+* I need to review /on ssl_server_cert for sanity and document it
+* Remove the now superfluous notion of "strict status" checking
+* Remove the bogus stubs for #ifndef HAVE_SSL since that's not supported
+
