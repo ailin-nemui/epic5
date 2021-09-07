@@ -1,5 +1,133 @@
 EPIC5-2.2
 
+*** News 09/06/2021 -- SSL handling improvements (take 2)
+	The other day I posted some info on how the SSL
+	handling has been improved.  But then things got
+	revamped again, so I delete the old info and am
+	replacing it with this info.
+
+	1) Step one - You connect to an SSL server
+	 You connect to an irc server doing something like
+		/SERVER irc.example.com:6697:type=irc-ssl
+	 This goes through connect()ing to the server, and 
+	 then doing an SSL_connect() to set up the certificate
+	 exchange and TLS negotiation.
+
+	2) Step two - The SSL handshake is completed
+	 After the SSL_connect() step has completed, we now have
+	 a fully functioning TLS socket with an SSL certificate.
+	 Before we use the TLS socket, we're supposed to verify
+	 that we trust the SSL certificate, to ensure we're talking
+	 to who we think we are.
+
+	3) Step three - The client watches the certificate verification
+	 OpenSSL "verifies" the certificate and the client provides
+	 a C function to tag along for the ride.  The callback function
+	 is called every time:
+	   (1) An error is discovered, or
+	   (2) There are no (further) errors in a certificate.
+	 Thus, if a certificate is trusted, it will only report 
+	 "no problems" for each link in the chain.
+
+	 This permits the client to trap and categorize every error that
+	 happens - some certificates have multiple problems!  There are
+	 three buckets the client uses:
+		(1) Self-signed certificates
+		(2) Incorrect-hostname certificates
+		(3) Any other (serious) error
+	 The client tracks the "most serious error" (if there is one),
+	 using the above priorities.
+
+	4) Step four - The cliet offers you /ON SSL_SERVER_CERT
+	  The client sets $serverctl(SET <refnum> SSL_ACCEPT_CERT -1)
+	  and then throws /ON SSL_SERVER_CERT.   The use of -1 is on
+	  purpose so the client can determine whether your /ON handler
+	  sets it to 0 or 1.  
+
+	  If your handler does a $serverctl(SET <retval> SSL_ACCEPT_CERT 0|1)
+	  then that is taken as the final disposition of the handling, and 
+	  nothing further occurs. (ie, it skips the rest of the steps)
+
+	  Parameters of /ON SSL_SERVER_CERT
+		$0  The fd of the socket
+		    (Use $serverctl(FROM_SERVER) to get the server refnum)
+		$1  Certificate Subject, url-encoded
+		$2  Certificate Issuer, url-encoded
+		$3  Bits used in the public key 
+		$4  OpenSSL error code of the "most serious error"
+			(18 is "Self-signed certificate",
+			 62 is "Hostname mismatch",
+			 everything else is irregular/bad)
+		$5  The SSL regime being used (ie, TLSv1.2)
+		$6  The Certificate Hash
+		$7  Was there a hostname mismatch?  0 = no error, 1 = error
+		$8  Was there a self-signed error?  0 = no error, 1 = error
+		$9  Was there another (serious) error?  
+			0 = no other error 1 = other error
+		$10 Was there any error of any kind?  
+			0 = no errors of any kind, 1 = some kind of error
+
+	5) Step five - The client makes a provisional decision
+	  Next, the client looks at the errors and decides whether
+	  it thinks the cert is ok.  
+	    * Cert has no errors 		   -> ACCEPT
+	    * Cert has "self signed" or "wrong hostname" error
+	      and /SET ACCEPT_INVALID_SSL_CERT ON  -> ACCEPT
+	    * Cert has "self signed" or "wrong hostname" error
+	      and /SET ACCEPT_INVALID_SSL_CERT OFF -> REJECT
+	    * Cert has any serious error	   -> REJECT
+	  The client sets this provisional value with 
+		$serverctl(SET <refnum> SSL_ACCEPT_CERT 0|1)
+
+	6) Step six - The client offers you /ON SERVER_SSL_EVAL
+	  Then, the client hooks /ON SERVER_SSL_EVAL.  At this point,
+	  all of the information your script needs to make a fully 
+	  informed decision to accept or overrule the client's choice
+	  is available.  Your handler is not obligated to make any
+	  change, but it certainly can if it wants to 
+
+	  Parameters of /ON SERVER_SSL_EVAL
+		$0  The server refnum
+		$1  The "ourname" of the server (what you /server'd to)
+		$2  Was there any error at all? 
+			0 = no errors of any kind   1 = some kind of error
+		$3  Was there a hostname mismatch?  0 = no error, 1 = error
+		$4  Was there a self-signed error?  0 = no error, 1 = error
+		$5  Was there another (serious) error?
+			0 = no other error, 1 = other error
+		$6  What does the client suggest?
+			0 = reject certificate, 1 = accept certificate
+
+	  Using $serverctl() to get info about the certificate
+	  Use $serverctl(GET <refnum> <item>) where <item> is:
+		SSL_CIPHER		The encryption cipher being used
+		SSL_PEM			The certificate (in PEM format)
+		SSL_CERT_HASH		The certificate's hash
+		SSL_PKEY_BITS		The bits in the public key
+		SSL_SUBJECT		Who the cert was issued to
+		SSL_SUBJECT_URL		Who the cert was issued to (url-encoded)
+		SSL_ISSUER		Who issued the cert
+		SSL_ISSUER_URL		Who issued the cert (url-encoded)
+		SSL_VERSION		What version of SSL being used (ie, TLSv1.2)
+		SSL_SANS		Subject Alternate Names in the cert
+		SSL_CHECKHOST_ERROR	Hostname Mismatch error - 0 (no) 1 (yes)
+		SSL_SELF_SIGNED_ERROR	Self-signed error - 0 (no) 1 (yes)
+		SSL_OTHER_ERROR	        Any other (serious) error - 0 (no) 1 (yes)
+		SSL_MOST_SERIOUS_ERROR	The OpenSSL error code of the most serious error
+					18 (self-signed) and 62 (hostname mismatch)
+					are considered non-serious (routine) errors
+		SSL_VERIFY_ERROR	Any error at all - 0 (no) 1 (yes)
+		SSL_ACCEPT_CERT		Is this cert headed for acceptance?  0 (no) 1 (yes)
+
+	   Use $serverctl(SET <refnum> SSL_ACCEPT_CERT 0) to reject the cert
+	   Use $serverctl(SET <refnum> SSL_ACCEPT_CERT 1) to accept the cert
+	   If you don't do anything, the client will do the most reasonable thing
+
+	7) Step seven - The client moves forward
+	  Finally, everyone has had a chance to weigh in.  
+	  Whatever the value of $serverctl(GET <refnum> SSL_ACCEPT_CERT) 
+	  is after all this, is used to accept or reject the SSL connection.
+
 *** News 09/02/2021 -- Configuring SSL Ciphers
 	Now, if you know what you are doing, you can set
 	the SSL Ciphersuites that the client will use for
@@ -10,79 +138,7 @@ EPIC5-2.2
 	openssl choose the ciphers for us.
 
 *** News 09/02/2021 -- SSL Handling improvements
-	When connecting to an IRC server using SSL, the client 
-	has to evaluate the SSL certificate the server presents.
-	Unlike when you use https, irc ssl certificates can be
-	messy and have two problems.
-
-	1. Self-signed certificates
-	2. "Third-party" certificates
-
-	Self-signed certificates are not verified according to
-	the PKI that underlies the web, so you can't be sure
-	whether the person you're talking to is who they say
-	they are, or if they're a MITM attacker.  There are 
-	some defenses for this like caching previous hashes
-
-	"Third-party" certificates happen when you connect to 
-	a round-robin DNS (eg, irc.efnet.org) and you connect
-	to a server that does not have an SSL certificate for 
-	"irc.efnet.org" but rather for its real name.  Under
-	normal circumstances, this SSL certificate is *not* ok.
-
-	When the client receives an SSL certificate from an IRC
-	server over a TLS socket, it now performs these steps:
-
-	1. It calls SSL_get_verify_result() which returns 0 for
-	   "everything is ok" or 18 for "self-signed certificate"
-	   or something else if something went wrong.  This tests
-	   for whether the *certificate* is trusted. (ie,
-	   "self-signed certificate")
-	2. It calls X509_check_host, which returns 1 on success
-	   and 0 for failure.  This tests whether the certificate
-	   *was issued to this server* (ie, "third party certificate")
-
-	This results in a "pass/fail" decision on whether to accept
-	the certificate.
-
-	If the certificate would "fail" because it is self-signed,
-	and you have /SET ACCEPT_INVALID_SSL_CERT ON, then it will
-	"pass".
-
-	The client then calls /ON SERVER_SSL_EVAL and passes it the
-	following information
-		$0 - server refnum
-		$1 - the server "ourname"
-		$2 - return value of SSL_get_verify_result()
-		$3 - return value of X509_check_host()
-		$4 - whether the cert is self-signed (1) or not (0)
-		$5 - whether the client intends to pass (1) or fail (0)
-
-	In your /ON handler, you can use all of these $serverctl()
-	values to get information
-		Usage: $serverctl(GET $0 <item>)
-	where <item> is one of:
-		SSL_CIPHER
-		SSL_PEM
-		SSL_CERT_HASH
-		SSL_PKEY_BITS
-		SSL_SUBJECT
-		SSL_SUBJECT_URL
-		SSL_ISSUER
-		SSL_ISSUER_URL
-		SSL_VERSION
-		SSL_SANS
-		SSL_CHECKHOST_RESULT
-		SSL_VERIFY_RESULT
-		SSL_SELF_SIGNED
-		SSL_ACCEPT_CERT
-
-	The last one (SSL_ACCEPT_CERT) is the "pass or fail" decider.
-	Your handler can change that
-		@serverctl(SET $0 SSL_ACCEPT_CERT 0)
-
-	Whatever the value is when your handler returns, that is what
-	the client will use to decide whether to pass or fail.
+	[replaced -- see above]
 
 *** News 08/30/2021 -- New server description field "ssl-strict"
 	[this feature was removed]
