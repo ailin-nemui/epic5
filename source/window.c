@@ -2155,6 +2155,8 @@ static void	restore_window_positions (Window *w, intmax_t scrolling, intmax_t ho
 	recalculate_window_cursor_and_display_ip(w);
 	if (w->scrolling_distance_from_display_ip >= w->display_lines)
 		unclear_window(w);
+	else if (w->scrolling_distance_from_display_ip <= w->display_lines && w->scrolladj)
+		unclear_window(w);
 	else
 	{
 		window_body_needs_redraw(w);
@@ -6453,8 +6455,8 @@ static const window_ops options [] = {
 	{ "BEEP_ALWAYS",	window_beep_always 	},
 	{ "CHANNEL",		window_channel 		},
 	{ "CHECK",		window_check		},
-	{ "CLEAR",		window_clear		},
 	{ "CLAIM",		window_claim		},
+	{ "CLEAR",		window_clear		},
 	{ "CREATE",		window_create 		},
 	{ "DELETE",		window_delete 		},
 	{ "DELETE_KILL",	window_delete_kill	},

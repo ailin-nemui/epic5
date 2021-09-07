@@ -2,10 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* When narrowing a window, if the new conetnts overflow, it does an /unclear
-  But when widening a window, if the new contents don't take up all the lines
-  available, it just leaves blank lines.  -- ie, it "pins the top" rather 
-  than "pinning the bottom"
+<none right now>
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1009,4 +1006,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * I need to review /on ssl_server_cert for sanity and document it
 * Remove the now superfluous notion of "strict status" checking
 * Remove the bogus stubs for #ifndef HAVE_SSL since that's not supported
+* Make widening the screen honor /window scrolladj
+* Sync all /window operations in tabkey.ce
+* Re-sort the /window operations list ("claim" was in the wrong place)
+* Document $json_explode(), $json_implode() and $json_error()
 

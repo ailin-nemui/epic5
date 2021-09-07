@@ -1,24 +1,48 @@
 EPIC5-2.2
 
+*** News 09/06/2021 -- Functions for JSON document handling
+	Some time ago some new functions appeared for handling
+	JSON documents, but they were not documented.  So now
+	I am going to document them!
+
+	CONVERTING JSON DOCS TO /ASSIGNS
+	--------------------------------
+	Syntax:    $json_explode(varbase json-document)
+
+	An example is worth a thousand words:
+
+	    $json_explode(e {"one": 1, "two": { "sub1", "hi", "sub2", "bye" })
+	will result in three new assigns
+		$e[one]		-> 1
+		$e[two][sub1]	-> hi
+		$e[two][sub2]	-> bye
+
+	CONVERTING ASSIGNS TO JSON DOCS
+	-------------------------------
+	Syntax:	   $json_implode(varbase)
+
+	This converts everything under $varbase[*] into a JSON doc.
+
+	HANDLING ERRORS
+	--------------
+	If there is an error, $json_error() will tell you about it.
+
 *** News 09/06/2021 -- SSL handling improvements (take 2)
-	The other day I posted some info on how the SSL
-	handling has been improved.  But then things got
-	revamped again, so I delete the old info and am
-	replacing it with this info.
+	The other day I posted some info on how the SSL handling has been 
+	improved.  But then things got revamped again, so I delete the old 
+	info and am replacing it with this info.
 
 	1) Step one - You connect to an SSL server
 	 You connect to an irc server doing something like
 		/SERVER irc.example.com:6697:type=irc-ssl
-	 This goes through connect()ing to the server, and 
-	 then doing an SSL_connect() to set up the certificate
-	 exchange and TLS negotiation.
+	 This goes through connect()ing to the server, and then doing an 
+	 SSL_connect() to set up the certificate exchange and TLS negotiation.
 
 	2) Step two - The SSL handshake is completed
-	 After the SSL_connect() step has completed, we now have
-	 a fully functioning TLS socket with an SSL certificate.
-	 Before we use the TLS socket, we're supposed to verify
-	 that we trust the SSL certificate, to ensure we're talking
-	 to who we think we are.
+	 After the SSL_connect() step has completed, we now have a fully 
+	 functioning TLS socket with an SSL certificate.  Before we use the 
+	 TLS socket, we're supposed to verify we trust the SSL certificate, 
+	 to ensure we're talking to who we think we are.
 
 	3) Step three - The client watches the certificate verification
 	 OpenSSL "verifies" the certificate and the client provides
