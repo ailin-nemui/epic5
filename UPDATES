@@ -1,5 +1,28 @@
 EPIC5-2.2
 
+*** News 09/08/2021 -- New statement type: block-with-arglist
+	The ircII syntax now supports a new statement type, which I'm 
+	calling a "block with arglist"
+
+		(arglist) {block}
+
+	You could also think of this as an "inline anonymous function".
+	For the purposes of the statement, $* is modified by (arglist)
+	and then {block} is run.
+
+	Please note there are several caveats to this:
+	  1. Arglist is not magic, it is syntactic sugar.  So it creates real 
+	     local variables, and those local variables have their ordinary 
+	     scope.  So they will persist after the end of the statement.
+	  2. The statement only modifies $* during the statement itself.
+	     So after {block} is run, $* goes back to what it was originally.
+	  3. Note that this is a *statement* and not a *block* so if you are
+	     working with something that expects a block, wrap it in {}s to
+	     create a block.
+		if (# == 3) {(arg0, arg1, arg2) {... code ...}}
+	  4. Arglist processing isn't "free" so doing it in a tight loop will
+	     be slower than doing it outside of the loop
+
 *** News 09/07/2021 -- Pass window refnum in /ON CHANNEL_LOST
 	The /ON CHANNEL_LOST hook now provides the window that a channel
 	was in as $2

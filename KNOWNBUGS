@@ -2,7 +2,8 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none right now>
+* The reconnect script should "save" channels in an 
+	/on channel_lost when server_state($0) == CLOSING
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -35,9 +36,6 @@ MEDIUM-TERM PROJECTS
   of the challenge of indicating which elements are from local variables.
 * Harz would like a way to do /bind -default for just a single binding.
 * /PAUSE does not save/restore context, and it should.
-* You should be able to pass in arglists to /exec -line and /exec -end
-* You should be able to pass in extra args to /exec -line and /exec -end
-* The "anonymous function" statement -- (arglist) {block}
 * /window maximize + new status expando when a zero-height window gets output
 
 [I moved the old list to the file "WISHLIST" to keep this file short]
@@ -1012,3 +1010,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Document $json_explode(), $json_implode() and $json_error()
 * Add winref as $2 in /on channel_lost
 * Remove tracking of "cursor window", a thing we haven't supported in 25 years
+* Add support for (arglist) {block} statement type

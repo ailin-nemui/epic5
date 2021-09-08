@@ -3863,6 +3863,33 @@ static	unsigned 	level = 0;
 	if (interactive && cmdchar_used == 0)
 		send_text(from_server, get_target_by_refnum(0), stmt, NULL, 1, 0);
 
+	/*
+	 * Statement that looks like () {} is an block-with-arglist statement
+	 */
+	else if (*stmt == '(')
+	{
+		char *arglist;
+		char *block;
+		char *copy;
+
+		/*
+		 * If any syntax errors are encountered, fall down to
+		 * the expression handler (which handles it in a backwards
+		 * compatable way
+		 */
+		copy = LOCAL_COPY(stmt);
+		if (!(arglist = next_expr(&copy, '(')))
+			goto expression_statement;
+		while (*copy && my_isspace(*copy))
+			copy++;
+		if (*copy != '{')
+			goto expression_statement;
+		if (!(block = next_expr(&copy, '{')))
+			goto expression_statement;
+
+		runcmds_with_arglist(block, arglist, subargs);
+	}
+
 	/* 
 	 * Statement that starts with a { is a block statement.
 	 */
@@ -3893,8 +3920,10 @@ static	unsigned 	level = 0;
 		 * expand_alias() step, but since we don't expand expressions,
 		 * we just make a local copy.
 		 */
-		char *	my_stmt = LOCAL_COPY(stmt);
-		char *	tmp;
+		char	*my_stmt, *tmp;
+
+expression_statement:
+		my_stmt = LOCAL_COPY(stmt);
 
 		/* Expressions can start with @ or be surrounded by ()s */
 		if (*my_stmt == '(')
