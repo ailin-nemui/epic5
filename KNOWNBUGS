@@ -1011,3 +1011,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add winref as $2 in /on channel_lost
 * Remove tracking of "cursor window", a thing we haven't supported in 25 years
 * Add support for (arglist) {block} statement type
+* Add /window clearlevel <levels> (rb zlonix)

@@ -317,6 +317,29 @@ void 	truncate_lastlog (Window *window)
 }
 
 /*
+ * clear_level_from_lastlog: Removes all items of the given level(s)
+ * from a window, unconditionally and irreversibly
+ */
+void 	clear_level_from_lastlog (Window *window, Mask *levels)
+{
+	Lastlog *item;
+
+	item = oldest_lastlog_for_window(window);
+	while (item)
+	{
+		Lastlog *next_item;
+
+		next_item = newer_lastlog_entry(item, window);
+		if (mask_isset(levels, item->level))
+		{
+			remove_lastlog_item(item);
+			window_scrollback_needs_rebuild(window);
+		}
+		item = next_item;
+	}
+}
+
+/*
  * set_lastlog_size: sets up a lastlog buffer of size given.  If the lastlog
  * has gotten larger than it was before, all newer lastlog entries remain.
  * If it get smaller, some are deleted from the end. 

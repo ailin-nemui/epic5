@@ -47,4 +47,6 @@ extern	double	output_expires_after;
 	void	move_lastlog_item_by_level	(struct WindowStru *, struct WindowStru *, Mask *);
 	void	move_lastlog_item_by_regex	(struct WindowStru *, struct WindowStru *, Char *);
 
+	void    clear_level_from_lastlog 	(struct WindowStru *, Mask *);
+
 #endif /* __lastlog_h_ */

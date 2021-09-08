@@ -6440,6 +6440,26 @@ static Window *window_unclear (Window *window, char **args)
 	return window;
 }
 
+/* WINDOW CLEARLEVEL - Remove all lastlog items of certain level(s) */
+static Window *window_clearlevel (Window *window, char **args)
+{
+	Mask	mask;
+	char *	rejects = NULL;
+	char *	arg;
+
+	if (!args)
+	{
+		return window;
+	}
+
+	arg = next_arg(*args, args);;
+	if (str_to_mask(&mask, arg, &rejects))
+		standard_level_warning("/WINDOW CLEARLEVEL", &rejects);
+
+	clear_level_from_lastlog(window, &mask);
+	return window;
+}
+
 
 typedef Window *(*window_func) (Window *, char **args);
 
@@ -6457,6 +6477,7 @@ static const window_ops options [] = {
 	{ "CHECK",		window_check		},
 	{ "CLAIM",		window_claim		},
 	{ "CLEAR",		window_clear		},
+	{ "CLEARLEVEL",		window_clearlevel	},
 	{ "CREATE",		window_create 		},
 	{ "DELETE",		window_delete 		},
 	{ "DELETE_KILL",	window_delete_kill	},
