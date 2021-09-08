@@ -1010,4 +1010,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Sync all /window operations in tabkey.ce
 * Re-sort the /window operations list ("claim" was in the wrong place)
 * Document $json_explode(), $json_implode() and $json_error()
-
+* Add winref as $2 in /on channel_lost
+* Remove tracking of "cursor window", a thing we haven't supported in 25 years

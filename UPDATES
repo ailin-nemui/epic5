@@ -1,5 +1,12 @@
 EPIC5-2.2
 
+*** News 09/07/2021 -- Pass window refnum in /ON CHANNEL_LOST
+	The /ON CHANNEL_LOST hook now provides the window that a channel
+	was in as $2
+		$0 - The server refnum of a channel
+		$1 - The name of a channel
+		$2 - The window refnum of a channel
+
 *** News 09/06/2021 -- Functions for JSON document handling
 	Some time ago some new functions appeared for handling
 	JSON documents, but they were not documented.  So now

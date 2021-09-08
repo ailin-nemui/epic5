@@ -371,7 +371,6 @@ static	int	recursive = 0;
 /*yell("moving cursor to %d %d", PHYSICAL_CURSOR, INPUT_LINE); */
 			term_move_cursor(PHYSICAL_CURSOR, INPUT_LINE);
 			term_flush();
-			cursor_not_in_display(screen);
 		}
 	}
 	output_screen = last_input_screen = oldscreen;
@@ -905,7 +904,6 @@ const char *	prompt;
 		term_flush();
 		term_move_cursor(PHYSICAL_CURSOR, INPUT_LINE);
 		term_flush();
-		cursor_not_in_display(last_input_screen);
 	}
 
 	/*
@@ -943,14 +941,12 @@ const char *	prompt;
 		term_echo(old_do_echo);
 		term_clear_to_eol();
 		term_flush();
-		cursor_not_in_display(last_input_screen);
 	}
 
 	if (update == UPDATE_JUST_CURSOR)
 	{
 		term_move_cursor(PHYSICAL_CURSOR, INPUT_LINE);
 		term_flush();
-		cursor_not_in_display(last_input_screen);
 	}
 
 	/*

@@ -320,7 +320,7 @@ void 	remove_channel (const char *channel, int server)
 	{
 		if ((tmp = find_channel(channel, server)))
 		{
-			do_hook(CHANNEL_LOST_LIST, "%d %s", tmp->server, tmp->channel);
+			do_hook(CHANNEL_LOST_LIST, "%d %s %d", tmp->server, tmp->channel, tmp->winref);
 			destroy_channel(tmp);
 			new_free((char **)&tmp);
 		}
@@ -1316,7 +1316,7 @@ void 	destroy_server_channels (int server)
 		reset = 0;
 		if (tmp->server != server)
 			continue;
-		do_hook(CHANNEL_LOST_LIST, "%d %s", tmp->server, tmp->channel);
+		do_hook(CHANNEL_LOST_LIST, "%d %s %d", tmp->server, tmp->channel, tmp->winref);
 		destroy_channel(tmp);
 		new_free((char **)&tmp);
 		reset = 1;

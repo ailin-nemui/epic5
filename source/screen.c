@@ -2822,7 +2822,6 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 	check_window_cursor(window);
 	trim_scrollback(window);
 
-	cursor_in_display(window);
 	cursor_to_input();
 
 	/*
@@ -2992,41 +2991,9 @@ static void 	scroll_window (Window *window)
 	 */
 	if (window->screen && window->display_lines)
 	{
-		window->screen->cursor_window = window;
 		term_move_cursor(0, window->top + window->cursor);
 		term_clear_to_eol();
-		cursor_in_display(window);
 	}
-}
-
-/* * * * * CURSORS * * * * * */
-/*
- * cursor_not_in_display: This forces the cursor out of the display by
- * setting the cursor window to null.  This doesn't actually change the
- * physical position of the cursor, but it will force rite() to reset the
- * cursor upon its next call 
- */
-void 	cursor_not_in_display (Screen *s)
-{
-	if (!s)
-		s = output_screen;
-	if (s->cursor_window)
-		s->cursor_window = NULL;
-}
-
-/*
- * cursor_in_display: this forces the cursor_window to be the
- * current_screen->current_window. 
- * It is actually only used in hold.c to trick the system into thinking the
- * cursor is in a window, thus letting the input updating routines move the
- * cursor down to the input line.  Dumb dumb dumb 
- */
-void 	cursor_in_display (Window *w)
-{
-	if (!w)
-		w = current_window;
-	if (w->screen)
-		w->screen->cursor_window = w;
 }
 
 /* * * * * * * SCREEN UDPATING AND RESIZING * * * * * * * * */
@@ -3073,7 +3040,6 @@ void 	repaint_window_body (Window *window)
 		if (!(str = window->topline[count]))
 			str = empty_string;
 
-		window->screen->cursor_window = window;
 		term_move_cursor(0, window->top - window->toplines_showing + count);
 		term_clear_to_eol();
 
@@ -3089,8 +3055,6 @@ void 	repaint_window_body (Window *window)
 			output_with_count(*my_lines, 1, foreground);
 		new_free(&n);
 */
-
-		cursor_in_display(window);
 	   }
 
 	window->cursor = 0;
@@ -3158,7 +3122,6 @@ void	create_new_screen (void)
 	new_s->last_window_refnum = 1;
 	new_s->window_list = NULL;
 	new_s->window_list_end = NULL;
-	new_s->cursor_window = NULL;
 	new_s->current_window = NULL;
 	new_s->visible_windows = 0;
 	new_s->window_stack = NULL;
@@ -3550,7 +3513,6 @@ void 	kill_screen (Screen *screen)
 	screen->current_window = NULL;
 	screen->window_list = NULL;
 	screen->window_list_end = NULL;
-	screen->cursor_window = NULL;
 	screen->last_window_refnum = -1;
 	screen->visible_windows = 0;
 	screen->window_stack = NULL;

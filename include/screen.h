@@ -70,7 +70,6 @@ typedef	struct	ScreenStru
 	unsigned last_window_refnum;	/* Most previous current window */
 	Window	*window_list;		/* The top window on me */
 	Window	*window_list_end;	/* The bottom window on me */
-	Window	*cursor_window;		/* The window that has my cursor */
 	int	visible_windows;	/* Number of windows on me */
 	WindowStack	*window_stack;	/* Number of windows on my stack */
 struct	ScreenStru *prev;		/* Next screen in list */
@@ -131,10 +130,7 @@ struct	ScreenStru *next;		/* Previous screen in list */
 	void	fire_wait_prompt	(u_32int_t);
 	void	fire_normal_prompt	(const char *);
 	void	add_to_screen		(const unsigned char *);
-	void	cursor_not_in_display	(struct ScreenStru *);
-	void	cursor_in_display	(Window *);
 	void	translate_user_input	(unsigned char byte);
-	int	is_cursor_in_display	(struct ScreenStru *);
 	void	repaint_window_body	(Window *);
 	void	create_new_screen	(void);
 	Window	*create_additional_screen (void);
