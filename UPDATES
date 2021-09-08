@@ -1,5 +1,14 @@
 EPIC5-2.2
 
+*** News 09/08/2021 -- New /window operation, /WINDOW CLEARLEVEL [levels]
+	This was requested by Zlonix.
+
+	The /WINDOW CLEARLEVEL [levels] operation removes all items from
+	the window's lastlog of the levels you specify.  Removing them
+	from your lastlog removes them from your screen as well.  This is
+	useful for making noise go away retroactively
+	Example:	/window clearlevel joins,parts,quits,kicks
+
 *** News 09/08/2021 -- New statement type: block-with-arglist
 	The ircII syntax now supports a new statement type, which I'm 
 	calling a "block with arglist"
