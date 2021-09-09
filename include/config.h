@@ -375,7 +375,7 @@
 #define DEFAULT_STATUS_HALFOP "%"
 #define DEFAULT_STATUS_HOLD " Held: "
 #define DEFAULT_STATUS_HOLD_LINES "%B"
-#define DEFAULT_STATUS_HOLDMODE " (Hold) "
+#define DEFAULT_STATUS_HOLDMODE " (Hold)"
 #define DEFAULT_STATUS_INSERT ""
 #define DEFAULT_STATUS_MAIL " (Mail: %M)"
 #define DEFAULT_STATUS_MODE " (+%+)"
