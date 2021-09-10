@@ -279,7 +279,8 @@ void *	really_new_realloc (void **ptr, size_t size, const char *fn, int line)
 	void *newptr = NULL;
 
 	if (!size) 
-		*ptr = really_new_free(ptr, fn, line);
+		return *ptr;	/* Don't change anything */
+		/* *ptr = really_new_free(ptr, fn, line); */
 	else if (!*ptr)
 		*ptr = really_new_malloc(size, fn, line);
 	else 
@@ -529,7 +530,7 @@ ssize_t	rstristr (const char *start, const char *srch)
 		if (!my_strnicmp(p, srch, srchlen))
 			return quick_code_point_index(start, p);
 
-		if ((d = previous_code_point(start, (const unsigned char **)&p)) == 0)
+		if (previous_code_point(start, (const unsigned char **)&p) == 0)
 			return -1;		/* Not found */
 
 	}
@@ -4312,7 +4313,7 @@ char *	malloc_strcat2_c (char **ptr, const char *str1, const char *str2, size_t 
 char *	malloc_strcat3_c (char **ptr, const char *str1, const char *str2, const char *str3, size_t *clue)
 {
 	size_t	csize;
-	int 	msize;
+	size_t	msize;
 
 	csize = clue ? *clue : 0;
 	msize = csize;
@@ -4335,8 +4336,14 @@ char *	malloc_strcat3_c (char **ptr, const char *str1, const char *str2, const c
 		*ptr = new_malloc(msize + 1);
 		**ptr = 0;
 	}
-	else
+	else if (msize >= 0)
 		RESIZE(*ptr, char, msize + 1);
+	else
+	{
+		msize = 10;
+		*ptr = new_malloc(msize + 1);
+		**ptr = 0;
+	}
 
 	if (str1)
 		strlcat(csize + *ptr, str1, msize + 1 - csize);
@@ -6376,8 +6383,7 @@ static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *met
 	}
 
 	/* Stuff seems to be working... */
-	while ((n = iconv(encodingx, &orig_ptr, &orig_left, &dest_ptr, 
-		&dest_left)) != 0)
+	while (iconv(encodingx, &orig_ptr, &orig_left, &dest_ptr, &dest_left) != 0)
 	{
 		/* I *THINK* this is a hack. */
 		if (errno == EINVAL || errno == EILSEQ)
@@ -6838,7 +6844,7 @@ int	recode_with_iconv (const char *from, const char *to, char **data, size_t *nu
 		work_data = *data;
 		dest_ptr = retstr;
 
-		while ((n = iconv(iref, &work_data, numbytes, &dest_ptr, &dest_left)) != 0)
+		while (iconv(iref, &work_data, numbytes, &dest_ptr, &dest_left) != 0)
 		{
 			/* I *THINK* this is a hack. */ 
 			if (errno == EINVAL || errno == EILSEQ)
@@ -6913,7 +6919,7 @@ int	recode_with_iconv_t (iconv_t iref, char **data, size_t *numbytes)
 	work_data = *data;
 	dest_ptr = retstr;
 
-        while ((n = iconv(iref, &work_data, numbytes, &dest_ptr, &dest_left)) != 0)
+        while (iconv(iref, &work_data, numbytes, &dest_ptr, &dest_left) != 0)
         {
                 /* I *THINK* this is a hack. */ 
                 if (errno == EINVAL || errno == EILSEQ)

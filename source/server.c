@@ -691,10 +691,9 @@ static	void	update_refnum_serverinfo (int refnum, ServerInfo *new_si)
 
 static	int	update_server_from_raw_desc (int refnum, char *str)
 {
-	Server  *s;
 	ServerInfo si;
 
-	if (!(s = get_server(refnum)))
+	if (!get_server(refnum))
 		return NOSERV;
 
 	clear_serverinfo(&si);
@@ -2173,7 +2172,7 @@ int	grab_server_address (int server)
 static int	connect_next_server_address (int server)
 {
 	Server *s;
-	int	err = -1, fd = -1;
+	int	fd = -1;
 	SS	localaddr;
 	socklen_t locallen;
 	const AI *	ai;
@@ -2201,7 +2200,7 @@ static int	connect_next_server_address (int server)
 		yell("Trying to connect to server %d using address [%d] and protocol [%d]",
 					server, s->addr_counter, ai->ai_family);
 
-	    if ((err = inet_vhostsockaddr(ai->ai_family, -1, s->info->vhost,
+	    if ((inet_vhostsockaddr(ai->ai_family, -1, s->info->vhost,
 						&localaddr, &locallen)) < 0)
 	    {
 #if 0
@@ -2215,7 +2214,7 @@ static int	connect_next_server_address (int server)
 				"[%d] (%s) did not resolve - using your normal "
 				"vhost (if you have one)", 
 					server, s->info->vhost);
-	        if ((err = inet_vhostsockaddr(ai->ai_family, -1, NULL,
+	        if ((inet_vhostsockaddr(ai->ai_family, -1, NULL,
 						&localaddr, &locallen)) < 0)
 #endif
 		{
@@ -2438,7 +2437,6 @@ void	close_server (int refnum, const char *message)
 	Server *s;
 	int	was_registered;
 	char *  sub_format;
-	int	old_server_state;
 	char 	final_message[IRCD_BUFFER_SIZE];
 
 	/* Make sure server refnum is valid */
@@ -2450,7 +2448,6 @@ void	close_server (int refnum, const char *message)
 
 	*final_message = 0;
 	was_registered = is_server_registered(refnum);
-	old_server_state = get_server_state(refnum);
 	set_server_state(refnum, SERVER_CLOSING);
 	if (s->waiting_out > s->waiting_in)		/* XXX - hack! */
 		s->waiting_out = s->waiting_in = 0;
@@ -2867,10 +2864,9 @@ int	is_server_open (int refnum)
 
 int	is_server_registered (int refnum)
 {
-	Server *s;
 	int	state;
 
-	if (!(s = get_server(refnum)))
+	if (!get_server(refnum))
 		return 0;
 
 	state = get_server_state(refnum);
@@ -2961,9 +2957,7 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 
 void	server_is_unregistered (int refnum)
 {
-	Server *s;
-
-	if (!(s = get_server(refnum)))
+	if (!get_server(refnum))
 		return;
 
 	destroy_005(refnum);
@@ -2972,9 +2966,7 @@ void	server_is_unregistered (int refnum)
 
 int	is_server_active (int refnum)
 {
-	Server *s;
-
-	if (!(s = get_server(refnum)))
+	if (get_server(refnum))
 		return 0;
 
 	if (get_server_state(refnum) == SERVER_ACTIVE)
@@ -3684,15 +3676,15 @@ const char	*get_server_itsname (int refnum)
  */
 int	get_server_protocol_state (int refnum)
 {
-	int	retval;
+	int	retval = 0;
 
-	retval = get_server_doing_ctcp(refnum);
+	retval = (get_server_doing_ctcp(refnum) & 0xFF);
 	retval = retval << 8;
 
-	retval += get_server_doing_notice(refnum);
+	retval += (get_server_doing_notice(refnum) & 0xFF);
 	retval = retval << 8;
 
-	retval += get_server_doing_privmsg(refnum);
+	retval += (get_server_doing_privmsg(refnum) & 0xFF);
 
 	return retval;
 }
@@ -4374,7 +4366,7 @@ static char *	get_all_server_groups (void)
 
 	for (i = 0; i < number_of_servers; i++)
 	{
-	    if (!(s = get_server(i)))
+	    if (!get_server(i))
 		continue;
 
 	    /* 
@@ -4735,7 +4727,7 @@ char 	*serverctl 	(char *input)
 			Server *s;
 			int	des;
 
-			if (!(s = get_server(refnum)) || !get_server_ssl_enabled(refnum))
+			if (!get_server(refnum) || !get_server_ssl_enabled(refnum))
 				RETURN_EMPTY;
 
 			if (!my_strnicmp(listc, "SSL_ACCEPT_CERT", len)) {

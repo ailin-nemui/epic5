@@ -7569,7 +7569,6 @@ BUILT_IN_FUNCTION(function_strptime, input)
 BUILT_IN_FUNCTION(function_check_code, input)
 {
 	char type;
-	char *expr;
 
 	while (input && *input && isspace(*input))
 		input++;
@@ -7578,7 +7577,7 @@ BUILT_IN_FUNCTION(function_check_code, input)
 		RETURN_INT(-1);		/* Not a block statement or expr */
 
 	type = *input;
-	if (!(expr = next_expr_failok(&input, type)))
+	if (!next_expr_failok(&input, type))
 		RETURN_INT(-2);		/* Unmatched brace or paren */
 
 	while (input && *input && isspace(*input))

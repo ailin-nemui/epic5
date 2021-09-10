@@ -544,6 +544,10 @@ int 		text_to_process (const char *target, const char *text, int show)
 	else
 		logical_name = proc->refnum_desc;
 
+	/* Say nothing, do nothing */
+	if (!text)
+		return -1;
+
 	size = strlen(text) + 2;
 	my_buffer = alloca(size);
 	snprintf(my_buffer, size, "%s\n", text);

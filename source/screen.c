@@ -970,7 +970,7 @@ static ssize_t	read_esc_seq (const unsigned char *start, void *ptr_a, int *nd_sp
 	str = start;
 	len = 0;
 
-	switch ((chr = start[len]))
+	switch (start[len])
 	{
 	    /*
 	     * These are two-character commands.  The second
@@ -3771,7 +3771,7 @@ static	int		never_warn_again = 0;
 	prev_char = byte;
 
 	/* Convert whatever the user is typing into UTF8 */
-	if ((n = iconv(xlat, &in, &inlen, &out, &outlen)) != 0)
+	if (iconv(xlat, &in, &inlen, &out, &outlen) != 0)
 	{
 		if (errno == EILSEQ)
 		{

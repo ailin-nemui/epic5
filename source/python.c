@@ -797,7 +797,7 @@ int 	call_python_function_1arg (PyObject *pFunc, int vfd)
 {
 	PyObject *args_py = NULL;
 	PyObject *pArgs = NULL, *pRetVal = NULL;
-	PyObject *retval_repr = NULL;
+	/* PyObject *retval_repr = NULL; */
 	char 	*r = NULL, *retvalstr = NULL;
 
 	if (!PyCallable_Check(pFunc))
@@ -819,7 +819,7 @@ int 	call_python_function_1arg (PyObject *pFunc, int vfd)
 	if (!(pRetVal = PyObject_CallObject(pFunc, pArgs)))
 		goto c_p_f_error;
 
-        if (!(retval_repr = PyObject_Repr(pRetVal)))
+        if (!(/*retval_repr = */PyObject_Repr(pRetVal)))
 		goto c_p_f_error;
 
 	goto c_p_f_cleanup;
@@ -844,6 +844,7 @@ void	do_python_fd (int vfd)
 	{
 		yell("do_python_fd: FD %d doesn't belong to me - new_close()ing it.", vfd);
 		new_close(vfd);
+		return;
 	}
 
 	if ((n = dgets(vfd, buffer, BIG_BUFFER_SIZE, -1)) > 0)
@@ -895,6 +896,7 @@ void	do_python_fd_failure (int vfd, int error)
 	{
 		yell("do_python_fd_failure: FD %d doesn't belong to me - new_close()ing it myself.", vfd);
 		new_close(vfd);
+		return;
 	}
 
 	if (callback->except_callback)

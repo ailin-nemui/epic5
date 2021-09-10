@@ -386,7 +386,6 @@ static	int	recursive = 0;
  */
 static int	retokenize_input (int start)
 {
-	const unsigned char *str;
 	const unsigned char *s, *old_s;
 	int	cols;
 	int	codepoint;
@@ -394,7 +393,7 @@ static int	retokenize_input (int start)
 
 	start = 0;
 	current_column = 0;
-	old_s = s = str = INPUT_BUFFER;
+	old_s = s = INPUT_BUFFER;
 
 	while (s && *s)
 	{

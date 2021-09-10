@@ -1117,6 +1117,10 @@ char *	make_string_var_bydata (const void *irc_variable)
 const 	VARIABLE *data;
 	char	*ret = (char *) 0;
 
+	/* XXX Not sure what better to do here */
+	if (!irc_variable)
+		return malloc_strdup(empty_string);
+
 	type = ((const IrcVariable *)irc_variable)->type;
 	data = (const VARIABLE *)(((const IrcVariable *)irc_variable)->data);
 

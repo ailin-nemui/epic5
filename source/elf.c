@@ -129,7 +129,7 @@ static int	archive_fopen(struct epic_loadfile *elf, char *filename, const char *
         elf->a = archive_read_new();
         if (!archive_read_support_format_all(elf->a)) {
 
-            if ( !(ret = archive_read_open_filename(elf->a, fname, 10240)) ) {
+            if ( !archive_read_open_filename(elf->a, fname, 10240))  {
                 if ( (strstr(safet, "/"))!=NULL ) { /* specific file provided */
                     if (!find_in_archive(elf->a, &elf->entry, extra, do_error))
                         return 0;
@@ -288,7 +288,7 @@ off_t	epic_stat(const char *filename, struct stat *buf)
         a = archive_read_new();
         archive_read_support_format_all(a);
 
-        if ( !(ret=archive_read_open_filename(a, zipstr, 10240)) ) {
+        if ( !archive_read_open_filename(a, zipstr, 10240) ) {
             if (scan) {
                 if (!(find_in_archive(a, &entry, zip, 0)) ) {
                     return -1;

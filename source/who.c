@@ -203,7 +203,7 @@ static WhoEntry *who_previous_query (int refnum, WhoEntry *me)
 	WhoEntry *what;
 	Server *s;
 
-	if (!(s = get_server(refnum)))
+	if (!get_server(refnum))
 		return NULL;
 
 	what = who_queue_top(refnum);
@@ -1184,7 +1184,7 @@ static IsonEntry *get_new_ison_entry (int refnum, int next)
 	Server *s;
 	IsonEntry *new_w;
 
-	if (!(s = get_server(refnum)))
+	if (!get_server(refnum))
 		return NULL;
 
 	new_w = (IsonEntry *)new_malloc(sizeof(IsonEntry));

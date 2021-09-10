@@ -152,7 +152,7 @@ static void	rebuild_notify_ison (int refnum)
 /* notify: the NOTIFY command.  Does the whole ball-o-wax */
 BUILT_IN_COMMAND(notify)
 {
-	Server		*s;
+	Server *	s;
 	char		*nick,
 			*list = (char *) 0,
 			*ptr;
@@ -276,7 +276,7 @@ BUILT_IN_COMMAND(notify)
 	{
 	    for (refnum = first; refnum < last; refnum++)
 	    {
-		if (!(s = get_server(refnum)))
+		if (!get_server(refnum))
 		    continue;
 
 		if (is_server_registered(refnum) && list && *list)

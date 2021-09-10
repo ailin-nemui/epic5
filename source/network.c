@@ -679,6 +679,9 @@ int	my_getaddrinfo (const char *nodename, const char *servname, const AI *hints,
 
 	if (do_af_unix)
 	{
+		if (!nodename)
+			return EAI_NONAME;
+
                 memset(&storage, 0, sizeof(storage));
                 storage.sun_family = AF_UNIX;
                 strlcpy(storage.sun_path, nodename, sizeof(storage.sun_path));

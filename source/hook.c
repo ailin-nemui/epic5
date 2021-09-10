@@ -273,10 +273,9 @@ static void	initialize_hook_functions (void)
 {
 	int	i, b;
 	char *  p;
-	char *	buffer;
 
 	hook_functions = malloc(NUMBER_OF_LISTS * sizeof(Hookables));
-	p = buffer = malloc(4050);
+	p = malloc(4050);
 
 	for (i = 0; i < FIRST_NAMED_HOOK; i++, p += 4)
 	{

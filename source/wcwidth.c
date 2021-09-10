@@ -500,7 +500,6 @@ int	quick_display_column_count (const unsigned char *str)
 int	count_initial_codepoints (const unsigned char *str, const unsigned char *p)
 {
 	const unsigned char *s;
-	int	code_point;
 	int	length = 0;
 	int	x;
 
@@ -508,7 +507,7 @@ int	count_initial_codepoints (const unsigned char *str, const unsigned char *p)
 		return 0;
 
 	s = str;
-	while ((code_point = next_code_point(&s, 1)))
+	while (next_code_point(&s, 1))
 	{
 		length++;
 		if (s >= p)

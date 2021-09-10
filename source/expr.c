@@ -1371,8 +1371,7 @@ char	*expand_alias	(const char *string, const char *args)
 
 	quote_temp[1] = 0;
 
-	stuff = LOCAL_COPY(string);
-	ptr = free_stuff = stuff;
+	ptr = stuff = LOCAL_COPY(string);
 
 	while (ptr && *ptr)
 	{
@@ -1463,13 +1462,16 @@ char	*expand_alias	(const char *string, const char *args)
 	if (stuff)
 		malloc_strcat_ues_c(&buffer, stuff, unescape, &buffclue);
 
-	if (get_int_var(DEBUG_VAR) & DEBUG_EXPANSIONS)
-		privileged_yell("Expanded " BOLD_TOG_STR "[" BOLD_TOG_STR "%s" BOLD_TOG_STR "]" BOLD_TOG_STR " to " BOLD_TOG_STR "[" BOLD_TOG_STR "%s" BOLD_TOG_STR "]" BOLD_TOG_STR, string, buffer);
-
 #if 0						/* Maybe a good idea later? */
 	if (!buffer)
 		panic(1, "expanded_alias [%s] returning NULL!", string);
+#else
+	if (!buffer)
+		buffer = malloc_strdup(empty_string);
 #endif
+
+	if (get_int_var(DEBUG_VAR) & DEBUG_EXPANSIONS)
+		privileged_yell("Expanded " BOLD_TOG_STR "[" BOLD_TOG_STR "%s" BOLD_TOG_STR "]" BOLD_TOG_STR " to " BOLD_TOG_STR "[" BOLD_TOG_STR "%s" BOLD_TOG_STR "]" BOLD_TOG_STR, string, buffer);
 
 	return buffer;
 }
@@ -1567,13 +1569,16 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 
 			if ((span = MatchingBracket(ph, '(', ')')) >= 0)
 				ptr = ph + span;
-			else
+			else if ((ptr = strchr(ph, ')')))
 				ptr = strchr(ph, ')');
+			else
+			{
+				yell("Unmatched ( after $ starting at [%-.20s] (continuing anyways)", ph);
+				ptr = ph;
+			}
 
 			if (ptr)
 				*ptr++ = 0;
-			else
-				yell("Unmatched ( after $ starting at [%-.20s] (continuing anyways)", ph);
 
 			/*
 			 * Keep expanding as long as neccesary.
@@ -1587,8 +1592,8 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			}
 			while (tmp && *tmp == '$');
 
-			alias_special_char(&sub_buffer, tmp, args, 
-						quote_em);
+			if (tmp)
+				alias_special_char(&sub_buffer, tmp, args, quote_em);
 
 			/* Some kind of bogus expando */
 			if (sub_buffer == NULL)
@@ -1712,7 +1717,9 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			    *rest = c2;
 			}
 
-			if (c == '#')
+			if (!sub_buffer)
+			    val = malloc_strdup(zero);
+			else if (c == '#')
 			    val = malloc_strdup(ltoa(count_words(sub_buffer, DWORD_EXTRACTW, "\"")));
 			else
 			    val = malloc_strdup(ltoa(strlen(sub_buffer)));

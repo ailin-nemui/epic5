@@ -185,7 +185,7 @@ static Binding *add_binding (const char *name, BindFunction func, char *alias)
 	if (!name)
 		return NULL; 	/* no binding name. */
 
-	if ((bp = find_binding(name)))
+	if (find_binding(name))
 	{
 		yell("Binding %s already exists!", name);
 		return NULL;

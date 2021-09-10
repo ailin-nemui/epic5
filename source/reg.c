@@ -537,7 +537,7 @@ int wild_match (const char *p, const char *str)
 		 * We will have to null this out, but not until we've used it
 		 * XXX This seems to be a no-op.  Why bother?
 		 */
-		placeholder = ptr = ptr2 = strstr(pattern, "\\[");
+		placeholder = ptr = strstr(pattern, "\\[");
 
 		/*
 		 * Look for the matching \].
@@ -707,7 +707,7 @@ char *	pattern2regex (const char *pattern, int *weight)
 			char *ptr, *ptr2, *arg, *placeholder;
 			int nest = 1;
 
-			placeholder = ptr = ptr2 = strstr(pattern, "\\[");
+			placeholder = ptr = strstr(pattern, "\\[");
 			do
 			{
 				switch (ptr[1]) 

@@ -2557,11 +2557,10 @@ const char 	*get_prompt_by_refnum (unsigned refnum)
  */
 const char 	*get_target_by_refnum (unsigned refnum)
 {
-	Window	*tmp;
 	const char *	cc;
 
-	if (!(tmp = get_window_by_refnum(refnum)))
-		if (!(tmp = last_input_screen->current_window))
+	if (!get_window_by_refnum(refnum))
+		if (!last_input_screen->current_window)
 			return NULL;
 
 	if ((cc = get_equery_by_refnum(refnum)))
@@ -7472,6 +7471,11 @@ BUILT_IN_KEYBINDING(toggle_stop_screen)
 void 	recalculate_window_cursor_and_display_ip (Window *window)
 {
 	Display *tmp;
+
+	/* XXX - This is "impossible", but it's here to satisfy clang's analyzer */
+	if (window->display_ip == NULL)
+		panic(1, "recalculate_window_cursor_and_display_ip: window %d's display_ip is NULL",
+			window->refnum);
 
 	window->cursor = 0;
 	window->display_buffer_size = 0;

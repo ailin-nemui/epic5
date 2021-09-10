@@ -867,7 +867,6 @@ target_ok:
 const char *	outbound_recode (const char *to, int server, const char *message, char **extra)
 {
 	iconv_t	i;
-	const char *	encodingx;
 	char *	new_buffer;
 	size_t	new_buffer_len;
 	char *copy;
@@ -887,7 +886,7 @@ const char *	outbound_recode (const char *to, int server, const char *message, c
 	}
 
 	/* If no recoding is necessary, then we're done. */
-	if (!(encodingx = decide_encoding(NULL, to, server, &i)))
+	if (!decide_encoding(NULL, to, server, &i))
 	{
 		if (x_debug & DEBUG_RECODE)
 			yell("ob: I can't decide on an encoding, so i can't recode");
@@ -940,7 +939,6 @@ const char *	inbound_recode (const char *from, int server, const char *to, const
 {
 	iconv_t	i;
 	char *	msg;
-	const char *	encodingx;
 	char *	new_buffer;
 	size_t	new_buffer_len;
 
@@ -974,7 +972,7 @@ const char *	inbound_recode (const char *from, int server, const char *to, const
 	/*
 	 * XXX TODO -- This should be impossible.  A panic is probably better.
 	 */
-	if (!(encodingx = decide_encoding(from, to, server, &i)))
+	if (!decide_encoding(from, to, server, &i))
 	{
 		if (x_debug & DEBUG_RECODE)
 			yell("ib: I couldn't figure out what encoding rule to use.  This is supposed to be impossible.");
@@ -1030,7 +1028,7 @@ int     ucs_to_console (u_32int_t codepoint, unsigned char *deststr, size_t dest
 
 	dest = deststr;
 
-	if ((n = iconv(xlat, &source, &utf8strsiz, &dest, &deststrsiz)) != 0)
+	if (iconv(xlat, &source, &utf8strsiz, &dest, &deststrsiz) != 0)
 	{
 		if (errno == EINVAL || errno == EILSEQ)
 		{
@@ -1266,7 +1264,7 @@ static int	sanity_check_encoding (const char *encodingx, int verbose)
 	size_t		c_size;
 	char		utf8str[16], *x;
 	size_t		x_size;
-	int		i, n, errors;
+	int		i, errors;
 
 	/*
 	 * An encoding is acceptable IF AND ONLY IF:
@@ -1313,7 +1311,7 @@ static int	sanity_check_encoding (const char *encodingx, int verbose)
 		x = utf8str;
 		x_size = sizeof(utf8str);
 
-		if ((n = iconv(ti, &cstr, &c_size, &x, &x_size)) != 0)
+		if (iconv(ti, &cstr, &c_size, &x, &x_size) != 0)
 		{
 			if (errno == EINVAL || errno == EILSEQ)
 				errors++;

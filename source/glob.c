@@ -248,10 +248,11 @@ static int globexp2	(	const Char *ptr,
 	/* copy part up to the brace */
 	for (lm = patbuf, pm = pattern; pm != ptr; *lm++ = *pm++)
 		continue;
+	*lm = EOS;
 	ls = lm;
 
 	/* Find the balanced brace */
-	for (i = 0, pe = ++ptr; *pe; pe++)
+	for (i = 0, pe = ++ptr; *pe != EOS; pe++)
 	{
 		if (*pe == LBRACKET) 
 		{
@@ -421,6 +422,11 @@ static int glob0		(	const Char *pattern,
 	Char		patbuf[PATH_MAX+1];
 
 	qpatnext = globtilde(pattern, patbuf, pglob);
+	if (qpatnext == NULL) 
+	{
+		errno = E2BIG;
+		return (GLOB_NOSPACE);
+	}
 	oldpathc = pglob->gl_pathc;
 	bufnext = patbuf;
 

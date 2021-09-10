@@ -926,7 +926,7 @@ int	ssl_connected (int vfd)
 	 * a file somewhere and use it to detect if the certificate
 	 * changed between connections.   Or something clever.
 	 */
-	if (do_hook(SSL_SERVER_CERT_LIST, "%d %s %s %d %d %s %s %d %d", 
+	if (do_hook(SSL_SERVER_CERT_LIST, "%d %s %s %d %d %s %s %d %d %d %d", 
 			x->md.vfd, 
 			x->md.u_cert_subject, x->md.u_cert_issuer, 
 			x->md.pkey_bits, x->md.most_serious_error,

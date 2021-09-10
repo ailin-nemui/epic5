@@ -4,6 +4,9 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * The reconnect script should "save" channels in an 
 	/on channel_lost when server_state($0) == CLOSING
+* Sometimes /server + does not always find another server
+  in the same group (wrap around problem?) (rb zlonix)
+
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1013,3 +1016,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add support for (arglist) {block} statement type
 * Add /window clearlevel <levels> (rb zlonix)
 * The #define DEFAULT_STATUS_HOLDMODE was different from UPDATES and irregular
+* Fix many things clang's static analyzer pointed out.
