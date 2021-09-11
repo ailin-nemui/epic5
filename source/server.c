@@ -764,6 +764,7 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	memset(&s->uh_addr, 0, sizeof(s->uh_addr));
 	memset(&s->local_sockname, 0, sizeof(s->local_sockname));
 	memset(&s->remote_sockname, 0, sizeof(s->remote_sockname));
+	s->remote_paddr = NULL;
 	s->redirect = NULL;
 	s->cookie = NULL;
 	s->quit_message = NULL;
@@ -904,6 +905,7 @@ static 	void 	remove_from_server_list (int i)
 	new_free(&s->sent_body);
 	new_free(&s->funny_match);
 	new_free(&s->default_realname);
+	new_free(&s->remote_paddr);
 	destroy_notify_list(i);
 	destroy_005(i);
 	reset_server_altnames(i, NULL);
@@ -1627,6 +1629,8 @@ something_broke:
 
 			/* Update this! */
 			*(SA *)&s->remote_sockname = *(SA *)&name;
+			s->remote_paddr = inet_sa_to_paddr((SA *)&name, 0);
+			say("Connected to IP address %s", s->remote_paddr);
 
 			/*
 			 * For SSL server connections, we have to take a little
@@ -3088,6 +3092,20 @@ int	get_server_local_port (int refnum)
 	return 0;
 }
 
+static const char *	get_server_remote_paddr (int refnum)
+{
+	Server *	s;
+
+	if (!(s = get_server(refnum)))
+		return 0;
+
+	if (is_server_open(refnum) && s->remote_paddr)
+		return s->remote_paddr;
+
+	return empty_string;
+}
+
+
 static SS	get_server_remote_addr (int refnum)
 {
 	Server *s;
@@ -4511,6 +4529,9 @@ char 	*serverctl 	(char *input)
 		} else if (!my_strnicmp(listc, "PORT", len)) {
 			num = get_server_port(refnum);
 			RETURN_INT(num);
+		} else if (!my_strnicmp(listc, "PADDR", len)) {
+			ret = get_server_remote_paddr(refnum);
+			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "LOCALPORT", len)) {
 			num = get_server_local_port(refnum);
 			RETURN_INT(num);

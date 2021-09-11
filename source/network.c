@@ -441,6 +441,33 @@ int	inet_ntostr (SA *name, char *host, int hsize, char *port, int psize, int fla
 	return 0;
 }
 
+/*
+ * NAME: inet_sa_to_paddr
+ * USAGE: Convert a 'sockaddr name' (SA) into a p-addr
+ * PLAIN ENGLISH: Convert getpeername into "1.2.3.4"
+ * ARGS: name - The socket address, usually returned by getpeername(),
+ *	 flags - extra flags you want to pass to getnameinfo() 
+ *		 note, NI_NUMERICHOST is always included.
+ */
+char *	inet_sa_to_paddr (SA *name, int flags)
+{
+	char		buffer[8192];
+	char *		retval;
+	int		gni_retval;
+	socklen_t	len;
+
+	len = socklen(name);
+	if ((gni_retval = Getnameinfo(name, len, buffer, sizeof(buffer),
+					NULL, 0, flags | NI_NUMERICHOST)))
+	{
+		syserr(-1, "inet_sa_to_paddr: Getnameinfo(sockaddr->p_addr) failed: %s",
+					gai_strerror(gni_retval));
+		return malloc_strdup("<error>");
+	}
+
+	return malloc_strdup(buffer);
+}
+
 /* * * * * * * * * */
 /* Only used by $convert() and $nametoip() */
 /*

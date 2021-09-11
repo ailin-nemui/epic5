@@ -68,6 +68,7 @@ const	AI *		next_addr;		/* The next one to try upon failure */
 	/* state = CONNECTING */
 	SS		local_sockname; 	/* sockname of this connection */
 	SS		remote_sockname; 	/* sockname of this connection */
+	char *		remote_paddr;		/* p-addr of remote_sockname */
 
 	/* state = SSL_CONNECTING */
 	int		accept_cert;		/* Whether we accept the SSL certificate */

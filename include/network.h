@@ -51,6 +51,7 @@
 
 int     inet_strton             (const char *, const char *, SA *, int);
 int     inet_ntostr             (SA *, char *, int, char *, int, int);
+char *  inet_sa_to_paddr	(SA *name, int flags);
 int	inet_hntop             (int, const char *, char *, int);
 int	inet_ptohn             (int, const char *, char *, int);
 int	one_to_another         (int, const char *, char *, int);

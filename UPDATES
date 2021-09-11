@@ -1,5 +1,10 @@
 EPIC5-2.2
 
+*** News 09/11/2021 -- New option,  $serverctl(GET x PADDR)
+	The $serverctl(GET x PADDR) returns the server's presentation
+	address.  This is "1.2.3.4" for ipv4, or "2600::1" for ipv6.
+	This represents the IP address we're connected to.
+
 *** News 09/11/2021 -- New /window operation, /WINDOW CLEARREGEX <regex>
 	This was requested by Zlonix.
 
