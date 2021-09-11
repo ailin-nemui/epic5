@@ -677,7 +677,7 @@ static	time_t	last_ctcp_parsed = 0;
 				{
 					strlcat(local_ctcp_buffer, ptr, sizeof local_ctcp_buffer);
 					new_free(&ptr);
-					continue;
+					/* continue; */  /* XXX Sigh */
 				}
 			}
 
