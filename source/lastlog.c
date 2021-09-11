@@ -340,6 +340,47 @@ void 	clear_level_from_lastlog (Window *window, Mask *levels)
 }
 
 /*
+ * clear_regex_from_lastlog: Removes all items whose text matches a given regex
+ * from a window, unconditionally and irreversibly
+ */
+void 	clear_regex_from_lastlog (Window *window, const char *regex)
+{
+	Lastlog *item;
+	regex_t	preg;
+	int	errcode;
+
+	if (!regex)
+		return;
+
+	if ((errcode = regcomp(&preg, regex, REG_EXTENDED|REG_ICASE|REG_NOSUB)))
+	{
+		char	buffer[8192];
+
+		*buffer = 0;
+		regerror(errcode, &preg, buffer, sizeof(buffer));
+		yell("clear_regex_from_lastlog: could not compile regex "
+			"regcomp(%s) returned %d (%s)",
+			regex, errcode, buffer);
+		return;
+	}
+
+	item = oldest_lastlog_for_window(window);
+	while (item)
+	{
+		Lastlog *next_item;
+
+		next_item = newer_lastlog_entry(item, window);
+		if (!regexec(&preg, item->msg, 0, NULL, 0))
+		{
+			remove_lastlog_item(item);
+			window_scrollback_needs_rebuild(window);
+		}
+		item = next_item;
+	}
+	regfree(&preg);
+}
+
+/*
  * set_lastlog_size: sets up a lastlog buffer of size given.  If the lastlog
  * has gotten larger than it was before, all newer lastlog entries remain.
  * If it get smaller, some are deleted from the end. 

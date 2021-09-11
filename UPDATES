@@ -1,5 +1,15 @@
 EPIC5-2.2
 
+*** News 09/11/2021 -- New /window operation, /WINDOW CLEARREGEX <regex>
+	This was requested by Zlonix.
+
+	The /WINDOW CLEARREGEX <regex> operation removes all items from
+	the window's lastlog whose text (what you see on the screen) 
+	matches the <regex>.  Removing them from the lastlog removes
+	them from the scrollback and your screen as well.  This is useful
+	for making conversations with annoying bots go away retroactively.
+	Example:	/window clearregex annoybot
+
 *** News 09/11/2021 -- New /ON, /ON RECONNECT_REQUIRED 
 	The /ON RECONNECT_REQUIRED hook is thrown by the client when it
 	feels that a reconnection intervention is appropriate.  

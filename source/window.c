@@ -6470,6 +6470,25 @@ static Window *window_clearlevel (Window *window, char **args)
 	return window;
 }
 
+/* WINDOW CLEARREGEX - Remove all lastlog items matching a regex */
+static Window *window_clearregex (Window *window, char **args)
+{
+	Mask	mask;
+	char *	rejects = NULL;
+	char *	arg;
+
+	if (!args)
+	{
+		return window;
+	}
+
+	arg = new_next_arg(*args, args);;
+	clear_regex_from_lastlog(window, arg);
+	return window;
+}
+
+
+
 
 typedef Window *(*window_func) (Window *, char **args);
 
@@ -6488,6 +6507,7 @@ static const window_ops options [] = {
 	{ "CLAIM",		window_claim		},
 	{ "CLEAR",		window_clear		},
 	{ "CLEARLEVEL",		window_clearlevel	},
+	{ "CLEARREGEX",		window_clearregex	},
 	{ "CREATE",		window_create 		},
 	{ "DELETE",		window_delete 		},
 	{ "DELETE_KILL",	window_delete_kill	},
