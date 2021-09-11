@@ -1202,8 +1202,8 @@ static void	p_rpong (const char *from, const char *comm, const char **ArgList)
 	 */
 
 	delay = time(NULL) - atol(orig_time);
-	say("Pingtime %s - %s : %s ms (total delay: %ld s)",
-		from, target_server, millisecs, delay);
+	say("Pingtime %s - %s : %s ms (total delay: "INTMAX_FORMAT" s)",
+		from, target_server, millisecs, (intmax_t)delay);
 }
 
 /* 

@@ -2025,7 +2025,7 @@ static	const char	*format =
 		/* assume the other end encoded the filename */
 		encoded_description = malloc_strdup(dcc->description);
 
-	    if (do_hook(DCC_LIST_LIST, "%s %s %s %s %ld "INTMAX_FORMAT
+	    if (do_hook(DCC_LIST_LIST, "%s %s %s %s " INTMAX_FORMAT " "INTMAX_FORMAT
 							" "INTMAX_FORMAT" %s",
 				dcc_types[flags & DCC_TYPES],
 				zero,			/* No encryption */
@@ -2035,7 +2035,7 @@ static	const char	*format =
 					flags & DCC_MY_OFFER     ? "Waiting" :
 					flags & DCC_THEIR_OFFER  ? "Offered" :
 							           "Unknown",
-				dcc->starttime.tv_sec,
+				(intmax_t)dcc->starttime.tv_sec,
 			        dcc->filesize,
 				dcc->bytes_sent ? dcc->bytes_sent
 						   : dcc->bytes_read,

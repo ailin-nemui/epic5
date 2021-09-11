@@ -4,10 +4,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * Sometimes /server + does not always find another server
   in the same group (wrap around problem?) (rb zlonix)
-* There are places where (time_t)s are printf'd by %ld
-	https://clbin.com/PWmVZ
 * jm needs server's p-addr (wcarson is interested)
-
+* Verify that both ends of CTCP requests work with the script
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1021,3 +1019,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /on reconnect_required (sb zlonix)
 * /WINDOW winref SERVER servref should no-op if it's already that way.
 * Add /window clearregex <regex> (rb zlonix)
+* When printf()ing (time_t)s, always cast to (intmax_t) and use INTMAX_FORMAT

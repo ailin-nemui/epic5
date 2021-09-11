@@ -109,7 +109,7 @@ static		int	hour = -1;
 
 		from_server = primary_server;
 		do_hook(TIMER_LIST, "%02d:%02d", hour, min);
-		do_hook(IDLE_LIST, "%ld", (tv.tv_sec - idle_time.tv_sec) / 60);
+		do_hook(IDLE_LIST, INTMAX_FORMAT, (intmax_t)(tv.tv_sec - idle_time.tv_sec) / 60);
 		from_server = old_server;
 	}
 }

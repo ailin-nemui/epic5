@@ -1264,10 +1264,11 @@ DISPLAY:
 			time2 = (time_t)my_atol(time2_str);
 			time3 = (time_t)my_atol(time3_str);
 
-			put_it("%s Channel %s was created at %ld, "
-				  "+c was last set at %ld, "
-				  "and has been opless since %ld", banner(), 
-					channel, time1, time2, time3);
+			put_it("%s Channel %s was created at "INTMAX_FORMAT", "
+				  "+c was last set at "INTMAX_FORMAT", "
+				  "and has been opless since "INTMAX_FORMAT, 
+					banner(), channel, (intmax_t)time1, 
+					(intmax_t)time2, (intmax_t)time3);
 		}
 		else
 		{
@@ -1322,8 +1323,8 @@ DISPLAY:
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		howlong = time(NULL) - my_atol(when_str);
-		put_it("%s The topic was set by %s %ld sec ago",banner(), 
-				nick, howlong);
+		put_it("%s The topic was set by %s "INTMAX_FORMAT" sec ago",
+				banner(), nick, (intmax_t)howlong);
 		break;
 	}
 
@@ -1489,8 +1490,8 @@ DISPLAY:
 		if (perp && when_str) 
 		{
 			howlong = time(NULL) - my_atol(when_str);
-			put_it("%s %s %-25s set by %-10s %ld sec ago", 
-				banner(), channel, ban, perp, howlong);
+			put_it("%s %s %-25s set by %-10s "INTMAX_FORMAT" sec ago", 
+				banner(), channel, ban, perp, (intmax_t)howlong);
 		}
 		else
 			put_it("%s %s %s", banner(), channel, ban);
