@@ -206,6 +206,7 @@ Hookables hook_function_templates[] =
 	{ "PUBLIC_OTHER",	NULL,	3,	0,	0,	NULL, 0 },
 	{ "RAW_IRC",		NULL,	1,	0,	0,	NULL, 0 },
 	{ "RAW_IRC_BYTES",	NULL,	1,	0,	0,	NULL, 0 },
+	{ "RECONNECT_REQUIRED",	NULL,	1,	0,	0,	NULL, 0 },
 	{ "REDIRECT",		NULL,	2,	0,	HF_NORECURSE,	NULL, 0 },
 	{ "SEND_ACTION",	NULL,	2,	0,	HF_NORECURSE,	NULL, 0 },
 	{ "SEND_CTCP",		NULL,	3,	0,	HF_NORECURSE,	NULL, 0 },

@@ -1815,6 +1815,7 @@ return_from_ssl_detour:
 				case -1:	/* EOF or other error */
 				{
 					server_is_unregistered(i);
+					do_hook(RECONNECT_REQUIRED_LIST, "%d", i);
 					close_server(i, NULL);
 					say("Connection closed from %s", s->info->host);
 					i++;		/* NEVER DELETE THIS! */
@@ -2062,6 +2063,7 @@ void	send_to_aserver_raw (int refnum, size_t len, const char *buffer)
 		{
 			say("Write to server failed.  Resetting connection.");
 			set_server_state(refnum, SERVER_ERROR);
+			do_hook(RECONNECT_REQUIRED_LIST, "%d", refnum);
 			close_server(refnum, NULL);
 		}
 	    }

@@ -1,5 +1,37 @@
 EPIC5-2.2
 
+*** News 09/11/2021 -- New /ON, /ON RECONNECT_REQUIRED 
+	The /ON RECONNECT_REQUIRED hook is thrown by the client when it
+	feels that a reconnection intervention is appropriate.  
+	We are going to start this small, and build in more use cases
+	as we go forward.
+
+	  1. When server is in ACTIVE state and the socket dies
+	  2. When a write to the server fails
+
+	In these situations, your script should take whatever measures
+	are necessary to save the state of windows, channels, etc,
+	in preparation for the upcoming disconnection.
+
+	This /ON is thrown while the server is in a state of chaos.
+	The internal state of the system is wrong, and you must assume
+	that the connection to the server has already been lost.  
+
+	YOU MUST _*_*_NOT_*_*_ try to do anything clever in this /on.
+	If you have this idea of moving windows or servers or channels,
+	please don't!  I recommend setting up /timer's and /defer's so
+	you can do those sorts of changes away from the blast radius.
+
+	YOU MUST _*_*_NEVER_*_*_ attempt to do any direct intervention
+	in this /on -- instead, you should save information and create 
+	a timer to deal with the problem later.  YOU HAVE BEEN WARNED.
+
+	/ON RECONNECT_REQUIRED currently provides this information
+		$0 	The server that unexpected failed on us.
+			Reconnection will be required.  Remember,
+			you cannot do reconnection in the /on, you
+			have to schedule it to happen "later"
+
 *** News 09/08/2021 -- New /window operation, /WINDOW CLEARLEVEL [levels]
 	This was requested by Zlonix.
 
