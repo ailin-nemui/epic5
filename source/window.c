@@ -6063,33 +6063,44 @@ Window *window_server (Window *window, char **args)
 		if ((i = str_to_servref_with_update(arg)) == NOSERV)
 			i = str_to_newserv(arg);
 		from_server = i;
-
-		/*
-		 * Lose our channels
-		 */
-		destroy_window_waiting_channels(window->refnum);
-		if (window->server != i)
-			reassign_window_channels(window->refnum);
-
-		/*
-		 * Associate ourselves with the new server.
-		 */
-		window_change_server(window, i);
 		status = get_server_state(i);
 
-		if (status > SERVER_RECONNECT && status < SERVER_EOF)
+		/*
+		 * This stuff only happens if the window is changing server.  
+		 * If you're not changing server, that's a no-op.
+		 */
+		if (window->server != i)
 		{
-		    if (old_server_lastlog_mask) {
-			renormalize_window_levels(window->refnum, 
-					*old_server_lastlog_mask);
-			revamp_window_masks(window);
-		    }
-		}
-		else if (status > SERVER_ACTIVE)
-			disconnectcmd("RECONNECT", NULL, NULL);
-			/* set_server_status(i, SERVER_RECONNECT); */
+			/*
+			 * Lose our channels
+			 */
+			destroy_window_waiting_channels(window->refnum);
+			reassign_window_channels(window->refnum);
 
-		malloc_strcpy(&window->original_server_string, arg);
+			/*
+			 * Associate ourselves with the new server.
+			 */
+			window_change_server(window, i);
+
+			if (status > SERVER_RECONNECT && status < SERVER_EOF)
+			{
+			    if (old_server_lastlog_mask) {
+				renormalize_window_levels(window->refnum, 
+						*old_server_lastlog_mask);
+				revamp_window_masks(window);
+			    }
+			}
+			else if (status > SERVER_ACTIVE)
+				disconnectcmd("RECONNECT", NULL, NULL);
+				/* set_server_status(i, SERVER_RECONNECT); */
+
+			malloc_strcpy(&window->original_server_string, arg);
+		}
+		else
+		{
+			if (status == SERVER_CLOSED)
+				disconnectcmd("RECONNECT", NULL, NULL);
+		}
 	}
 	else
 		display_server_list();

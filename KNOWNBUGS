@@ -2,15 +2,8 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* The reconnect script should "save" channels in an 
-	/on channel_lost when server_state($0) == CLOSING
 * Sometimes /server + does not always find another server
   in the same group (wrap around problem?) (rb zlonix)
-* /window disconn sucks, as it calls /reconnect which can
-  result in an infinite loop 
-* /window server sucks as it monkeys with the destination
-  server without checking if the server is changing, or
-  if there are other things on the server
 * There are places where (time_t)s are printf'd by %ld
 	https://clbin.com/PWmVZ
 * jm needs server's p-addr (wcarson is interested)
@@ -1026,3 +1019,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * The #define DEFAULT_STATUS_HOLDMODE was different from UPDATES and irregular
 * Fix many things clang's static analyzer pointed out.
 * Add /on reconnect_required (sb zlonix)
+* /WINDOW winref SERVER servref should no-op if it's already that way.
