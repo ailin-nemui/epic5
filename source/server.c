@@ -1113,7 +1113,7 @@ static int	next_server_in_group (int oldserv, int direction)
 			newserv += number_of_servers;
 
 		/* Make sure the new server is valid. */
-		if (newserv > number_of_servers)
+		if (newserv >= number_of_servers)
 			newserv %= number_of_servers;
 
 		/* If there is no server at this refnum, skip it. */

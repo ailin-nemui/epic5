@@ -2,9 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Sometimes /server + does not always find another server
-  in the same group (wrap around problem?) (rb zlonix)
-* jm needs server's p-addr (wcarson is interested)
+<none>
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1021,3 +1019,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * When printf()ing (time_t)s, always cast to (intmax_t) and use INTMAX_FORMAT
 * When processing CTCPs with a script, don't short out /on ctcp or verbse_ctcp
 * Add $serverctl(GET x PADDR) returns the p-addr of a connected server.
+* Fix /server + so it correctly rolls over to server 0.
