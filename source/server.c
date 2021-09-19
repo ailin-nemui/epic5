@@ -1769,7 +1769,8 @@ return_from_ssl_detour:
 						s->accept_cert = 0;
 					}
 				}
-				s->accept_cert = 1;
+				else
+					s->accept_cert = 1;
 
 				/*
 				 * Let a script have a chance to overrule us
