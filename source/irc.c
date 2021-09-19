@@ -52,6 +52,7 @@ const char internal_version[] = "20210529";
 /*
  * In theory, this number is incremented for every commit.
  */
+/* XXX THIS IS A DEBUG BRANCH XXX NOT PRODUCTION CODE XXX */
 const unsigned long	commit_id = 1968;
 
 /*
