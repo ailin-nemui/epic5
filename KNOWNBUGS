@@ -1020,3 +1020,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * When processing CTCPs with a script, don't short out /on ctcp or verbse_ctcp
 * Add $serverctl(GET x PADDR) returns the p-addr of a connected server.
 * Fix /server + so it correctly rolls over to server 0.
+* Add $serverctl(GET x OPEN) [don't forget to document this]
+* Set parsing_server_index around server errors so /timers create correctly

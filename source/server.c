@@ -1818,10 +1818,13 @@ return_from_ssl_detour:
 
 				case -1:	/* EOF or other error */
 				{
+					parsing_server_index = i;
 					server_is_unregistered(i);
 					do_hook(RECONNECT_REQUIRED_LIST, "%d", i);
 					close_server(i, NULL);
 					say("Connection closed from %s", s->info->host);
+					parsing_server_index = NOSERV;
+
 					i++;		/* NEVER DELETE THIS! */
 					break;
 				}
@@ -4601,6 +4604,8 @@ char 	*serverctl 	(char *input)
 			RETURN_STR(get_server_realname(refnum));
 		} else if (!my_strnicmp(listc, "DEFAULT_REALNAME", len)) {
 			RETURN_STR(get_server_default_realname(refnum));
+		} else if (!my_strnicmp(listc, "OPEN", len)) {
+			RETURN_INT(is_server_open(refnum));
 		} else if (!my_strnicmp(listc, "SSL_", 4)) {
 			Server *s;
 			int	des;

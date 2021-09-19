@@ -52,7 +52,7 @@ const char internal_version[] = "20210529";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1966;
+const unsigned long	commit_id = 1967;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
