@@ -145,6 +145,7 @@ void	set_ssl_root_certs_location (void *stuff)
 	struct stat 	st;
 	VARIABLE *	v;
 	const char *	p;
+	Filename	path;
 
 	if (x_debug & DEBUG_SSL)
 		yell("SSL >>> HERE WE GO -- SETTING SSL ROOT CERTS LOCATION");
@@ -163,31 +164,47 @@ void	set_ssl_root_certs_location (void *stuff)
 		new_free(&x509_default_cert_location_dir);
 		new_free(&x509_default_cert_location_file);
 	}
-
-	/* 
-	 * If you set it to a directory, we overrule the directory default.
-	 * If you set it to a file, we overrule the file default.
-	 * If it's neither (or it doesn't exist, we change nothing.
-	 */
-	else if (stat(p, &st) == 0)
+	else
 	{
+	    Filename path;
+	    *path = 0;
+
+	    if (normalize_filename(p, path))
+		(void) 0;   /* File doesn't exist or is nonsense. just do the recovery */
+
+	    /* 
+	     * If you set it to a directory, we overrule the directory default.
+	     * If you set it to a file, we overrule the file default.
+	     * If it's neither (or it doesn't exist, we change nothing.
+	     */
+	    else if (stat(path, &st) == 0)
+	    {
+		if (x_debug & DEBUG_SSL)
+			yell("SSL >>> Evaluating new value of the /set: %s", path);
+
 		if (S_ISDIR(st.st_mode))
 		{
 			if (x_debug & DEBUG_SSL)
 				yell("SSL >>> The new value of the /set is a directory, so setting the directory");
-			malloc_strcpy(&x509_default_cert_location_dir, p);
+			malloc_strcpy(&x509_default_cert_location_dir, path);
 		}
 		else if (S_ISREG(st.st_mode))
 		{
 			if (x_debug & DEBUG_SSL)
 				yell("SSL >>> The new value of the /set is a file, so setting the file");
-			malloc_strcpy(&x509_default_cert_location_file, p);
+			malloc_strcpy(&x509_default_cert_location_file, path);
 		}
 		else
 		{
 			if (x_debug & DEBUG_SSL)
 				yell("SSL >>> The new value of the /set is neither file nor directory, so doing nothing.");
 		}
+	    }
+	    else
+	    {
+		if (x_debug & DEBUG_SSL)
+			yell("SSL >>> The new value of the /set does not exist, punting: %s", path);
+	    }
 	}
 
 	/*
