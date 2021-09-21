@@ -1,5 +1,9 @@
 EPIC5-2.2
 
+*** News 09/21/2021 -- Another round of clang static analysis
+	Somewhere around here we did another round of static analysis
+	with clang's analyzer, and fixed whatever it recommended.
+
 *** News 09/19/2021 -- "reconnect" script has been reimplemented
 	The reconnect script has been renamed to "reconnect.orig".
 	If you want the original behavior, just /load reconnect.orig
@@ -259,6 +263,8 @@ EPIC5-2.2
 *** News 08/30/2021 -- New server description field "ssl-strict"
 	[this feature was removed]
 
+*** News 05/29/2021 -- EPIC5-2.1.5 released here (Fecund) (Commit id: 1945)
+
 *** News 05/25/2021 -- Updated configure to autoconf-2.69
 	We upgraded configure from autoconf-2.13 to 2.69 here.
 	Along the way, we fixed the support for python3.8+
@@ -336,6 +342,8 @@ EPIC5-2.2
 		$uuid4(NODASHES) - UUID4 without dashes
 	EVERYTHING ELSE IS UNDEFINED BEHAVIOR (ie, other arguments may 
 	do something today, but forwards compatability is not guaranteed)
+
+*** News 03/26/2021 -- EPIC5-2.1.4 released here (Redound) (Commit id: 1927)
 
 *** News 02/13/2021 -- /UNLOAD now supports /TIMERs
 	If you create a /TIMER in a script you /LOAD with /PACKAGE
@@ -426,6 +434,7 @@ EPIC5-2.2
 	    such as /window killable off, then the attempt to kill the
 	    window will fail, and it will be orphaned.
 
+*** News 05/11/2020 -- EPIC5-2.1.2 released here (Lugubrious) (Commit id: 1908)
 
 *** News 05/09/2020 -- New built in function $execctl()
 	You can now program the /EXEC command with this low level function
@@ -667,6 +676,8 @@ EPIC5-2.2
 	You can use /EXEC -WINTARGET to send it to any window you want:
 	Example:
 		/exec -wintarget msgwin ls
+
+*** News 02/24/2019 -- EPIC5-2.1.1 released here (Abulia) (Commit id: 1899)
 
 *** News 02/05/2018 -- CTCP UTC now implemented as script
 	Given the below feature, CTCP PING support has been 
