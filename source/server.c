@@ -1406,6 +1406,7 @@ void	do_server (int fd)
 	int	des,
 		i, l;
 	char *extra = NULL;
+	int	found = 0;
 
 	for (i = 0; i < number_of_servers; i++)
 	{
@@ -1421,6 +1422,8 @@ void	do_server (int fd)
 
 		if (des != fd)
 			continue;		/* Move along. */
+
+		found = 1;			/* We found it */
 
 		from_server = i;
 		l = message_from(NULL, LEVEL_OTHER);
@@ -1866,6 +1869,12 @@ return_from_ssl_detour:
 
 		pop_message_from(l);
 		from_server = primary_server;
+	}
+
+	if (!found)
+	{
+		syserr(i, "FD [%d] says it is a server but no server claims it.  Closing it", fd);
+		new_close(fd);
 	}
 }
 

@@ -1,0 +1,261 @@
+if (word(2 $loadinfo()) != [pf]) {
+	load -pf $word(1 $loadinfo());
+	return;
+};
+
+package basic;
+
+## Basic script for EPIC5.
+## Written by zlonix@efnet, public domain.
+##
+## Version: 1.0 (September, 2021)
+##  - Initial roll-out
+
+## This script setup some basic irc environment for beginners
+
+window level none;
+
+fe ($jot(1 9)) jj {
+	alias $jj window swap $jj;
+	bind ^[$jj parse_command window swap $jj;
+};
+
+bind ^n parse_command window next;
+bind ^p parse_command window prev;
+
+## *****************************************************************************
+
+set -continued_line;
+set -status_user;
+set allow_c1_chars on;
+set beep off;
+set clock_24hour on;
+set dcc_store_path $HOME;
+set dispatch_unknown_commands on;
+set do_notify_immediately off;
+set floating_point_math on;
+set high_bit_escape 0;
+set hold_interval 1;
+set indent on;
+set input_prompt $$T> ;
+set lastlog 65536;
+set mode_stripper on;
+set new_server_lastlog_level none;
+set notify_level ctcps,actions,public,msgs,notices;
+set output_rewrite  $$Z $$1-;
+set scrollback 65536;
+set status_does_exp off;
+set status_format %T [%R] %*%=%@%N%#%S%{1}H%H%B%Q%A%C%+%I%O%M%F%L %D%U%X%Y%Z%W%> %{5}S %| ;
+set status_window ^;
+set switch_channels_between_windows off;
+
+addset window_options str;
+set window_options double off;
+
+^window $window_options;
+
+## *****************************************************************************
+
+on #-msg 100 * {
+	if ((querywin($0 $servernum()) == -1 || querywin($0 $servernum()) == 50) && winnum() != 50) {
+		@ ::msgs++;
+		set status_user \(Messages: $msgs\) ;
+		xecho -v -b Private message from $0 at $serverctl(GET $servernum() 005 NETWORK): $1-;
+	};
+
+	xecho ${winnam(MsgWin) ? [-w MsgWin] : []} \($serverctl(GET $servernum() 005 NETWORK)\) *$0* $1-;
+};
+
+on #-notice 100 * {
+	if ((querywin($0 $servernum()) == -1 || querywin($0 $servernum()) == 50) && winnum() != 50) {
+		@ ::msgs++;
+		set status_user \(Messages: $msgs\) ;
+		xecho -v -b Notice from $0 at $serverctl(GET $servernum() 005 NETWORK): $1-;
+	};
+
+	xecho ${winnam(MsgWin) ? [-w MsgWin] : []} \($serverctl(GET $servernum() 005 NETWORK)\) -$0\- $1-;
+};
+
+on #-switch_windows 100 '% % % 50' {
+	set -status_user;
+	@ ::msgs = 0;
+};
+
+on #-connect 100 * {
+	if (!winnam(MsgWin))
+		mwn;
+};
+
+## *****************************************************************************
+
+alias ' say $$*;
+
+alias back (void) {
+	if (@A) {
+		away;
+	} else {
+		xecho -b You're not away;
+	};
+};
+alias bans mode $$C +b;
+alias clear (void) { window flush_scrollback };
+alias eecho (text) {
+	eval echo $text;
+};
+alias join (chan, key, void) {
+	//join ${ischannel($chan) ? [] : [#]}$chan $key;
+};
+alias j join $$*;
+alias l (chan default "$C", void) {
+	part $chan;
+};
+alias mw msgwin 0 $$0;
+alias mwn msgwin 1 12;
+alias mwc (void) {
+	if (winnam(MsgWin))
+		^window MsgWin flush_scrollback ;
+};
+
+alias msgwin (type default "0", size default "12", void) {
+	if (winnam(MsgWin)) {
+		^window MsgWin kill;
+		^bind ^[\; nothing;
+		^bind ^[' nothing;
+		xecho -b Destroyed message window;
+	} else {
+		if (type) {
+			^window new_hide swap last name MsgWin number 50 level msg,notice double off noserv;
+			^window MsgWin status_format " ***%Q%F %> [Messages] ";
+			^window back;
+		} else {
+			^window push new name MsgWin number 50 size $size level msg,notice double off fixed on skip on swappable off noserv pop;
+			^window MsgWin status_format " *** %> [Messages] ";
+			^bind ^[\; parse_command window push refnum MsgWin scroll_backward 0 pop;
+			^bind ^[' parse_command window push refnum MsgWin scroll_forward 0 pop;
+		};
+
+		^window 50 level msgs,notices,ctcps,invites;
+		^window 50 notify_level ctcps,invites;
+
+		xecho -b Created ${type ? [hidden] : [split]} message window;
+	};
+};
+
+alias q query $$*;
+alias wb window balance;
+alias wi (nick default "$servernick()", void) {
+	//whois $nick
+};
+alias wii (nick default "$servernick()", void) {
+	//whois $nick $nick
+};
+alias wh window hide;
+alias wj (chan, key, void) {
+	^window new_hide swap last channel "${ischannel($chan) ? [] : [#]}$chan $key" $window_options;
+};
+alias wjj (chan, key, void) {
+	if (chan) {
+		@ :curwin = winnum();
+		fe ($revw($remw(50 $afterw($winnum() $numsort($windowctl(REFNUMS)))))) win {
+			window $win number ${win+1};
+		};
+		^wj $chan $key;
+		^window number ${curwin+1};
+	};
+};
+alias wk window kill;
+alias wks window killswap;
+alias wm window merge 50;
+alias wn window new;
+alias wnh ^window new_hide swap last $$window_options;
+alias wl (void) {
+	fe ($numsort($windowctl(REFNUMS))) ii {
+		@ :server = windowctl(GET $ii SERVER);
+		@ :servername = serverctl(GET $server NAME);
+		@ :port = serverctl(GET $server PORT);
+		@ :nick = servernick($server);
+		@ :chans = windowctl(GET $ii CHANNELS);
+		echo ${ii == winnum() ? [] : windowctl(GET $ii VISIBLE) ? [] : []}$[3]ii $[9]nick  $[25]servername $port     $chans;
+	};
+};
+alias wq window new_hide swap last query $$0;
+alias wqs window new query $$0 size 10;
+alias ws window show $$0;
+alias ww whowas $$0;
+alias umode mode $$servernick() $$*;
+alias uptime xecho -b Client [$$J rev.: $$info(i)] uptime: $$tdiff(${time() - F});
+
+## *****************************************************************************
+
+on -send_ctcp "PRIVMSG *" {
+	xecho -b Requesting a CTCP $2 from $1${*3 ? [: $3-] : []};
+}
+
+on ^317 '*' {
+	xecho -b $1 has been idle $tdiff($2);
+	xecho -b $1 signed on at $stime($3) \($tdiff(${time() - *3}) ago\);
+};
+
+on ^333 '*' {
+	xecho -b The topic was set by $2 at $strftime($3 %H:%M:%S %d-%b %Y) \($tdiff2(${time() - *3}) ago\);
+};
+
+on ^channel_signoff * {
+	xecho -b Signoff from $0: $1 ${*2 ? [\($2-\)] : [] };
+};
+
+on ^timer "*:00" xecho -b The time is $$0;
+on ^timer "00:00" xecho -b Date has changed to $$strftime(%d-%b %Y);
+
+alias window_swap_or_last (win) {
+	window ${(winnum($win) == winnum()) ? [swap last] : [refnum_or_swap $win]};
+};
+bind ^[w parse_command window_swap_or_last 50;
+
+## *****************************************************************************
+
+set -status_user1;
+addset highlight_list str;
+alias highlight.log (string) {
+	@ :fd = open(~/.epic/highlight W);
+	@ write($fd $string);
+	@ close($fd);
+};
+alias highlight.status (chan, void) {
+	@ :win = winchan($chan);
+	if (!winvisible($win) && findw($win $highlight_wins) == -1) {
+		@ push(::highlight_wins $win);
+		set status_user1 \(Highlight: $sar(g/ /,/$sort($highlight_wins))\) ;
+	};
+};
+set highlight_list zlonix misha terver russia kqueue _kq moscow mp4;
+#set status_user1 $${highlight_wins ? [\(Highlight: $sar(g/ /,/$sort($highlight_wins))\) ] :[]};
+on ^public '% % *\\\\[$$highlight_list\\\\]*' {
+	echo <$0> $2-;
+	highlight.log $strftime(%H:%M:%S %d-%b %Y) <$0:$1> $2-;
+	highlight.status $1;
+	if (!winvisible($winchan($1)))
+		xecho -v -b Highlight from $0 in $1 on $serverctl(GET $servernum() 005 NETWORK): $^*2-;
+};
+on ^public_other '% % *\\\\[$$highlight_list\\\\]*' {
+	echo <$0:$1> $2-;
+	highlight.log $strftime(%H:%M:%S %d-%b %Y) <$0:$1> $2-;
+	highlight.status $1;
+	if (!winvisible($winchan($1)))
+		xecho -v -b Highlight from $0 in $1 on $serverctl(GET $servernum() 005 NETWORK): $^*2-;
+};
+on #-switch_windows 100 '% % % \\\\[$$highlight_wins\\\\]' {
+	@ ::highlight_wins = remw($3 $highlight_wins);
+	if (@highlight_wins) {
+		set status_user1 \(Highlight: $sar(g/ /,/$sort($highlight_wins))\) ;
+	} else {
+		set -status_user1;
+	};
+};
+
+## *****************************************************************************
+
+on ^send_public * { echo -> \($0\) $1- };
+
+xecho -b Loading basics complete!;
+xdebug +crash;

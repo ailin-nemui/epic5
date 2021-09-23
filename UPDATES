@@ -833,6 +833,12 @@ EPIC5-2.2
 EPIC5-2.0
 EPIC5-1.8
 
+*** News 08/05/2016 -- EPIC5-2.0.1 released here (Commit id: 1869)
+
+*** News 01/30/2016 -- EPIC5-2.0 released here (Commit id: 1864)
+
+*** News 01/30/2016 -- EPIC5-1.8 released here (Commit id: 1862)
+
 *** News 01/30/2016 -- /WINDOW LOGFILE and /SET LOGFILE more like /LOG FILNAME
 	Historically, changing a logfile name (with /WINDOW LOGFILE and
 	/SET LOGFILE) does not affect the log status.  This leads to 
@@ -850,6 +856,8 @@ EPIC5-1.8
 	while it is open will close the existing log and open a new one.
 
 EPIC5-1.6
+
+*** News 01/30/2016 -- EPIC5-1.6 released here (Commit id: 1854)
 
 *** News 01/08/2016 -- Per-server vhosts now restrict protocol (ipv4/ipv6)
 	Historically, the client tries to connect to the server using the
@@ -962,6 +970,8 @@ EPIC5-1.6
 
 EPIC5-1.4
 
+*** News 08/29/2015 -- EPIC5-1.4 released here (Commit id: 1833)
+
 *** News 08/25/2015 -- Improved automargin support 
 	You can now use automargins to get better wrapping of long urls.
 
@@ -1009,6 +1019,8 @@ EPIC5-1.4
 EPIC5-1.2 
 EPIC5-1.1.11
 
+*** News 08/09/2015 -- EPIC5-1.2 released here (Commit id: 1817)
+
 *** News 07/20/2015 -- New operation: @serverctl(SET refnum UMODE ...)
 	You've never been able to SET your UMODE, becuase that never
 	made much sense.  But it was pointed out that the UMODE is used
@@ -1018,6 +1030,8 @@ EPIC5-1.1.11
 	So now, when the server is disconnected, you can change its umode,
 	which will be used when you next connect.  Try something like this:
 		on server_lost * {defer @serverctl(SET $0 UMODE i)}
+
+*** News 07/11/2015 -- EPIC5-1.1.11 released here (Commit id: 1810)
 
 *** News 07/09/2015 -- Don't do /redirect @W<refnum> <command>
 	You can /msg @W4 <stuff> for example to do an /xecho -w 4 <stuff>.
@@ -1236,6 +1250,10 @@ EPIC5-1.1.11
 
 EPIC5-1.1.10
 EPIC5-1.1.9
+
+*** News 04/13/2014 -- EPIC5-1.1.10 released here (Commit id: 1781)
+
+*** News 04/12/2014 -- EPIC5-1.1.9 released here (Commit id: 1780)
 
 *** News 04/16/2014 -- $fix_width() now fully works, and UTF-8 aware.
 	The $fix_width() function takes the following arguments:
