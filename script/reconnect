@@ -34,12 +34,13 @@ package reconnect3;
 ##
 ## Do not connect to more than one server per group. It's recommended to have
 ## sane ircII.servers file in your IRCLIB environment variable, with groups and
-## all of that (on disconnect the script tries to reconnect to the server 5
-## times before trying next server in the group, looping over when tried the
-## last one), also, note that Libera.chat supports supplying your password for
-## the account upon connect, through password token in server description so you
-## don't need to use sasl_auth script anymore. For details about server
-## description and its tokes visit http://help.epicsol.org/server_description.
+## all of that (on disconnect the script tries to reconnect to the server
+## $auto_reconnect_retries times before trying next server in the group, looping
+## over when tried the last one), also, note that Libera.chat supports supplying
+## your password for the account upon connect, through password token in server
+## description so you don't need to use sasl_auth script anymore. For details
+## about server description and its tokes visit
+## http://help.epicsol.org/server_description.
 ##
 ## Another limitation is that the script won't catch 'Connection refused', or
 ## any DNS errors, since it's not considered as action for 'reconnect_required'
@@ -50,6 +51,9 @@ package reconnect3;
 
 addset auto_reconnect_delay int;
 set auto_reconnect_delay 15;
+
+addset auto_reconnect_retries int;
+set auto_reconnect_retries 5;
 
 addset auto_reconnect bool {
 	if (*0 == [on]) {
@@ -105,7 +109,7 @@ addset auto_reconnect bool {
 				};
 
 				if (!serverctl(GET $server OPEN)) {
-					if (auto_reconnect.failures[$group_enc] < 5) {
+					if (auto_reconnect.failures[$group_enc] < auto_reconnect_retries) {
 						@ ::auto_reconnect.failures[$group_enc]++;
 						reconnect;
 					} else {
