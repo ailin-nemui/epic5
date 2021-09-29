@@ -3010,6 +3010,7 @@ BUILT_IN_COMMAND(disconnectcmd)
 	char	*server;
 	const char *message;
 	int	i;
+	int	discon = !strcmp(command, "DISCONNECT");
 	int	recon = strcmp(command, "DISCONNECT");
 
 	if (!(server = next_arg(args, &args)))
@@ -3021,6 +3022,13 @@ BUILT_IN_COMMAND(disconnectcmd)
 			say("No such server!");
 			return;
 		}
+	}
+
+	if (recon && is_server_registered(i))
+	{
+		say("You cannot /RECONNECT to a server you are actively on (%s)", get_server_itsname(i));
+		say("Use /DISCONNECT first.  This is a safety valve");
+		return;
 	}
 
 	if (get_server(i))
@@ -3038,12 +3046,12 @@ BUILT_IN_COMMAND(disconnectcmd)
 		    close_server(i, message);
 		    update_all_status();
 		}
-		else if (!recon)
+		else if (discon)
 		    say("You are already disconnected from server %s",
 						get_server_itsname(i));
 	}
 
-	if (!recon && !connected_to_server)
+	if (discon && !connected_to_server)
                 if (do_hook(DISCONNECT_LIST, "Disconnected by user request"))
 			say("You are not connected to a server, use /SERVER to connect.");
 
