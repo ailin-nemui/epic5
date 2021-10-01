@@ -1504,6 +1504,7 @@ BUILT_IN_KEYBINDING(send_line)
 	int	holding_already;
 	int	do_unscroll;
 
+	/* XXX No No No No No No XXX */
 	from_server = get_window_server(0);
 	line = LOCAL_COPY(INPUT_BUFFER);
 

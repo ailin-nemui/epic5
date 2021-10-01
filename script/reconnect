@@ -117,7 +117,7 @@ addset auto_reconnect bool {
 				if (!serverctl(GET $server OPEN)) {
 					if (auto_reconnect.failures[$group_enc] < auto_reconnect_retries) {
 						@ ::auto_reconnect.failures[$group_enc]++;
-						reconnect;
+						server +$server;
 					} else {
 						@ ::auto_reconnect.failures[$group_enc] = 0;
 						server +;

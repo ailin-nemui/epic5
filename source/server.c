@@ -3014,7 +3014,10 @@ BUILT_IN_COMMAND(disconnectcmd)
 	int	recon = strcmp(command, "DISCONNECT");
 
 	if (!(server = next_arg(args, &args)))
-		i = get_window_server(0);
+	{
+		if ((i = from_server) == NOSERV)
+			i = get_window_server(0);
+	}
 	else
 	{
 		if ((i = str_to_servref(server)) == NOSERV)

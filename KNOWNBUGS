@@ -1028,3 +1028,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Updated version of 'reconnect' from zlonix.
 * Convert our bundled test.c to be minimal c99 to avoid warnings
 * Don't permit /reconnect on servers that are actively working
+* /RECONNECT must not default to the current input window (bah)
+* Reconnect script should use /server +refnum, not /reconnect
