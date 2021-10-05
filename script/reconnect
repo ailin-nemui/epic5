@@ -123,7 +123,7 @@ addset auto_reconnect bool {
 						server +$server;
 					} else {
 						@ ::auto_reconnect.failures[$group_enc] = 0;
-						if (auto_reconnect_try_other_servers == [on]) {
+						if (auto_reconnect_try_other_servers == [on] && group != [<default>]) {
 							server +;
 						} else {
 							xecho -b Maximum auto reconnect retries failed - Use /RECONNECT to reconnect;

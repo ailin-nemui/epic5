@@ -1030,3 +1030,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't permit /reconnect on servers that are actively working
 * /RECONNECT must not default to the current input window (bah)
 * Reconnect script should use /server +refnum, not /reconnect
+* Reconnect script should only do /server + on servers with groups
