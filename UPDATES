@@ -1,5 +1,7 @@
 EPIC5-2.2
 
+*** News 10/06/2021 -- EPIC5-2.1.6 (1981 - Impignorate) released Here
+
 *** News 09/21/2021 -- Another round of clang static analysis
 	Somewhere around here we did another round of static analysis
 	with clang's analyzer, and fixed whatever it recommended.
