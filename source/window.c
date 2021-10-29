@@ -7321,20 +7321,26 @@ static void 	window_scrollback_forwards_lines (Window *window, int my_lines)
  */
 static	int	window_scroll_regex_tester (Window *window, Display *line, void *meta)
 {
+	char *	denormal;
+
+	denormal = denormalize_string(line->line);
+
 	debuglog("window_scroll_regex_tester: window %d, display (ur %lld, cnt %lld, lr %lld, when %lld, txt %s",
 			window->refnum, (long long)line->unique_refnum, 
 					(long long)line->count, 
 					(long long)line->linked_refnum,
-					(long long)line->when, line->line);
+					(long long)line->when, denormal);
 
 	/* If it matches, stop here */
-	if (regexec((regex_t *)meta, line->line, 0, NULL, 0) == 0)
+	if (regexec((regex_t *)meta, denormal, 0, NULL, 0) == 0)
 	{
+		new_free(&denormal);
 		debuglog("regexec succeeded, found what i am looking for");
 		return -1;	/* Stop right here. */
 	}
 	else
 	{
+		new_free(&denormal);
 		debuglog("regexec failed, will keep looking");
 		return 0;	/* Just keep going. */
 	}
