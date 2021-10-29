@@ -1768,6 +1768,71 @@ unsigned char *	denormalize_string (const unsigned char *str)
 	return output;
 }
 
+/* 
+ * XXX I'm not sure where this belongs, but for now it goes here.
+ * This function converts a type-0 normalized string (with the attribute
+ * markers) into plain text (with no attributes)
+ *
+ * normalized_string_to_plain_text - Convert a Type 0 Normalized String into Type 1
+ *
+ * Arguments 
+ *	str 	- A Type 0 normalized string (ie, returned by 
+ *			new_normalize_string() with logical == 0 or 3)
+ * Return Value:
+ *	Just the plain text from the string.
+ */
+unsigned char *	normalized_string_to_plain_text (const unsigned char *str)
+{
+	unsigned char *	output = NULL;
+	size_t		maxpos;
+	Attribute 	olda, a;
+	size_t		span;
+	size_t		pos;
+
+        /* Reset all attributes to zero */
+        a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
+        a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
+	a.italic = 0;
+	olda = a;
+
+	/* 
+	 * The output string has a few extra chars on the end just 
+	 * in case you need to tack something else onto it.
+	 */
+	if (!str)
+		str = "<normalized_string_to_plain_text was called with NULL>";
+
+	maxpos = strlen(str);
+	output = (unsigned char *)new_malloc(maxpos + 192);
+	pos = 0;
+
+	while (*str)
+	{
+		if (pos > maxpos)
+		{
+			maxpos += 192; /* Extend 192 chars at a time */
+			RESIZE(output, unsigned char, maxpos + 192);
+		}
+		switch (*str)
+		{
+		    case '\006':
+		    {
+			if (read_attributes(str, &a))
+				continue;		/* Mangled */
+			str += 5;
+			break;
+		    }
+		    default:
+		    {
+			output[pos++] = *str++;
+			break;
+		    }
+		}
+	}
+	output[pos] = 0;
+	return output;
+}
+
 
 
 /*

@@ -7323,7 +7323,7 @@ static	int	window_scroll_regex_tester (Window *window, Display *line, void *meta
 {
 	char *	denormal;
 
-	denormal = denormalize_string(line->line);
+	denormal = normalized_string_to_plain_text(line->line);
 
 	debuglog("window_scroll_regex_tester: window %d, display (ur %lld, cnt %lld, lr %lld, when %lld, txt %s",
 			window->refnum, (long long)line->unique_refnum, 
