@@ -5907,10 +5907,18 @@ static int	new_search_term (const char *arg)
 	int	errcode;
 
 	if (last_regex)
+	{
+		debuglog("clearing last search term");
 		regfree(last_regex);
+	}
 	else
+	{
+		debuglog("Creating first search term");
 		last_regex = new_malloc(sizeof(*last_regex));
+	}
 
+	memset(last_regex, 0, sizeof(*last_regex));
+	debuglog("compiling regex: %s", arg);
 	errcode = regcomp(last_regex, arg, 
 				REG_EXTENDED | REG_ICASE | REG_NOSUB);
 	if (errcode != 0)
@@ -5918,11 +5926,13 @@ static int	new_search_term (const char *arg)
 		char	errstr[1024];
 
 		regerror(errcode, last_regex, errstr, sizeof(errstr));
+		debuglog("regex compile failed: %s : %s", arg, errstr);
 		say("The regex [%s] isn't acceptable because [%s]", 
 				arg, errstr);
 		new_free((char **)&last_regex);
 		return -1;
 	}
+	debuglog("regex appeared to compile successfully");
 	return 0;
 }
 
@@ -7311,11 +7321,23 @@ static void 	window_scrollback_forwards_lines (Window *window, int my_lines)
  */
 static	int	window_scroll_regex_tester (Window *window, Display *line, void *meta)
 {
+	debuglog("window_scroll_regex_tester: window %d, display (ur %lld, cnt %lld, lr %lld, when %lld, txt %s",
+			window->refnum, (long long)line->unique_refnum, 
+					(long long)line->count, 
+					(long long)line->linked_refnum,
+					(long long)line->when, line->line);
+
 	/* If it matches, stop here */
 	if (regexec((regex_t *)meta, line->line, 0, NULL, 0) == 0)
+	{
+		debuglog("regexec succeeded, found what i am looking for");
 		return -1;	/* Stop right here. */
+	}
 	else
+	{
+		debuglog("regexec failed, will keep looking");
 		return 0;	/* Just keep going. */
+	}
 }
 
 static void 	window_scrollback_to_string (Window *window, regex_t *preg)

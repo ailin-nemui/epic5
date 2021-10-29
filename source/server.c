@@ -654,7 +654,7 @@ static	int	serverinfo_to_servref (ServerInfo *si)
 	int	i, j, opened;
 	Server *s;
 
-	if (si->refnum != NOSERV && get_server(si->refnum))
+	if (si->refnum != NOSERV && (s = get_server(si->refnum)))
 		return si->refnum;
 
 	if (!si->host)
