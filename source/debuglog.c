@@ -98,7 +98,7 @@ int	debuglog (const char *format, ...)
 		sec = xnow.tv_sec;
 		tm = localtime(&sec);
 		strftime(timebuf, 10240, "%F %T", tm);
-		fprintf(debuglogf, "[%s.%04ld] ", timebuf, xnow.tv_usec / 1000);
+		fprintf(debuglogf, "[%s.%04ld] ", timebuf, (long)xnow.tv_usec / 1000);
                 vfprintf(debuglogf, format, args);
                 va_end(args);
 		fprintf(debuglogf, "\n");

@@ -2,7 +2,8 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-<none>
+* /on dcc_raw handling should set message_from() (rb Harz)
+* #include "config.h" should happen after system headers (rb skered)
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1033,3 +1034,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Reconnect script should only do /server + on servers with groups
 * EPIC5-2.1.6 (1981) (Impignorate) released here
 * Add debuglog testing for /window search_back (for fusion)
+* Strip all attributes when regex()ing /window search_back
+* Fix warnings on mac os x 12 (rb skered)
+

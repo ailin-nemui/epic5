@@ -2919,10 +2919,10 @@ int 	check_val (const char *sub)
 
 	/* Numbers that cause exceptional conditions in strtod() are true */
         if (errno == ERANGE
-#if defined(HAVE_FINITE)
-                                || finite(sval) == 0
-#elif defined(HAVE_ISFINITE)
+#if defined(HAVE_ISFINITE)
                                 || isfinite(sval) == 0
+#elif defined(HAVE_FINITE)
+                                || finite(sval) == 0
 #endif
                                                         )
 		return 1;
