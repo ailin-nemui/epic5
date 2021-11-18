@@ -12,9 +12,9 @@ EPIC5-2.2
 
 	So $json_implode() is our pilot test for json object argument lists.
 	It now supports the following two arguments:
-		root		The root of the assign tree (required)
-		compact		false - return human readable (default)
-				true - return one line
+		root	  string    The root of the assign tree (required)
+		compact	  boolean   false - return human readable (default)
+				    true - return one line
 
 	Example:
 		@ q.one = [val1]
