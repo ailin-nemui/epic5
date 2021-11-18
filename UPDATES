@@ -20,7 +20,7 @@ EPIC5-2.2
 		@ q.one = [val1]
 		@ q.two = [val2]
 	then,
-		$json_implode({"root": "q", "compact": "true"})
+		$json_implode({"root": "q", "compact": true})
 	would return
 		{"one":"val1","two","val2"}
 
