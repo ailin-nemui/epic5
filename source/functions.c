@@ -309,6 +309,7 @@ static	char
 	*function_json_error	(char *),
 	*function_json_explode	(char *),
 	*function_json_implode	(char *),
+	*function_jsontest	(char *),
 	*function_key 		(char *),
 	*function_killpid	(char *),
 	*function_leftpc	(char *),
@@ -620,6 +621,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "JSON_ERROR",         function_json_error 	},
 	{ "JSON_EXPLODE",       function_json_explode 	},
 	{ "JSON_IMPLODE",       function_json_implode 	},
+	{ "JSONTEST",       	function_jsontest 	},
 	{ "KEY",                function_key 		},
 	{ "KILLPID",		function_killpid	},
 	{ "LASTLOG",		function_lastlog	}, /* lastlog.h */
@@ -901,6 +903,192 @@ static int	func_exist (char *command)
 	if (func == NULL)
 		return 0;
 	return 1;
+}
+
+/*
+ * Convert a json object string into arguments as described by 'kwargs'.
+ */
+int	parse_kwargs (struct kwargs *kwargs, const char *input)
+{
+	cJSON *json = cJSON_Parse(input);
+	int	i;
+
+	if (json == NULL)
+	{
+		const char *error_ptr = cJSON_GetErrorPtr();
+		if (error_ptr != NULL)
+			yell("Error before: %s\n", error_ptr);
+		return -1;
+	}
+
+	while (kwargs && kwargs->kwarg)
+	{
+		const cJSON *value;
+
+		value = cJSON_GetObjectItem(json, kwargs->kwarg);
+		if (kwargs->type == KWARG_TYPE_STRING)
+		{
+			if (cJSON_IsInvalid(value))
+			{
+				malloc_strcpy((char **)kwargs->data, empty_string);
+			}
+			else if (cJSON_IsFalse(value))
+			{
+				malloc_strcpy((char **)kwargs->data, zero);
+			}
+			else if (cJSON_IsTrue(value))
+			{
+				malloc_strcpy((char **)kwargs->data, one);
+			}
+			else if (cJSON_IsNull(value))
+			{
+				malloc_strcpy((char **)kwargs->data, empty_string);
+			}
+			else if (cJSON_IsNumber(value))
+			{
+				malloc_sprintf((char **)kwargs->data, "%f", value->valuedouble);
+			}
+			else if (cJSON_IsString(value) && (value->valuestring != NULL))
+			{
+				malloc_strcpy((char **)kwargs->data, value->valuestring);
+			}
+			else if (cJSON_IsArray(value))
+			{
+				malloc_strcpy((char **)kwargs->data, "<unsupported array>");
+			}
+			else if (cJSON_IsObject(value))
+			{
+				malloc_strcpy((char **)kwargs->data, "<unsupported dict>");
+			}
+			else
+				say("kwarg %s not found or was invalid", kwargs->kwarg);
+		}
+		if (kwargs->type == KWARG_TYPE_INTEGER)
+		{
+			if (cJSON_IsInvalid(value))
+			{
+				*(intmax_t *)kwargs->data = 0;
+			}
+			else if (cJSON_IsFalse(value))
+			{
+				*(intmax_t *)kwargs->data = 0;
+			}
+			else if (cJSON_IsTrue(value))
+			{
+				*(intmax_t *)kwargs->data = 1;
+			}
+			else if (cJSON_IsNull(value))
+			{
+				*(intmax_t *)kwargs->data = 0;
+			}
+			else if (cJSON_IsNumber(value))
+			{
+				*(intmax_t *)kwargs->data = (intmax_t)value->valuedouble;
+			}
+			else if (cJSON_IsString(value) && (value->valuestring != NULL))
+			{
+				char *end = NULL;
+				*(intmax_t *)kwargs->data = (intmax_t)strtoimax(value->valuestring, &end, 0);
+			}
+			else if (cJSON_IsArray(value))
+			{
+				*(intmax_t *)kwargs->data = 0;
+			}
+			else if (cJSON_IsObject(value))
+			{
+				*(intmax_t *)kwargs->data = 0;
+			}
+			else
+				say("kwarg %s not found or was invalid", kwargs->kwarg);
+		}
+		if (kwargs->type == KWARG_TYPE_NUMBER)
+		{
+			if (cJSON_IsInvalid(value))
+			{
+				*(long double *)kwargs->data = 0;
+			}
+			else if (cJSON_IsFalse(value))
+			{
+				*(long double *)kwargs->data = 0;
+			}
+			else if (cJSON_IsTrue(value))
+			{
+				*(long double *)kwargs->data = 1;
+			}
+			else if (cJSON_IsNull(value))
+			{
+				*(long double *)kwargs->data = 0;
+			}
+			else if (cJSON_IsNumber(value))
+			{
+				*(long double *)kwargs->data = (long double)value->valuedouble;
+			}
+			else if (cJSON_IsString(value) && (value->valuestring != NULL))
+			{
+				char *end = NULL;
+				*(long double *)kwargs->data = (long double)strtod(value->valuestring, &end);
+			}
+			else if (cJSON_IsArray(value))
+			{
+				*(long double *)kwargs->data = 0;
+			}
+			else if (cJSON_IsObject(value))
+			{
+				*(long double *)kwargs->data = 0;
+			}
+			else
+				say("kwarg %s not found or was invalid", kwargs->kwarg);
+		}
+		if (kwargs->type == KWARG_TYPE_BOOL)
+		{
+			if (cJSON_IsInvalid(value))
+			{
+				*(int *)kwargs->data = 0;
+			}
+			else if (cJSON_IsFalse(value))
+			{
+				*(int *)kwargs->data = 0;
+			}
+			else if (cJSON_IsTrue(value))
+			{
+				*(int *)kwargs->data = 1;
+			}
+			else if (cJSON_IsNull(value))
+			{
+				*(int *)kwargs->data = 0;
+			}
+			else if (cJSON_IsNumber(value))
+			{
+				if (value->valuedouble)
+					*(int *)kwargs->data = 1;
+				else
+					*(int *)kwargs->data = 0;
+			}
+			else if (cJSON_IsString(value))
+			{
+				if (!value->valuestring || !*value->valuestring)
+					*(int *)kwargs->data = 0;
+				else if (!my_stricmp(value->valuestring, zero))
+					*(int *)kwargs->data = 0;
+				else
+					*(int *)kwargs->data = 1;
+			}
+			else if (cJSON_IsArray(value))
+			{
+				*(int *)kwargs->data = 0;
+			}
+			else if (cJSON_IsObject(value))
+			{
+				*(int *)kwargs->data = 0;
+			}
+			else
+				say("kwarg %s not found or was invalid", kwargs->kwarg);
+		}
+
+		kwargs++;
+	}
+	cJSON_Delete(json);
+	return 0;
 }
 
 
@@ -8072,7 +8260,7 @@ static int implode_struct_var(char *var, cJSON *parent)
 
 BUILT_IN_FUNCTION(function_json_implode, input)
 {
-	const char *var;
+	const char *var = NULL;
 	const char *canon_var;
 	cJSON *root;
 	char **sublist;
@@ -8081,9 +8269,23 @@ BUILT_IN_FUNCTION(function_json_implode, input)
 	char *json = NULL;
 	char *retval;
 	int err = 0;
+	int	compact = 0;
 
-	GET_FUNC_ARG(var, input);
+	char *name1 = NULL, *flag = NULL;
+	struct kwargs kwargs[] = {
+		{ "root", KWARG_TYPE_STRING, &var },
+		{ "compact", KWARG_TYPE_BOOL, &compact },
+		{ NULL, KWARG_TYPE_SENTINAL, NULL }
+	};
+
+	if (input && *input == '{')
+		parse_kwargs(kwargs, input);
+	else
+		GET_FUNC_ARG(var, input);
+
+	RETURN_IF_EMPTY(var);
 	canon_var = remove_brackets(var, NULL);
+
 
 	sublist = get_subarray_elements(canon_var, &count, VAR_ALIAS);
 	new_free(&canon_var);
@@ -8099,8 +8301,12 @@ BUILT_IN_FUNCTION(function_json_implode, input)
 			err = implode_struct_var(sublist[i], root);
 
 		if (err == 0)
-			json = cJSON_Print(root);
-
+		{
+			if (compact)
+				json = cJSON_PrintUnformatted(root);
+			else
+				json = cJSON_Print(root);
+		}
 		cJSON_Delete(root);
 	}
 
@@ -8152,5 +8358,26 @@ BUILT_IN_FUNCTION(function_cp437test, input)
 	result = cp437_to_utf8(my_string, my_string_len, &resultlen);
 	say("%s", result);
 	RETURN_MSTR(result);
+}
+
+BUILT_IN_FUNCTION(function_jsontest, input)
+{
+	char *name1 = NULL, *flag = NULL;
+	struct kwargs kwargs[] = {
+		{ "name1", KWARG_TYPE_STRING, &name1 },
+		{ "flag", KWARG_TYPE_STRING, &flag },
+		{ NULL, KWARG_TYPE_SENTINAL, NULL }
+	};
+
+	if (input && *input == '{')
+		parse_kwargs(kwargs, input);
+	else
+		say("jsontest: invalid input (must be json object)");
+
+	if (name1)
+		say("name1 is %s", name1);
+	if (flag)
+		say("flag is %s", flag);
+	RETURN_EMPTY;
 }
 

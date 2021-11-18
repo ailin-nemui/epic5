@@ -1,5 +1,45 @@
 EPIC5-2.2
 
+*** News 11/11/2021 -- $json_implode() takes kwargs, adds "compact mode"
+	The standard behavior of $json_implode() is to take a single word 
+	as an argument, the root of a assign tree to convert into a json 
+	object.
+		$json_implode(q)	# Collapse $q.* into json object
+
+	The standard behavior of $json_implode() is to return a "human-
+	formatted" string, with newlines and indentation.  This is nice 
+	for looking at, but isn't appropriate for every situation.
+
+	So $json_implode() is our pilot test for json object argument lists.
+	It now supports the following two arguments:
+		root		The root of the assign tree (required)
+		compact		false - return human readable (default)
+				true - return one line
+
+	Example:
+		@ q.one = [val1]
+		@ q.two = [val2]
+	then,
+		$json_implode({"root": "q", "compact": "true"})
+	would return
+		{"one":"val1","two","val2"}
+
+	
+*** News 11/18/2021 -- New concept -- json object as argument list ("kwargs")
+	You'll start noticing something new happening more and more.
+	The idea of "json object as an argument list" is being introduced,
+	to allow passing of parameters in a more deterministic way.
+
+	JSON objects (also known as "dicts") are a collection of key-value pairs.
+		{ "field1", "val1", "field2", "val2"}
+	You already operate on these with $json_implode() and $json_explode().
+	Most RESTful APIs in the world send and receive them.  
+
+	For backwards compatability reasons, of course, this feature will be
+	rolled out on a case-by-case basis whenever it seems appropriate.
+	But, occasionally, a new feature might be available only through json
+	object arguments because it makes sense.
+
 *** News 10/06/2021 -- EPIC5-2.1.6 (1981 - Impignorate) released Here
 
 *** News 09/21/2021 -- Another round of clang static analysis

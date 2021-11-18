@@ -1036,4 +1036,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add debuglog testing for /window search_back (for fusion)
 * Strip all attributes when regex()ing /window search_back
 * Fix warnings on mac os x 12 (rb skered)
-
+* Add support for json object arguments ("kwargs")
+* Add support for kwargs for $json_implode(): "root", "compact" (rb fusion)

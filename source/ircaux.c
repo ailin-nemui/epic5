@@ -7562,4 +7562,6 @@ unsigned char *  cp437_to_utf8 (const unsigned char *input, size_t inputlen, siz
 	return dest;
 }
 
+/***********************************************************************/
+/* This probably belongs in functions.c, but it lives here for now */
 

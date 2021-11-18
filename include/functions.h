@@ -69,4 +69,33 @@
 #define BUILT_IN_FUNCTION(x, y) char * x (char * y)
 #endif
 
+struct kwargs {
+        const char *    kwarg;
+        int             type;
+        void *          data;
+};
+#define KWARG_TYPE_SENTINAL 0
+#define KWARG_TYPE_STRING 1
+#define KWARG_TYPE_INTEGER 2
+#define KWARG_TYPE_NUMBER 3
+#define KWARG_TYPE_BOOL 4
+
+int     parse_kwargs (struct kwargs *kwargs, const char *input);
+ 
+/* 
+ * Examples for using the above:
+ *       char *name1 = NULL, *flag = NULL;
+ *       struct kwargs kwargs[] = {
+ *               { "name1", KWARG_TYPE_STRING, &name1 },
+ *               { "flag", KWARG_TYPE_STRING, &flag },
+ *               { NULL, KWARG_TYPE_SENTINAL, NULL }
+ *       };
+ *
+ *       if (input && *input == '{')
+ *            parse_kwargs(kwargs, input);
+ *
+ * and
+ *      @func({"name1": "value1", "flag": "booya"})
+ */
+
 #endif
