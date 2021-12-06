@@ -6653,7 +6653,7 @@ $as_echo "no" >&6; }
 else
 	with_tcl_errormsg="You specified --with-tcl=$with_tcl but I could not find TCL. Please specify --with-tcl=/path/to/tclConfig.sh or remove --with-tcl from ./configure's commandline."
 	if test "x$with_tcl" = "xmaybe" -o "x$with_tcl" = "xyes"; then
-		for i in /usr/lib /usr/local/lib /usr/local/lib/tcl8.4 ; do
+		for i in /usr/lib /usr/local/lib /usr/local/lib/tcl8.4 /usr/local/lib/tcl8.6 ; do
 			if test -r "$i"/tclConfig.sh ; then
 				tclconfig="$i"/tclConfig.sh
 				break;

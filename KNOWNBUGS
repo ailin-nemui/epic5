@@ -1038,3 +1038,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix warnings on mac os x 12 (rb skered)
 * Add support for json object arguments ("kwargs")
 * Add support for kwargs for $json_implode(): "root", "compact" (rb fusion)
+* Add support for tcl8.6 -- run 'make makedepend'
