@@ -2104,11 +2104,7 @@ const	unsigned char	*cont_ptr;
 			 * wrapped (such as for counting output length.
 			 */
 			if (word_break == 0 || (flags & PREPARE_NOWRAP))
-#if 0
-				word_break = pos;
-#else
 				word_break = pos - 1;
-#endif
 
 
 			/*
@@ -2133,11 +2129,7 @@ const	unsigned char	*cont_ptr;
 			 * it all comes down to it.  Good thing its cheap. ;-)
 			 */
 			if (!cont && (firstwb == word_break) && do_indent) 
-#if 0
-				word_break = pos;
-#else
 				word_break = pos - 1;
-#endif
 
 			/*
 			 * If we are approaching the number of lines that
@@ -2439,11 +2431,7 @@ const 	unsigned char	*ptr;
 			break;
 	}
 	buffer[pos] = 0;
-
-#if 0
-	if (*buffer)
-#endif
-		malloc_strcpy_c((char **)&retval, buffer, &clue);
+	malloc_strcpy_c((char **)&retval, buffer, &clue);
 
 	/*
 	 * If we get here, either we have slurped up 'max_cols' cols, or
@@ -2700,10 +2688,6 @@ void 	add_to_screen (const unsigned char *buffer)
 	    }
 	    else
 	    {
-#if 0
-	      for (;;)
-	      {
-#endif
 		tmp = NULL;
 		while (traverse_all_windows(&tmp))
 		{
@@ -2719,23 +2703,6 @@ void 	add_to_screen (const unsigned char *buffer)
 		    add_to_window(tmp, buffer);
 		    return;
 		}
-
-#if 0
-		/*
-		 * EPIC4 had a hideously complicated if() that handled 
-		 * DCC CHAT nicks ("=nick") against /query's that look like
-		 * "nick" or "=nick".  I'm cheating here by just removing
-		 * the = and letting this go through a second pass.
-		 */
-		if (*who_from == '=')
-		{
-		    who_from++;
-		    continue;
-		}
-		else
-		    break;
-	      }
-#endif
 	    }
 	}
 
@@ -3394,11 +3361,6 @@ Window	*create_additional_screen (void)
 	    *args_ptr++ = NULL;
 	}
 
-#if 0
-	for (i = 0; args[i]; i++)
-		yell("Arg %d: %s", i, args[i]);
-#endif
-
 	/* Now create a new screen */
 	create_new_screen();
 	new_s = last_input_screen;
@@ -3862,16 +3824,6 @@ static	int		never_warn_again = 0;
 		workbuf[0] = 0;
 		edit_codepoint(codepoint);
 	}
-
-
-#if 0
-        /* If the high bit is set, mangle it as neccesary. */
-        if (key & 0x80 && current_term->TI_meta_mode)
-        {
-                translate_user_input('\033');
-                key &= ~0x80;
-        }
-#endif
 }
 
 /*

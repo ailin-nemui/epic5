@@ -1533,33 +1533,8 @@ static void	reduce (expr_info *cx, int what)
 
 		/* Comparison operators */
 		case DEQ:	COMPARE(a == b,  my_stricmp(s, t) == 0)
-#if 0
-		{
-			pop_2_strings(cx, &s, &t);
-			CHECK_NOEVAL
-			c = my_stricmp(s, t) ? 0 : 1;
-
-			if (x_debug & DEBUG_NEW_MATH_DEBUG)
-				yell("O: %s == %s -> %d", s, t, c);
-
-			push_boolean(cx, c);
-			break;
-		}
-#endif
 		case NEQ:	COMPARE(a != b,  my_stricmp(s, t) != 0)
-#if 0
-		{
-			pop_2_strings(cx, &s, &t);
-			CHECK_NOEVAL
-			c = my_stricmp(s, t) ? 1 : 0;
 
-			if (x_debug & DEBUG_NEW_MATH_DEBUG)
-				yell("O: %s != %s -> %d", s, t, c);
-
-			push_boolean(cx, c);
-			break;
-		}
-#endif
 		case LITEQ:
 		{
 			pop_2_strings(cx, &s, &t);

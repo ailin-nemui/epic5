@@ -590,19 +590,7 @@ static void	sha256_passwd (const char *orig, size_t orig_len, char **passwd, siz
 
 static void	copy_passwd (const char *orig, size_t orig_len, char **passwd, size_t *passwdlen)
 {
-#if 0
-	size_t	passwd_len;
-	orig_len = strlen(orig);		/* XXX for now */
-
-	if ((passwd_len = orig_len) < 9)
-		passwd_len = 9;
-
-	*passwd = new_malloc(passwd_len);
-	memset(*passwd, 0, passwd_len);
-	strlcpy(*passwd, orig, passwd_len);
-#else
 	*passwd = malloc_strdup(orig);
-#endif
 	*passwdlen = orig_len;
 }
 

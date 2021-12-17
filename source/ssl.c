@@ -1379,18 +1379,6 @@ static int verify_callback (int preverify_ok, X509_STORE_CTX *ctx)
 	else
 		say("ssl cert OK at depth=%d, %s issued by %s", depth, subject, issuer);
 
-#if 0
-	/*
-	 * At this point, err contains the last verification error. We can use
-	 * it for something special
-	 */
-	if (preverify_ok == 0 && (err == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT)) 
-	{
-		X509_NAME_oneline(X509_get_issuer_name(err_cert), buf, MAX_ONELINE);
-		say("issuer = %s", buf);
-	}
-#endif
-
 	return 1;
 }
 

@@ -1462,13 +1462,8 @@ char	*expand_alias	(const char *string, const char *args)
 	if (stuff)
 		malloc_strcat_ues_c(&buffer, stuff, unescape, &buffclue);
 
-#if 0						/* Maybe a good idea later? */
-	if (!buffer)
-		panic(1, "expanded_alias [%s] returning NULL!", string);
-#else
 	if (!buffer)
 		buffer = malloc_strdup(empty_string);
-#endif
 
 	if (get_int_var(DEBUG_VAR) & DEBUG_EXPANSIONS)
 		privileged_yell("Expanded " BOLD_TOG_STR "[" BOLD_TOG_STR "%s" BOLD_TOG_STR "]" BOLD_TOG_STR " to " BOLD_TOG_STR "[" BOLD_TOG_STR "%s" BOLD_TOG_STR "]" BOLD_TOG_STR, string, buffer);

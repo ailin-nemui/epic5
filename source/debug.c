@@ -36,11 +36,7 @@
 #include "reg.h"
 #include "commands.h"
 
-#if 0
-unsigned long x_debug = DEBUG_SERVER_CONNECT;
-#else
 unsigned long x_debug = 0;
-#endif
 
 struct debug_opts
 {

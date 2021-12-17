@@ -805,13 +805,6 @@ static	time_t	last_ctcp_reply = 0;
 		}
 	}
 
-#if 0
-	if (in_ctcp == 0)
-		protocol = "PRIVMSG";
-	else
-		protocol = "NOTICE";
-#endif
-
 	l = message_from(to, LEVEL_CTCP);
 	if (format)
 	{

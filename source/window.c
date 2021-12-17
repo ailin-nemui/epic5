@@ -291,10 +291,6 @@ Window	*new_window (Screen *screen)
 	new_w->hold_interval = 10;
 
 	/* LASTLOG stuff */
-#if 0
-	new_w->lastlog_oldest = NULL;
-	new_w->lastlog_newest = NULL;
-#endif
 	new_w->lastlog_mask = real_lastlog_mask();
 	new_w->lastlog_size = 0;
 	new_w->lastlog_max = get_int_var(LASTLOG_VAR);
@@ -597,12 +593,6 @@ delete_window_contents:
 	}
 
 	destroy_window_waiting_channels(window->refnum);
-
-#if 0
-	/* Adjust any active output contexts pointing at this window to point
-	 * somewhere sensible instead. */
-	adjust_context_windows(window->refnum);
-#endif
 
 	/* Adjust any active output contexts pointing at this window to point
 	 * somewhere sensible instead. */
@@ -3084,27 +3074,6 @@ int	real_message_setall (unsigned refnum, const char *who, int level, const char
 	return context_counter++;
 }
 
-#if 0
-/*
- * adjust_context_windows: This function goes through the context
- * stack and rewrites any instances of 'old_win' to 'new_win'.
- * This is needed when a window is killed, so that further output
- * in any contexts using that window has somewhere to go.
- */
-void	adjust_context_windows (int refnum)
-{
-	int context;
-
-	for (context = 0; context < context_counter; context++)
-	{
-		if (contexts[context].to_window = refnum)
-			contexts[context].to_window = -1;
-	}
-
-/*	to_window = get_window_by_refnum(contexts[context_counter - 1].to_window); */
-}
-#endif
-
 /*
  * adjust_context_windows: This function goes through the context
  * stack and rewrites any instances of 'old_win' to 'new_win'.
@@ -3993,13 +3962,6 @@ static Window *window_describe (Window *window, char **args)
 {
 	const char *chan;
 	char *c;
-
-#if 0
-	if (!args)
-	{
-		return window;
-	}
-#endif
 
         if (window->name)
 	    say("Window %s (%u)", 
@@ -5026,13 +4988,6 @@ static Window *window_new (Window *window, char **args)
 {
 	Window *tmp;
 
-#if 0
-	if (!args)
-	{
-		return window;
-	}
-#endif
-
 	if ((tmp = new_window(window->screen)))
 		window = tmp;
 
@@ -5043,13 +4998,6 @@ static Window *window_new (Window *window, char **args)
 
 static Window *window_new_hide (Window *window, char **args)
 {
-#if 0
-	if (!args)
-	{
-		return window;
-	}
-#endif
-
 	new_window(NULL);
 	return window;
 }
@@ -5059,13 +5007,6 @@ static Window *window_next (Window *window, char **args)
 	Window	*tmp;
 	Window	*next = NULL;
 	Window	*smallest = NULL;
-
-#if 0
-	if (!args)
-	{
-		return window;
-	}
-#endif
 
 	smallest = window;
 	for (tmp = invisible_list; tmp; tmp = tmp->next)
@@ -5192,14 +5133,6 @@ static Window *window_number (Window *window, char **args)
 
 	if ((arg = next_arg(*args, args)))
 	{
-#if 0
-		if (window_current_channel(window->refnum, window->server))
-		{
-			say("You cannot change the number of a window with a channel");
-			return window;
-		}
-#endif
-
 		if ((i = my_atol(arg)) > 0)
 		{
 			oldref = window->refnum;
@@ -5276,12 +5209,6 @@ static Window *window_previous (Window *window, char **args)
 	Window	*previous = NULL, *largest;
 
 	/* It is ok for 'args' to be NULL -- SWAP_PREVIOUS_WINDOW uses this. */
-#if 0
-	if (!args)
-	{
-		return window;
-	}
-#endif
 
 	largest = window;
 	for (tmp = invisible_list; tmp; tmp = tmp->next)
@@ -5416,10 +5343,6 @@ Window *window_query (Window *window, char **args)
 		 * is launched.  Be careful not to send a message
 		 * to a non-existing process!
 		 */
-#if 0
-		if (!is_valid_process(nick))
-			nick = NULL;
-#endif
 	}
 
 	if (!nick)
@@ -6631,10 +6554,6 @@ BUILT_IN_COMMAND(windowcmd)
 		int len = strlen(arg);
 		int pass_null;
 
-#if 0
-		if (*arg == '-' || *arg == '/')		/* Ignore - or / */
-			arg++, len--;
-#endif
 		if (*arg == '-')
 			arg++, len--, pass_null = 1;
 		else

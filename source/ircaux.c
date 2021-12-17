@@ -717,32 +717,6 @@ unsigned char *stricmp_tables[2] = {
 };
 
 /* XXX These functions should mean "must be equal, at least to 'n' chars */
-/* my_table_strnicmp: case insensitive version of strncmp */
-#if 0
-int	my_table_strnicmp (const unsigned char *short_string, const unsigned char *full_string, size_t min_match, int table)
-{
-	int	actual_match = 0;
-
-	while (*short_string && *full_string &&
-		(stricmp_tables[table][(unsigned short)*short_string] == 
-		 stricmp_tables[table][(unsigned short)*full_string]))
-	    short_string++, full_string++, actual_match++;
-
-	/* 
-	 * Success IFF the the two strings match for the LONGER of
-	 * 		(strlen(short_string), min_match)
-	 * That is to say, the short string MUST be exhausted
-	 * and its length must be >= min_match.
-	 */
-	if (*short_string == 0 && actual_match >= min_match)
-		return 0;
-
-	/* Otherwise, return the ordinary strcmp() retval. */
-	return (stricmp_tables[table][(unsigned short)*short_string] -
-		stricmp_tables[table][(unsigned short)*full_string]);
-}
-#endif
-
 /* my_strnicmp: case insensitive version of strncmp */
 int     my_table_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n, int table)
 {
@@ -1101,18 +1075,6 @@ int	normalize_filename (const char *str, Filename result)
 		str = workpath;
 	}
 
-/* I don't understand the point of this code. */
-#if 0
-        /* yes, these are redundant, but what if people */
-        /* have directories with .zip in them? */
-        if (((stristr(str, ".zip"))!=-1) || ((stristr(str, ".tar"))!=-1)) {
-            if (file_exists(str)) {
-                snprintf(result, PATH_MAX + 1, "%s", str);
-                return 0;
-            }
-        }
-#endif
-
 	if (realpath(str, result) == NULL)
 		return -1;
 
@@ -1206,86 +1168,6 @@ char *	check_nickname (char *nick, int unused)
 	return *nick ? nick : NULL;
 }
 
-#if 0
-/*
- * sindex: much like index(), but it looks for a match of any character in
- * the group, and returns that position.  If the first character is a ^, then
- * this will match the first occurence not in that group.
- *
- * XXXX - sindex is a lot like strpbrk(), which is standard
- */
-char *	sindex (char *string, const char *group)
-{
-	const char	*ptr;
-
-	if (!string || !group)
-		return (char *) NULL;
-	if (*group == '^')
-	{
-		group++;
-		for (; *string; string++)
-		{
-			for (ptr = group; *ptr; ptr++)
-			{
-				if (*ptr == *string)
-					break;
-			}
-			if (*ptr == '\0')
-				return string;
-		}
-	}
-	else
-	{
-		for (; *string; string++)
-		{
-			for (ptr = group; *ptr; ptr++)
-			{
-				if (*ptr == *string)
-					return string;
-			}
-		}
-	}
-	return (char *) NULL;
-}
-
-/*
- * rsindex: much like rindex(), but it looks for a match of any character in
- * the group, and returns that position.  If the first character is a ^, then
- * this will match the first occurence not in that group.
- */
-char *	rsindex (char *string, char *start, char *group, int howmany)
-{
-	char	*ptr;
-
-	if (howmany && string && start && group && start <= string)
-	{
-		if (*group == '^')
-		{
-			group++;
-			for (ptr = string; (ptr >= start) && howmany; ptr--)
-			{
-				if (!strchr(group, *ptr))
-				{
-					if (--howmany == 0)
-						return ptr;
-				}
-			}
-		}
-		else
-		{
-			for (ptr = string; (ptr >= start) && howmany; ptr--)
-			{
-				if (strchr(group, *ptr))
-				{
-					if (--howmany == 0)
-						return ptr;
-				}
-			}
-		}
-	}
-	return NULL;
-}
-#endif
 
 /*
  * cpindex - Find the 'howmany'th instance of any of the codepoints in 'search'
@@ -1535,20 +1417,6 @@ int	path_search (const char *name, const char *xpath, Filename result)
 		}
 	    }
 	}
-
-/* This test looks really bogus.  The above test catches all these cases. */
-#if 0
-	/* 
-	 * There are three exceptions to path searching:
-	 * 1) absolute pathnames: /path/to/file, which start with "/"
-         * 2) Homedir pathnames: ~user/path/to/file, which start with "~"
-	 * 3) ``absolute'' relatives: ./path/to/file or ../path/to, which
-	 *	start with "."
-	 * In any of these three cases, we do not do path searching!
-	 */
-	if (*name == '.' || *name == '/' || *name == '~')
-		return -1;
-#endif
 
 	*result = 0;
 	for (path = LOCAL_COPY(xpath); path; path = ptr)
@@ -2458,126 +2326,6 @@ const char *	ftoa (double foo)
 	}
 	return buffer;
 }
-
-/*  
- * This function is bad -- it does not correctly count columns,
- * You should use:
- *	dest = fix_string_width(src, "left", pad, length);
- */
-#if 0
-/*
- * strformat - Return 'src' so it is 'length' columns wide.
- *
- * Arguments:
- *	dest	- Where to return results. should be 6 times size of 'src'.
- *	src	- A UTF8 string
- *	length	- How many columns 'src' should take up
- *		  If > 0, src is left justified
- *		  If 0, error (dest is unchanged)
- *		  If < 0, src is right justified
- *	pad	- If 'src' is not 'length' columns wide, use this code
- *		  point to pad it out.
- *
- * Note:
- *	If 'src' is greater than 'length', then it is TRUNCATED.
- *	If 'src' is less than 'length' then it will be left or right
- *	padded with 'pad', (which should be a 1 column code point)
- */
-char *	strformat (char *dest, size_t destlen, const unsigned char *src, ssize_t length, int pad)
-{
-	int	srclen;		/* How many columns 'src' is */
-	int	srcuse;		/* How many columns filled by 'src' */
-	int	paduse;		/* How many columns filled by 'pad' */
-	char	padutf8[8];	/* 'pad' as a utf8 string */
-	int	padlen;		/* How many columns padutf8 takes */
-	int	padreps;	/* How many padutf8's we need in result */
-	int	i;
-
-	/* How many columns does the source string take up? */
-	srclen = quick_display_column_count(src);
-
-	/*
-	 * Figure out how many columns to use from 'src'
-	 * and how many columns to use from 'pad'
-	 */
-	/* Right Justify */
-	if (length < 0)	
-	{
-		if (-length < srclen)
-		{
-			srcuse = -length;		/* Truncate! */
-			paduse = 0;
-		}
-		else
-		{
-			srcuse = srclen;
-			paduse = length + srclen;	/* Negative! */
-		}
-	}
-
-	/* This is nonsense - just cut it short */
-	else if (length == 0)
-	{
-		*dest = 0;
-		return dest;
-	}
-
-	/* Left Justify */
-	else
-	{
-		if (length < srclen)
-		{
-			srcuse = length;		/* Truncate! */
-			paduse = 0;
-		}
-		else
-		{
-			srcuse = srclen;
-			paduse = length - srclen;	/* Positive! */
-		}
-	}
-
-	ucs_to_utf8(pad, padutf8, sizeof(padutf8));
-	if ((padlen = quick_display_column_count(padutf8)) == 0)
-	{
-		strlcpy(padutf8, " ", sizeof(padutf8));
-		padlen = 1;
-	}
-	padreps = paduse / padlen;
-
-
-	/* 
-	 * Create the result.
-	 * 'padreps' has the sign of 'length' (< 0 Left Justify, > 0 Right)
-	 * and it is the difference of 'length' and columns of 'src'.
-	 * So if 'length' is shorter than 'src', padreps is 0.
-	 */
-	*dest = 0;
-	for (i = padreps; i < 0; i++)
-		strlcat(dest, padutf8, destlen);
-	while (srcuse > 0)
-	{
-		int	codepoint;
-		int	cols;
-		char	utf8str[16];
-		char	utf8strlen;
-
-		codepoint = next_code_point(&src, 1);
-		cols = codepoint_numcolumns(codepoint);
-		if (cols == -1)
-			cols = 1;	/* XXX is this right? */
-
-		ucs_to_utf8(codepoint, utf8str, sizeof(utf8str));
-		strlcat(dest, utf8str, destlen);
-		srcuse -= cols;
-	}
-	for (i = 0; i < padreps; i++)
-		strlcat(dest, padutf8, destlen);
-
-	return dest;
-}
-#endif
-
 
 /* 
  * MatchingBracket returns the next unescaped bracket of the given type 
@@ -5474,9 +5222,6 @@ static ssize_t	url_encoder (const char *orig, size_t orig_len, const void *meta,
 	static const char safe[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 				   "abcdefghijklmnopqrstuvwxyz"
 				   "0123456789-._~";
-#if 0
-        static const char unsafe[] = "`'!@#$%^&*(){}<>~|\\\";? ,/+";
-#endif
         static const char hexnum[] = "0123456789ABCDEF";
 	size_t	orig_i, dest_i;
 	ssize_t	count = 0;

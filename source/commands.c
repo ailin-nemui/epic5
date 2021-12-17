@@ -2694,29 +2694,6 @@ BUILT_IN_COMMAND(sendlinecmd)
 	from_server = server;
 }
 
-#if 0
-/* 
- * IRCUSER command. Changes your userhost on the fly.  Takes effect
- * the next time you connect to a server 
- */
-BUILT_IN_COMMAND(set_username)
-{
-#ifdef ALLOW_USER_SPECIFIED_LOGIN
-        char *blah = next_arg(args, &args);
-	if (blah && *blah)
-	{
-		if (!strcmp(blah, "-"))
-			strlcpy(username, empty_string, sizeof username);
-		else 
-			strlcpy(username, blah, sizeof username);
-		say("Username has been changed to '%s'",username);
-	}
-	else
-		say ("Usage: /IRCUSER <text>");
-#endif
-}
-#endif
-
 BUILT_IN_COMMAND(setenvcmd)
 {
 	char *env_var;
@@ -3440,102 +3417,6 @@ struct target_type target[4] =
 	from_server = old_from_server;
 	recursion--;
 }
-
-#if 0
-/*
- * new_send_text: All that and a bag of sugar
- *
- * Given
- * 1) A default server
- * 2) A comma separated list of targets
- * 3) A message
- * 4) A preferred protocol command
- * 5) A boolean flag on whether to hook /on send_* or not...
- *
- * Sort the comma separated list of targets into a variety of buckets,
- * depending on a "best fit", and then dispatch the messages.
- *
- * Historically supported targets:
- *	%<refnum>		Send a message to an /exec'd process
- * 	%<refname>		Send a message to an /exec -name'd process
- *	0			Send a message to the sink (nowhere)
- *	@<refnum>		Send a message to an $open() file
- *	@W<refnum>		Send a message to a window log, but do not
- *				output the message to the window.
- *	/<command>		Send a message to (run) an alias
- *	=<refnum>		Send a message to a $connect()ed dcc raw
- *	=<nick>			Send a message to a dcc chat peer
- *	-<refnum>/<nick>	Send a message to a nick on another server.
- *	<channel>		Send a message to a channel over irc.
- *	<nick>			Send a message to a nickname over irc.
- *
- * Newly supported targets
- *	@<channel>		Send a message to channel operators.
- *				(Requires server-side support)
- *
- * Each bucket is thus represented as:
- *	(server, key, message, command, targets)
- *
- * Important considerations:
- *	If the server supports CPRIVMSG (or CNOTICE) and you are sending a 
- *	message to someone on the same channel as you, CPRIVMSG (or CNOTICE)
- *	will be used instead of PRIVMSG or NOTICE.
- *
- *	If are holding an encrypted conversation with a peer, it needs to be
- *	sorted separately based on the encryption key you're using. 
- */
-struct TextMessage {
-	int	server;
-	char *	command;
-	char *	target;
-	char *	key;
-	char *	message;
-};
-
-void 	new_send_text (int server, const char *orig_target_list, const char *text, const char *command, int hook)
-{
-	char *target_list;
-	char *target;
-
-	target_list = LOCAL_COPY(orig_target_list);
-	while (*target_list)
-	{
-	    target = next_in_comma_list(target_list, &target_list);
-
-	    if (*target == '%')
-		text_to_process(target, text, 1);
-	    else if (!text || !*text)
-		;
-	    else if (*target == '0' && target[1] == 0)
-		;
-	    else if (*target == '@' && is_number(target + 1))
-	    {
-	    }
-	    else if (*target == '@' && target[1] == 'W' && 
-					is_number(target + 2))
-	    {
-	    }
-	    else if (*target == '@' && is_channel(target + 1))
-	    {
-	    }
-	    else if (*target == '/')
-	    {
-	    }
-	    else if (*target == '=')
-	    {
-	    }
-	    else if (*target == '-')
-	    {
-	    }
-	    else if (is_channel(target))
-	    {
-	    }
-	    else
-	    {
-	    }
-	}
-}
-#endif
 
 /***************************************************************************/
 static char *	parse_line_alias_special (const char *name, const char *what, const char *args, void *arglist, int function);

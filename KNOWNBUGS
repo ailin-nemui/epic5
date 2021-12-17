@@ -3,7 +3,6 @@ EPIC5 Projects, Bugs, and other Errata:
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
 * /on dcc_raw handling should set message_from() (rb Harz)
-* #include "config.h" should happen after system headers (rb skered)
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1039,3 +1038,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add support for json object arguments ("kwargs")
 * Add support for kwargs for $json_implode(): "root", "compact" (rb fusion)
 * Add support for tcl8.6 -- run 'make makedepend'
+* Remove dead code that was #if 0'd out for a long time.

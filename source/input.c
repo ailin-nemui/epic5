@@ -1293,12 +1293,6 @@ BUILT_IN_KEYBINDING(input_add_character)
 	unsigned char utf8str[8];
 	int	utf8strlen;
 
-#if 0
-	/* This test isn't used, but should it be? */
-	if ((numcols = codepoint_numcolumns(key)) == -1)
-		numcols = 1;
-#endif
-
 	utf8strlen = ucs_to_utf8(key, utf8str, sizeof(utf8str));
 
 	/* Don't permit the input buffer to get too big. */
@@ -1395,64 +1389,6 @@ BUILT_IN_KEYBINDING(input_reset_line)
 	else
 		set_input(string);	/* This calls update_input() */
 }
-
-
-#if 0
-/*
- * input_transpose_characters: move the character before the cursor to
- * the position after the cursor.
- */
-BUILT_IN_KEYBINDING(input_transpose_characters)
-{
-	/*
-	 * This is tricky because the cursor never moves and there are three cases:
-	 *
-	 * 1. Cursor is at char 0: swap 0 and 1 
-	 *	A_ B C		->	B_ A C
-	 * 2. Cursor is over a char: swap char under cursor and char before cursor
-	 *	A B_ C		->	B A_ C
-	 * 3. Cursor is at end (not on char): swap char before cursor and char before that
-	 *	A B C _		->	A C B _
-	 */
-
-	/* Case 1 -- swap char 0 and 1 */
-	if (LOGICAL_CURSOR == 0 && THIS_CHAR && NEXT_CHAR)
-	{
-		int	tc, nc;
-
-		tc = THIS_CHAR;
-		nc = NEXT_CHAR;
-		*THIS_SPOT = nc;
-		*NEXT_SPOT = tc;
-	}
-
-	/* Case 2 -- cursor over char, but not the first char */
-	else if (LOGICAL_CURSOR > 0 && THIS_CHAR && PREV_CHAR)
-	{
-		int	tc, pc;
-
-		tc = THIS_CHAR;
-		pc = PREV_CHAR;
-		*THIS_SPOT = pc;
-		*PREV_SPOT = tc;
-	}
-
-	/* Case 3 -- cursor at end */
-	else if (LOGICAL_CURSOR > 1 && !THIS_CHAR && PREV_CHAR && PREV_PREV_CHAR)
-	{
-		int	pc, ppc;
-
-		pc = PREV_CHAR;
-		ppc = PREV_PREV_CHAR;
-		*THIS_SPOT = ppc;
-		*PREV_PREV_SPOT = pc;
-	}
-
-	/* In all other cases, this is a no-op. */
-	update_input(last_input_screen, UPDATE_ALL);
-}
-#endif
-
 
 BUILT_IN_KEYBINDING(refresh_inputline)
 {

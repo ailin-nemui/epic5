@@ -534,11 +534,7 @@ void	init_recodings (void)
 	if (!cp437_encoding_invalid)
 		recode_rules[1] = create_recoding_rule("scripts", "CP437", 1, ENCODING_FALLBACK);
 	else
-#if 0
-		recode_rules[1] = create_recoding_rule("scripts", "CP437_BUILTIN", 1, ENCODING_FALLBACK);
-#else
 		recode_rules[1] = create_recoding_rule("scripts", "ISO8859-1", 1, ENCODING_FALLBACK);
-#endif
 
 	/* Rule 2 is "irc" */
 	recode_rules[2] = create_recoding_rule("irc", "ISO-8859-1", 1, ENCODING_FALLBACK);

@@ -337,9 +337,6 @@ void 	init_binds (void)
     ADDBIND("SWITCH_QUERY",		    switch_query		    );
     ADDBIND("TOGGLE_INSERT_MODE",	    toggle_insert_mode		    );
     ADDBIND("TOGGLE_STOP_SCREEN",	    toggle_stop_screen		    );
-#if 0
-    ADDBIND("TRANSPOSE_CHARACTERS",	    input_transpose_characters	    );
-#endif
     ADDBIND("TYPE_TEXT",		    type_text			    );
     ADDBIND("UNCLEAR_SCREEN",		    input_unclear_screen	    );
     ADDBIND("UNDERLINE",		    insert_underline		    );
@@ -1270,9 +1267,6 @@ void	init_keys (void)
 	BIND("^Q", "QUOTE_CHARACTER");
 	/* ^R */
 	BIND("^S", "TOGGLE_STOP_SCREEN");
-#if 0
-	BIND("^T", "TRANSPOSE_CHARACTERS");
-#endif
 	BIND("^U", "ERASE_LINE");
 	BIND("^V", "REVERSE");
 	BIND("^W", "NEXT_WINDOW");

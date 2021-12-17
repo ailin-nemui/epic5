@@ -68,18 +68,6 @@ typedef	struct	notify_stru
 	int	flag;			/* Is the person on irc? */
 } NotifyItem;
 
-#if 0		/* Declared in notify.h */
-typedef struct	notify_alist
-{
-	NotifyItem **	list;
-	int		max;
-	int		max_alloc;
-	alist_func	func;
-	hash_type	hash;
-	char *		ison;
-} NotifyList;
-#endif
-
 static 	void	ison_notify (int refnum, char *AskedFor, char *AreOn);
 static 	void	rebuild_notify_ison 	(int server);
 

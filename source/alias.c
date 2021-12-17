@@ -1441,10 +1441,6 @@ static Symbol *	lookup_symbol (const char *name)
 	int 	loc;
 	int 	cnt = 0;
 
-#if 0
-	name += strspn(name, ":");		/* Accept ::global */
-#endif
-
 	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
 	if (cnt >= 0)
 		item = NULL;
@@ -3754,48 +3750,4 @@ char    *symbolctl      (char *input)
 	    RETURN_EMPTY;
 }
 
-/* Pure fantasy for now. */
-#if 0
-/* Statements are either blocks, expressions, or commands */
-enum StatementTypeE {
-	BLOCK_STATEMENT,
-	EXPR_STATEMENT,
-	CMD_STATEMENT
-};
-
-/* A block is a collection of statements */
-struct BlockT {
-	size_t	numcmds;
-	union StatementT *cmds;
-};
-
-/* A command statement has a command, and an argument list */
-struct CommandStatementT {
-	enum StatementTypeE type;
-	wchar_t *	cmd;
-	wchar_t *	args;
-};
-
-/* An expression statement has a math expression */
-struct ExpressionStatementT {
-	enum StatementTypeE type;
-	wchar_t *	expr;
-};
-
-/* A block statement has a block (natch) */
-struct BlockStatementT {
-	enum StatementTypeE type;
-	struct BlockT 	block;
-};
-
-/* 
- * A statement is either a command statement, 
- * an expression statement, or a block statement.
- */
-union StatementT {
-	enum StatementTypeE type;
-	struct CommandStatementT;
-	struct ExpressionStatementT;
-	struct BlockStatementT;
-#endif
 

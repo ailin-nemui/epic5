@@ -449,7 +449,6 @@ extern char
 	*function_push		(char *),
 	*function_pop		(char *),
 	*function_shift		(char *),
-        *function_shiftseg      (char *),
         *function_unshift	(char *),
 	*function_shiftbrace	(char *);
 
@@ -722,9 +721,6 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "SETITEM",            function_setitem 	},
 	{ "SHIFT",		function_shift 		},
 	{ "SHIFTBRACE",		function_shiftbrace	},
-#if 0
-	{ "SHIFTSEG",           function_shiftseg       },
-#endif
 	{ "SIN",		function_sin		},
 	{ "SINH",		function_sinh		},
 	{ "SORT",		function_sort		},
@@ -2843,52 +2839,6 @@ char *function_shiftbrace (char *word)
 	RETURN_MSTR(booya);
 }
 
-#if 0
-char *function_shiftseg (char *input)
-{
-	char *var;
-	char *tok;
-
-        char *placeholder;
-	char *blah;
-
-	if (!input || !*input)
-		RETURN_EMPTY;
-
-	GET_DWORD_ARG(tok, input);
-        GET_FUNC_ARG(var, input);
-
-	upper(var);
-
-	placeholder = get_variable(var);
-
-        ssize_t x = stristr(placeholder, tok);
-
-        if (x < 0) {
-                add_var_alias(var, empty_string, 0);
-		RETURN_STR(placeholder);
-        }
-
-        blah = placeholder + x;
-
-        /* we chop our string in half here, separating the result from
-	 what gets placed back into our variable */
-	*blah=0;
-        /* then we skip over our token, since it's a separator and not data */
-	blah+=strlen(tok);
-
-	if (var)
-                add_var_alias(var, blah, 0);
-
-        /* this will copy everything from the beginning up until our token */
-	blah = malloc_strdup(placeholder);
-
-	new_free(&placeholder);
-
-	return blah;
-}
-#endif
-
 char *function_shift (char *word)
 {
 	char    *value = (char *) 0;
@@ -2897,14 +2847,6 @@ char *function_shift (char *word)
 	char *	free_it = NULL;
 
 	GET_FUNC_ARG(var, word);
-
-#if 0
-	if (word && *word)
-		GET_FUNC_ARG(next, word);
-	if (next && *next)
-		RETURN_STR(var);
-#endif
-
 	upper(var);
 	free_it = value = get_variable(var);
 
@@ -2991,14 +2933,6 @@ char *function_pop (char *word)
 	char *free_it = NULL;
 
 	GET_FUNC_ARG(var, word);
-
-#if 0
-	while (word && *word)
-		GET_FUNC_ARG(last, word);
-	if (last && *last)
-		RETURN_STR(last);
-#endif
-
 	upper(var);
 	free_it = value = get_variable(var);
 	if (!value || !*value)
@@ -7389,9 +7323,6 @@ BUILT_IN_FUNCTION(function_tobase, input)
 	intmax_t	n, num;
 	char *	string;
 	char 	table[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-#if 0
-	char *	number, *after;
-#endif
 
 	len = pos = 0;
 	
@@ -7408,9 +7339,6 @@ BUILT_IN_FUNCTION(function_tobase, input)
 		input++;
 	}
 	GET_INT_ARG(num, input);
-#if 0
-	num = strtoimax(number, &after, 10);	/* Must not use GET_INT_ARG */
-#endif
 	/* The exponent routine below doesn't work for 0 */
 	if (num == 0)
 		RETURN_INT(num);

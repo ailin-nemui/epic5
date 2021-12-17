@@ -52,7 +52,7 @@ const char internal_version[] = "20211006";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1987;
+const unsigned long	commit_id = 1988;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -191,10 +191,6 @@ char		*startup_file = NULL,		/* Set when epicrc loaded */
 		*default_channel = NULL,	/* Channel to join on connect */
 		nickname[NICKNAME_LEN + 1],	/* users nickname */
 		hostname[NAME_LEN + 1],		/* name of current host */
-#if 0
-		username[NAME_LEN + 1],		/* usernameof user */
-		userhost[NAME_LEN + 1],		/* userhost of user */
-#endif
 		*send_umode = NULL,		/* sent umode */
 		*last_notify_nick = (char *) 0;	/* last detected nickname */
 const char	empty_string[] = "",		/* just an empty string */
@@ -494,9 +490,6 @@ static	void	parse_args (int argc, char **argv)
 	extern int optind;
 
 	*nickname = 0;
-#if 0
-	*username = 0;
-#endif
 
 	/* 
 	 * Its probably better to parse the environment variables
@@ -983,13 +976,6 @@ static	int		level = 0,
 	/* Move the cursor back to the input line */
 	cursor_to_input();
 
-#if 0
-#ifdef __GNUC__
-	/* GCC wants us to do this to reclaim any alloca()ed space */
-	alloca(0);
-#endif
-#endif
-
 	/* Release this io() accounting level */
 	caller[level] = NULL;
 	level--;
@@ -1003,154 +989,6 @@ static	int		level = 0,
 	if (level == 0)
 		check_message_from_queue();
 
-	return;
-}
-
-static void check_password (void)
-{
-#if defined(PASSWORD) && (defined(HARD_SECURE) || defined(SOFT_SECURE))
-#define INPUT_PASSWD_LEN 15
-	char 	input_passwd[INPUT_PASSWD_LEN];
-#ifdef HAVE_GETPASS
-	strlcpy(input_passwd, getpass("Passwd: "), sizeof input_passwd);
-#else
-	fprintf(stderr, "Passwd: ");
-	fgets(input_passwd, INPUT_PASSWD_LEN - 1, stdin);
-	chop(input_passwd, 1);
-#endif
-	if (strcmp(input_passwd, PASSWORD))
-		execl(SPOOF_PROGRAM, SPOOF_PROGRAM, NULL);
-	else
-		memset(input_passwd, 0, INPUT_PASSWD_LEN);
-#endif
-	return;
-}
-
-static void check_valid_user (void)
-{
-#ifdef INVALID_UID_FILE
-{
-	long myuid = getuid();
-	long curr_uid;
-	char curr_uid_s[10];
-	char *curr_uid_s_ptr;
-	FILE *uid_file;
-
-	uid_file = fopen(INVALID_UID_FILE, "r");
-	if (uid_file == NULL)
-		return;
-
-	while (fgets(curr_uid_s, 9, uid_file))
-	{
-		chop(curr_uid_s, 1);
-		curr_uid_s_ptr = curr_uid_s;
-		while (!isdigit(*curr_uid_s_ptr) && *curr_uid_s_ptr != 0)
-			curr_uid_s_ptr++;
-
-		if (*curr_uid_s_ptr == 0)
-			continue;
-		else
-			curr_uid = my_atol(curr_uid_s);
-
-		if (myuid == curr_uid)
-			exit(1);
-	}
-	fclose(uid_file);
-}
-#endif
-#ifdef HARD_SECURE
-{
-	int myuid = getuid();
-	long curr_uid;
-	char *curr_uid_s;
-	char *uid_s_copy = NULL;
-	char *uid_s_ptr;
-
-	malloc_strcpy(&uid_s_copy, VALID_UIDS);
-	uid_s_ptr = uid_s_copy;
-	while (uid_s_ptr && *uid_s_ptr)
-	{
-		curr_uid_s = next_arg(uid_s_ptr, &uid_s_ptr);
-		if (curr_uid_s && *curr_uid_s)
-			curr_uid = my_atol(curr_uid_s);
-		else
-			continue;
-		if (myuid == curr_uid)
-			return;
-	}
-	new_free(&uid_s_copy);
-	execl(SPOOF_PROGRAM, SPOOF_PROGRAM, NULL);
-}
-#else
-# if defined(SOFT_SECURE) && defined(VALID_UID_FILE)
-{
-	long myuid = getuid();
-	long curr_uid;
-	char curr_uid_s[10];
-	char *uid_s_ptr;
-	char *curr_uid_s_ptr;
-	FILE *uid_file;
-
-	uid_file = fopen(VALID_UID_FILE, "r");
-	if (uid_file == NULL)
-		return;
-
-	while (fgets(curr_uid_s, 9, uid_file))
-	{
-		chop(curr_uid_s, 1);
-		curr_uid_s_ptr = curr_uid_s;
-		while (*curr_uid_s_ptr && !isdigit(*curr_uid_s_ptr))
-			curr_uid_s_ptr++;
-
-		if (*curr_uid_s_ptr == 0)
-			continue;
-		else	
-			curr_uid = my_atol(curr_uid_s_ptr);
-
-		if (myuid == curr_uid)
-		{
-			fclose(uid_file);
-			return;
-		}
-	}
-	fclose(uid_file);
-	execl(SPOOF_PROGRAM, SPOOF_PROGRAM, NULL);
-}
-# endif
-#endif
-	return;
-}
-
-
-/* 
- * contributed by:
- *
- * Chris A. Mattingly (Chris_Mattingly@ncsu.edu)
- *
- */
-static void check_invalid_host (void)
-{
-#if defined(HOST_SECURE) && defined(INVALID_HOST_FILE)
-	char *curr_host_s_ptr;
-	char curr_host_s[256];
-	FILE *host_file;
-	char myhostname[256];
-	size_t size;
-	int err;
-
-	gethostname(myhostname, 256);
-	host_file = fopen(INVALID_HOST_FILE, "r");
-	if (host_file == NULL)
-		return;
-
-	while (fgets(curr_host_s, 255, host_file))
-	{
-		chop(curr_host_s, 1);
-		if (!my_stricmp(myhostname,curr_host_s))
-			execl(SPOOF_PROGRAM, SPOOF_PROGRAM, NULL);
-	}
-	fclose(host_file);
-#endif
 	return;
 }
 
@@ -1182,10 +1020,6 @@ int 	main (int argc, char *argv[])
 	SOCKSinit(argv[0]);
 #endif
         get_time(&start_time);
-	check_password();
-	check_valid_user();
-	check_invalid_host();
-
 #ifdef WITH_THREADED_STDOUT
 	tio_init();
 #endif

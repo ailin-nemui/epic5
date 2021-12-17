@@ -338,9 +338,6 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		say("The server has asked you to switch to %s:%d.  I set up server refnum %d for you.", new_server, new_port, new_servref);
 		say("If you want to switch, do /SERVER %d", new_servref);
 
-#if 0
-		change_window_server(old_server, new_servref);
-#endif
 		from_server = old_server;
 		break;
 	}

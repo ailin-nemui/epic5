@@ -498,10 +498,7 @@ static	void	update_serverinfo (ServerInfo *old_si, ServerInfo *new_si)
 {
 	/* You should never update 'host' because it contains the
 	 * lookup key, and cannot ever be mutable. ever. */
-#if 0
-	if (new_si->host)
-		old_si->host = new_si->host;
-#endif
+
 	if (new_si->port)
 		old_si->port = new_si->port;
 	if (new_si->password)
@@ -2222,26 +2219,10 @@ static int	connect_next_server_address (int server)
 	    if ((inet_vhostsockaddr(ai->ai_family, -1, s->info->vhost,
 						&localaddr, &locallen)) < 0)
 	    {
-#if 0
-		/* 
-		 * If using the server-specific vhost failed (possibly because 
-		 * it does not resolve in the ai_family you're trying to 
-		 * connect to), we will stake another stab without a vhost.
-		 * This would fall back to your /hostname, if you have one.
-		 */
-		syserr(server, "connect_next_server_address: Your vhost for "
-				"[%d] (%s) did not resolve - using your normal "
-				"vhost (if you have one)", 
-					server, s->info->vhost);
-	        if ((inet_vhostsockaddr(ai->ai_family, -1, NULL,
-						&localaddr, &locallen)) < 0)
-#endif
-		{
 		    syserr(server, "connect_next_server_address: Can't use address [%d] "
 				" because I can't get vhost for protocol [%d]",
 					 s->addr_counter, ai->ai_family);
 		    continue;
-		}
 	    }
 
 	    if ((fd = client_connect((SA *)&localaddr, locallen, 
@@ -4090,41 +4071,6 @@ const char *	get_server_altname (int refnum, int which)
 	return s->altnames->list[which].name;
 }
 
-#if 0
-/*
- * which_server_altname: Check if 'name' is an altname for 'refnum'
- *
- * Parameters:
- *	refnum 	-
- *	name	-
- *
- * Returns:
- *	-2	- "refnum" is not a valid server refnum
- *	-1	- "name" is not a valid altname for "refnum"
- * 	>= 0	- An index suitable for passing to get_server_altname().
- *		  *** Note *** altnames may be changed at any time by
- *		  the user, so it's not clear how long this index would
- *		  be valid for.
- *
- * XXX This function appears to be unused.
- */
-int	which_server_altname (int refnum, const char *name)
-{
-	Server *s;
-	int	i;
-
-	if (!(s = get_server(refnum)))
-		return -2;
-
-	for (i = 0; i < s->altnames->numitems; i++)
-		if (!my_stricmp(s->altnames->list[i].name, name))
-			return i;
-
-	return -1;
-}
-#endif
-
-
 /*
  * shortname: Convert a server "ourname" into a server "shortname".
  *
@@ -4910,33 +4856,6 @@ static int	server_addrs_left (int refnum)
 
 	return count;
 }
-
-#if 0
-/*
- * This calculates how long a privmsg/notice can be on 'server' that we send
- * to 'target'.
- *
- * Each privmsg/notice looks like this:
- *      1        2             345678901        23         4 5
- *	:<mynick>!<myuser@host> PRIVMSG <target> :<message>\r\n
- * so each line has 15 bytes of overhead
- *   + length of my nick
- *   + length of my user@host
- *   + length of channel/target (including #)
- * The maximum length of a message is 512 - all of the above
- */
-size_t	get_server_message_limit (int server, const char *target)
-{
-	size_t	overhead;
-
-	overhead = 15;
-	overhead += strlen(get_server_nickname(server));
-	overhead += strlen(get_server_userhost(server));
-	overhead += strlen(target);
-	return 512 - overhead;
-}
-#endif
-
 
 Server *      get_server (int server)
 {
