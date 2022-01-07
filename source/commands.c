@@ -2358,6 +2358,12 @@ BUILT_IN_COMMAND(pretend_cmd)
 	char *args_copy;
 	int	s = from_server;
 
+	if (!is_server_open(s))
+	{
+		say("Server %d is not connected", s);
+		return;
+	}
+	
 	if (!(args_copy = alloca(IO_BUFFER_SIZE + 1)))
 		return;
 
