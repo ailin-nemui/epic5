@@ -1501,11 +1501,14 @@ static	int recursion = 0;		/* Recursion is bad */
 	}
 
 	term_reset();
-	fprintf(stderr, "An unrecoverable logic error has occurred.\n");
-	fprintf(stderr, "Please fill out the BUG_FORM file, and include the following message:\n");
+	fprintf(stderr, "A critical logic error has occurred.\n");
+	fprintf(stderr, "To protect you from a crash, the client has aborted what you were doing.\n");
+	fprintf(stderr, "Please visit #epic on EFNet and relay this information:\n");
 	fprintf(stderr, "Panic: [%s (%lu):%s]\n", irc_version, commit_id, buffer);
+	fprintf(stderr, "You can refresh your screen to make this message go away\n");
 	panic_dump_call_stack();
 
+#if 0
 	if (quitmsg == 0)
 		strlcpy(buffer, "Ask user for panic message.", sizeof(buffer));
 
@@ -1513,6 +1516,8 @@ static	int recursion = 0;		/* Recursion is bad */
 		irc_exit(0, "Panic: epic5-%lu:%s", commit_id, buffer);
 	else
 		irc_exit(1, "Panic: epic5-%lu:%s", commit_id, buffer);
+#endif
+	longjmp(panic_jumpseat, 1);
 }
 
 /* beep_em: Not hard to figure this one out */

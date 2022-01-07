@@ -139,6 +139,7 @@ extern struct timeval	idle_time;
 extern struct timeval	now;
 extern struct timeval	input_timeout;
 extern	unsigned	window_display;		/* This is in window.h */
+extern		jmp_buf	panic_jumpseat;
 
 /* irc.c's extern functions */
 	void	io 			(const char *);

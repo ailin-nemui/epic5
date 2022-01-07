@@ -37,6 +37,7 @@
 #ifdef HAVE_STDDEF_H
 #include <stddef.h>
 #endif
+#include <setjmp.h>
 
 /*
  * Everybody needs these POSIX headers...

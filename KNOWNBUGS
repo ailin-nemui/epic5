@@ -1039,3 +1039,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add support for kwargs for $json_implode(): "root", "compact" (rb fusion)
 * Add support for tcl8.6 -- run 'make makedepend'
 * Remove dead code that was #if 0'd out for a long time.
+* Make /pretend object when you're disconnected (rb skered)
+* Change panic() to setjmp/longjmp back to main() instead of exit()

@@ -52,7 +52,7 @@ const char internal_version[] = "20211006";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 1989;
+const unsigned long	commit_id = 1990;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -165,6 +165,8 @@ int		privileged_output = 0;
 
 /* Output which should not trigger %F in hidden windows */
 int		do_window_notifies = 1;
+
+jmp_buf		panic_jumpseat;
 
 /*
  * If set, outbound connections will be bind()ed to the address
@@ -1141,6 +1143,16 @@ int 	main (int argc, char *argv[])
 
 	get_time(&idle_time);
 	reset_system_timers();
+
+	/*
+	 * Have you ever seen a setjmp() before?
+	 * The first time it returns 0 (thus is false and falls through)
+	 * The second time it returns != 0 (thus is true, and calls itself twice)
+	 * Consequently, this loop assures that panic_jumpseat is initialized.
+	 * You can return here later with longjmp(panic_jumpseat);
+	 */
+	while (setjmp(panic_jumpseat))
+		;
 
 	for (;;system_exception = 0)
 		io("main");
