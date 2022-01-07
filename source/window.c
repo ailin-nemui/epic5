@@ -3168,7 +3168,7 @@ void	pop_message_from (int context)
  * in theory, there shouldn't be ANY contexts left on the stack.
  * if there are, maybe we should panic here?  Or maybe just delete them.
  */
-void	check_message_from_queue (void)
+void	check_message_from_queue (int doing_reset)
 {
 	int	i;
 
@@ -3178,9 +3178,10 @@ void	check_message_from_queue (void)
 	    /* Alert to the problem... */
 	    for (i = 1; i < context_counter; i++)
 	    {
-		yell("Warning: Output context from %s:%d was not released",
-			contexts[i].who_file,
-			contexts[i].who_line);
+		if (!doing_reset)
+			yell("Warning: Output context from %s:%d was not released",
+				contexts[i].who_file,
+				contexts[i].who_line);
 
 	    }
 

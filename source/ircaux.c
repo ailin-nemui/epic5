@@ -1491,7 +1491,7 @@ static	int recursion = 0;		/* Recursion is bad */
 	if (recursion)
 		abort();
 
-	recursion = 1;
+	recursion++;
 	if (format)
 	{
 		va_list arglist;
@@ -1500,7 +1500,9 @@ static	int recursion = 0;		/* Recursion is bad */
 		va_end(arglist);
 	}
 
+#if 0
 	term_reset();
+#endif
 	fprintf(stderr, "A critical logic error has occurred.\n");
 	fprintf(stderr, "To protect you from a crash, the client has aborted what you were doing.\n");
 	fprintf(stderr, "Please visit #epic on EFNet and relay this information:\n");
@@ -1517,6 +1519,7 @@ static	int recursion = 0;		/* Recursion is bad */
 	else
 		irc_exit(1, "Panic: epic5-%lu:%s", commit_id, buffer);
 #endif
+	recursion--;
 	longjmp(panic_jumpseat, 1);
 }
 

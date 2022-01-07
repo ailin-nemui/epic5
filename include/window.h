@@ -309,6 +309,6 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	int	window_is_scrolled_back		(Window *);
 	void 	window_change_server		(Window *, int);
 
-	void   check_message_from_queue 	(void);
+	void   check_message_from_queue 	(int);
 
 #endif /* __window_h__ */
