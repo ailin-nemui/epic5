@@ -1,0 +1,190 @@
+if (word(2 $loadinfo()) != [pf]) {
+	load -pf $word(1 $loadinfo());
+	return;
+};
+
+package sasl_nistp256;
+
+## SASL NISTP256 authentication script for EPIC5.
+## Written by zlonix@efnet, public domain.
+##
+## Version: 1.0 (January, 2022)
+##  - Initial roll-out
+
+## This script implements SASL NISTP256 authentication, primarily used on
+## Libera.Chat network. Note please, that the script has been tested only on
+## Libera.Chat, other networks MAY or MAY NOT work properly, and such networks
+## are not supported by the author. NISTP256 authentication is a requirement to
+## connect to Libera.Chat via Tor.
+##
+## The script is heavily based on sasl_auth script which has been deprecated in
+## latest versions of EPIC5. Old script implemented only PLAIN authentication
+## protocol for Libera.Chat and now it is advised to use "password" field of the
+## server description instead - http://help.epicsol.org/server_description, for
+## example, put this in your $IRCLIB/ircII.servers file (don't forget to use
+## IRC-SSL protocol, because your password can be easily intercepted otherwise):
+##
+## irc.libera.chat:7000:password=mypassword:nick=mynick:type=IRC-SSL
+##
+## To generate private key file and sign responses from a network you will need
+## ecdsatool, which can be found on https://github.com/kaniini/ecdsatool
+##
+## To work properly on Libera.Chat you will need set public key with NickServ,
+## to do it issue the following command:
+##
+## /msg NickServ set pubkey <key you got from "ecdsatool keygen">
+##
+## If you don't do it - the authentication will fail.
+##
+## !!! WARNING  !!! WARNING !!! WARNING !!! WARNING !!! WARNING !!!
+##    Don't forget to "chmod 0600 file.pem", because everyone
+##    who has access to this file will have access to your
+##    IRC account. Don't use SASL on untrusted systems, because
+##    root is The Almighty.
+## !!! WARNING  !!! WARNING !!! WARNING !!! WARNING !!! WARNING !!!
+##
+
+## To use the script put following lines at the end of your ~/.ircrc or
+## ~/.epicrc file:
+##
+## load sasl_nistp256
+## set sasl_nistp256_ecdsatool <path to ecdsatool binary>
+## sasl_nistp256 <server mask> <account name> <path to pem file>
+##
+## Example:
+##
+## load sasl_nistp256
+## set sasl_nistp256_ecdsatool ~/bin/ecdsatool
+## sasl_nistp256 *.libera.chat myaccount ~/.epic/libera.pem
+##
+## If you use PF loader - you will need to put semicolons at the end of each
+## line.
+##
+## Note for Tor users: if you use MapAddress with private IP address in your
+## torrc, then you must use exactly this private IP in sasl_nistp256 command,
+## usual mask of "*.libera.chat" will not work. For example, if you have this in
+## your torrrc:
+##
+## MapAddress 10.0.0.1 libera75.....
+##
+## You should use this command:
+##
+## sasl_nistp256 10.0.0.1 myaccount ~/.epic/libera.pem
+##
+## Currently author wasn't able to find a way to make EPIC5 work with DNS names
+## in torrc.
+
+## Limitation and bugs:
+##
+## The script don't check for NAK's, timeouts and has no other safety belts,
+## undefined behavior will happen, if you encounter any of such events. All this
+## is sacrificed for simplicity of implementation, since only Libera.Chat is
+## supported.
+##
+## The script don't check for proper (0600) private key file access mode.
+##
+## The script hasn't been checked for coexistence with all other CAP IRCv3
+## functionality, because currently there is none in EPIC5.
+
+addset sasl_nistp256_ecdsatool str;
+
+alias sasl_nistp256 (server, nick, file, void) {
+	if (@server && @nick && @file) {
+		if (findw($server $sasl_nistp256.servers) == -1) {
+			@ push(sasl_nistp256.servers $server);
+			@ push(sasl_nistp256.nicks $nick);
+			@ push(sasl_nistp256.keys $file);
+		};
+	};
+
+};
+
+alias sasl_nistp256.setstate (server, state, void) {
+	if (state != [null]) {
+		assign sasl_nistp256.status.$server $state;
+	} else {
+		assign -sasl_nistp256.status.$server;
+	};
+};
+
+on #-server_established 100 '\\\\[$$sasl_nistp256.servers\\\\] %' {
+	@ :server = servername();
+	@ :state = sasl_nistp256.status.$server;
+
+	if (state == []) {
+		sasl_nistp256.setstate $server req_sent;
+
+		quote CAP REQ :sasl;
+
+	} else {
+		xecho -b sasl_nistp256: server_established: server $server is in a wrong state [$state] (should be <empty>);
+		sasl_nistp256.setstate $server null;
+	};
+};
+
+on ^odd_server_stuff '\\\\[$$sasl_nistp256.servers\\\\] CAP % ACK *sasl*' {
+	@ :server = servername();
+	@ :state = sasl_nistp256.status.$server;
+
+	if (state == [req_sent]) {
+		sasl_nistp256.setstate $server meth_sent;
+
+		quote AUTHENTICATE ECDSA-NIST256P-CHALLENGE;
+	} else {
+		xecho -b sasl_nistp256: odd_server_stuff: CAP ACK: server $server \(real: $0\) is in a wrong state [$state] (should be "req_sent");
+		sasl_nistp256.setstate $server null;
+	};
+
+};
+
+on ^odd_server_stuff '\* AUTHENTICATE \+' {
+	@ :server = servername();
+	@ :state = sasl_nistp256.status.$server;
+
+	if (state == [meth_sent]) {
+		sasl_nistp256.setstate $server auth_sent;
+
+		@ :idx = rmatch($server $sasl_nistp256.servers)-1;
+		@ :nick = word($idx $sasl_nistp256.nicks);
+
+		@ :auth = xform("-CTCP +B64" $^\nick\\0$^\nick\\0);
+		quote AUTHENTICATE $auth;
+	} else {
+		xecho -b sasl_nistp256: odd_server_stuff: AUTHENTICATE: server $server \(real: $0\) is in a wrong state [$state] (should be "meth_sent");
+		sasl_nistp256.setstate $server null;
+	};
+};
+
+on ^exec 'ecdsatool %' {
+	quote AUTHENTICATE $1;
+};
+
+on ^odd_server_stuff '\* AUTHENTICATE %' {
+	@ :server = servername();
+	@ :state = sasl_nistp256.status.$server;
+
+	if (state == [auth_sent]) {
+		sasl_nistp256.setstate $server chal_sent;
+
+		@ :idx = rmatch($server $sasl_nistp256.servers)-1;
+		@ :key = word($idx $sasl_nistp256.keys);
+
+		^exec -name ecdsatool $sasl_nistp256_ecdsatool sign $key $2;
+	} else {
+		xecho -b sasl_nistp256: odd_server_stuff: AUTHENTICATE: server $server \(real: $0\) is in a wrong state [$state] (should be "auth_sent");
+		sasl_nistp256.setstate $server null;
+	};
+};
+
+on -903 '\\\\[$$sasl_nistp256.servers\\\\] *' {
+	@ :server = servername();
+	@ :state = sasl_nistp256.status.$server;
+
+	if (state == [chal_sent]) {
+		sasl_nistp256.setstate $server null;
+		quote CAP END;
+	} else {
+		xecho -b sasl_nistp256: 903: server $server \(real: $0\) is in a wrong state [$state] (should be "chal_sent");
+		sasl_nistp256.setstate $server null;
+	};
+};
