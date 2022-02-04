@@ -232,7 +232,7 @@ static void	cleanse_crypto_item (Crypt *item)
 	}
 	if (item->passwd)
 	{
-		memset(item->passwd, 0, strlen(item->passwd));
+		memset(item->passwd, 0, item->passwdlen);
 		new_free((char **)&(item->passwd));
 	}
 	if (item->prog)
