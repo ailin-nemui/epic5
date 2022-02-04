@@ -2,7 +2,10 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
+* Need a coalesce operator (ie, lhs || rhs is the same as lhs ? lhs : rhs)
+* Need a $shuffle() operator.
 * /on dcc_raw handling should set message_from() (rb Harz)
+* The way we handle "screen is not tall enough" underflow needs work
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1042,3 +1045,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make /pretend object when you're disconnected (rb skered)
 * Change panic() to setjmp/longjmp back to main() instead of exit()
 * Fix bugs with the new panic stuff.
+* Add 'colors' and 'sasl_nistp256' scripts from zlonix
+* Fix crash when you switched to AESSHA /encryption (rb zlonix)

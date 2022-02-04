@@ -116,17 +116,18 @@ static void	add_to_crypt (Char *nick, Char *serv, Char *passwd, Char *prog, int 
 {
 	Crypt	*new_crypt;
 
-	/* Create a 'new_crypt' if one doesn't already exist */
-	if (!(new_crypt = internal_is_crypted(nick, serv)))
-	{
-		new_crypt = (Crypt *) new_malloc(sizeof(Crypt));
-		new_crypt->nick = NULL;
-		new_crypt->serv = NULL;
-		new_crypt->passwd = NULL;
-		new_crypt->passwdlen = 0;
-		new_crypt->prog = NULL;
-		new_crypt->sed_type = sed_type;
-	}
+	/* Always purge an old item if there is one */
+	if ((new_crypt = internal_is_crypted(nick, serv)))
+		cleanse_crypto_item(new_crypt);
+	else
+		new_crypt = (Crypt *)new_malloc(sizeof(Crypt));
+
+	new_crypt->nick = NULL;
+	new_crypt->serv = NULL;
+	new_crypt->passwd = NULL;
+	new_crypt->passwdlen = 0;
+	new_crypt->prog = NULL;
+	new_crypt->sed_type = sed_type;
 
 	/* Fill in the 'nick' field. */
 	malloc_strcpy(&new_crypt->nick, nick);
@@ -197,6 +198,7 @@ static int	internal_remove_crypt (Char *nick, Char *serv)
 		(remove_item_from_list((List **)&crypt_list, (List *)item)))
 	{
 		cleanse_crypto_item(item);
+		new_free((char **)&item);
 		return 0;	/* Success */
 	}
 
@@ -212,6 +214,7 @@ static	void	clear_crypto_list (void)
 		item = crypt_list;
 		crypt_list = crypt_list->next;
 		cleanse_crypto_item(item);
+		new_free((char **)&item);
 	}
 }
 
@@ -238,7 +241,6 @@ static void	cleanse_crypto_item (Crypt *item)
 		new_free((char **)&(item->prog));
 	}
 	memset(item, 0, sizeof(Crypt));
-	new_free((char **)&item);
 	return;
 }
 
