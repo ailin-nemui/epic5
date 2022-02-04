@@ -1048,3 +1048,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add 'colors' and 'sasl_nistp256' scripts from zlonix
 * Fix crash when you switched to AESSHA /encryption (rb zlonix)
 * Add configure check for newlocale() for slackware 15 (rb fusion)
+* Some CTCPs are "restartable" (encryption types). (rb zlonix)

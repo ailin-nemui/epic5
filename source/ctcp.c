@@ -65,6 +65,7 @@
 #define CTCP_ORDINARY   2	/* Ordinary handlers either return a inline value or you should tell the user */
 #define CTCP_REPLACE_ARGS   4	/* A "replace args" CTCP rewrites the args, but still needs to be "handled" normally */
 #define CTCP_RAW	32	/* Requires the original payload, not a recoded message */
+#define CTCP_RESTARTABLE 64	/* Requires the CTCP processing to be restarted after handling */
 
 /* CTCP ENTRIES */
 /*
@@ -677,7 +678,8 @@ static	time_t	last_ctcp_parsed = 0;
 				{
 					strlcat(local_ctcp_buffer, ptr, sizeof local_ctcp_buffer);
 					new_free(&ptr);
-					/* continue; */  /* XXX Sigh */
+					if (CTCP(i)->flag & CTCP_RESTARTABLE)
+						continue; 
 				}
 			}
 
@@ -1014,25 +1016,25 @@ int	init_ctcp (void)
 				do_dcc, 	do_dcc_reply, NULL, NULL);
 
 	/* Strong Crypto CTCPs */
-	add_ctcp("AESSHA256-CBC", 	CTCP_ORDINARY | CTCP_RAW,
+	add_ctcp("AESSHA256-CBC", 	CTCP_ORDINARY | CTCP_RAW | CTCP_RESTARTABLE,
 				"transmit aes256-cbc ciphertext using a sha256 key",
 				do_crypto, 	do_crypto, NULL, NULL );
-	add_ctcp("AES256-CBC", 		CTCP_ORDINARY | CTCP_RAW,
+	add_ctcp("AES256-CBC", 		CTCP_ORDINARY | CTCP_RAW | CTCP_RESTARTABLE,
 				"transmit aes256-cbc ciphertext",
 				do_crypto, 	do_crypto, NULL, NULL );
-	add_ctcp("CAST128ED-CBC", 	CTCP_ORDINARY | CTCP_RAW,
+	add_ctcp("CAST128ED-CBC", 	CTCP_ORDINARY | CTCP_RAW | CTCP_RESTARTABLE,
 				"transmit cast5-cbc ciphertext",
 				do_crypto, 	do_crypto, NULL, NULL );
-	add_ctcp("BLOWFISH-CBC", 	CTCP_ORDINARY | CTCP_RAW,
+	add_ctcp("BLOWFISH-CBC", 	CTCP_ORDINARY | CTCP_RAW | CTCP_RESTARTABLE,
 				"transmit blowfish-cbc ciphertext",
 				do_crypto, 	do_crypto, NULL, NULL );
-	add_ctcp("FISH", 		CTCP_ORDINARY | CTCP_RAW,
+	add_ctcp("FISH", 		CTCP_ORDINARY | CTCP_RAW | CTCP_RESTARTABLE,
 				"transmit FiSH (blowfish-ecb with sha256'd key) ciphertext",
 				do_crypto, 	do_crypto, NULL, NULL );
-	add_ctcp("SED", 		CTCP_ORDINARY | CTCP_RAW,
+	add_ctcp("SED", 		CTCP_ORDINARY | CTCP_RAW | CTCP_RESTARTABLE,
 				"transmit simple_encrypted_data ciphertext",
 				do_crypto, 	do_crypto, NULL, NULL );
-	add_ctcp("SEDSHA", 		CTCP_ORDINARY | CTCP_RAW,
+	add_ctcp("SEDSHA", 		CTCP_ORDINARY | CTCP_RAW | CTCP_RESTARTABLE,
 				"transmit simple_encrypted_data ciphertext using a sha256 key",
 				do_crypto, 	do_crypto, NULL, NULL );
 
