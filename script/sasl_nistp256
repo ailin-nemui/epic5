@@ -42,7 +42,6 @@ package sasl_nistp256;
 ##    IRC account. Don't use SASL on untrusted systems, because
 ##    root is The Almighty.
 ## !!! WARNING  !!! WARNING !!! WARNING !!! WARNING !!! WARNING !!!
-##
 
 ## To use the script put following lines at the end of your ~/.ircrc or
 ## ~/.epicrc file:
@@ -155,10 +154,6 @@ on ^odd_server_stuff '\* AUTHENTICATE \+' {
 	};
 };
 
-on ^exec 'ecdsatool %' {
-	quote AUTHENTICATE $1;
-};
-
 on ^odd_server_stuff '\* AUTHENTICATE %' {
 	@ :server = servername();
 	@ :state = sasl_nistp256.status.$server;
@@ -169,7 +164,7 @@ on ^odd_server_stuff '\* AUTHENTICATE %' {
 		@ :idx = rmatch($server $sasl_nistp256.servers)-1;
 		@ :key = word($idx $sasl_nistp256.keys);
 
-		^exec -name ecdsatool $sasl_nistp256_ecdsatool sign $key $2;
+		^exec -line { quote AUTHENTICATE $0 } $sasl_nistp256_ecdsatool sign $key $2;
 	} else {
 		xecho -b sasl_nistp256: odd_server_stuff: AUTHENTICATE: server $server \(real: $0\) is in a wrong state [$state] (should be "auth_sent");
 		sasl_nistp256.setstate $server null;
