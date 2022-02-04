@@ -374,7 +374,7 @@ dnl
 dnl Checking for headers, functions, and a type declarations
 dnl
 
-AC_CHECK_HEADERS(fcntl.h ieeefp.h inttypes.h math.h ndbm.h netdb.h regex.h stdargs.h stddef.h stdint.h sys/cdefs.h sys/fcntl.h sys/file.h sys/filio.h sys/select.h sys/sysctl.h sys/syslimits.h sys/time.h sys/un.h sys/param.h termios.h sys/termios.h xlocale.h,)
+AC_CHECK_HEADERS(fcntl.h ieeefp.h inttypes.h locale.h math.h ndbm.h netdb.h regex.h stdargs.h stddef.h stdint.h sys/cdefs.h sys/fcntl.h sys/file.h sys/filio.h sys/select.h sys/sysctl.h sys/syslimits.h sys/time.h sys/un.h sys/param.h termios.h sys/termios.h xlocale.h,)
 if test $termcap -eq 0 ; then
 	AC_CHECK_HEADERS(term.h,)
 else
@@ -453,8 +453,23 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
      ]])],
      [ AC_MSG_RESULT(yes) 
        AC_DEFINE(NEWLOCALE_REQUIRES__GNU_SOURCE, 1, [Define this if newlocale() requires #define __GNU_SOURCE to work]) ],
-     [ AC_MSG_RESULT(no.  bummer for you) 
-       AC_DEFINE(NEWLOCALE_DOESNT_WORK, 1, [Define this if newlocale() doesn't work the way I expect]) ], :), ], :)
+     [ AC_MSG_RESULT(no. well...)
+       AC_MSG_CHECKING(whether we can fix that with _XOPEN_SOURCE 700)
+       AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+	  #include <stdlib.h>
+	  #define _XOPEN_SOURCE 700
+	  #include <locale.h>
+       ]],[[
+	  locale_t utf8_locale;
+	  utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
+	  return 0;
+       ]])],
+       [ AC_MSG_RESULT(yes.  Yay!) 
+         AC_DEFINE(NEWLOCALE_REQUIRES__XOPEN_SOURCE_700, 1, [Define this if newlocale() requires #define __XOPEN_SOURCE 700 to work]) ],
+         [ AC_MSG_RESULT(no.  bummer for you) 
+           AC_DEFINE(NEWLOCALE_DOESNT_WORK, 1, [Define this if newlocale() doesn't work the way I expect]) ], :), ], :)
+     ]
+)
 
 dnl -- Oh why does this have to be so painful? --
 AC_MSG_CHECKING(whether term.h works by itself)

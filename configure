@@ -4719,7 +4719,7 @@ fi
 done
 
 
-for ac_header in fcntl.h ieeefp.h inttypes.h math.h ndbm.h netdb.h regex.h stdargs.h stddef.h stdint.h sys/cdefs.h sys/fcntl.h sys/file.h sys/filio.h sys/select.h sys/sysctl.h sys/syslimits.h sys/time.h sys/un.h sys/param.h termios.h sys/termios.h xlocale.h
+for ac_header in fcntl.h ieeefp.h inttypes.h locale.h math.h ndbm.h netdb.h regex.h stdargs.h stddef.h stdint.h sys/cdefs.h sys/fcntl.h sys/file.h sys/filio.h sys/select.h sys/sysctl.h sys/syslimits.h sys/time.h sys/un.h sys/param.h termios.h sys/termios.h xlocale.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
@@ -5079,6 +5079,36 @@ $as_echo "yes" >&6; }
 $as_echo "#define NEWLOCALE_REQUIRES__GNU_SOURCE 1" >>confdefs.h
 
 else
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no. well..." >&5
+$as_echo "no. well..." >&6; }
+       { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we can fix that with _XOPEN_SOURCE 700" >&5
+$as_echo_n "checking whether we can fix that with _XOPEN_SOURCE 700... " >&6; }
+       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+	  #include <stdlib.h>
+	  #define _XOPEN_SOURCE 700
+	  #include <locale.h>
+
+int
+main ()
+{
+
+	  locale_t utf8_locale;
+	  utf8_locale = newlocale(LC_ALL_MASK, "en_US.UTF-8", 0);
+	  return 0;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes.  Yay!" >&5
+$as_echo "yes.  Yay!" >&6; }
+
+$as_echo "#define NEWLOCALE_REQUIRES__XOPEN_SOURCE_700 1" >>confdefs.h
+
+else
    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no.  bummer for you" >&5
 $as_echo "no.  bummer for you" >&6; }
 
@@ -5086,6 +5116,10 @@ $as_echo "#define NEWLOCALE_DOESNT_WORK 1" >>confdefs.h
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext,
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 

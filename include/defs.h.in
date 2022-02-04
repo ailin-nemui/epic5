@@ -97,6 +97,9 @@
 /* Define this if you have a working libarchive */
 #undef HAVE_LIBARCHIVE
 
+/* Define to 1 if you have the <locale.h> header file. */
+#undef HAVE_LOCALE_H
+
 /* Define to 1 if the system has the type `long long int'. */
 #undef HAVE_LONG_LONG_INT
 
@@ -308,6 +311,9 @@
 
 /* Define this if newlocale() requires #define __GNU_SOURCE to work */
 #undef NEWLOCALE_REQUIRES__GNU_SOURCE
+
+/* Define this if newlocale() requires #define __XOPEN_SOURCE 700 to work */
+#undef NEWLOCALE_REQUIRES__XOPEN_SOURCE_700
 
 /* Define this if you don't have job control */
 #undef NO_JOB_CONTROL
