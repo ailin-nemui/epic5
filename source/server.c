@@ -4573,6 +4573,8 @@ char 	*serverctl 	(char *input)
 			RETURN_STR(get_server_default_realname(refnum));
 		} else if (!my_strnicmp(listc, "OPEN", len)) {
 			RETURN_INT(is_server_open(refnum));
+		} else if (!my_strnicmp(listc, "NEXT_SERVER_IN_GROUP", len)) {
+			RETURN_INT(next_server_in_group(refnum, 1));
 		} else if (!my_strnicmp(listc, "SSL_", 4)) {
 			Server *s;
 			int	des;

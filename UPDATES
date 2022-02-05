@@ -1,5 +1,8 @@
 EPIC5-2.2
 
+*** News 02/05/2022 -- New $serverctl(GET x NEXT_SERVER_IN_GROUP)
+	This will return the server that /server + will connect to
+
 *** News 11/11/2021 -- $json_implode() takes kwargs, adds "compact mode"
 	The standard behavior of $json_implode() is to take a single word 
 	as an argument, the root of a assign tree to convert into a json 
