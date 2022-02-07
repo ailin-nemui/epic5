@@ -6613,7 +6613,7 @@ BUILT_IN_FUNCTION(function_indextoword, input)
 
 BUILT_IN_FUNCTION(function_realpath, input)
 {
-	char	resolvedname[PATH_MAX];
+	Filename	resolvedname;
 
 	if (!normalize_filename(input, resolvedname))
 		RETURN_STR(resolvedname);

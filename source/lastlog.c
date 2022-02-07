@@ -805,11 +805,19 @@ BUILT_IN_COMMAND(lastlog)
 
 	if (outfile)
 	{
+		Filename real_outfile;
+
+		if (normalize_filename(outfile, real_outfile))
+		{
+			say("LASTLOG: %s contains an invalid path", outfile);
+			goto bail;
+		}
+
 		/* 
 		 * XXX /LASTLOG -FILE is not encoding aware.
 		 * I'm not even sure if it could be.
 		 */
-		if ((outfp = fopen(outfile, "a")) == NULL)
+		if ((outfp = fopen(real_outfile, "a")) == NULL)
 		{
 			say("Couldn't open output file");
 			goto bail;

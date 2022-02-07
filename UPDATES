@@ -1,5 +1,42 @@
 EPIC5-2.2
 
+*** News 02/06/2022 -- What is $serverctl(GET x OPEN)?
+	Zlonix asked me to document "what does OPEN mean for a server?"
+
+	A server is "open" when it has a file descriptor open.  
+	This is entirely different from whether it is connected to IRC.
+	(for that, use $serverctl(GET x CONNECTED))
+
+	When a server is "open" then it is under the active management
+	of the client.  When a server is "closed" then the client has 
+	stopped paying attention to it and nothing further will happen
+	with it until the user (or script) does something.
+
+	During the course of a connection, several *different*
+	file descriptors get used by a server as it goes through the
+	server states:
+
+	Server State	Is "Open"?	What is fd used for?
+	-------------	-------------	----------------------------
+	CREATED		No
+	RECONNECT	No
+	DNS		Yes*		DNS helper subprocess
+	CONNECTING	Yes*		socket that is not yet connect()ed
+	SSL_CONNECTING	Yes*		connected socket not yet ssl'd
+	REGISTERING	Yes		socket that is trying to get on irc
+	SYNCING		Yes		socket that is on irc
+	ACTIVE		Yes		socket that is on irc
+	EOF		Yes*		socket that has seen an end-of-file
+	ERROR		Yes*		socket that has fatal error
+	CLOSING		Yes*		socket that is shutting down
+	CLOSED		No		
+	DELETED		No		
+
+	* - Just because a server is "open" does not mean that it is useful
+	    for IRC purposes.  It only means that the fd has not yet been
+	    closed at the OS level.  These states still have an 'fd that 
+	    has not been close(2)d', but don't represent useful states
+
 *** News 02/05/2022 -- New $serverctl(GET x NEXT_SERVER_IN_GROUP)
 	This will return the server that /server + will connect to
 

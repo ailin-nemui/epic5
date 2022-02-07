@@ -1050,3 +1050,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add configure check for newlocale() for slackware 15 (rb fusion)
 * Some CTCPs are "restartable" (encryption types). (rb zlonix)
 * Add $serverctl(GET x NEXT_SERVER_IN_GROUP)
+* New reconnect script (zlonix)
+* Fix $realpath(); the 2d arg to normalize_filename is (Filename) (zlonix)
+* Permit /lastlog -file to support ~-expansion (zlonix)
