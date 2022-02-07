@@ -1053,3 +1053,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * New reconnect script (zlonix)
 * Fix $realpath(); the 2d arg to normalize_filename is (Filename) (zlonix)
 * Permit /lastlog -file to support ~-expansion (zlonix)
+* /ON RECONNECT_REQUIRED only gets thrown when connected!

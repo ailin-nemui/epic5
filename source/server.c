@@ -1821,7 +1821,8 @@ return_from_ssl_detour:
 				{
 					parsing_server_index = i;
 					server_is_unregistered(i);
-					do_hook(RECONNECT_REQUIRED_LIST, "%d", i);
+					if (is_server_registered(i))
+						do_hook(RECONNECT_REQUIRED_LIST, "%d", i);
 					close_server(i, NULL);
 					say("Connection closed from %s", s->info->host);
 					parsing_server_index = NOSERV;
@@ -2132,10 +2133,7 @@ int	grab_server_address (int server)
 		if (x_debug & DEBUG_SERVER_CONNECT)
 		    yell("This server still has addresses left over from "
 			 "last time.  Starting over anyways...");
-		new_free(&s->addrs);
-		/* Freeaddrinfo(s->addrs); */
-		s->addrs = NULL;
-		s->next_addr = NULL;
+		discard_dns_results(server);
 	}
 
 	set_server_state(server, SERVER_DNS);
@@ -2249,10 +2247,7 @@ static int	connect_next_server_address (int server)
 
 	say("I'm out of addresses for server %d so I have to stop.", 
 			server);
-	/* Freeaddrinfo(s->addrs); */
-	/* s->addrs = NULL; */
-	new_free(&s->addrs);
-	s->next_addr = NULL;
+	discard_dns_results(server);
 	return -1;
 }
 
@@ -2892,11 +2887,8 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 	/* Throw away the rest of addresses to stop reconnections */
 	if (x_debug & DEBUG_SERVER_CONNECT)
 	    yell("We're connected! Throwing away the rest of the addrs");
-	/* Freeaddrinfo(s->addrs); */
-	/* s->addrs = NULL; */
-	new_free(&s->addrs);
-	s->next_addr = NULL;
 
+	discard_dns_results(refnum);
 	set_server_state(refnum, SERVER_SYNCING);
 
 	accept_server_nickname(refnum, ourname);
