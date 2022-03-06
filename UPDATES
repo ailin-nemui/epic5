@@ -1,5 +1,11 @@
 EPIC5-2.2
 
+*** News 03/06/2022 -- New math operator: "??" -- Coalesce
+	The coalesce operator is a binary operator that returns the left
+	value if the left value is true-y, otherwise returns the right
+	value.  Therefore, "x ?? y" is shorthand for "x ? x : y"
+	The operator precedence is the same as "||".
+
 *** News 03/06/2022 -- New /set BROKEN_AIXTERM
 	Some terminal emulators are silly and don't/can't/won't support
 	bold and color at the same time, instead insisting that you send

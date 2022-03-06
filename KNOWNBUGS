@@ -2,7 +2,6 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Need a coalesce operator (ie, lhs || rhs is the same as lhs ? lhs : rhs)
 * Need a $shuffle() operator.
 * /on dcc_raw handling should set message_from() (rb Harz)
 * The way we handle "screen is not tall enough" underflow needs work
@@ -1058,3 +1057,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * /ON RECONNECT_REQUIRED only gets thrown when connected!
 * Permit status bars on hidden windows to be generated in the ordinary way
 * Add /set broken_aixterm for silly emulators that don't support bold+color
+* Add ?? binary operator (coalesce), same priority as || ("DOR")

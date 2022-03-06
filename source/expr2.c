@@ -337,7 +337,7 @@ enum LEX {
 	OR,
 	DAND,
 	DXOR,
-	DOR,
+	DOR,		COALESCE,
 	QUEST,		COLON,
 	EQ,		PLUSEQ,		MINUSEQ,	MULEQ,		DIVEQ,
 			MODEQ,		ANDEQ,		XOREQ,		OREQ,
@@ -386,7 +386,7 @@ static	int	prec[TOKCOUNT] =
 	12,
 	13,
 	14,
-	15,
+	15,		15,
 	16,		16,
 	17,		17,		17,		17,		17,
 			17,		17,		17,		17,
@@ -440,7 +440,7 @@ static 	int 	assoc[TOKCOUNT] =
 	LR,
 	BOOL,
 	BOOL,
-	BOOL,
+	BOOL,		LR,
 	RL,		RL,
 	RL,		RL,		RL,		RL,		RL,
 			RL,		RL,		RL,		RL,
@@ -1609,6 +1609,43 @@ static void	reduce (expr_info *cx, int what)
 		case COLON:
 			break;
 
+		/* 
+		 * Coalesce is like a mix between || (dor) and , (comma)
+		 * If the lval is not false, the lval; otherwise the rval.
+		 */
+		case COALESCE:
+		{
+			pop_2_tokens(cx, &v, &w);
+			CHECK_NOEVAL
+
+			/* 
+			 * First we see, is the left value true or false?
+			 * Note that although we LOOK at the boolean-ness
+			 * of the left value (v), we push the token (and
+			 * not its boolean value) back.
+			 */
+			if (get_token_boolean(cx, v))
+			{
+				if (x_debug & DEBUG_NEW_MATH_DEBUG)
+					yell("O: %s ?? %s -> %s", 
+						get_token_expanded(cx, v),
+						get_token_expanded(cx, w),
+						get_token_expanded(cx, v));
+				push_token(cx, v);
+			}
+			else
+			{
+				if (x_debug & DEBUG_NEW_MATH_DEBUG)
+					yell("O: %s ?? %s -> %s", 
+						get_token_expanded(cx, v),
+						get_token_expanded(cx, w),
+						get_token_expanded(cx, w));
+				push_token(cx, w);
+			}
+
+			break;
+		}
+
 		case COMMA:
 		{
 			pop_2_tokens(cx, &v, &w);
@@ -1990,9 +2027,17 @@ static int	zzlex (expr_info *c)
 				OPERATOR("=", 0, EQ)
 
 		case '?':
-			check_implied_arg(c);
-			c->operand = 1;
-			return QUEST;
+			if (*c->ptr == '?')
+			{
+				c->ptr++;
+				OPERATOR("??", 0, COALESCE)
+			}
+			else
+			{
+				check_implied_arg(c);
+				c->operand = 1;
+				return QUEST;
+			}
 
 		case ':':
 			/*
