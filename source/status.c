@@ -398,7 +398,12 @@ static void	build_status_format (Status *s, int k)
  *		  default status format (main_status)
  *
  * Return value:
- *	None
+ *	None -- but the results are stored in 's'
+ *
+ * Notes:
+ *   You may be asking "why do you pass in 's' separately from 'w'?
+ *    1. 'w' is permitted to be NULL, but 's' is never NULL
+ *    2. $status_oneoff() will pass in its own 's' 
  */
 void	compile_status (Window *w, Status *s)
 {
@@ -759,6 +764,19 @@ int	make_status (Window *window, Status *status)
 				window->refnum, status_line, line);
 		    malloc_strcpy(&status->line[line].result, buffer);
 		    anything_changed++;
+
+		    /*
+		     * Ends up that BitchX always throws this hook and
+		     * people seem to like having this thrown in standard
+		     * mode, so i'll go along with that.
+		     *
+		     * We now do this unconditionally, rather than 
+		     * waiting until the window to be redrawn.  This was
+		     * because people want this thrown for invisible
+		     * windows (although they might change their minds)
+		     */
+		    do_hook(STATUS_UPDATE_LIST, "%d %d %s", 
+					window->refnum, line, buffer);
 		}
 	}
 
@@ -802,7 +820,6 @@ int	redraw_status (Window *window, Status *status)
 		defered_status_updates++;
 		return -1;
 	}
-
 	debuglog("redraw_status(%d): redrawing", window->refnum);
 
 	for (status_line = 0; status_line < status->number; status_line++)
@@ -825,14 +842,6 @@ int	redraw_status (Window *window, Status *status)
 				window->refnum, status_line, line);
 			continue;
 		}
-
-		/*
-		 * Ends up that BitchX always throws this hook and
-		 * people seem to like having this thrown in standard
-		 * mode, so i'll go along with that.
-		 */
-		do_hook(STATUS_UPDATE_LIST, "%d %d %s", 
-			window->refnum, status_line, status_str);
 
 		if (dumb_mode || !foreground || !window->screen)
 		{
@@ -951,11 +960,13 @@ int     permit_status_update (int flag)
 
 	old_flag = status_updates_permitted;
         status_updates_permitted = flag;
+	debuglog("permit_status_update: %d -> %d", old_flag, flag);
 
 	/* XXX I hate this, but I just want this problem to go away. */
 	/* This is caused by doing a /window command within /on window_create */
 	if (flag && defered_status_updates)
 	{
+		debuglog("permit_status_update: forcing update_all_*");
 		update_all_status();
 		update_all_windows();
 		defered_status_updates = 0;
@@ -970,12 +981,14 @@ int     permit_status_update (int flag)
 /*
  * This is used to get the current window on a window's screen
  */
+#if 0
 #define CURRENT_WINDOW window->screen->current_window
+#endif
 
 /*
  * This tests to see if the window IS the current window on its screen
  */
-#define IS_CURRENT_WINDOW (window->screen->current_window == window)
+#define IS_CURRENT_WINDOW (window->screen && window->screen->current_window == window)
 
 /*
  * This tests to see if all expandoes are to appear in all status bars
@@ -1635,6 +1648,8 @@ STATUS_FUNCTION(status_window)
 	switch (map)
 	{
 		case 0:
+			if (!window->screen)
+				break;
 			if (number_of_windows_on_screen(window) <= 1)
 				break;
 			/* FALLTHROUGH */

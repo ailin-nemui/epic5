@@ -1655,6 +1655,17 @@ static	int	restart = 0;
 	recursion++;
 	while (traverse_all_windows(&tmp))
 	{
+		/* 
+		 * "Window updates" come in two flavors, which we don't 
+		 * differentiate between
+		 *  1. Logical changes
+		 *  2. Physical changes
+		 * Some updates implicate both.  
+		 *
+		 * We cannot do physical updates on hidden windows (since 
+		 * they are not visible), so this function first does the
+		 * logical updates and conditionally the physical updates.
+		 */
 		if (restart)
 		{
 			debuglog("update_all_windows: restarting");
@@ -1663,6 +1674,9 @@ static	int	restart = 0;
 			continue;
 		}
 
+		/*
+		 * Logical update Type 1 - Scrollback rebuilds
+		 */
 		if (tmp->rebuild_scrollback)
 		{
 			debuglog("update_all_windows(%d), rebuild scrollback",
@@ -1671,8 +1685,8 @@ static	int	restart = 0;
 		}
 
 		/* 
-		 * This should always be done, even for hidden windows
-		 * ... i think.
+		 * Logical update Type 2 - Adjust the window's views
+		 * (when the number of rows changes)
 		 */
 		if (tmp->display_lines != tmp->old_display_lines)
 		{
@@ -1681,78 +1695,83 @@ static	int	restart = 0;
 			resize_window_display(tmp);
 		}
 
-		/* Never try to update/redraw an invisible window */
+		/*
+		 * Logical update Type 3 - Recalculating the status bar
+		 */
+		if ((tmp->update & REDRAW_STATUS) || (tmp->update & UPDATE_STATUS))
+		{
+		    do {
+			int	status_changed;
+
+			debuglog("update_all_windows(%d), regen status", tmp->refnum);
+			status_changed = make_status(tmp, &tmp->status);
+
+			/* If they are both set, REDRAW takes precedence. */
+			if ((tmp->update & REDRAW_STATUS) && (tmp->update & UPDATE_STATUS))
+				tmp->update &= (~UPDATE_STATUS);
+
+			/* 
+			 * The difference between UPDATE_STATUS and REDRAW_STATUS
+			 * is that UPDATE_STATUS does not force the status to be 
+			 * redrawn unless it has changed.   REDRAW_STATUS will 
+			 * always do the output even if nothing has changed.
+			 */
+			if ((tmp->update & UPDATE_STATUS) && status_changed <= 0)
+			{
+				debuglog("update_all_windows(%d), UPDATE_STATUS -> no action taken", tmp->refnum);
+				break;
+			}
+
+			debuglog("update_all_windows(%d): FORCE_STATUS set", tmp->refnum);
+			tmp->update |= FORCE_STATUS;
+			tmp->update &= (~UPDATE_STATUS);
+			tmp->update &= (~REDRAW_STATUS);
+		    } while (0);
+		}
+
+		/* * * * * * * */
+		/*
+		 * This now gates on visible/physical windows.
+		 * Everything after this point should be only physical updates
+		 */
 		if (!tmp->screen)
 		{
-			debuglog("update_all_windows(%d), hidden",
-					tmp->refnum);
+			tmp->update &= (~FORCE_STATUS);
+			tmp->update &= (~REDRAW_STATUS);
+			tmp->update &= (~UPDATE_STATUS);
+			debuglog("update_all_windows(%d), hidden (not redrawn)", tmp->refnum);
 			continue;
 		}
 
+		/*
+		 * Physical update #1 - Redraw the entire window
+		 */
 		if (tmp->cursor == -1 ||
 		   (tmp->cursor < tmp->scrolling_distance_from_display_ip  &&
 			 tmp->cursor < tmp->display_lines))
 		{
-			debuglog("update_all_windows(%d), repaint",
-					tmp->refnum);
+			debuglog("update_all_windows(%d), window repainted", tmp->refnum);
 			repaint_window_body(tmp);
 		}
 
-		if (tmp->update & REDRAW_STATUS)
+		/*
+		 * Physical update #2 - Redraw the status bar
+		 *  -- Note: FORCE_STATUS handles only the physical redraw
+		 *     of the status bar.  This can be manually triggered
+		 *     or automatically (via (UPDATE|REDRAW)_STATUS)
+		 */
+		if (tmp->update & FORCE_STATUS)
 		{
-			debuglog("update_all_windows(%d), redraw status",
-				tmp->refnum);
-
-			/* 
-			 * The difference between REDRAW_STATUS and
-			 * UPDATE_STATUS is that REDRAW_STATUS does not
-			 * care what make_status() returns, it is going to
-			 * force the status bar to be redrawn!
-			 */
-			make_status(tmp, &tmp->status);
-
 			/* If redrawing failed this time, try next time */
 			if (redraw_status(tmp, &tmp->status) < 0)
 			{
 				debuglog("update_all_windows(%d) (redraw_status), OK, status not redrawn -- lets try update later",
 					tmp->refnum);
-				tmp->update |= UPDATE_STATUS;
-				tmp->update |= FORCE_STATUS;
 			}
-			tmp->update &= ~REDRAW_STATUS;
-			do_input_too = 1;
-		}
-		else if (tmp->update & UPDATE_STATUS)
-		{
-			int	forced;
-
-		    if (tmp->update & FORCE_STATUS)
-		    {
-		        debuglog("update_all_windows(%d), update_status FORCED",
-				tmp->refnum);
-			forced = 1;
-		    }
-		    else
-		    {
-		        debuglog("update_all_windows(%d), update_status",
-				tmp->refnum);
-			forced = 0;
-		    }
-
-			if (make_status(tmp, &tmp->status) > 0 || forced)
+			else
 			{
-			   debuglog("update_all_windows(%d) (update_status), make_status returned > 0 (or forced)",
-					tmp->refnum);
-
-			   if (redraw_status(tmp, &tmp->status) == 0)
-			   {
-				debuglog("update_all_windows(%d) (update_status), ok, status redrawn.", tmp->refnum);
-				tmp->update &= ~UPDATE_STATUS;
+				debuglog("update_all_windows(%d) status redrawn successfully");
 				tmp->update &= ~FORCE_STATUS;
-			   }
-			   else
-				debuglog("update_all_windows(%d) (update_status), redraw_status returned nonzero, still needs update.");
-
 			}
 			do_input_too = 1;
 		}
