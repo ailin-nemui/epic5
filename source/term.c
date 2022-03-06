@@ -917,6 +917,8 @@ int 	term_init (void)
 	 */
 	for (i = 0; i < 256; i++)
 		current_term->TI_forecolors[i] = current_term->TI_backcolors[i] = "";
+	for (i = 0; i < 8; i++)
+		current_term->TI_bold_forecolors[i] = current_term->TI_bold_backcolors[i] = "";
 
 	if (current_term->TI_bold)
 		current_term->TI_sgrstrs[TERM_SGR_BOLD_ON-1] = current_term->TI_bold;
@@ -1064,6 +1066,23 @@ int 	term_init (void)
 		    snprintf(cbuf, sizeof cbuf, "\033[%dm", (i & 0x07) + 40);
 
 		current_term->TI_backcolors[i] = malloc_strdup(cbuf);
+	}
+
+	/* 
+	 * These are the silly "aixterm" colors for emulators that are 
+	 * too stubborn to emulate bold+color like real emulators do
+	 */
+	for (i = 0; i < 8; i++)
+	{
+		char cbuf[128];
+
+		*cbuf = 0;
+		snprintf(cbuf, sizeof cbuf, "\033[9%dm", i);
+		current_term->TI_bold_forecolors[i] = malloc_strdup(cbuf);
+
+		*cbuf = 0;
+		snprintf(cbuf, sizeof cbuf, "\033[10%dm", i);
+		current_term->TI_bold_backcolors[i] = malloc_strdup(cbuf);
 	}
 
 	/* I don't know any other way to set 256 colors, so ..... */

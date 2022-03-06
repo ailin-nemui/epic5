@@ -8,8 +8,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * The way we handle "screen is not tall enough" underflow needs work
 * Doing /window clear on a hidden window does not "un-notify" it
   because update_all_windows() won't update hidden windows
-* Maybe a /set aixcolors to support doing ^[[91m instead of ^[[1;31m
-  because kitty is bizarre.
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1059,3 +1057,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Permit /lastlog -file to support ~-expansion (zlonix)
 * /ON RECONNECT_REQUIRED only gets thrown when connected!
 * Permit status bars on hidden windows to be generated in the ordinary way
+* Add /set broken_aixterm for silly emulators that don't support bold+color

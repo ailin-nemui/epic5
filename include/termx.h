@@ -595,6 +595,8 @@ struct my_term {
 	const char *TI_sgrstrs[TERM_SGR_MAXVAL];
 	const char *TI_forecolors[256];
 	const char *TI_backcolors[256];
+	const char *TI_bold_forecolors[8];
+	const char *TI_bold_backcolors[8];
 	int TI_meta_mode;
 /*	int TI_need_redraw ; */
 };
@@ -623,6 +625,8 @@ int	tputs_x(char *);
 #define term_italics_off()	outcap(ITALIC_OFF)
 #define term_set_foreground(x)	tputs_x(current_term->TI_forecolors[(x) & 0xff])
 #define term_set_background(x)	tputs_x(current_term->TI_backcolors[(x) & 0xff])
+#define term_set_bold_foreground(x)	tputs_x(current_term->TI_bold_forecolors[(x) & 0x07])
+#define term_set_bold_background(x)	tputs_x(current_term->TI_bold_backcolors[(x) & 0x07])
 #define term_set_attribs(f,b)	tputs_x(term_getsgr(TERM_SGR_COLORS,(f),(b)))
 #define term_putgchar(x)	tputs_x(term_getsgr(TERM_SGR_GCHAR,(x),0))
 #define term_clear_screen()	term_clrscr()

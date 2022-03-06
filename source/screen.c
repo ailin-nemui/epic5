@@ -453,8 +453,18 @@ static void	term_attribute (Attribute *a)
 	/* XXXX This is where you'd put in a shim to globally defeat colors */
 	if (!(x_debug & DEBUG_NO_COLOR))
 	{
-		if (a->color_fg) { term_set_foreground(a->fg_color); }
-		if (a->color_bg) { term_set_background(a->bg_color); }
+		if (a->color_fg) { 
+			if (a->bold && get_int_var(BROKEN_AIXTERM_VAR))
+				term_set_bold_foreground(a->fg_color);
+			else
+				term_set_foreground(a->fg_color); 
+		}
+		if (a->color_bg) { 
+			if (a->bold && get_int_var(BROKEN_AIXTERM_VAR))
+				term_set_bold_background(a->bg_color);
+			else
+				term_set_background(a->bg_color); 
+		}
 	}
 }
 
