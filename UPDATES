@@ -1,5 +1,15 @@
 EPIC5-2.2
 
+*** News 03/06/2022 -- New /set BROKEN_AIXTERM
+	Some terminal emulators are silly and don't/can't/won't support
+	bold and color at the same time, instead insisting that you send
+	proprietary/non-standard ansi codes that were pioneered by a
+	vendor that also couldn't get its terminal emulator to properly
+	emulate real terminals.
+
+	If you are using such an emulator, you can /set broken_aixterm
+	and bold colors will send aixterm codes instead of standard codes.
+
 *** News 02/06/2022 -- What is $serverctl(GET x OPEN)?
 	Zlonix asked me to document "what does OPEN mean for a server?"
 
