@@ -1770,7 +1770,8 @@ static	int	restart = 0;
 			}
 			else
 			{
-				debuglog("update_all_windows(%d) status redrawn successfully");
+				debuglog("update_all_windows(%d) status redrawn successfully", 
+					tmp->refnum);
 				tmp->update &= ~FORCE_STATUS;
 			}
 			do_input_too = 1;
@@ -3216,8 +3217,13 @@ static void 	clear_window (Window *window)
 	if (dumb_mode)
 		return;
 
+	debuglog("clearing window: clearing window %d", window->refnum);
 	window->scrolling_top_of_display = window->display_ip;
-	window->notified = 0;
+	if (window->notified)
+	{
+		window->notified = 0;
+		update_all_status();
+	}
 	window->current_activity = 0;
 	recalculate_window_cursor_and_display_ip(window);
 

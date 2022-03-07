@@ -5,8 +5,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Need a $shuffle() operator.
 * /on dcc_raw handling should set message_from() (rb Harz)
 * The way we handle "screen is not tall enough" underflow needs work
-* Doing /window clear on a hidden window does not "un-notify" it
-  because update_all_windows() won't update hidden windows
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1058,3 +1056,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Permit status bars on hidden windows to be generated in the ordinary way
 * Add /set broken_aixterm for silly emulators that don't support bold+color
 * Add ?? binary operator (coalesce), same priority as || ("DOR")
+* A /window clear on a notified hidden window requires a full status regen
