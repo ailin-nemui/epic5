@@ -1057,3 +1057,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /set broken_aixterm for silly emulators that don't support bold+color
 * Add ?? binary operator (coalesce), same priority as || ("DOR")
 * A /window clear on a notified hidden window requires a full status regen
+* Add $serverctl(DONT_CONNECT 1) to trigger the -s command line option

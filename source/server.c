@@ -4426,6 +4426,13 @@ char 	*serverctl 	(char *input)
 		RETURN_INT(last_server);
 	} else if (!my_strnicmp(listc, "FROM_SERVER", len)) {
 		RETURN_INT(from_server);
+	} else if (!my_strnicmp(listc, "DONT_CONNECT", len)) {
+		if (input && *input)
+		{
+			int	new_dont_connect = atol(input);
+			dont_connect = new_dont_connect;
+		}
+		RETURN_INT(dont_connect);
 	} else if (!my_strnicmp(listc, "REFNUM", len)) {
 		char *server;
 

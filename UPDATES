@@ -1,5 +1,12 @@
 EPIC5-2.2
 
+*** News 03/06/2022 -- New serverctl(DONT_CONNECT), sets the -s CLI
+	The -s command line option ("dont connect to a server") can now
+	be set by your ~/.epicrc with 
+		@serverctl(DONT_CONNECT 1)
+	Obviously this only matters at client startup.  Setting it at
+	any other time is pointless
+
 *** News 03/06/2022 -- New math operator: "??" -- Coalesce
 	The coalesce operator is a binary operator that returns the left
 	value if the left value is true-y, otherwise returns the right
