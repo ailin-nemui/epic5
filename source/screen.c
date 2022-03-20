@@ -338,7 +338,7 @@ static size_t	logic_attributes (unsigned char *output, Attribute *old_a, Attribu
 		if (a->bg_color <= 7)
 			*str++ = '\003', count++;
 		else
-			*str++ = '\020', count++;
+			*str++ = '\030', count++;
 	    }
 	    *str++ = ',', count++;
 
@@ -357,7 +357,7 @@ static size_t	logic_attributes (unsigned char *output, Attribute *old_a, Attribu
 	    }
 	    else
 	    {
-		    *str++ = '\020', count++;
+		    *str++ = '\030', count++;
 		    if (a->color_bg)
 		    {
 			*str++ = a->bg_color / 100, count++;

@@ -375,6 +375,7 @@ static	char
 	*function_reverse 	(char *),
 	*function_revw 		(char *),
 	*function_rewind	(char *),
+	*function_rgb		(char *),
 	*function_rfilter 	(char *),
 	*function_rightw 	(char *),
 	*function_rmdir 	(char *),
@@ -703,6 +704,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "REVERSE",            function_reverse 	},
 	{ "REVW",               function_revw 		},
 	{ "RFILTER",            function_rfilter 	},
+	{ "RGB",		function_rgb		},
 	{ "RIGHT",		function_right 		},
 	{ "RIGHTW",             function_rightw 	},
 	{ "RINDEX",		function_rindex 	},
@@ -8308,4 +8310,18 @@ BUILT_IN_FUNCTION(function_jsontest, input)
 		say("flag is %s", flag);
 	RETURN_EMPTY;
 }
+
+BUILT_IN_FUNCTION(function_rgb, input)
+{
+	int	r, g, b, retval;
+	char	retval_str[3];
+
+	GET_INT_ARG(r, input);
+	GET_INT_ARG(g, input);
+	GET_INT_ARG(b, input);
+	retval = rgb_to_256(r, g, b);
+	snprintf(retval_str, 3, "%X", retval);
+	RETURN_STR(retval_str);
+}
+
 

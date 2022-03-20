@@ -64,6 +64,8 @@ char *	malloc_vsprintf 	(char **, const char *, va_list);
 int	is_number 		(const char *);
 int	is_real_number 		(const char *);
 const char *	my_ctime 	(time_t);
+int     rgb_to_256 		(uint8_t r, uint8_t g, uint8_t b);
+
 
 int	my_table_strnicmp 	(const unsigned char *, const unsigned char *, size_t, int);
 #define my_table_stricmp(x, y, t) my_table_strnicmp(x, y, UINT_MAX, t)
@@ -341,3 +343,4 @@ extern	const char *	inbound_recode (const char *, int, const char *, const char 
 extern	char *	function_encodingctl (char *);
 
 #endif /* _IRCAUX_H_ */
+
