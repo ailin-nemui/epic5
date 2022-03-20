@@ -299,77 +299,32 @@ static size_t	logic_attributes (unsigned char *output, Attribute *old_a, Attribu
 	}
 
 	/* Colors need to be set first, always */
-	if (a->color_fg != old_a->color_fg || a->fg_color != old_a->fg_color)
+	if (a->color_fg != old_a->color_fg || a->fg_color != old_a->fg_color ||
+	    a->color_bg != old_a->color_bg || a->bg_color != old_a->bg_color)
 	{
-	    if (a->fg_color <= 7)
-	    {
-		    *str++ = '\003', count++;
-		    if (a->color_fg)
-		    {
-			*str++ = '3', count++;
-			*str++ = '0' + a->fg_color, count++;
-		    }
-		    else
-		    {
-			*str++ = '-', count++;
-			*str++ = '1', count++;
-		    }
-	    }
-	    else
-	    {
-		    *str++ = '\020', count++;
-		    if (a->color_fg)
-		    {
-			*str++ = a->fg_color / 100, count++;
-			*str++ = (a->fg_color % 100) / 10, count++;
-			*str++ = a->fg_color % 10, count++;
-		    }
-		    else
-		    {
-			*str++ = '-', count++;
-			*str++ = '1', count++;
-		    }
-	     }
-	}
-	if (a->color_bg != old_a->color_bg || a->bg_color != old_a->bg_color)
-	{
-	    if (!a->color_fg)
-	    {
-		if (a->bg_color <= 7)
-			*str++ = '\003', count++;
-		else
-			*str++ = '\030', count++;
-	    }
-	    *str++ = ',', count++;
+		*str++ = '\030', count++;
 
-	    if (a->bg_color <= 7)
-	    {
-		    if (a->color_bg)
-		    {
-			*str++ = '4', count++;
-			*str++ = '0' + a->bg_color, count++;
-		    }
-		    else
-		    {
-			*str++ = '-', count++;
-			*str++ = '1', count++;
-		    }
-	    }
-	    else
-	    {
-		    *str++ = '\030', count++;
-		    if (a->color_bg)
-		    {
-			*str++ = a->bg_color / 100, count++;
-			*str++ = (a->bg_color % 100) / 10, count++;
-			*str++ = a->bg_color % 10, count++;
-		    }
-		    else
-		    {
-			*str++ = '-', count++;
-			*str++ = '1', count++;
-		    }
-	     }
+		if (a->color_fg != old_a->color_fg || a->fg_color != old_a->fg_color)
+		{
+			if (a->color_fg)
+				count += hex256(a->fg_color, &str);
+			else
+			{
+				*str++ = '-', count++;
+				*str++ = '1', count++;
+			}
+		}
+		if (a->color_bg != old_a->color_bg || a->bg_color != old_a->bg_color)
+		{
+			*str++ = ',', count++;
+			if (a->color_bg)
+				count += hex256(a->bg_color, &str);
+			else
+			{
+				*str++ = '-', count++;
+				*str++ = '1', count++;
+			}
+		}
 	}
 	if (old_a->bold != a->bold)
 		*str++ = BOLD_TOG, count++;
@@ -1186,15 +1141,38 @@ start_over:
 			}
 			case 38:	/* Set 256 fg color */
 			{
-				if (i == nargs)
-					break;		/* Invalid */
-				if (args[++i] != 5)
-					break;		/* Invalid */
+				/* 38 takes at least one argument */
 				if (i == nargs)
 					break;		/* Invalid */
 				i++;
-				a->color_fg = 1;
-				a->fg_color = args[i];
+
+				/* 38-5 takes 1 argument */
+				if (args[i] == 5)
+				{
+					if (i == nargs)
+					    break;	/* Invalid */
+					i++;
+
+					a->color_fg = 1;
+					a->fg_color = args[i];
+					break;		/* Invalid */
+				}
+				else if (args[i] == 2)
+				{
+					int	r, g, b, c;
+
+					if (i + 3 >= nargs)
+					    break;	/* Invalid */
+
+					r = args[++i];
+					g = args[++i];
+					b = args[++i];
+					c = rgb_to_256(r, g, b);
+					a->color_fg = 1;
+					a->fg_color = c;
+					break;
+				}
+
 				break;
 			}
 			case 39:	/* Reset foreground color to default */
@@ -1212,15 +1190,37 @@ start_over:
 			}
 			case 48:	/* Set 256 bg color */
 			{
-				if (i == nargs)
-					break;		/* Invalid */
-				if (args[++i] != 5)
-					break;		/* Invalid */
+				/* 48 takes at least one argument */
 				if (i == nargs)
 					break;		/* Invalid */
 				i++;
-				a->color_bg = 1;
-				a->bg_color = args[i];
+
+				/* 48-5 takes 1 argument */
+				if (args[i] == 5)
+				{
+					if (i == nargs)
+					    break;	/* Invalid */
+
+					a->color_bg = 1;
+					a->bg_color = args[++i];
+					break;		/* Invalid */
+				}
+				else if (args[i] == 2)
+				{
+					int	r, g, b, c;
+
+					if (i + 3 >= nargs)
+					    break;	/* Invalid */
+
+					r = args[++i];
+					g = args[++i];
+					b = args[++i];
+					c = rgb_to_256(r, g, b);
+					a->color_bg = 1;
+					a->bg_color = c;
+					break;
+				}
+
 				break;
 			}
 			case 49:	/* Reset background color to default */
@@ -1229,6 +1229,29 @@ start_over:
 				a->bg_color = 0;
 				break;
 			}
+
+			/* 
+			 * Some emulators are incapable of supporting 
+			 * bold/blink+colors and require you to use these 
+			 * irregular/non-standard numbers.
+			 */
+			case 90: case 91: case 92: case 93: case 94: case 95:
+			case 96: case 97:	/* Set bright foreground color */
+			{
+				a->bold = 1;
+				a->color_fg = 1;
+				a->fg_color = args[i] - 90;
+				break;
+			}
+			case 100: case 101: case 102: case 103: case 104: case 105:
+			case 106: case 107:	/* Set bright (blink) background color */
+			{
+				a->blink = 1;
+				a->color_bg = 1;
+				a->bg_color = args[i] - 100;
+				break;
+			}
+
 
 			default:	/* Everything else is not supported */
 				break;

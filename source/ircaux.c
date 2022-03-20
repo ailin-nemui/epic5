@@ -7415,3 +7415,17 @@ int	rgb_to_256 (uint8_t r, uint8_t g, uint8_t b)
 		return 16 + (reduced_r * 36 + reduced_g * 6 + reduced_b);
 }
 
+size_t	hex256 (uint8_t x, char **retval)
+{
+static const char hexnum[] = "0123456789ABCDEF";
+	int	l = x & 0xF0 >> 4;
+	int	h = x & 0x0F;
+
+	**retval = hexnum[l];
+	(*retval)++;
+	**retval = hexnum[h];
+	(*retval)++;
+	**retval = 0;
+	return 2;
+}
+

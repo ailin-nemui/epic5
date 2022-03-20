@@ -65,6 +65,7 @@ int	is_number 		(const char *);
 int	is_real_number 		(const char *);
 const char *	my_ctime 	(time_t);
 int     rgb_to_256 		(uint8_t r, uint8_t g, uint8_t b);
+size_t  hex256			(uint8_t x, char **retval);
 
 
 int	my_table_strnicmp 	(const unsigned char *, const unsigned char *, size_t, int);
