@@ -1,0 +1,89 @@
+Here's the plan
+
+We want to be able to map any RGB color to an approximate "256 color"
+In general, the 256 colors have three zones:
+
+Zone 1 - Legacy colors (8 basic colors and 8 "bright" colors -- 16 colors)
+Zone 2 - 6-bit RGB space (6x6x6 == 216 colors)
+Zone 3 - Grayscale (24 colors)
+
+ZONE 1
+======
+Zone 1, the legacy colors, are too varied to be mapped reliably.
+So we won't be mapping any colors to it.
+
+ZONE 2
+======
+In Zone 2, every color is represented as an RGB value with 6 values
+rather than 256 values.  To convert 256 values to 6 requires lossy
+compression -- and the bands to be used are somewhat speculative.
+I'm going to use the xterm bands
+
+	Value	Normative	Band
+	------	----------	-----------
+	  0	   0		  0 -  47
+	  1	  95 (5f)	 48 - 114
+	  2	 135 (87)	115 - 154
+	  3	 175 (af)	155 - 194
+	  4	 215 (d7)	195 - 234
+	  5	 255 (ff)	235 - 255
+
+Note there are 6 zone 2 colors that map to "grayscale colors" (which
+will be discmissed more later)
+	color	rgb tuple
+	-----	--------
+	 16	  0
+	 59	 95
+	102	135
+	145	175
+	188	215
+	231	255
+
+
+ZONE 3
+======
+In Zone 3, every number has RGB values approximately equal,
+with 24 values starting with 8 + (10 * value) (to 238)
+interposed with the 6 "gray" colors called out above.
+
+A color is "approximately equal" if the largest difference
+between the RGB values is 10, they are declared "equal"
+
+Colors where some pair of RGB values are more than 10 apart,
+then they will be mapped to a zone 2 color.
+
+The "value" of a zone 3 color is (R+G+B/3)
+
+	Value	 Normative	 Band
+	-----	-----------	------------
+	<16>	   0		  0-4
+	 0 (232)   8		  5-13
+	 1 (233)  18		 14-23
+	 2 (234)  28		 24-33
+	 3 (235)  38		 34-43
+	 4 (236)  48		 44-53
+	 5 (237)  58		 54-63
+	 6 (238)  68		 64-73
+	 7 (239)  78		 74-83
+	 8 (240)  88		 84-91
+	<59>	  95		 92-96
+	 9 (241)  98		 97-103
+	10 (242) 108		104-113
+	11 (243) 118		114-123
+	12 (244) 128		124-131
+	<102>	 135		132-136
+	13 (245) 138		137-143
+	14 (246) 148		144-153
+	15 (247) 158		154-163
+	16 (248) 168		164-171
+	<145>	 175		172-176
+	17 (249) 178		177-183
+	18 (250) 188		184-193
+	19 (251) 198		194-203
+	20 (252) 208		204-211
+	<188>	 215		212-216
+	21 (253) 218		217-223
+	22 (254) 228		224-233
+	23 (255) 238		234-246
+	<231>	 255		247-255
+
