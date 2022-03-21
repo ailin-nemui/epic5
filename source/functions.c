@@ -4857,8 +4857,9 @@ BUILT_IN_FUNCTION(function_nohighlight, input)
 			case BLINK_TOG:
 			case ALL_OFF:
 			case ALT_TOG:
-			case '\003':
-			case '\033':
+			case COLOR_TAG:
+			case COLOR256_TAG:
+			case '\033':	/* \033 is ESCape */
 			{
 				*ptr++ = REV_TOG;
 				*ptr++ = (*input++ | 0x40);
@@ -5377,108 +5378,108 @@ char *	function_cparse (char *input)
 		    switch (stuff[i])
 		    {
 			case 'k':
-				output[j++] = '\003';
+				output[j++] = COLOR_TAG;
 				output[j++] = '3';
 				output[j++] = '0';
 				break;
 			case 'r':
-				output[j++] = '\003';
+				output[j++] = COLOR_TAG;
 				output[j++] = '3';
 				output[j++] = '1';
 				break;
 			case 'g':
-				output[j++] = '\003';
+				output[j++] = COLOR_TAG;
 				output[j++] = '3';
 				output[j++] = '2';
 				break;
 			case 'y':
-				output[j++] = '\003';
+				output[j++] = COLOR_TAG;
 				output[j++] = '3';
 				output[j++] = '3';
 				break;
 			case 'b':
-				output[j++] = '\003';
+				output[j++] = COLOR_TAG;
 				output[j++] = '3';
-				output[j++]   = '4';
+				output[j++] = '4';
 				break;
 			case 'm':
 			case 'p':
-				output[j++] = '\003';
+				output[j++] = COLOR_TAG;
 				output[j++] = '3';
-				output[j++]   = '5';
+				output[j++] = '5';
 				break;
 			case 'c':
-				output[j++] = '\003';
+				output[j++] = COLOR_TAG;
 				output[j++] = '3';
-				output[j++]   = '6';
+				output[j++] = '6';
 				break;
 			case 'w':
-				output[j++] = '\003';
+				output[j++] = COLOR_TAG;
 				output[j++] = '3';
-				output[j++]   = '7';
+				output[j++] = '7';
 				break;
 
 			case 'K':
-				output[j++] = '\003';
+				output[j++] = COLOR_TAG;
 				output[j++] = '5';
-				output[j++]   = '0';
+				output[j++] = '0';
 				break;
 			case 'R':
-				output[j++] = '\003';
+				output[j++] = COLOR_TAG;
 				output[j++] = '5';
-				output[j++]   = '1';
+				output[j++] = '1';
 				break;
 			case 'G':
-				output[j++] = '\003';
+				output[j++] = COLOR_TAG;
 				output[j++] = '5';
-				output[j++]   = '2';
+				output[j++] = '2';
 				break;
 			case 'Y':
-				output[j++] = '\003';
+				output[j++] = COLOR_TAG;
 				output[j++] = '5';
-				output[j++]   = '3';
+				output[j++] = '3';
 				break;
 			case 'B':
-				output[j++] = '\003';
+				output[j++] = COLOR_TAG;
 				output[j++] = '5';
-				output[j++]   = '4';
+				output[j++] = '4';
 				break;
 			case 'M':
 			case 'P':
-				output[j++] = '\003';
+				output[j++] = COLOR_TAG;
 				output[j++] = '5';
-				output[j++]   = '5';
+				output[j++] = '5';
 				break;
 			case 'C':
-				output[j++] = '\003';
+				output[j++] = COLOR_TAG;
 				output[j++] = '5';
-				output[j++]   = '6';
+				output[j++] = '6';
 				break;
 			case 'W':
-				output[j++] = '\003';
+				output[j++] = COLOR_TAG;
 				output[j++] = '5';
-				output[j++]   = '7';
+				output[j++] = '7';
 				break;
 
 			case '0': case '1': case '2': case '3': 
 			case '4': case '5': case '6': case '7':
-				output[j++] = '\003';
+				output[j++] = COLOR_TAG;
 				output[j++] = ',';
 				output[j++] = '4';
-				output[j++]   = stuff[i];
+				output[j++] = stuff[i];
 				break;
 
 			case 'F':
 				output[j++] = BLINK_TOG;
 				break;
 			case 'n':
-				output[j++] = '\003';
+				output[j++] = COLOR_TAG;
 				output[j++] = '-';
 				output[j++] = '1';
 				output[j++] = ALL_OFF;
 				break;
 			case 'X':
-				output[j++] = '\030';
+				output[j++] = COLOR256_TAG;
 				break;
 
 			case 'N':
@@ -5498,7 +5499,7 @@ char *	function_cparse (char *input)
 	}
 	if (noappend == 0)
 	{
-		output[j++] = '\003';
+		output[j++] = COLOR_TAG;
 		output[j++] = '-';
 		output[j++] = '1';
 	}
@@ -8320,7 +8321,7 @@ BUILT_IN_FUNCTION(function_rgb, input)
 	GET_INT_ARG(g, input);
 	GET_INT_ARG(b, input);
 	retval = rgb_to_256(r, g, b);
-	snprintf(retval_str, 3, "%X", retval);
+	snprintf(retval_str, 3, COLOR256_TAG_STR "%X", retval);
 	RETURN_STR(retval_str);
 }
 

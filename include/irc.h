@@ -59,6 +59,10 @@
 #define ALT_TOG_STR	"\005"
 #define ITALIC_TOG	'\020'		/* ^P */
 #define ITALIC_TOG_STR	"\020"
+#define COLOR_TAG	'\003'		/* ^C */
+#define COLOR_TAG_STR	"\003"
+#define COLOR256_TAG	'\030'		/* ^X */
+#define	COLOR256_TAG_STR "\030"
 
 #define IRCD_BUFFER_SIZE	512
 /* Last two bytes are always reserved for \r\n */

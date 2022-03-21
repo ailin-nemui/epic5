@@ -552,7 +552,7 @@ static ssize_t	read_color_seq (const unsigned char *start, void *d, int blinkbol
 	 * inconvenient to pass in the ^C here for prepare_display, so
 	 * i'm making this check optional.
 	 */
-	if (*ptr == '\003')
+	if (*ptr == COLOR_TAG)
 		ptr++;
 
 	/*
@@ -764,11 +764,11 @@ static ssize_t	read_color256_seq (const unsigned char *start, void *d)
 	a = (d) ? (Attribute *)d : &ad;
 
 	/*
-	 * Originally this was a check for *ptr == '\003' but it was
+	 * Originally this was a check for *ptr == '\030' but it was
 	 * inconvenient to pass in the ^C here for prepare_display, so
 	 * i'm making this check optional.
 	 */
-	if (*ptr == '\030')
+	if (*ptr == COLOR256_TAG)
 		ptr++;
 
 	/*
@@ -1278,14 +1278,14 @@ start_over:
  * State 0 is a "normal, printable character" (8 bits included)
  * State 1 is a "C1 character", aka a control character with high bit set.
  * State 2 is an "escape character" (\033)
- * State 3 is a "color code character" (\003)
+ * State 3 is a "color code character" (\003 aka COLOR_TAG)
  * State 4 is an "attribute change character"
  * State 5 is a "suppressed character" (always stripped)
  * State 6 is a "character that is never printable."
  * State 7 is a "beep"
  * State 8 is a "tab"
  * State 9 is a "non-destructive space"
- * State 10 is a "256 color code character" (\030)
+ * State 10 is a "256 color code character" (\030 aka COLOR256_TAG)
  */
 static	unsigned char	ansi_state[128] = {
 /*	^@	^A	^B	^C	^D	^E	^F	^G(\a) */

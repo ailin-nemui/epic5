@@ -5,7 +5,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Need a $shuffle() operator.
 * /on dcc_raw handling should set message_from() (rb Harz)
 * The way we handle "screen is not tall enough" underflow needs work
-* $rgb() function that approximates RGB codes into 256-color codes
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1060,3 +1059,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * A /window clear on a notified hidden window requires a full status regen
 * Add $serverctl(DONT_CONNECT 1) to trigger the -s command line option
 * Add $rgb() function to convert rgbs to 256 color (first try at this)
+* Add support for ^[[38;2;r;g;bm (and 48-2) color codes
+* Prefix $rgb() with ^X for skered
+* Change hardcoded \003 and \030's to macros.
