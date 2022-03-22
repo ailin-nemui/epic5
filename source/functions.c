@@ -958,7 +958,7 @@ int	parse_kwargs (struct kwargs *kwargs, const char *input)
 			{
 				malloc_strcpy((char **)kwargs->data, "<unsupported dict>");
 			}
-			else
+			else if (kwargs->required)
 				say("kwarg %s not found or was invalid", kwargs->kwarg);
 		}
 		if (kwargs->type == KWARG_TYPE_INTEGER)
@@ -996,7 +996,7 @@ int	parse_kwargs (struct kwargs *kwargs, const char *input)
 			{
 				*(intmax_t *)kwargs->data = 0;
 			}
-			else
+			else if (kwargs->required)
 				say("kwarg %s not found or was invalid", kwargs->kwarg);
 		}
 		if (kwargs->type == KWARG_TYPE_NUMBER)
@@ -1034,7 +1034,7 @@ int	parse_kwargs (struct kwargs *kwargs, const char *input)
 			{
 				*(long double *)kwargs->data = 0;
 			}
-			else
+			else if (kwargs->required)
 				say("kwarg %s not found or was invalid", kwargs->kwarg);
 		}
 		if (kwargs->type == KWARG_TYPE_BOOL)
@@ -1079,7 +1079,7 @@ int	parse_kwargs (struct kwargs *kwargs, const char *input)
 			{
 				*(int *)kwargs->data = 0;
 			}
-			else
+			else if (kwargs->required)
 				say("kwarg %s not found or was invalid", kwargs->kwarg);
 		}
 
@@ -8204,9 +8204,9 @@ BUILT_IN_FUNCTION(function_json_implode, input)
 
 	char *name1 = NULL, *flag = NULL;
 	struct kwargs kwargs[] = {
-		{ "root", KWARG_TYPE_STRING, &var },
-		{ "compact", KWARG_TYPE_BOOL, &compact },
-		{ NULL, KWARG_TYPE_SENTINAL, NULL }
+		{ "root", KWARG_TYPE_STRING, &var, 1 },
+		{ "compact", KWARG_TYPE_BOOL, &compact, 1 },
+		{ NULL, KWARG_TYPE_SENTINAL, NULL, 0 }
 	};
 
 	if (input && *input == '{')
@@ -8295,9 +8295,9 @@ BUILT_IN_FUNCTION(function_jsontest, input)
 {
 	char *name1 = NULL, *flag = NULL;
 	struct kwargs kwargs[] = {
-		{ "name1", KWARG_TYPE_STRING, &name1 },
-		{ "flag", KWARG_TYPE_STRING, &flag },
-		{ NULL, KWARG_TYPE_SENTINAL, NULL }
+		{ "name1", KWARG_TYPE_STRING, &name1, 1 },
+		{ "flag", KWARG_TYPE_STRING, &flag, 1 },
+		{ NULL, KWARG_TYPE_SENTINAL, NULL, 0 }
 	};
 
 	if (input && *input == '{')
@@ -8312,16 +8312,63 @@ BUILT_IN_FUNCTION(function_jsontest, input)
 	RETURN_EMPTY;
 }
 
+#define HEX2NUM(x)   ( (x) >= '0' && (x) <= '9' ? (x) - '0'   \
+					        : (x) >= 'A' && (x) <= 'F' ? (x) - 'A' + 10  \
+                                                                           : 0 )
+
 BUILT_IN_FUNCTION(function_rgb, input)
 {
-	int	r, g, b, retval;
-	char	retval_str[3];
+	intmax_t	r = 0, g = 0, b = 0;
+	int	attr = 1;
+	int	color;
+	char	retval_str[4];
 
-	GET_INT_ARG(r, input);
-	GET_INT_ARG(g, input);
-	GET_INT_ARG(b, input);
-	retval = rgb_to_256(r, g, b);
-	snprintf(retval_str, 3, COLOR256_TAG_STR "%X", retval);
+	while (input && *input && my_isspace(*input))
+		input++;
+
+	if (input && *input == '{')
+	{
+		struct kwargs kwargs[] = {
+			{ "r", KWARG_TYPE_INTEGER, &r, 1 },
+			{ "g", KWARG_TYPE_INTEGER, &g, 1 },
+			{ "b", KWARG_TYPE_INTEGER, &b, 1 },
+			{ "attr", KWARG_TYPE_BOOL, &attr, 0 },
+			{ NULL, KWARG_TYPE_SENTINAL, NULL, 0 }
+		};
+
+		parse_kwargs(kwargs, input);
+	}
+	else if (*input == '#') 
+	{
+		char r1 = 0, r2 = 0, g1 = 0, g2 = 0, b1 = 0, b2 = 0;
+
+		input++;
+#define next_byte_or_fail(src, var)   if (* src ) var = * src ++; else RETURN_EMPTY;
+		next_byte_or_fail(input, r1)
+		next_byte_or_fail(input, r2)
+		next_byte_or_fail(input, g1)
+		next_byte_or_fail(input, g2)
+		next_byte_or_fail(input, b1)
+		next_byte_or_fail(input, b2)
+
+		r = HEX2NUM(r1) * 16 + HEX2NUM(r2);
+		g = HEX2NUM(g1) * 16 + HEX2NUM(g2);
+		b = HEX2NUM(b1) * 16 + HEX2NUM(b2);
+	}
+	else 
+	{
+		GET_INT_ARG(r, input);
+		GET_INT_ARG(g, input);
+		GET_INT_ARG(b, input);
+	}
+
+	color = rgb_to_256(r, g, b);
+
+	if (attr)
+		snprintf(retval_str, 4, COLOR256_TAG_STR "%X", color);
+	else
+		snprintf(retval_str, 3, "%X", color);
+
 	RETURN_STR(retval_str);
 }
 

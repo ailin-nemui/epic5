@@ -1,5 +1,19 @@
 EPIC5-2.2
 
+*** News 03/21/2022 -- New built in function $rgb()
+	There are three ways to call the $rgb() function:
+	   1. As three numbers
+		$rgb(255 0 255)
+	   2. As a string
+		$rgb(#FF00FF)
+	   3. As kwargs
+		$rgb({"r":255, "g":0, "b":255, "attr":true})
+
+	This will return a string that will change to the indicated color.
+	(ie, it is of the form ^Xab, where "ab" are two hex digits)
+	The kwarg version is the only way to prevent prefixing with ^X
+	(ie, to get the color number).   The 'attr' flag is optional.
+
 *** News 03/06/2022 -- New serverctl(DONT_CONNECT), sets the -s CLI
 	The -s command line option ("dont connect to a server") can now
 	be set by your ~/.epicrc with 
