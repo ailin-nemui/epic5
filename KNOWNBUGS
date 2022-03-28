@@ -1063,3 +1063,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Prefix $rgb() with ^X for skered
 * Change hardcoded \003 and \030's to macros.
 * Add $rgb({...}) and $rgb{#RRGGBB) (see UPDATES)
+* EPIC5-2.1.7 (2011) (Cinereous) released here

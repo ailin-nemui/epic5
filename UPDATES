@@ -1,5 +1,7 @@
 EPIC5-2.2
 
+*** News 03/27/2021 -- EPIC5-2.1.7 (2011 - Cinereous) released here
+
 *** News 03/21/2022 -- New built in function $rgb()
 	There are three ways to call the $rgb() function:
 	   1. As three numbers
