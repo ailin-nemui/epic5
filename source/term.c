@@ -681,9 +681,9 @@ static	char	termcap[2048];		/* Bigger than we need, just in case */
 static	char	termcap2[2048];		/* Bigger than we need, just in case */
 static	char *	tptr = termcap2;
 
-static	void	term_establish_last_column (int force);
-static void	term_enable_last_column (int);
-static void	term_disable_last_column (int);
+static	void	term_establish_last_column (void);
+static void	term_enable_last_column (void);
+static void	term_disable_last_column (void);
 
 /*
  * term_echo: if 0, echo is turned off (all characters appear as blanks), if
@@ -760,7 +760,7 @@ void	term_reset (void)
 	if (current_term->TI_rmcup)
 		tputs_x(current_term->TI_rmcup);
 #endif
-	term_disable_last_column(1);
+	term_disable_last_column();
 	term_flush();
 }
 
@@ -777,7 +777,7 @@ SIGNAL_HANDLER(term_cont)
 		if (current_term->TI_smcup)
 			tputs_x(current_term->TI_smcup);
 #endif
-		term_establish_last_column(0);
+		term_establish_last_column();
 		need_redraw = 1;
 		tcsetattr(tty_des, TCSADRAIN, &newb);
 	}
@@ -1202,7 +1202,7 @@ int 	term_init (void)
 	 * There are no guarantees it will work, since some emulators say they 
 	 * support turning off auto-margins, but they lie.
 	 */
-	term_establish_last_column(0);
+	term_establish_last_column();
 
 	/*
 	 * Next we tell the kernel that it should support 8 bits both
@@ -1269,7 +1269,7 @@ int	term_resize (void)
 	}
 #	endif
 
-	term_establish_last_column(0);
+	term_establish_last_column();
 	if ((old_li != current_term->TI_lines) || (old_co != current_term->TI_cols))
 	{
 		old_li = current_term->TI_lines;
@@ -1283,24 +1283,26 @@ int	term_resize (void)
 	return 0;
 }
 
-static	void	term_establish_last_column (int force)
+static	void	term_establish_last_column (void)
 {
 	if (get_int_var(AUTOMARGIN_OVERRIDE_VAR))
-		term_enable_last_column(1);
+		term_enable_last_column();
+	else if (current_term->TI_am && current_term->TI_rmam)
+		term_enable_last_column();
 	else
 	{
-		term_disable_last_column(0);
+		term_disable_last_column();
 		current_term->TI_cols--;
 	}
 }
 
-static void	term_enable_last_column (int force)
+static void	term_enable_last_column (void)
 {
 	if (current_term->TI_am && current_term->TI_rmam)
 		tputs_x(current_term->TI_rmam);
 }
 
-static void	term_disable_last_column (int force)
+static void	term_disable_last_column (void)
 {
 	if (current_term->TI_am && current_term->TI_smam)
 		tputs_x(current_term->TI_smam);
@@ -1345,27 +1347,19 @@ void	set_meta_8bit (void *stuff)
 
 void	set_automargin_override (void *stuff)
 {
-	VARIABLE *v;
-	int	value;
-
-	v = (VARIABLE *)stuff;
-	value = v->integer;
-
 	if (dumb_mode)
 		return;
 
 	/*
-	 * The logic of this (for the user) is reverse what the
-	 * terminal thinks of it.  
+	 * This is called whenever you /set automargin_override,
+	 * either way.  
 	 *
-	 * ON - Use the last column
-	 *	- term_automargins_off()
-	 *	- Do not remove 1 column from the screen's size
-	 * OFF - Do not use the last column
-	 *	- term_automargins_on()
-	 *	- Remove 1 column from the screen's size
+	 * ON - The client should assume it can use the last column
+	 *	no matter what the circumstances appear to support
+	 * OFF - The client should use (or not use) the last column
+	 *	based on whether it appears to be safe to do so.
 	 */
-	term_establish_last_column(1);
+	term_establish_last_column();
 	need_redraw = 1;
 }
 

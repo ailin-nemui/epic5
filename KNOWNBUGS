@@ -1065,3 +1065,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $rgb({...}) and $rgb{#RRGGBB) (see UPDATES)
 * EPIC5-2.1.7 (2011) (Cinereous) released here
 * Add /set automargin_override (for skered) - always turn on automargins
+* De-cruftify the /set automargin_override stuff (rb skered)
