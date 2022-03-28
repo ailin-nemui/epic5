@@ -681,6 +681,10 @@ static	char	termcap[2048];		/* Bigger than we need, just in case */
 static	char	termcap2[2048];		/* Bigger than we need, just in case */
 static	char *	tptr = termcap2;
 
+static	void	term_establish_last_column (int force);
+static void	term_enable_last_column (int);
+static void	term_disable_last_column (int);
+
 /*
  * term_echo: if 0, echo is turned off (all characters appear as blanks), if
  * non-zero, all is normal.  The function returns the old value of the
@@ -756,10 +760,7 @@ void	term_reset (void)
 	if (current_term->TI_rmcup)
 		tputs_x(current_term->TI_rmcup);
 #endif
-#if use_automargins
-	if (current_term->TI_am && current_term->TI_smam)
-		tputs_x(current_term->TI_smam);
-#endif
+	term_disable_last_column(1);
 	term_flush();
 }
 
@@ -776,10 +777,7 @@ SIGNAL_HANDLER(term_cont)
 		if (current_term->TI_smcup)
 			tputs_x(current_term->TI_smcup);
 #endif
-#if use_automargins
-		if (current_term->TI_rmam)
-			tputs_x(current_term->TI_rmam);
-#endif
+		term_establish_last_column(0);
 		need_redraw = 1;
 		tcsetattr(tty_des, TCSADRAIN, &newb);
 	}
@@ -1190,7 +1188,6 @@ int 	term_init (void)
 		tputs_x(current_term->TI_smcup);
 #endif
 
-#if use_automargins
 	/*
 	 * When you write a character to the last column of a line, most
 	 * terminal emulators will advance the cursor to the start of the
@@ -1205,9 +1202,7 @@ int 	term_init (void)
 	 * There are no guarantees it will work, since some emulators say they 
 	 * support turning off auto-margins, but they lie.
 	 */
-	if (current_term->TI_rmam)
-		tputs_x(current_term->TI_rmam);
-#endif
+	term_establish_last_column(0);
 
 	/*
 	 * Next we tell the kernel that it should support 8 bits both
@@ -1274,13 +1269,7 @@ int	term_resize (void)
 	}
 #	endif
 
-#if use_automargins
-	if (!current_term->TI_am || !current_term->TI_rmam)
-		current_term->TI_cols--;
-#else
-	current_term->TI_cols--;
-#endif
-
+	term_establish_last_column(0);
 	if ((old_li != current_term->TI_lines) || (old_co != current_term->TI_cols))
 	{
 		old_li = current_term->TI_lines;
@@ -1294,6 +1283,28 @@ int	term_resize (void)
 	return 0;
 }
 
+static	void	term_establish_last_column (int force)
+{
+	if (get_int_var(AUTOMARGIN_OVERRIDE_VAR))
+		term_enable_last_column(1);
+	else
+	{
+		term_disable_last_column(0);
+		current_term->TI_cols--;
+	}
+}
+
+static void	term_enable_last_column (int force)
+{
+	if (current_term->TI_am && current_term->TI_rmam)
+		tputs_x(current_term->TI_rmam);
+}
+
+static void	term_disable_last_column (int force)
+{
+	if (current_term->TI_am && current_term->TI_smam)
+		tputs_x(current_term->TI_smam);
+}
 
 /* term_CE_clear_to_eol(): the clear to eol function, right? */
 void	term_clreol	(void)
@@ -1331,6 +1342,33 @@ void	set_meta_8bit (void *stuff)
 	else if (value == 2)
 		current_term->TI_meta_mode = (current_term->TI_km == 0 ? 0 : 1);
 }
+
+void	set_automargin_override (void *stuff)
+{
+	VARIABLE *v;
+	int	value;
+
+	v = (VARIABLE *)stuff;
+	value = v->integer;
+
+	if (dumb_mode)
+		return;
+
+	/*
+	 * The logic of this (for the user) is reverse what the
+	 * terminal thinks of it.  
+	 *
+	 * ON - Use the last column
+	 *	- term_automargins_off()
+	 *	- Do not remove 1 column from the screen's size
+	 * OFF - Do not use the last column
+	 *	- term_automargins_on()
+	 *	- Remove 1 column from the screen's size
+	 */
+	term_establish_last_column(1);
+	need_redraw = 1;
+}
+
 
 /* Set the cursor position */
 void	term_gotoxy (int col, int row)

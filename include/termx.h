@@ -658,6 +658,7 @@ int	tputs_x(char *);
 	int		term_eight_bit		(void);
 	void		set_term_eight_bit	(int);
 	void		set_meta_8bit		(void *);
+	void		set_automargin_override	(void *);
 	const char *	term_getsgr		(int, int, int);
 	const char *	get_term_capability	(const char *, int, int);
 

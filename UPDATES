@@ -1,5 +1,26 @@
 EPIC5-2.2
 
+*** News 03/28/2021 -- New /SET, /SET AUTOMARGIN_OVERRIDE (default OFF)
+	Previously, automargin support was conditionally built into 
+	the client at compile time.  The default was to include it.
+	The support is now always included.
+
+	Traditionally, the use of the last column depended on whether the 
+	client was convinced your terminal emulator safely supported it.
+	At the request of skered, this /SET was added that allows you
+	to force it, even if the client doesn't know how to safely turn
+	it on.  Therefore, using this /SET may cause display corruption
+	if the final column is used -- and this would not be considered
+	a bug in the client.
+
+	/SET AUTOMARGIN_OVERRIDE ON
+		Try to use the final column, even if you aren't sure if
+		it can be done safely -- (at your own risk -- if you have
+		screen corruption, this is "normal")
+	/SET AUTOMARGIN_OVERRIDE OFF
+		Use (or don't use) the final column based on whether the
+		client is sure (or isn't sure) if it's safe.
+
 *** News 03/27/2021 -- EPIC5-2.1.7 (2011 - Cinereous) released here
 
 *** News 03/21/2022 -- New built in function $rgb()

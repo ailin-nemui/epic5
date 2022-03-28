@@ -22,8 +22,6 @@
  *     properly.
  */
 
-#define use_automargins 1
-
 /* 
  *  This is where you define a list of ``fallback'' servers in case the client
  *  cannot under other circumstances figure out where to connect.   Normally,
@@ -43,16 +41,6 @@
  *  you dont have other servers to use.
  */
 #define DEFAULT_SERVER "irc.efnet.net irc.undernet.org irc.dal.net"
-
-/*
- * This is the location of your SSL certificate file.
- * XXX - This needs to be auto-detected by configure, somehow...
- * XXX - This is the FreeBSD location. how bogus.
- */
-/*
-#define DEFAULT_SSL_ROOT_CERTS_LOCATION "/usr/local/share/certs/ca-root-nss.crt"
-*/
-#define DEFAULT_SSL_ROOT_CERTS_LOCATION NULL
 
 /*
  * By default we let OpenSSL choose the ciphers we wnat to use.
@@ -275,6 +263,7 @@
 #define DEFAULT_ALLOW_C1_CHARS 0
 #define DEFAULT_ALT_CHARSET 1
 #define DEFAULT_ALWAYS_SPLIT_BIGGEST 1
+#define DEFAULT_AUTOMARGIN_OVERRIDE 0
 #define DEFAULT_BANNER "***"
 #define DEFAULT_BANNER_EXPAND 0
 #define DEFAULT_BEEP 1
@@ -365,6 +354,7 @@
 #define DEFAULT_SHOW_CHANNEL_NAMES 1
 #define DEFAULT_SHOW_NUMERICS 0
 #define	DEFAULT_SHOW_STATUS_ALL 0
+#define DEFAULT_SSL_ROOT_CERTS_LOCATION NULL
 #define DEFAULT_STATUS_AWAY " (Away)"
 #define DEFAULT_STATUS_CHANNEL " %C"
 #define DEFAULT_STATUS_CHANOP "@"
