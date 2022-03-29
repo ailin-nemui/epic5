@@ -1096,7 +1096,7 @@ static	char	*alias_buffer 		(void) { return malloc_strdup(cut_buffer); }
 static	char	*alias_time 		(void) { return malloc_strdup(get_clock()); }
 static	char	*alias_dollar 		(void) { return malloc_strdup("$"); }
 static	char	*alias_detected 	(void) { return malloc_strdup(last_notify_nick); }
-static	char	*alias_nick 		(void) { return malloc_strdup((current_window->server != NOSERV) ? get_server_nickname(current_window->server) : empty_string); }
+static	char	*alias_nick 		(void) { return malloc_strdup((get_window_server(0) != NOSERV) ? get_server_nickname(get_window_server(0)) : empty_string); }
 static	char	*alias_away 		(void) { return malloc_strdup(get_server_away(from_server)); }
 static  char    *alias_sent_nick        (void) { return malloc_strdup((get_server_sent_nick(from_server)) ? get_server_sent_nick(from_server) : empty_string); }
 static  char    *alias_recv_nick        (void) { return malloc_strdup((get_server_recv_nick(from_server)) ? get_server_recv_nick(from_server) : empty_string); }
@@ -1105,8 +1105,8 @@ static  char    *alias_joined_nick      (void) { return malloc_strdup((get_serve
 static  char    *alias_public_nick      (void) { return malloc_strdup((get_server_public_nick(from_server)) ? get_server_public_nick(from_server) : empty_string); }
 static  char    *alias_show_realname 	(void) { 
 	return malloc_strdup(
-		(current_window->server != NOSERV) ? 
-		get_server_realname(current_window->server) : 
+		(get_window_server(0) != NOSERV) ? 
+		get_server_realname(get_window_server(0)) : 
 		empty_string); }
 static	char	*alias_version_str 	(void) { return malloc_strdup(irc_version); }
 static  char    *alias_invite           (void) { return malloc_strdup((get_server_invite_channel(from_server)) ? get_server_invite_channel(from_server) : empty_string); }
@@ -1129,7 +1129,7 @@ static	char	*alias_currdir  	(void)
 static	char	*alias_channel 		(void) 
 { 
 	const char	*tmp; 
-	return malloc_strdup((tmp = get_echannel_by_refnum(0)) ? tmp : zero);
+	return malloc_strdup((tmp = get_window_echannel(0)) ? tmp : zero);
 }
 
 static	char	*alias_server 		(void)
@@ -1144,13 +1144,13 @@ static	char	*alias_server 		(void)
 static	char	*alias_query_nick 	(void)
 {
 	const char	*tmp;
-	return malloc_strdup((tmp = query_nick()) ? tmp : empty_string);
+	return malloc_strdup((tmp = get_window_equery(0)) ? tmp : empty_string);
 }
 
 static	char	*alias_target 		(void)
 {
 	const char	*tmp;
-	return malloc_strdup((tmp = get_target_by_refnum(0)) ? tmp : empty_string);
+	return malloc_strdup((tmp = get_window_target(0)) ? tmp : empty_string);
 }
 
 static	char	*alias_cmdchar 		(void)
@@ -1168,14 +1168,14 @@ static	char	*alias_cmdchar 		(void)
 static	char	*alias_chanop 		(void)
 {
 	const char	*tmp;
-	return malloc_strdup(((tmp = get_echannel_by_refnum(0)) && get_channel_oper(tmp, get_window_server(0))) ?
+	return malloc_strdup(((tmp = get_window_echannel(0)) && get_channel_oper(tmp, get_window_server(0))) ?
 		"@" : empty_string);
 }
 
 static	char	*alias_modes 		(void)
 {
 	const char	*tmp;
-	return malloc_strdup((tmp = get_echannel_by_refnum(0)) ?
+	return malloc_strdup((tmp = get_window_echannel(0)) ?
 		get_channel_mode(tmp, get_window_server(0)) : empty_string);
 }
 
@@ -1860,7 +1860,7 @@ BUILT_IN_FUNCTION(function_tolower, input)
 
 BUILT_IN_FUNCTION(function_curpos, input)
 {
-	RETURN_INT(cursor_position(current_window->screen));
+	RETURN_INT(cursor_position(get_window_screen(0)));
 }
 
 BUILT_IN_FUNCTION(function_channels, input)
@@ -1872,7 +1872,7 @@ BUILT_IN_FUNCTION(function_channels, input)
 		GET_INT_ARG(server, input)
 	else if (*input)
 	{
-		Window  *window;
+		int	window;
 
 		server = -1;
 
@@ -1884,11 +1884,11 @@ BUILT_IN_FUNCTION(function_channels, input)
 		 * But people need to be able to use "#" here, so specifically
 		 * support "#" here if needed.
 		 */
- 		if ((window = get_window_by_desc(input)))
-			server = window->server;
+ 		if ((window = lookup_window(input)) > 0)
+			server = get_window_server(window);
 		else if (*input == '#')
-			if ((window = get_window_by_desc(input + 1)))
-				server = window->server;
+			if ((window = lookup_window(input + 1)) > 0)
+				server = get_window_server(window);
 	}
 
 	retval = create_channel_list(server);
@@ -4142,13 +4142,15 @@ BUILT_IN_FUNCTION(function_geom, words)
 {
         const char *refnum;
         int  col, li;
+	int	winref;
 
         if (!words || !*words)
                 refnum = zero;
         else
                 GET_FUNC_ARG(refnum, words);
 
-        if (get_geom_by_winref(refnum, &col, &li))
+	winref = lookup_window(refnum);
+        if (get_window_geometry(winref, &col, &li))
                 RETURN_EMPTY;
 
         return malloc_sprintf(NULL, "%d %d", col, li);
@@ -4645,8 +4647,8 @@ BUILT_IN_FUNCTION(function_status, word)
 
 	GET_INT_ARG(window_refnum, word);
 	GET_INT_ARG(status_line, word);
-	retval = get_status_by_refnum(window_refnum, status_line);
-	RETURN_STR(retval);
+	retval = get_window_status_line(window_refnum, status_line);
+	RETURN_MSTR(retval);
 }
 
 /*
@@ -4696,15 +4698,15 @@ BUILT_IN_FUNCTION(function_winchan, input)
 	 */
 	else 
 	{
-		Window *win;
+		int	win;
 
 		if (arg1 && *arg1)
-			win = get_window_by_desc(arg1);
+			win = lookup_window(arg1);
 		else
-			win = get_window_by_refnum(0);
+			win = get_window_refnum(0);
 
 		if (win)
-			RETURN_STR(get_echannel_by_refnum(win->refnum));
+			RETURN_STR(get_window_echannel(win));
 		RETURN_EMPTY;
 	}
 }
@@ -4917,7 +4919,7 @@ BUILT_IN_FUNCTION(function_currchans, input)
 	{
 		if (server != -2 && blah->server != server)
 			continue;
-		if (!(chan = get_echannel_by_refnum(blah->refnum)))
+		if (!(chan = get_window_echannel(blah->refnum)))
 			continue;
 
 		malloc_strcat_wordlist_c(&retval, space, "\"", &clue);
@@ -5591,10 +5593,10 @@ BUILT_IN_FUNCTION(function_querywin, args)
 
 	while (traverse_all_windows(&w))
 	{
-	    q = get_equery_by_refnum(w->refnum);
+	    q = get_window_equery(w->refnum);
 	    if (q && !my_stricmp(q, nick))
 		if (servref < 0 || servref == w->server)
-			RETURN_INT(w->refnum);
+			RETURN_INT(w->user_refnum);
 	}
 
 	RETURN_INT(-1);
@@ -5846,7 +5848,7 @@ BUILT_IN_FUNCTION(function_iscurchan, input)
 		 * Check to see if the channel specified is the current
 		 * channel on *any* window for the current server.
 		 */
-		if ((chan = get_echannel_by_refnum(w->refnum)) &&
+		if ((chan = get_window_echannel(w->refnum)) &&
 			!my_stricmp(arg, chan) && w->server == from_server)
 				RETURN_INT(1);
 	}
@@ -6711,7 +6713,7 @@ BUILT_IN_FUNCTION(function_stat, words)
 
 BUILT_IN_FUNCTION(function_isdisplaying, input)
 {
-	RETURN_INT(window_display);
+	RETURN_INT(get_window_display());
 }
 
 BUILT_IN_FUNCTION(function_getcap, input)
@@ -6775,7 +6777,7 @@ BUILT_IN_FUNCTION(function_notifywindows, input)
 	window = NULL;
 	while (traverse_all_windows(&window))
 		if (window->notified)
-			malloc_strcat_word_c(&retval, space, ltoa(window->refnum), DWORD_NO, &rvclue);
+			malloc_strcat_word_c(&retval, space, ltoa(window->user_refnum), DWORD_NO, &rvclue);
 
 	RETURN_MSTR(retval);
 }
@@ -7199,11 +7201,10 @@ BUILT_IN_FUNCTION(function_dccctl, input)
 
 BUILT_IN_FUNCTION(function_outputinfo, input)
 {
-	if (who_from)
-		return malloc_sprintf(NULL, "%s %s", level_to_str(who_level),
-						who_from);
+	if (get_who_from())
+		return malloc_sprintf(NULL, "%s %s", level_to_str(get_who_level()), get_who_from());
 	else
-		return malloc_strdup(level_to_str(who_level));
+		return malloc_strdup(level_to_str(get_who_level()));
 }
 
 BUILT_IN_FUNCTION(function_levelwindow, input)
@@ -7220,7 +7221,7 @@ BUILT_IN_FUNCTION(function_levelwindow, input)
 	{
 	    if (mask_isset(&mask, LEVEL_DCC) && 
 		mask_isset(&w->window_mask, LEVEL_DCC))
-		RETURN_INT(w->refnum);
+		RETURN_INT(w->user_refnum);
 
 	    if (w->server != server)
 		continue;
@@ -7228,7 +7229,7 @@ BUILT_IN_FUNCTION(function_levelwindow, input)
 	    for (i = 1; BIT_VALID(i); i++)
 		if (mask_isset(&mask, i) &&
 		    mask_isset(&w->window_mask, i))
-			RETURN_INT(w->refnum);
+			RETURN_INT(w->user_refnum);
 	}
 	RETURN_INT(-1);
 }

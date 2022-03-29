@@ -99,7 +99,7 @@ void	redraw_all_screens (void)
 		unflash();
 		term_clear_screen();
 		if (s == main_screen && term_resize())
-			recalculate_windows(current_window->screen);
+			recalculate_windows(s);
 	}
 
 	/* Logically mark all windows as needing a redraw */
@@ -219,7 +219,7 @@ void	put_echo (const unsigned char *str)
  */
 void	put_it (const char *format, ...)
 {
-	if (window_display && format)
+	if (get_window_display() && format)
 	{
 		va_list args;
 		va_start (args, format);
@@ -242,7 +242,7 @@ void	file_put_it (FILE *fp, const char *format, ...)
 			fputs(putbuf, fp);
 			fputs("\n", fp);
 		}
-		else if (window_display)
+		else if (get_window_display())
 			put_echo(putbuf);
 	}
 }
@@ -253,7 +253,7 @@ void	file_put_it (FILE *fp, const char *format, ...)
  */
 static void 	vsay (const char *format, va_list args)
 {
-	if (window_display && format)
+	if (get_window_display() && format)
 	{
 		const char *str;
 
@@ -348,7 +348,7 @@ static void     vsyserr (int server, const char *format, va_list args)
 	int     l, old_from_server = from_server;
 	int	i_set_from_server = 0;
 
-        if (!window_display || !format)
+        if (!get_window_display() || !format)
 		return;
 
 	*putbuf = 0;
@@ -394,5 +394,35 @@ void    syserr (int server, const char *format, ...)
         va_start(args, format);
         vsyserr(server, format, args);
         va_end(args);
+}
+
+/*****/
+/*
+ * This was migrated over from window.h
+ */
+/*
+ * This is set to 1 if output is to be dispatched normally.  This is set to
+ * 0 if all output is to be suppressed (such as when the system wants to add
+ * and alias and doesnt want to blab to the user, or when you use ^ to
+ * suppress the output of a command.)
+ */
+static  unsigned window_display = 1;
+
+int     get_window_display (void)
+{
+        return window_display;
+}
+
+int     set_window_display (int value)
+{
+        window_display = value;
+        return 0;
+}
+
+int     swap_window_display (int value)
+{
+        int     old_value = window_display;
+        window_display = value;
+        return old_value;
 }
 

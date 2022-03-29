@@ -204,17 +204,17 @@ static File *	lookup_file (int fd)
 	return NULL;
 }
 
-static File *	lookup_window_logfile (int fd)
+static File *	lookup_window_logfile (int refnum)
 {
 	FILE *			x = NULL;
 static struct epic_loadfile	elf;
 static File 			retval = {0 , &elf, NULL};
 	Window *		w;
 
-	if (fd == -1)
+	if (refnum == -1)
 		x = irclog_fp;
-	else if ((w = get_window_by_refnum(fd)))
-		x = w->log_fp;
+	else if (get_window_refnum(refnum) > 0)
+		x = get_window_log_fp(refnum);
 	else
 		return NULL;
 

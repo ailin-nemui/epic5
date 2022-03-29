@@ -687,7 +687,7 @@ static void *	timeout_keypress (void *lastp, Timeval pressed)
 		return NULL; 
 
 	/* 
-	 * If this node is not ambiguous (it is not bound here, but requires
+	 * If this node is not ambiguous (it is not bound here), but requires
 	 * more keys to complete, we have nothing to resolve.
 	 */
 	last = (Key *)lastp;
@@ -751,8 +751,8 @@ static int	do_input_timeouts (void *ignored)
 
 		/* Set up context and check the sequence */
 		last_input_screen = output_screen = screen;
-		make_window_current(screen->current_window);
-		from_server = current_window->server;
+		make_window_current_by_refnum(screen->input_window);
+		from_server = get_window_server(0);
 
 		screen->last_key = timeout_keypress(screen->last_key,
 						    screen->last_press);

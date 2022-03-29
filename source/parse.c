@@ -1060,13 +1060,13 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 	 */
 	if (is_me(-1, victim))
 	{
-		Window *win, *old_cw;
+		int	winref;
+		int	ocw;
 
 		/*
 		 * Uh-oh.  If win is null we have a problem.
 		 */
-		if (!(win = get_window_by_refnum(
-				get_channel_winref(channel, from_server))))
+		if ((winref = get_channel_winref(channel, from_server)) < 1)
 		{
 		    /*
 		     * Check to see if we got a KICK for a 
@@ -1084,9 +1084,9 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 		}
 
 		/* XXX A POX ON ANYONE WHO ASKS ME TO MOVE THIS AGAIN XXX */
-		old_cw = current_window;
-		current_window = win;
-		l = message_setall(win->refnum, channel, LEVEL_KICK);
+		ocw = get_window_refnum(0);
+		make_window_current_informally(winref);
+		l = message_setall(winref, channel, LEVEL_KICK);
 
 		if (do_hook(KICK_LIST, "%s %s %s %s", victim, from, 
 					check_channel_type(channel), comment))
@@ -1095,7 +1095,7 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 					comment);
 
 		pop_message_from(l);
-		current_window = old_cw;
+		make_window_current_informally(ocw);
 
 		remove_channel(channel, from_server);
 		update_all_status();

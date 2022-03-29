@@ -557,11 +557,11 @@ int 		text_to_process (const char *target, const char *text, int show)
 	if (write(proc->p_stdin, recoded_text, strlen(recoded_text)) <= 0)
 		yell("Was unable to write text %s to process %s", text, target);
 	new_free(&extra);
-	set_prompt_by_refnum(proc->window_refnum, empty_string);
+	set_window_prompt(proc->window_refnum, empty_string);
 
 	if (show)
 		if ((do_hook(SEND_EXEC_LIST, "%s %d %s", logical_name, process_refnum, text)))
-			put_it("%s%s", get_prompt_by_refnum(proc->window_refnum), text);
+			put_it("%s%s", get_window_prompt(proc->window_refnum), text);
 
 	pop_message_from(l);
 	return (0);
@@ -891,8 +891,7 @@ static void 	kill_all_processes (int signo)
 	int	i;
 	int	tmp;
 
-	tmp = window_display;
-	window_display = 0;
+	tmp = swap_window_display(0);
 	for (i = 0; i < process_list_size; i++)
 	{
 		if (process_list[i])
@@ -901,7 +900,7 @@ static void 	kill_all_processes (int signo)
 			kill_process(process_list[i], signo);
 		}
 	}
-	window_display = tmp;
+	swap_window_display(tmp);
 }
 
 
@@ -1606,7 +1605,7 @@ BUILT_IN_COMMAND(execcmd)
 		{
 			const char *who;
 
-			if (!(who = get_target_by_refnum(0)))
+			if (!(who = get_window_target(0)))
 				say("No query or channel in this window for -OUT");
 			else
 			{
@@ -1619,20 +1618,20 @@ BUILT_IN_COMMAND(execcmd)
 		{
 			pop_message_from(l);
 			l = set_message_from_for_process(process);
-			process->window_refnum = current_refnum();
+			process->window_refnum = get_window_refnum(0);
 			say("Output from process %d (%s) now going to window %d", 
 					process->refnum, process->commands, process->window_refnum);
 		}
 		else if (my_strnicmp(flag, "-WINTARGET", len) == 0)
 		{
 			const char *desc = flags[++i];
-			Window *w;
+			int	w;
 
-			if (!desc || !(w = get_window_by_desc(desc)))
+			if (!desc || (w = lookup_window(desc)) <= 0)
 				say("Target window not found");
 			else
 			{
-				process->window_refnum = w->refnum;
+				process->window_refnum = w;
 				pop_message_from(l);
 				l = set_message_from_for_process(process);
 				say("Output from process %d (%s) now going to window %d", 

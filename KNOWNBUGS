@@ -1066,3 +1066,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * EPIC5-2.1.7 (2011) (Cinereous) released here
 * Add /set automargin_override (for skered) - always turn on automargins
 * De-cruftify the /set automargin_override stuff (rb skered)
+* Begin a larger project to transition (Window *) ptrs to winrefs.
+* The intention is to make (Window *) a pure data object and not a linked list

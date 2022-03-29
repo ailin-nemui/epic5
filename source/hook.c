@@ -585,27 +585,25 @@ static void remove_hook (int which, char *nick, int sernum, int quiet)
 void    flush_on_hooks (void)
 {
         int x;
-        int old_display = window_display;
+        int old_display;
 
-        window_display = 0;
+	old_display = swap_window_display(0);
         for (x = 0; x < NUMBER_OF_LISTS; x++)
 		remove_hook(x, NULL, 0, 1); 
-        window_display = old_display;
+	swap_window_display(old_display);
 
-		new_free(&hooklist);
-		hooklist_size = 0;
-		last_created_hook = -2;
-
+	new_free(&hooklist);
+	hooklist_size = 0;
+	last_created_hook = -2;
 }
 
 void	unload_on_hooks (char *filename)
 {
-	int		x;
-	Hook		*list, *next;
+	int	x;
+	Hook	*list, *next;
+	int	old_display;
 
-	int old_display = window_display;
-	window_display = 0;
-
+	old_display = swap_window_display(0);
 	for (x = 0; x < NUMBER_OF_LISTS; x++)
 	{
 		for (list = hook_functions[x].list; list; list = next)
@@ -615,8 +613,7 @@ void	unload_on_hooks (char *filename)
 			remove_hook(x, list->nick, list->sernum, 1);
 		}
 	}
-
-	window_display = old_display;
+	swap_window_display(old_display);
 }
 
 
@@ -728,7 +725,7 @@ static int 	do_hook_internal (int which, char **result, const char *format, va_l
 	const char	*name 		= (char *) 0;
 	int		retval;
 	char *		buffer		= NULL;
-	unsigned	display		= window_display;
+	unsigned	display		= get_window_display();
 	char *		stuff_copy;
 	int		noise, old;
 	char		quote;
@@ -888,9 +885,9 @@ static int 	do_hook_internal (int which, char **result, const char *format, va_l
 		 * execution, turn off the display if the user specified.
 		 */
 		if (noise_info[noise]->display == 0)
-			window_display = 0;
+			set_window_display(0);
 		else
-			window_display = 1;
+			set_window_display(1);
 		old = system_exception;
 
 		buffer_copy = LOCAL_COPY(hook->buffer);
@@ -930,7 +927,7 @@ static int 	do_hook_internal (int which, char **result, const char *format, va_l
 		 * execution.
 		 */
 		system_exception = old;
-		window_display = display;
+		set_window_display(display);
 
 		/* Move onto the next serial number. */
 		break;

@@ -411,7 +411,7 @@ void	compile_status (Window *w, Status *s)
 		k;
 
 	if (w)
-		debuglog("compile_status for window %d", w->refnum);
+		debuglog("compile_status for window %d", w->user_refnum);
 	else
 		debuglog("compile_status for global");
 
@@ -500,7 +500,7 @@ int	make_status (Window *window, Status *status)
 	if (!status_updates_permitted)
 	{
 		debuglog("make_status(%d) -- no status updates right now",
-				window->refnum);
+				window->user_refnum);
 		defered_status_updates++;
 		return -1;
 	}
@@ -509,7 +509,7 @@ int	make_status (Window *window, Status *status)
 	if (!(screen = window->screen))
 	{
 		debuglog("make_status(%d) -- updating hidden window", 
-				window->refnum);
+				window->user_refnum);
 		screen = main_screen;
 	}
 
@@ -544,10 +544,10 @@ int	make_status (Window *window, Status *status)
 		else
 			panic(1, "make_status: for window [%d], status->number is [%d] and status_line "
 				"is [%d] and that makes no sense!", 
-				window->refnum, status->number, status_line);
+				window->user_refnum, status->number, status_line);
 
 		debuglog("make_status(%d): status line %d, number %d, line %d",
-			window->refnum, status_line, status->number, line);
+			window->user_refnum, status_line, status->number, line);
 
 		/*
 		 * Sanity check:  If the status format doesnt exist, dont do
@@ -556,7 +556,7 @@ int	make_status (Window *window, Status *status)
 		if (!status->line[line].format)
 		{
 			debuglog("make_status(%d/%d): no status format",
-				window->refnum, line);
+				window->user_refnum, line);
 			continue;
 		}
 
@@ -571,9 +571,9 @@ int	make_status (Window *window, Status *status)
 			if (status->line[line].func[i] == NULL)
 			{
 				debuglog("make_status(%d/%d/%d): Not set up",
-					window->refnum, line, i);
+					window->user_refnum, line, i);
 				return -1;	/* Not set up yet */
-/* 				panic(1, "status callback null.  Window [%d], line [%d], function [%d]", window->refnum, line, i); */
+/* 				panic(1, "status callback null.  Window [%d], line [%d], function [%d]", window->user_refnum, line, i); */
 			}
 			func_value[i] = status->line[line].func[i]
 				(window, status->line[line].map[i],
@@ -608,19 +608,21 @@ int	make_status (Window *window, Status *status)
 		 */
 		if (get_int_var(STATUS_DOES_EXPANDOS_VAR))
 		{
-			int  old_fs = from_server;
-			Window *old = current_window;
-			int	owd = window_display;
+			int  	old_fs = from_server;
+			int	ocw = get_window_refnum(0);
+			int	owd;
 
 			debuglog("make_status(%d/%d): expanding expandos",
-					window->refnum, line);
-			current_window = window;
-			from_server = current_window->server;
-			window_display = 0;
+					window->user_refnum, line);
+			make_window_current_informally(window->refnum);
+			from_server = get_window_server(0);
+			owd = swap_window_display(0);
+
 			str = expand_alias(buffer, empty_string);
-			window_display = owd;
+
+			swap_window_display(owd);
 			from_server = old_fs;
-			current_window = old;
+			make_window_current_informally(ocw);
 			strlcpy(buffer, str, sizeof buffer);
 			new_free(&str);
 		}
@@ -761,7 +763,7 @@ int	make_status (Window *window, Status *status)
 		     * Roll the new back onto the old
 		     */
 		    debuglog("Make_status(%d/%d/%d): changed",
-				window->refnum, status_line, line);
+				window->user_refnum, status_line, line);
 		    malloc_strcpy(&status->line[line].result, buffer);
 		    anything_changed++;
 
@@ -776,7 +778,7 @@ int	make_status (Window *window, Status *status)
 		     * windows (although they might change their minds)
 		     */
 		    do_hook(STATUS_UPDATE_LIST, "%d %d %s", 
-					window->refnum, line, buffer);
+					window->user_refnum, line, buffer);
 		}
 	}
 
@@ -820,7 +822,7 @@ int	redraw_status (Window *window, Status *status)
 		defered_status_updates++;
 		return -1;
 	}
-	debuglog("redraw_status(%d): redrawing", window->refnum);
+	debuglog("redraw_status(%d): redrawing", window->user_refnum);
 
 	for (status_line = 0; status_line < status->number; status_line++)
 	{
@@ -839,14 +841,14 @@ int	redraw_status (Window *window, Status *status)
 		if (!(status_str = status->line[line].result))
 		{
 			debuglog("redraw_status(%d/%d/%d): no status bar",
-				window->refnum, status_line, line);
+				window->user_refnum, status_line, line);
 			continue;
 		}
 
 		if (dumb_mode || !foreground || !window->screen)
 		{
 			debuglog("redraw_status(%d/%d/%d): dumb/bg/hidden",
-				window->refnum, status_line, line);
+				window->user_refnum, status_line, line);
 			continue;
 		}
 
@@ -857,7 +859,7 @@ int	redraw_status (Window *window, Status *status)
 		term_move_cursor(0, window->bottom + status_line);
 		output_with_count(status_str, 1, 1);
 		debuglog("redraw_status(%d/%d/%d): status redrawn",
-			window->refnum, status_line, line);
+			window->user_refnum, status_line, line);
 	}
 	return 0;
 }
@@ -982,13 +984,13 @@ int     permit_status_update (int flag)
  * This is used to get the current window on a window's screen
  */
 #if 0
-#define CURRENT_WINDOW window->screen->current_window
+#define CURRENT_WINDOW window->screen->input_window
 #endif
 
 /*
  * This tests to see if the window IS the current window on its screen
  */
-#define IS_CURRENT_WINDOW (window->screen && window->screen->current_window == window)
+#define IS_CURRENT_WINDOW (window->screen && window->screen->input_window == window->refnum)
 
 /*
  * This tests to see if all expandoes are to appear in all status bars
@@ -1179,7 +1181,7 @@ STATUS_FUNCTION(status_query_nick)
 	STATUS_VARS
 	const char *q;
 
-	if (!(q = get_equery_by_refnum(window->refnum)))
+	if (!(q = get_window_equery(window->refnum)))
 		return empty_string;
 
 	PRESS(query_format, q)
@@ -1236,7 +1238,7 @@ STATUS_FUNCTION(status_notify_windows)
 			if (doneone++)
 				strlcat(buf2, ",", sizeof buf2);
 			strlcat(buf2, (map == 1 && s) ? s :
-					ltoa(window->refnum), sizeof buf2);
+					ltoa(window->user_refnum), sizeof buf2);
 		}
 	}
 
@@ -1278,7 +1280,7 @@ STATUS_FUNCTION(status_mode)
 		return empty_string;
 
 	/* If there is a current channel, get it's mode */
-	if ((chan = get_echannel_by_refnum(window->refnum)))
+	if ((chan = get_window_echannel(window->refnum)))
 		mode = get_channel_mode(chan, window->server);
 	if (!mode)
 		mode = empty_string;
@@ -1354,7 +1356,7 @@ STATUS_FUNCTION(status_chanop)
 	const char *chan;
 
 	if (window->server == NOSERV ||
-           (!(chan = get_echannel_by_refnum(window->refnum))))
+           (!(chan = get_window_echannel(window->refnum))))
 		return empty_string;
 	
 	if (get_channel_oper(chan, window->server) &&
@@ -1426,7 +1428,7 @@ STATUS_FUNCTION(status_channel)
 	if (window->server == NOSERV || !channel_format)
 		return empty_string;
 
-	if (!(chan = get_echannel_by_refnum(window->refnum)))
+	if (!(chan = get_window_echannel(window->refnum)))
 		return empty_string;
 
 	if (get_int_var(HIDE_PRIVATE_CHANNELS_VAR) && 
@@ -1454,7 +1456,7 @@ STATUS_FUNCTION(status_voice)
 	const char *chan;
 
 	if (window->server == NOSERV ||
-           (chan = get_echannel_by_refnum(window->refnum)) == NULL)
+           (chan = get_window_echannel(window->refnum)) == NULL)
 		return empty_string;
 
 	if (get_channel_voice(chan, window->server) &&
@@ -1672,7 +1674,7 @@ STATUS_FUNCTION(status_refnum)
 	if (window->name)
 		value = window->name;
 	else
-		value = ltoa(window->refnum);
+		value = ltoa(window->user_refnum);
 
 	PRESS("%s", value)
 	RETURN
@@ -1682,7 +1684,7 @@ STATUS_FUNCTION(status_refnum_real)
 {
 	STATUS_VARS
 
-	PRESS("%s", ltoa(window->refnum))
+	PRESS("%s", ltoa(window->user_refnum))
 	RETURN
 }
 

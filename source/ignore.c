@@ -1038,11 +1038,10 @@ char *	ignorectl (char *input)
 
 		GET_FUNC_ARG(pattern, input);
 
-		owd = window_display;
-		window_display = 0;
+		owd = swap_window_display(0);
 		i = new_ignore(pattern);
 		ignore_change(i, 1, input);
-		window_display = owd;
+		swap_window_display(owd);
 		RETURN_INT(i->refnum);
 	} else if (!my_strnicmp(listc, "CHANGE", len)) {
 		int	refnum;
@@ -1054,18 +1053,16 @@ char *	ignorectl (char *input)
 		if (!(i = get_ignore_by_refnum(refnum)))
 			RETURN_EMPTY;
 
-		owd = window_display;
-		window_display = 0;
+		owd = swap_window_display(0);
 		ignore_change(i, 1, input);
-		window_display = owd;
+		swap_window_display(owd);
 		RETURN_INT(i->refnum);
 	} else if (!my_strnicmp(listc, "DELETE", len)) {
 		int	retval;
 
-		owd = window_display;
-		window_display = 0;
+		owd = swap_window_display(0);
 		retval = remove_ignore(input);
-		window_display = owd;
+		swap_window_display(owd);
 		RETURN_INT(retval);
 	} else if (!my_strnicmp(listc, "PATTERN", len)) {
 		RETURN_MSTR(get_ignores_by_pattern(input, 0));

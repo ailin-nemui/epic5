@@ -31,4 +31,8 @@ struct ScreenStru;
 	int	init_screen 		(void);
 	void   	file_put_it 		(FILE *fp, const char *format, ...);
 
+        int     get_window_display              (void);
+        int     set_window_display              (int);
+        int     swap_window_display             (int);
+
 #endif /* _OUTPUT_H_ */

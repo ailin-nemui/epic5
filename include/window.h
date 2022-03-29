@@ -1,5 +1,5 @@
 /*
- 6 window.h: header file for window.c 
+ * window.h: header file for window.c 
  *
  * Copyright 1990 Michael Sandrof
  * Copyright 1997 EPIC Software Labs
@@ -30,69 +30,77 @@ struct	ScreenStru;
 /* Should be a way to make static to window.c */
 typedef	struct	DisplayStru
 {
-	size_t			count;
-	char			*line;
-	intmax_t		linked_refnum;
-	struct	DisplayStru	*prev;
-	struct	DisplayStru	*next;
-	ssize_t			unique_refnum;
-	time_t			when;
+struct	DisplayStru *	prev;
+struct	DisplayStru *	next;
+
+	size_t		count;
+	char *		line;
+	intmax_t	linked_refnum;
+	ssize_t		unique_refnum;
+	time_t		when;
 }	Display;
 
 typedef struct	WNickListStru
 {
-struct WNickListStru	*next;
-	char		*nick;
+struct WNickListStru *	next;
+	char *		nick;
 	int		counter;
 } WNickList;
 
 
 typedef	struct	WindowStru
 {
-	unsigned refnum;		/* Unique refnum for window */
-	char *	name;			/* Logical name for window */
-	char *	uuid;			/* UUID4 for window (never changes) */
-	unsigned priority;		/* "Current window Priority" */
+	/* List stuff */
+struct	WindowStru	*next;			/* Window below us on screen */
+struct	WindowStru	*prev;			/* Window above us on screen */
+struct	ScreenStru	*screen;		/* The screen we belong to */
+	short		deceased;		/* Set when the window is killed */
+
+	unsigned 	refnum;			/* Unique refnum for window */
+	unsigned 	user_refnum;		/* Sequencing number used by the user */
+	char *		name;			/* Logical name for window */
+	char *		uuid;			/* UUID4 for window (never changes) */
+	unsigned 	priority;		/* "Current window Priority" */
 
 	/* Output rule stuff */
-	int	server;			/* Server that win is connected to */
-	Mask	window_mask;		/* Window level for the window */
-	WNickList *waiting_chans;	/*
-					 * When you JOIN or reconnect, if this
-					 * is set, a JOIN to that channel will
-					 * put that channel into this win.
-					 */
-	WNickList *nicks;		/* List of nick-queries for this win */
-	int	query_counter;		/* Is there a query anyways? */
-	char *	claimed_channel;	/* A /WINDOW CLAIM claim */
+	int		server;			/* Server that win is connected to */
+	Mask		window_mask;		/* Window level for the window */
+	WNickList *	waiting_chans;		/*
+					 	 * When you JOIN or reconnect, if this
+					 	 * is set, a JOIN to that channel will
+					 	 * put that channel into this win.
+					 	 */
+	WNickList *	nicks;			/* List of nick-queries for this win */
+	int		query_counter;		/* Is there a query anyways? */
+	char *		claimed_channel;	/* A /WINDOW CLAIM claim */
 
 	/* Internal flags */
-	short	top;			/* SCREEN line for top of window */
-	short	bottom;			/* SCREEN line for bottom of window */
-	short	cursor;			/* WINDOW line where the cursor is */
-	short	change_line;		/* True if this is a scratch window */
-	short	update;			/* True if window display is dirty */
-	short	rebuild_scrollback;	/* True if scrollback needs rebuild */
+	short		top;			/* SCREEN line for top of window */
+	short		bottom;			/* SCREEN line for bottom of window */
+	short		cursor;			/* WINDOW line where the cursor is */
+	short		change_line;		/* True if this is a scratch window */
+	short		update;			/* True if window display is dirty */
+	short		rebuild_scrollback;	/* True if scrollback needs rebuild */
 
 	/* User-settable flags */
-	short	notify_when_hidden;	/* True to notify for hidden output */
-	short	notified;		/* True if we have notified */
-	char *	notify_name;		/* The name for %{1}F */
-	short	beep_always;		/* True if a beep to win always beeps */
-	Mask	notify_mask;		/* the notify mask.. */
-	short	skip;			/* Whether window should be skipped */
-	short	old_co;			/* .... */
-	short	my_columns;		/* How wide we are when hidden */
-	short	indent;			/* How far /set indent goes */
-	short	swappable;		/* Can it be swapped in or out? */
-	short	scrolladj;		/* Push back top-of-win on grow? */
-	short	killable;		/* Can it be killed? */
-	short	scroll_lines;		/* How many lines scroll at a time? */
-	char *	original_server_string;
+	short		notify_when_hidden;	/* True to notify for hidden output */
+	short		notified;		/* True if we have notified */
+	char *		notify_name;		/* The name for %{1}F */
+	short		beep_always;		/* True if a beep to win always beeps */
+	Mask		notify_mask;		/* the notify mask.. */
+	short		skip;			/* Whether window should be skipped */
+	short		old_co;			/* .... */
+	short		my_columns;		/* How wide we are when hidden */
+	short		indent;			/* How far /set indent goes */
+	short		swappable;		/* Can it be swapped in or out? */
+	short		scrolladj;		/* Push back top-of-win on grow? */
+	short		killable;		/* Can it be killed? */
+	short		scroll_lines;		/* How many lines scroll at a time? */
+	char *		original_server_string;
 
 	/* Input and Status stuff */
-	char *	prompt;			/* Current EXEC prompt for window */
-	Status	status;			/* Current status line info */
+	char *		prompt;			/* Current EXEC prompt for window */
+	Status		status;			/* Current status line info */
 
 	/* SCROLLBACK stuff */
 	/*
@@ -113,24 +121,24 @@ typedef	struct	WindowStru
 	 * line will go.  When the user does a /clear, the screen is scrolled
 	 * up until display_ip is the top_of_display.  
 	 */
-	Display *top_of_scrollback;	/* Start of the scrollback buffer */
-	Display *display_ip;		/* End of the scrollback buffer */
-	int	display_buffer_size;	/* How big the scrollback buffer is */
-	int	display_buffer_max;	/* How big its supposed to be */
+	Display *	top_of_scrollback;	/* Start of the scrollback buffer */
+	Display *	display_ip;		/* End of the scrollback buffer */
+	int		display_buffer_size;	/* How big the scrollback buffer is */
+	int		display_buffer_max;	/* How big its supposed to be */
 
-	Display *scrolling_top_of_display;
-	int	scrolling_distance_from_display_ip;
+	Display *	scrolling_top_of_display;
+	int		scrolling_distance_from_display_ip;
 
-	Display *holding_top_of_display;
-	int	holding_distance_from_display_ip;
+	Display *	holding_top_of_display;
+	int		holding_distance_from_display_ip;
 
-	Display *scrollback_top_of_display;
-	int	scrollback_distance_from_display_ip;
+	Display *	scrollback_top_of_display;
+	int		scrollback_distance_from_display_ip;
 
-	int	display_counter;
-	short	hold_slider;
+	int		display_counter;
+	short		hold_slider;
 
-	Display *scrollback_indicator;	/* The === thing */
+	Display *	scrollback_indicator;	/* The === thing */
 
 	/*
 	 * Window geometry stuff
@@ -144,49 +152,38 @@ typedef	struct	WindowStru
 	 * parts (toplines, status bars, fixed windows) and then distribute
 	 * what is left to each window.
 	 */
-	short	display_lines;		/* How many lines window size is */
-	short	logical_size;		/* How many units window size is */
-	short	fixed_size;		/* True if window doesnt rebalance */
-	short	old_display_lines;	/* How big window was on last resize */
+	short		display_lines;		/* How many lines window size is */
+	short		logical_size;		/* How many units window size is */
+	short		fixed_size;		/* True if window doesnt rebalance */
+	short		old_display_lines;	/* How big window was on last resize */
 
 	/* HOLD_MODE stuff */
-	short	hold_interval;		/* How often to update status bar */
+	short		hold_interval;		/* How often to update status bar */
 
 	/* /LASTLOG stuff */
-#if 0
-struct lastlog_stru *lastlog_newest;	/* pointer to top of lastlog list */
-struct lastlog_stru *lastlog_oldest;	/* pointer to bottom of lastlog list */
-#endif
-	Mask	lastlog_mask;		/* The LASTLOG_LEVEL, determines what
-					 * messages go to lastlog */
-	int	lastlog_size;		/* number of messages in lastlog. */
-	int	lastlog_max;		/* Max number of messages in lastlog */
-
+	Mask		lastlog_mask;		/* The LASTLOG_LEVEL, determines what
+						 * messages go to lastlog */
+	int		lastlog_size;		/* number of messages in lastlog. */
+	int		lastlog_max;		/* Max number of messages in lastlog */
 
 	/* /WINDOW LOG stuff */
-	short	log;			/* True if file logging is on */
-	char	*logfile;		/* window's logfile name */
-	FILE	*log_fp;		/* file pointer for the log file */
-	char	*log_rewrite;		/* Overrules /set log_rewrite */
-	int	log_mangle;		/* Overrules /set mangle_logfiles */
-	char	*log_mangle_str;	/* String version of log_mangle */
+	short		log;			/* True if file logging is on */
+	char *		logfile;		/* window's logfile name */
+	FILE *		log_fp;			/* file pointer for the log file */
+	char *		log_rewrite;		/* Overrules /set log_rewrite */
+	int		log_mangle;		/* Overrules /set mangle_logfiles */
+	char *		log_mangle_str;		/* String version of log_mangle */
 
 	/* TOPLINES stuff */
-	short	toplines_wanted;
-	short	toplines_showing;
-	char *	topline[10];
+	short		toplines_wanted;
+	short		toplines_showing;
+	char *		topline[10];
 
 	/* ACTIVITY stuff */
-	short	current_activity;
-	char *	activity_data[11];
-	char *	activity_format[11];
+	short		current_activity;
+	char *		activity_data[11];
+	char *		activity_format[11];
 
-	/* List stuff */
-struct	ScreenStru	*screen;	/* The screen we belong to */
-struct	WindowStru	*next;		/* Window below us on screen */
-struct	WindowStru	*prev;		/* Window above us on screen */
-
-	short		deceased;	/* Set when the window is killed */
 }	Window;
 
 /*
@@ -195,75 +192,64 @@ struct	WindowStru	*prev;		/* Window above us on screen */
  */
 typedef	struct	window_stack_stru
 {
-	unsigned int	refnum;
-	struct	window_stack_stru	*next;
+struct	window_stack_stru *	next;
+	unsigned 		refnum;
 }	WindowStack;
 
-extern	Window	*current_window;
-extern	Window	*to_window;
-extern	Window	*invisible_list;
-extern	int	who_level;
-extern	const char	*who_from;
-extern	unsigned window_display;
-extern	unsigned current_window_priority;
+#if 0
+extern	Window	*	current_window;
+#endif
+extern	Window	*	invisible_list;
+#if 0
+extern	unsigned 	window_display;
+#endif
+extern	unsigned 	current_window_priority;
 
 
 	BUILT_IN_COMMAND(windowcmd);
 
 	Window 	*new_window 			(struct ScreenStru *);
-	void	delete_window			(Window *);
 	void	delete_all_windows		(void);
 	int	traverse_all_windows		(Window **);
 	void	add_to_invisible_list		(Window *);
-	Window	*add_to_window_list		(struct ScreenStru *, Window *);
-	void	recalculate_window_positions	(struct ScreenStru *);
 	void	window_statusbar_needs_update	(Window *);
-	void	window_statusbar_needs_redraw	(Window *);
 	void	window_body_needs_redraw	(Window *);
 	void	redraw_all_windows		(void);
 	void	recalculate_windows		(struct ScreenStru *);
-	void	rebalance_windows		(struct ScreenStru *);
 	void	update_all_windows		(void);
-	void	set_current_window		(Window *);
-	void	hide_window			(Window *);
 	BUILT_IN_KEYBINDING(swap_last_window);
 	BUILT_IN_KEYBINDING(next_window);
 	BUILT_IN_KEYBINDING(swap_next_window);
 	BUILT_IN_KEYBINDING(previous_window);
 	BUILT_IN_KEYBINDING(swap_previous_window);
-	void	back_window			(void);
-	Window 	*get_window_by_refnum		(unsigned);
+	Window 	*get_window_by_refnum		(int);
 	Window  *get_window_by_desc		(const char *);
-	int	is_window_visible		(char *);
-	char	*get_status_by_refnum		(unsigned, int);
+	char	*get_window_status_line		(int, int);
 	void	update_all_status		(void);
-	void	set_prompt_by_refnum		(unsigned, const char *);
-const	char 	*get_prompt_by_refnum		(unsigned);
-const	char	*get_target_by_refnum		(unsigned);
-const 	char	*query_nick			(void);
-const 	char *	get_equery_by_refnum		(int);
+	void	set_window_prompt		(int, const char *);
+	Char *	get_window_prompt		(int);
+	Char *	get_window_target		(int);
+	Char *	get_window_equery		(int);
 	BUILT_IN_KEYBINDING(switch_query);
 	int	is_current_channel		(const char *, int);
-const 	char *	set_channel_by_refnum		(unsigned, const char *);
-const	char	*get_echannel_by_refnum		(unsigned);
-	char	*get_channel_by_refnum		(unsigned);
+const	char	*get_window_echannel		(int);
 	void	destroy_waiting_channels	(int);
-	int     claim_waiting_channel (const char *chan, int servref);
-	void	window_prepare_channel_claim	(const char *, int);
-	int	window_claimed_channel		(const char *, int);
-	int	get_window_server		(unsigned);
+	int     claim_waiting_channel 		(const char *chan, int servref);
+	int	get_window_server		(int);
+	int	set_window_server		(int, int);
 	void	change_window_server		(int, int);
 	void	window_check_servers		(void);
-	int	set_mask_by_winref		(unsigned, Mask);
 	int	renormalize_window_levels	(unsigned, Mask);
-#define message_to(x) real_message_to(x, __FILE__, __LINE__)
-	int	real_message_to			(int, const char *, int);
 #define message_from(x, y) real_message_from(x, y, __FILE__, __LINE__)
 	int	real_message_from		(const char *, int, const char *, int);
 #define message_setall(x, y, z) real_message_setall(x, y, z, __FILE__, __LINE__)
 	int     real_message_setall		(unsigned, const char *, int, const char *, int);
-	/* void	adjust_context_windows		(int, int); */
 	void	pop_message_from		(int);
+	Char *	get_who_from			(void);
+	int	get_who_level			(void);
+	Char *	get_who_file			(void);
+	int	get_who_line			(void);
+	int	get_to_window			(void);
 
 	void	clear_all_windows		(int, int, int);
 	void	clear_window_by_refnum		(unsigned, int);
@@ -272,7 +258,6 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	void	set_scrollback_size		(void *);
 	void	set_scroll_lines		(void *);
 	void	set_continued_line		(void *);
-	unsigned current_refnum			(void);
 	int	number_of_windows_on_screen	(Window *);
 	int	add_to_scrollback		(Window *, const unsigned char *, intmax_t);
 	int	trim_scrollback			(Window *);
@@ -285,30 +270,59 @@ const	char	*get_echannel_by_refnum		(unsigned);
 	int	window_is_holding		(Window *);
 	int	unhold_a_window			(Window *);
 	void	recalculate_window_cursor_and_display_ip	(Window *);
-	char	*get_nicklist_by_window		(Window *); /* XXX */
 	void	make_window_current_by_refnum	(int);
 	void	make_window_current		(Window *);
-	Window  *window_query			(Window *, char **);
-	Window	*window_rejoin			(Window *, char **);
-	Window	*window_scroll			(Window *, char **);
-	Window *window_server			(Window *, char **);
+	int	make_window_current_informally	(int);
+	Window  *windowcmd_query		(Window *, char **);
+	Window	*windowcmd_rejoin		(Window *, char **);
 	void	window_check_channels		(void);
 
-	void	check_window_cursor		(Window *);
 	int     get_geom_by_winref 		(const char *, int *, int *);
 	int	get_indent_by_winref		(int);
 	int	get_winref_by_servref		(int);
 
-	int    is_window_waiting_for_channel (unsigned, const char *);
-	void   move_waiting_channel (unsigned oldref, unsigned newref);
-	int    get_winref_by_bound_channel (const char *channel, int server);
-	const char *   get_bound_channel_by_refnum (unsigned refnum);
-
 	char *	windowctl			(char *);
 	void    window_scrollback_needs_rebuild (Window *);
 	int	window_is_scrolled_back		(Window *);
-	void 	window_change_server		(Window *, int);
 
 	void   check_message_from_queue 	(int);
+
+	/* * * * */
+struct ScreenStru *get_window_screen		(int);
+	int	get_window_refnum		(int);
+	int	get_window_user_refnum		(int);
+	int	get_window_display_lines	(int);
+	int	set_window_change_line		(int, int);
+	int	lookup_any_visible_window	(void);
+	int	get_window_lastlog_size		(int);
+	int	get_window_lastlog_mask		(int, Mask *);
+	int	set_window_lastlog_mask		(int, Mask);
+	int	set_window_notify_mask		(int, Mask);
+	int	clear_window_lastlog_mask	(int);
+	int	set_window_priority		(int, int);
+	FILE *	get_window_log_fp		(int);
+
+#if 0
+   	Char *	 get_window_name		(unsigned);
+   	Char *   get_window_uuid		(unsigned);
+	unsigned get_window_priority		(unsigned);
+
+	int	get_window_server		(unsigned);
+	int	set_window_server		(unsigned, int);
+	Mask	get_window_mask			(unsigned);
+	int	set_window_mask			(unsigned, Mask);
+	int	get_window_query_counter	(unsigned);
+	int	set_window_query_counter	(unsigned, int);
+	Char *	get_window_claimed_channel	(unsigned);
+	int	set_window_claimed_channel	(unsigned, Char);
+
+	short	get_window_change_line		(unsigned);
+
+struct ScreenStru *get_window_screen		(unsigned);
+#endif
+
+	int    	get_window_indent 		(int winref);
+	int     get_window_geometry 		(int, int *co, int *li);
+	int     lookup_window 			(const char *desc);
 
 #endif /* __window_h__ */

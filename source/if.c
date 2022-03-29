@@ -532,7 +532,9 @@ BUILT_IN_COMMAND(fe)
 		return;
 	}
 
+#if 0
 	old_display = window_display;
+#endif
 
 	if (!doing_fe)
 		{ word = fec_buffer; }
@@ -596,7 +598,9 @@ BUILT_IN_COMMAND(fe)
 	add_var_alias(mapvar, map, 0);
 	new_free(&map);
 
+#if 0
 	window_display = old_display;
+#endif
 	new_free(&placeholder);
 }
 

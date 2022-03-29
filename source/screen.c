@@ -65,6 +65,7 @@
 
 #define CURRENT_WSERV_VERSION	4
 
+#if 0
 /*
  * When some code wants to override the default lastlog level, and needs
  * to have some output go into some explicit window (such as for /xecho -w),
@@ -72,6 +73,7 @@
  * window.  Dont forget to reset it to NULL when youre done!  ;-)
  */
 	Window	*to_window;
+#endif
 
 /*
  * When all else fails, this is the screen that is attached to the controlling
@@ -1934,8 +1936,10 @@ const	unsigned char	*cont_ptr;
         saved_a.color_fg = saved_a.color_bg = saved_a.fg_color = 0;
 	saved_a.bg_color = saved_a.italic = 0;
 
-	/* do_indent = get_int_var(INDENT_VAR); */
-	do_indent = get_indent_by_winref(winref);
+	if (winref < 0)
+		do_indent = get_int_var(INDENT_VAR);
+	else
+		do_indent = get_window_indent(winref);
 	if (!(words = get_string_var(WORD_BREAK_VAR)))
 		words = " \t";
 	if (!(cont_ptr = get_string_var(CONTINUED_LINE_VAR)))
@@ -2658,7 +2662,7 @@ void 	add_to_screen (const unsigned char *buffer)
 	/*
 	 * Just paranoia.
 	 */
-	if (!current_window)
+	if (!get_window_by_refnum(0))
 	{
 		puts(buffer);
 		return;
@@ -2666,9 +2670,9 @@ void 	add_to_screen (const unsigned char *buffer)
 
 	if (dumb_mode)
 	{
-		add_to_lastlog(current_window, buffer);
+		add_to_lastlog(get_window_by_refnum(0), buffer);
 		if (privileged_output || 
-		    do_hook(WINDOW_LIST, "%u %s", current_window->refnum, buffer))
+		    do_hook(WINDOW_LIST, "%u %s", get_window_by_refnum(0)->user_refnum, buffer))
 			puts(buffer);
 		fflush(stdout);
 		return;
@@ -2681,10 +2685,13 @@ void 	add_to_screen (const unsigned char *buffer)
 	 * The highest priority is if we have explicitly stated what
 	 * window we want this output to go to.
 	 */
-	if (to_window)
+	if ((winref = get_to_window()) > 0)
 	{
-		add_to_window(to_window, buffer);
-		return;
+		if ((tmp = get_window_by_refnum(winref)))
+		{
+			add_to_window(tmp, buffer);
+			return;
+		}
 	}
 
 	/*
@@ -2692,7 +2699,7 @@ void 	add_to_screen (const unsigned char *buffer)
 	 * used by the /WINDOW command, but I'm not even sure it's very
 	 * useful.  Maybe I'll think about this again later.
 	 */
-	else if ((who_level == LEVEL_NONE) && 
+	else if ((get_who_level() == LEVEL_NONE) && 
 	        ((winref = get_winref_by_servref(from_server)) > -1) && 
                 (tmp = get_window_by_refnum(winref)))
 	{
@@ -2704,16 +2711,16 @@ void 	add_to_screen (const unsigned char *buffer)
 	 * Next priority is if the output is targeted at a certain
 	 * user or channel (used for /window channel or /window add targets)
 	 */
-	else if (who_from)
+	else if (get_who_from())
 	{
-	    if (is_channel(who_from))
+	    if (is_channel(get_who_from()))
 	    {
 		if (from_server == NOSERV)
 		    panic(0, "Output to channel [%s:NOSERV]: %s",
-				who_from, buffer);
+				get_who_from(), buffer);
 
 	        if ((tmp = get_window_by_refnum(
-				get_channel_winref(who_from, from_server))))
+				get_channel_winref(get_who_from(), from_server))))
 		{
 		    add_to_window(tmp, buffer);
 		    return;
@@ -2725,12 +2732,12 @@ void 	add_to_screen (const unsigned char *buffer)
 		while (traverse_all_windows(&tmp))
 		{
 		    /* Must be for our server */
-		    if (who_level != LEVEL_DCC && (tmp->server != from_server))
+		    if (get_who_level() != LEVEL_DCC && (tmp->server != from_server))
 			continue;
 
 		    /* Must be on the nick list */
 		    if (!find_in_list((List **)&(tmp->nicks), 
-					who_from, !USE_WILDCARDS))
+					get_who_from(), !USE_WILDCARDS))
 			continue;
 
 		    add_to_window(tmp, buffer);
@@ -2742,7 +2749,7 @@ void 	add_to_screen (const unsigned char *buffer)
 	/*
 	 * Check to see if this level should go to current window
 	 */
-	if ((mask_isset(&current_window_mask, who_level)) &&
+	if ((mask_isset(&current_window_mask, get_who_level())) &&
 	    ((winref = get_winref_by_servref(from_server)) > -1) && 
             (tmp = get_window_by_refnum(winref)))
 	{
@@ -2759,14 +2766,14 @@ void 	add_to_screen (const unsigned char *buffer)
 		/*
 		 * Check for /WINDOW LEVELs that apply
 		 */
-		if (who_level == LEVEL_DCC && 
-			mask_isset(&tmp->window_mask, who_level))
+		if (get_who_level() == LEVEL_DCC && 
+			mask_isset(&tmp->window_mask, get_who_level()))
 		{
 			add_to_window(tmp, buffer);
 			return;
 		}
 		if ((from_server == tmp->server || from_server == NOSERV)
-			&& mask_isset(&tmp->window_mask, who_level))
+			&& mask_isset(&tmp->window_mask, get_who_level()))
 		{
 			add_to_window(tmp, buffer);
 			return;
@@ -2777,9 +2784,9 @@ void 	add_to_screen (const unsigned char *buffer)
 	 * If all else fails, if the current window is connected to the
 	 * given server, use the current window.
 	 */
-	if (current_window->server == from_server)
+	if (get_window_server(0) == from_server)
 	{
-		add_to_window(current_window, buffer);
+		add_to_window(get_window_by_refnum(0), buffer);
 		return;
 	}
 
@@ -2801,7 +2808,7 @@ void 	add_to_screen (const unsigned char *buffer)
 	 * No window found for a server is usually because we're
 	 * disconnected or not yet connected.
 	 */
-	add_to_window(current_window, buffer);
+	add_to_window(get_window_by_refnum(0), buffer);
 	return;
 }
 
@@ -2841,7 +2848,7 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 	{
 	   static int recursion = 0;
 
-	   if (!do_hook(WINDOW_LIST, "%u %s", window->refnum, str))
+	   if (!do_hook(WINDOW_LIST, "%u %s", window->user_refnum, str))
 		return;
 
 	   /* 
@@ -2857,7 +2864,7 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 		unsigned char	argstuff[10240];
 
 		/* Create $* and then expand with it */
-		snprintf(argstuff, 10240, "%u %s", window->refnum, str);
+		snprintf(argstuff, 10240, "%u %s", window->user_refnum, str);
 		str = free_me = expand_alias(pend, argstuff);
 	    }
 	    recursion--;
@@ -2869,7 +2876,7 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 	if (window->log_mangle)
 		mangler = window->log_mangle;
 	add_to_log(0, window->log_fp, window->refnum, str, mangler, rewriter);
-	add_to_logs(window->refnum, from_server, who_from, who_level, str);
+	add_to_logs(window->refnum, from_server, get_who_from(), get_who_level(), str);
 	refnum = add_to_lastlog(window, str);
 
 	/* Add to scrollback + display... */
@@ -2884,7 +2891,6 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 	new_free(&strval);
 
 	/* Check the status of the window and scrollback */
-	check_window_cursor(window);
 	trim_scrollback(window);
 
 	cursor_to_input();
@@ -2909,10 +2915,10 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 		term_beep();
 	    }
 	    if (!(window->notified) &&
-			mask_isset(&window->notify_mask, who_level))
+			mask_isset(&window->notify_mask, get_who_level()))
 	    {
 		window->notified = 1;
-	    	do_hook(WINDOW_NOTIFIED_LIST, "%u %s", window->refnum, level_to_str(who_level));
+	    	do_hook(WINDOW_NOTIFIED_LIST, "%u %s", window->user_refnum, level_to_str(get_who_level()));
 		if (window->notify_when_hidden)
 			type = "Activity";
 		update_all_status();
@@ -2920,8 +2926,8 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 
 	    if (type)
 	    {
-		int l = message_setall(current_window->refnum, who_from, who_level);
-		say("%s in window %d", type, window->refnum);
+		int l = message_setall(get_window_by_refnum(0)->refnum, get_who_from(), get_who_level());
+		say("%s in window %d", type, window->user_refnum);
 		pop_message_from(l);
 	    }
 	}
@@ -3000,7 +3006,7 @@ static void 	scroll_window (Window *window)
 
 	if (window->cursor > window->display_lines)
 		panic(1, "Window [%d]'s cursor [%d] is off the display [%d]",
-			window->refnum, window->cursor, window->display_lines);
+			window->user_refnum, window->cursor, window->display_lines);
 
 	/*
 	 * If the cursor is beyond the window then we should probably
@@ -3020,7 +3026,7 @@ static void 	scroll_window (Window *window)
 						window->display_lines)
 			panic(1, "Can't output to window [%d] "
 				"because it is holding stuff: [%d] [%d]", 
-				window->refnum, 
+				window->user_refnum, 
 				window->holding_distance_from_display_ip, 
 				window->display_lines);
 
@@ -3028,7 +3034,7 @@ static void 	scroll_window (Window *window)
 						window->display_lines)
 			panic(1, "Can't output to window [%d] "
 				"because it is scrolling back: [%d] [%d]", 
-				window->refnum, 
+				window->user_refnum, 
 				window->scrollback_distance_from_display_ip, 
 				window->display_lines);
 
@@ -3072,7 +3078,7 @@ void 	repaint_window_body (Window *window)
 	int 	count;
 
 	if (!window)
-		window = current_window;
+		window = get_window_by_refnum(0);
 
 	if (dumb_mode || !window->screen)
 		return;
@@ -3114,8 +3120,7 @@ void 	repaint_window_body (Window *window)
 
 /*
 		n = new_normalize_string(widthstr, 0, display_line_mangler);
-		my_lines = prepare_display(window->refnum, n, cols, 
-					&numls, PREPARE_NOWRAP);
+		my_lines = prepare_display(window->refnum, n, cols, &numls, PREPARE_NOWRAP);
 		if (*my_lines)
 			output_with_count(*my_lines, 1, foreground);
 		new_free(&n);
@@ -3187,7 +3192,7 @@ void	create_new_screen (void)
 	new_s->last_window_refnum = 1;
 	new_s->window_list = NULL;
 	new_s->window_list_end = NULL;
-	new_s->current_window = NULL;
+	new_s->input_window = -1;
 	new_s->visible_windows = 0;
 	new_s->window_stack = NULL;
 	new_s->last_press.tv_sec = new_s->last_press.tv_usec  = 0;
@@ -3267,7 +3272,7 @@ Window	*create_additional_screen (void)
 
 
 	/* Don't "move" this down! It belongs here. */
-	oldscreen = current_window->screen;
+	oldscreen = get_window_screen(0);
 
 	if (!use_input)
 		return NULL;
@@ -3401,7 +3406,7 @@ Window	*create_additional_screen (void)
 	/*
 	 * At this point, doing a say() or yell() or anything else that would
 	 * output to the screen will cause a refresh of the status bar and
-	 * input line.  new_s->current_window is NULL after the above line,
+	 * input line.  new_s->input_window is -1 after the above line,
 	 * so any attempt to reference $C or $T will be to NULL pointers,
 	 * which will cause a crash.  For various reasons, we can't fire up
 	 * a new window this early, so its just easier to make sure we don't
@@ -3570,7 +3575,7 @@ void 	kill_screen (Screen *screen)
 #endif
 
 	/* Take out some of the garbage left around */
-	screen->current_window = NULL;
+	screen->input_window = -1;
 	screen->window_list = NULL;
 	screen->window_list_end = NULL;
 	screen->last_window_refnum = -1;
@@ -3692,8 +3697,8 @@ static void 	do_screens (int fd)
 		 */
 		last_input_screen = screen;
 		output_screen = screen;
-		make_window_current(screen->current_window);
-		from_server = current_window->server;
+		make_window_current(get_window_by_refnum(screen->input_window));
+		from_server = get_window_server(0);
 
 		/*
 		 * PRIVMSG/NOTICE restrictions are suspended
@@ -3707,7 +3712,7 @@ static void 	do_screens (int fd)
 		 * window is killed, we know which window was the current
 		 * window immediately prior to it.
 		 */
-		current_window->priority = current_window_priority++;
+		set_window_priority(0, current_window_priority++);
 
 		/* Dumb mode only accepts complete lines from the user */
 		if (dumb_mode)
@@ -3724,8 +3729,7 @@ static void 	do_screens (int fd)
 		}
 
 		/* Ordinary full screen input is handled one byte at a time */
-		else if ((n = dgets(screen->fdin, buffer, 
-					BIG_BUFFER_SIZE, -1)) > 0)
+		else if ((n = dgets(screen->fdin, buffer, BIG_BUFFER_SIZE, -1)) > 0)
 		{
 			for (i = 0; i < n; i++)
 				translate_user_input(buffer[i]);
@@ -3737,8 +3741,7 @@ static void 	do_screens (int fd)
 
 		/* An EOF/error on main screen kills the whole client. */
 		else
-			irc_exit(1, "Hey!  Where'd my controlling "
-					"terminal go?");
+			irc_exit(1, "Hey!  Where'd my controlling terminal go?");
 
 		set_server_protocol_state(from_server, proto);
 	}
@@ -3992,8 +3995,8 @@ void 	add_wait_prompt (const char *prompt, void (*func)(char *data, const char *
 
 	old_last_input_screen = last_input_screen;
 
-	if (current_window->screen)
-		s = current_window->screen;
+	if (get_window_screen(0))
+		s = get_window_screen(0);
 	else
 		s = main_screen;
 

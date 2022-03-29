@@ -105,7 +105,7 @@ void	set_lastlog_mask (void *stuff)
 		standard_level_warning("/SET LASTLOG_LEVEL", &rejects);
 	malloc_strcpy(&v->string, mask_to_str(&lastlog_mask));
 
-	current_window->lastlog_mask = lastlog_mask;
+	set_window_lastlog_mask(0, lastlog_mask);
 }
 
 void	set_new_server_lastlog_mask (void *stuff)
@@ -179,7 +179,7 @@ void	set_notify_mask (void *stuff)
 		standard_level_warning("/SET NOTIFY_LEVEL", &rejects);
 	malloc_strcpy(&v->string, mask_to_str(&notify_mask));
 
-	current_window->notify_mask = notify_mask;
+	set_window_notify_mask(0, notify_mask);
 }
 
 void	set_current_window_mask (void *stuff)
@@ -209,18 +209,18 @@ intmax_t	add_to_lastlog (Window *window, const char *line)
 	Lastlog *new_l;
 
 	if (!window)
-		window = current_window;
+		window = get_window_by_refnum(0);
 
 	new_l = (Lastlog *)new_malloc(sizeof(Lastlog));
 	new_l->dead = 0;
 	new_l->refnum = global_lastlog_refnum++;
 	new_l->older = lastlog_newest;
 	new_l->newer = NULL;
-	new_l->level = who_level;
+	new_l->level = get_who_level();
 	new_l->msg = malloc_strdup(line);
 	new_l->window = window;
-	if (who_from)
-		new_l->target = malloc_strdup(who_from);
+	if (get_who_from())
+		new_l->target = malloc_strdup(get_who_from());
 	else
 		new_l->target = NULL;
 
@@ -246,7 +246,7 @@ intmax_t	add_to_lastlog (Window *window, const char *line)
 	if (!lastlog_oldest)
 		lastlog_oldest = lastlog_newest;
 
-	if (mask_isset(&window->lastlog_mask, who_level))
+	if (mask_isset(&window->lastlog_mask, new_l->level))
 	{
 		new_l->visible = 1;
 		window->lastlog_size++;
@@ -276,10 +276,10 @@ void 	trim_lastlog (Window *window)
 
 	debuglog("trim_lastlog: Preparing to trim lastlog for window %d -- "
 		 "(current size: %d, maximum allowable size %d", 
-			window->refnum, window->lastlog_size, window->lastlog_max);
+			window->user_refnum, window->lastlog_size, window->lastlog_max);
 	debuglog("trim_lastlog: Will remove %d entr(y/ies) from window %d",
 			window->lastlog_size - window->lastlog_max,
-			window->refnum);
+			window->user_refnum);
 
 	/* This must eventually terminate, because it will reach the end
 	 * of the linked-list of lastlog items. */
@@ -302,9 +302,9 @@ void 	truncate_lastlog (Window *window)
 	Lastlog *item;
 
 	debuglog("truncate_lastlog: Preparing to truncate lastlog for window %d.",
-			window->refnum);
+			window->user_refnum);
 	debuglog("truncate_lastlog: Will remove %d entr(y/ies) from window %d",
-			window->lastlog_size, window->refnum);
+			window->lastlog_size, window->user_refnum);
 
 	item = oldest_lastlog_for_window(window);
 	while (item)
@@ -502,14 +502,14 @@ BUILT_IN_COMMAND(lastlog)
 	int		mangler = 0;
 	int		lc;
 	const char *	rewrite = NULL;
-	Window *	window = current_window;
+	Window *	window = get_window_by_refnum(0);
 	int		this_server = 0;
 	int		global = 0;
 
 	lc = message_setall(0, NULL, LEVEL_OTHER);
-	cnt = current_window->lastlog_size;
-	save_mask = current_window->lastlog_mask;
-	mask_unsetall(&current_window->lastlog_mask);
+	cnt = get_window_lastlog_size(0);
+	get_window_lastlog_mask(0, &save_mask);
+	clear_window_lastlog_mask(0);
 	mask_unsetall(&level_mask);
 	rewrite = get_string_var(LASTLOG_REWRITE_VAR);
 
@@ -1024,7 +1024,7 @@ restart:
 					"%ld %ld %ld %ld . . . %s %s",
 						(long)l->refnum,
 						(long)l->created,
-						(long)l->window->refnum,
+						(long)l->window->user_refnum,
 						(long)l->level,
 						l->target?l->target:".",
 						result?result:".");
@@ -1222,7 +1222,7 @@ restart2:
 					"%ld %ld %ld %ld . . . %s %s",
 						(long)l->refnum,
 						(long)l->created,
-						(long)l->window->refnum,
+						(long)l->window->user_refnum,
 						(long)l->level,
 						l->target?l->target:".",
 						result?result:".");
@@ -1252,7 +1252,7 @@ bail:
 		regfree(rex);
 	if (norex)
 		regfree(norex);
-	current_window->lastlog_mask = save_mask;
+	set_window_lastlog_mask(0, save_mask);
 	pop_message_from(lc);
 	return;
 }

@@ -140,7 +140,7 @@ BUILT_IN_COMMAND(timercmd)
 	else
 	{
 		domain = WINDOW_TIMER;
-		domref = current_window ? (int)current_window->refnum : -1;
+		domref = get_window_refnum(0);
 	}
 
 	while (*args == '-' || *args == '/')
@@ -1077,7 +1077,7 @@ void 	ExecuteTimers (void)
 	{
 		int	old_refnum;
 
-		old_refnum = current_window->refnum;
+		old_refnum = get_window_refnum(0);
 		current = PendingTimers;
 		unlink_timer(current);
 
@@ -1109,7 +1109,7 @@ void 	ExecuteTimers (void)
 		}
 		else if (current->domain == WINDOW_TIMER)
 		{
-		    if (!get_window_by_refnum(current->domref))
+		    if (get_window_refnum(current->domref) < 1)
 		    {
 			if (current->cancelable)
 			    goto advance;
@@ -1118,22 +1118,21 @@ void 	ExecuteTimers (void)
 		    else
 		    {
 			make_window_current_by_refnum(current->domref);
-			from_server = current_window->server;
+			from_server = get_window_server(0);
 		    }
 		}
 		else
 		{
 		    /* General timers focus on the current window. */
-		    if (current_window)
+		    if (get_window_refnum(0) > 0)
 		    {
-			if (current_window->server != from_server)
-			    from_server = current_window->server;
+			if (get_window_server(0) != from_server)
+			    from_server = get_window_server(0);
 		    }
 		    else
 		    {
 			if (from_server != NOSERV)
-			    make_window_current_by_refnum(
-				get_winref_by_servref(from_server));
+			    make_window_current_by_refnum(get_winref_by_servref(from_server));
 		    }
 		}
 

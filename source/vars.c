@@ -296,12 +296,12 @@ void	unclone_biv (const char *name, IrcVariable *clone)
 			if (var->script)
 			{
 			    char *s;
-			    int owd = window_display;
+			    int owd;
 
 			    s = make_string_var_bydata((const void *)var);
-			    window_display = 0;
+			    owd = swap_window_display(0);
 			    call_lambda_command("SET", var->script, s);
-			    window_display = owd;
+			    swap_window_display(owd);
 			    new_free(&s);
 			}
 			var->pending--;
@@ -365,7 +365,7 @@ void 	init_variables_stage1 (void)
 	VAR(ACCEPT_INVALID_SSL_CERT,	BOOL, NULL)
 	VAR(ALLOW_C1_CHARS, 		BOOL, NULL)
 	VAR(ALWAYS_SPLIT_BIGGEST, 	BOOL, NULL)
-	VAR(AUTOMARGIN_OVERRIDE,	BOOL, set_automargin_override)
+	VAR(AUTOMARGIN_OVERRIDE,        BOOL, set_automargin_override)
 	VAR(BANNER, 			STR,  NULL)
 	VAR(BANNER_EXPAND, 		BOOL, NULL)
 	VAR(BEEP, 			BOOL, NULL)
@@ -796,12 +796,12 @@ int 	set_variable (const char *name, IrcVariable *var, const char *new_value, in
 		if (var->script)
 		{
 		    char *s;
-		    int owd = window_display;
+		    int owd;
 
 		    s = make_string_var_bydata((const void *)var);
-		    window_display = 0;
+		    owd = swap_window_display(0);
 		    call_lambda_command("SET", var->script, s);
-		    window_display = owd;
+		    swap_window_display(owd);
 		    new_free(&s);
 		}
 		var->pending--;

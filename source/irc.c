@@ -52,7 +52,7 @@ const char internal_version[] = "20220327";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 2014;
+const unsigned long	commit_id = 2015;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -244,7 +244,7 @@ void	irc_exit (int really_quit, const char *format, ...)
 {
 	char 	buffer[BIG_BUFFER_SIZE];
 	char *	quit_message = NULL;
-	int	old_window_display = window_display;
+	int	old_window_display;
 	int	value;
 
 	/*
@@ -309,7 +309,7 @@ void	irc_exit (int really_quit, const char *format, ...)
 	}
 	
 	/* Try to free as much memory as possible */
-	window_display = 0;
+	old_window_display = swap_window_display(0);
 /*	dumpcmd(NULL, NULL, NULL); */
 	remove_channel(NULL, 0);
 	set_lastlog_size(&value);
@@ -319,7 +319,8 @@ void	irc_exit (int really_quit, const char *format, ...)
 	remove_bindings();
 	flush_on_hooks();
 	flush_all_symbols();
-	window_display = old_window_display;
+	swap_window_display(old_window_display);
+
 	printf("\r");
 	fflush(stdout);
 
@@ -1148,7 +1149,7 @@ int 	main (int argc, char *argv[])
 	if (dont_connect)
 		display_server_list();		/* Let user choose server */
 	else
-		current_window->server = 0;	/* Connect to default server */
+		set_window_server(0, 0);	/* Connect to default server */
 
 	/* The user may have used -S and /server in their startup script */
 	window_check_servers();

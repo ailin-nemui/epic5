@@ -475,7 +475,7 @@ void	update_input (void *which_screen, int update)
 const char *	prompt;
 	int	do_echo, old_do_echo;
 	Screen	*os, *ns;
-	Window 	*saved_current_window;
+	int	saved_current_window;
 	int	cols_used;
 	int	original_update;
 	Screen	*oos;
@@ -488,7 +488,7 @@ const char *	prompt;
 
 	/* Save the state of things */
 	os = last_input_screen;
-	saved_current_window = current_window;
+	saved_current_window = get_window_refnum(0);
 	original_update = update;
 	oos = output_screen;
 
@@ -507,7 +507,7 @@ const char *	prompt;
 	/* XXX The (mis)use of last_input_screen is lamentable */
 	last_input_screen = ns;
 	output_screen = ns;
-	current_window = ns->current_window;
+	make_window_current_informally(ns->input_window);
 	update = original_update;
 	do_echo = last_input_screen->il->echo;
 
@@ -633,8 +633,8 @@ const char *	prompt;
 	 */
 	if (last_input_screen->il->input_prompt_raw)
 		prompt = last_input_screen->il->input_prompt_raw;
-	else if (is_valid_process(get_target_by_refnum(0)))
-		prompt = get_prompt_by_refnum(0);
+	else if (is_valid_process(get_window_target(0)))
+		prompt = get_window_prompt(0);
 	else
 		prompt = input_prompt;
 
@@ -960,7 +960,7 @@ const char *	prompt;
 
 	output_screen = oos;
         last_input_screen = os;
-	current_window = saved_current_window;
+	make_window_current_informally(saved_current_window);
 }
 
 
@@ -1452,8 +1452,8 @@ BUILT_IN_KEYBINDING(send_line)
 
 	update_input(last_input_screen, UPDATE_ALL);
 
-	holding_already = window_is_holding(last_input_screen->current_window);
-	do_unscroll = window_is_scrolled_back(last_input_screen->current_window);
+	holding_already = window_is_holding(get_window_by_refnum(last_input_screen->input_window));
+	do_unscroll = window_is_scrolled_back(get_window_by_refnum(last_input_screen->input_window));
 
 	/*
 	 * Hold_mode is weird.  Hold_mode gets even weirder when you're in
@@ -1463,7 +1463,7 @@ BUILT_IN_KEYBINDING(send_line)
 	 * whether to do the scrolldown before or after you run the command.
 	 */
 	if (holding_already == 0)
-		unhold_a_window(last_input_screen->current_window);
+		unhold_a_window(get_window_by_refnum(last_input_screen->input_window));
 
 	/* XXX This should be rolled together with fire_wait_prompt */
 	if (last_input_screen->promptlist && 
@@ -1482,9 +1482,9 @@ BUILT_IN_KEYBINDING(send_line)
 	}
 
 	if (holding_already == 1)
-		unhold_a_window(last_input_screen->current_window);
+		unhold_a_window(get_window_by_refnum(last_input_screen->input_window));
 
-	if (last_input_screen->current_window->holding_top_of_display &&
+	if (get_window_by_refnum(last_input_screen->input_window)->holding_top_of_display &&
 			do_unscroll == 1)
 		scrollback_forwards(0, NULL);	/* XXX - Keybinding */
 

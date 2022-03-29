@@ -596,7 +596,7 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 	    }
 	    else if (strcmp(arg, "*") == 0)
 	    {
-		channel = get_echannel_by_refnum(0);
+		channel = get_window_echannel(0);
 		if (!channel || !*channel)
 		{
 			WHO_DEBUG("WHOBASE: WHO *, but not on channel");

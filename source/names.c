@@ -142,7 +142,7 @@ static Channel *find_channel (const char *channel, int server)
 
 	/* Automatically grok the ``*'' channel. */
 	if (!channel || !*channel || !strcmp(channel, "*"))
-		if (!(channel = get_echannel_by_refnum(0)))
+		if (!(channel = get_window_echannel(0)))
 			return NULL;		/* sb colten */
 
 	while (traverse_all_channels(&ch, server, 1))
@@ -235,7 +235,7 @@ static void 	destroy_channel (Channel *chan)
 	if (is_current_now)
 	{
 	    channel_hold_election(chan->winref);
-	    if (!(new_current_channel = get_echannel_by_refnum(chan->winref)))
+	    if (!(new_current_channel = get_window_echannel(chan->winref)))
 		new_current_channel = zero;
 
 	    do_hook(SWITCH_CHANNELS_LIST, "%d %s %s",
@@ -1153,7 +1153,7 @@ void 	list_channels (void)
 		return;
 	}
 
-	if ((channame = get_echannel_by_refnum(0)))
+	if ((channame = get_window_echannel(0)))
 		say("Current channel %s", channame);
 	else
 		say("No current channel for this window");
@@ -1252,7 +1252,7 @@ static Channel *window_current_channel_internal (int window, int server)
 }
 
 /* 
- * This is the guts for "get_echannel_by_refnum", 
+ * This is the guts for "get_window_echannel", 
  * the current-channel feature.
  */
 const char *  window_current_channel (int window, int server)
@@ -1452,7 +1452,7 @@ void 	set_channel_window (const char *channel, int server, int winref, int as_cu
 		 * We need to know the present current channel of the new
 		 * target window.
 		 */
-		if (!(new_window_old_curchan = get_echannel_by_refnum(winref)))
+		if (!(new_window_old_curchan = get_window_echannel(winref)))
 			new_window_old_curchan = zero;
 
 		/* move the channel to the new window */
@@ -1472,7 +1472,7 @@ void 	set_channel_window (const char *channel, int server, int winref, int as_cu
 		if (old_window != winref && old_window > 0 && is_current_now)
 		{
 		    channel_hold_election(old_window);
-		    if (!(old_window_new_curchan = get_echannel_by_refnum(old_window)))
+		    if (!(old_window_new_curchan = get_window_echannel(old_window)))
 			old_window_new_curchan = zero;
 		    do_hook(SWITCH_CHANNELS_LIST, "%d %s %s",
 				old_window, channel, old_window_new_curchan);
@@ -1541,13 +1541,15 @@ static void	channel_hold_election (int winref)
  * For any given window, re-assign all of the channels that are connected
  * to that window.
  */
-void	reassign_window_channels (int window)
+void	reassign_window_channels (int window_src)
 {
 	Channel *tmp = NULL;
 	Window *w = NULL, *last_choice = NULL;
 	int	caution = 0;
 	int	winserv;
+	int	window;
 
+	window = get_window_refnum(window_src);
 	winserv = get_window_server(window);
 
 	if (winserv == NOSERV)
@@ -1604,7 +1606,7 @@ void	reassign_window_channels (int window)
 		 */
 		if (last_choice)
 		{
-			yell("Moving [%s:%d] to a skipped/fixed window [%d] -- not my first choice.", tmp->channel, tmp->server, last_choice->refnum);
+			yell("Moving [%s:%d] to a skipped/fixed window [%d] -- not my first choice.", tmp->channel, tmp->server, last_choice->user_refnum);
 			tmp->winref = last_choice->refnum;
 		}
 	}
@@ -1661,7 +1663,7 @@ void	channel_check_windows (void)
 			     "connected to any window; moved to "
 			     "window refnum [%d]",
 				tmp->channel, tmp->server, 
-				w->refnum);
+				w->user_refnum);
 			tmp->winref = w->refnum;
 			reset = 1;
 			break;

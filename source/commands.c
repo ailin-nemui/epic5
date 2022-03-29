@@ -518,7 +518,7 @@ BUILT_IN_COMMAND(ctcp)
 	if ((to = next_arg(args, &args)) != NULL)
 	{
 		if (!strcmp(to, "*"))
-			if ((to = get_echannel_by_refnum(0)) == NULL)
+			if ((to = get_window_echannel(0)) == NULL)
 				to = zero;
 
 		if ((stag = next_arg(args, &args)) != NULL)
@@ -628,7 +628,7 @@ BUILT_IN_COMMAND(describe)
 		int	l;
 
 		if (!strcmp(target, "*"))
-			if ((target = get_echannel_by_refnum(0)) == NULL)
+			if ((target = get_window_echannel(0)) == NULL)
 				target = zero;
 
 		message = args;
@@ -647,7 +647,7 @@ BUILT_IN_COMMAND(send_to_query_first)
 {
 	const char	*tmp;
 
-	tmp = get_target_by_refnum(0);
+	tmp = get_window_target(0);
 	send_text(from_server, tmp, args, NULL, 1, 0);
 }
 
@@ -655,9 +655,9 @@ BUILT_IN_COMMAND(send_to_channel_first)
 {
 	const char	*tmp;
 
-	if ((tmp = get_echannel_by_refnum(0)))
+	if ((tmp = get_window_echannel(0)))
 	    send_text(from_server, tmp, args, NULL, 1, 0);
-	else if ((tmp = get_target_by_refnum(0)))
+	else if ((tmp = get_window_target(0)))
 	    send_text(from_server, tmp, args, NULL, 1, 0);
 }
 
@@ -671,7 +671,7 @@ BUILT_IN_COMMAND(e_channel)
 
 	l = message_from(NULL, LEVEL_OTHER);
 	if (args && *args)
-		window_rejoin(current_window, &args);
+		windowcmd_rejoin(get_window_by_refnum(0), &args);
 	else
 		list_channels();
 	pop_message_from(l);
@@ -785,9 +785,9 @@ BUILT_IN_COMMAND(e_privmsg)
 				return;
 			}
 		}
-		else if (!strcmp(nick, "*") && (!(nick = get_echannel_by_refnum(0))))
+		else if (!strcmp(nick, "*") && (!(nick = get_window_echannel(0))))
 			nick = zero;
-		send_text(from_server, nick, args, command, window_display, 0);
+		send_text(from_server, nick, args, command, get_window_display(), 0);
 		set_server_sent_body(from_server, args);
 	}
 	else 
@@ -813,7 +813,7 @@ BUILT_IN_COMMAND(e_quit)
 BUILT_IN_COMMAND(e_topic)
 {
 	int	clear_topic = 0;
-	const char *channel = get_echannel_by_refnum(0);
+	const char *channel = get_window_echannel(0);
 	const char *arg;
 	char *	args_copy;
 	const char *recode_text;
@@ -880,10 +880,11 @@ BUILT_IN_COMMAND(e_wallop)
 /* Super simple, fast /ECHO */
 BUILT_IN_COMMAND(echocmd)
 {
-        int owd = window_display;
-        window_display = 1;
+	int	old;
+
+	old = swap_window_display(1);
         put_echo(args);
-        window_display = owd;
+	swap_window_display(old);
 }
 
 /*
@@ -904,11 +905,11 @@ BUILT_IN_COMMAND(xechocmd)
 	int	xtended = 0;
 	int	old_window_notify = do_window_notifies;
 	int	old_mangler = display_line_mangler;
-	int	to_window_refnum = to_window ? (int)to_window->refnum : -1;
+	int	to_window_refnum = get_to_window();
 	int	old_inhibit_logging = inhibit_logging;
 	int	old_output_expires_after = output_expires_after;
-	int	to_level = who_level;
-	const char *	to_from = who_from;
+	int	to_level = get_who_level();
+	const char *	to_from = get_who_from();
 
 	while (more && args && *args == '-')
 	{
@@ -925,7 +926,7 @@ BUILT_IN_COMMAND(xechocmd)
 		case 'l':
 		case 'L':
 		{
-		    Window *w;
+		    int w;
 
 		    flag_arg = next_arg(args, &args);
 
@@ -937,16 +938,15 @@ BUILT_IN_COMMAND(xechocmd)
 
 			if (to_window_refnum == -1)
 			{
-			    yell("XECHO: -LINE only works if -WIN is "
-					"specified first");
+			    yell("XECHO: -LINE only works if -WIN is specified first");
 			    return;
 			}
 
 			/* This is checked below, anyways */
-			if (!(w = get_window_by_refnum(to_window_refnum)))
+			if (get_window_refnum(to_window_refnum) < 1)
 				break;
 
-			display_lines = w->display_lines;
+			display_lines = get_window_display_lines(to_window_refnum);
 			to_line = my_atol(next_arg(args, &args));
 			if (to_line < 0 || to_line >= display_lines)
 			{
@@ -955,7 +955,7 @@ BUILT_IN_COMMAND(xechocmd)
 					display_lines - 1);
 				return;
 			}
-			w->change_line = to_line;
+			set_window_change_line(to_window_refnum, to_line);
 		     }
 
 		     /* LEVEL (use specified lastlog level) */
@@ -993,38 +993,27 @@ BUILT_IN_COMMAND(xechocmd)
 			/* Chew up the argument. */
 			/*flag_arg =*/ next_arg(args, &args);
 
-			if (current_window->screen)
-			    to_window_refnum = current_window->refnum;
+			if (get_window_screen(0))
+			    to_window_refnum = get_window_refnum(0);
 			else if (last_input_screen && 
-				 last_input_screen->current_window)
-			    to_window_refnum = last_input_screen->
-							current_window->refnum;
+				 last_input_screen->input_window)
+			    to_window_refnum = last_input_screen->input_window;
 			else
-			{
-			    /* There is always at least one visible window! */
-			    Window *win = NULL;
-			    while ((traverse_all_windows(&win)))
-			    {
-				if (win->screen)
-					to_window_refnum = win->refnum;
-			    }
-			}
+			    to_window_refnum = lookup_any_visible_window();
 			break;
 		}
 
 		case 'w':
 		case 'W':	/* WINDOW (output to specified window) */
 		{
-			Window *w;
+			int	w;
 			next_arg(args, &args);
 
 			if (!(flag_arg = next_arg(args, &args)))
 				break;
 
-			if (!(w = get_window_by_desc(flag_arg)))
-			    if (!(w = get_window_by_refnum(
-					get_channel_winref(flag_arg, 
-							from_server))))
+			if (((w = lookup_window(flag_arg)) < 0) && 
+			    ((w = get_channel_winref(flag_arg, from_server)) < 1))
 			{
 			    /* 
 			     * This is a special favor to Blackjac for
@@ -1033,12 +1022,12 @@ BUILT_IN_COMMAND(xechocmd)
 			     * current window when $winchan() returned -1.
 			     */
 			    if (!my_stricmp(flag_arg, "-1"))
-				w = current_window;
+				w = 0;
 			    else
 				return;	/* No such window */
 			}
 
-			to_window_refnum = w->refnum;
+			to_window_refnum = w;
 			break;
 		}
 
@@ -1085,7 +1074,7 @@ BUILT_IN_COMMAND(xechocmd)
 		case 'r':
 		case 'R':   /* RAW OUTPUT TO TERMINAL */
 		{
-			Window *wx;
+			int	wx;
 
 			next_arg(args, &args);
 			/*
@@ -1096,10 +1085,10 @@ BUILT_IN_COMMAND(xechocmd)
 			 * to_window->screen.
 			 */
 			if (to_window_refnum != -1 && 
-			    ((wx = get_window_by_refnum(to_window_refnum))))
-				output_screen = wx->screen;
+					get_window_screen(to_window_refnum))
+				output_screen = get_window_screen(to_window_refnum);
 			else
-				output_screen = current_window->screen;
+				output_screen = get_window_screen(0);
 			tputs_x(args);
 			term_flush();
 			return;
@@ -1117,7 +1106,7 @@ BUILT_IN_COMMAND(xechocmd)
 		case 'S': /* SAY (dont output if suppressing output) */
 		{
 			next_arg(args, &args);
-			if (!window_display)
+			if (!get_window_display())
 				return;
 			break;
 		}
@@ -1163,8 +1152,7 @@ BUILT_IN_COMMAND(xechocmd)
 		args = LOCAL_COPY(empty_string);
 	}
 
-	display = window_display;
-	window_display = 1;
+	display = swap_window_display(1);
 	if (nolog)
 		inhibit_logging = 1;
 
@@ -1219,7 +1207,7 @@ BUILT_IN_COMMAND(xechocmd)
 	if (nolog)
 		inhibit_logging = old_inhibit_logging;
 
-	window_display = display;
+	swap_window_display(display);
 }
 
 /*
@@ -1231,9 +1219,9 @@ BUILT_IN_COMMAND(xevalcmd)
 {
 	char *	flag;
 	int	old_from_server = from_server;
-	int	old_refnum = current_window->refnum;
+	int	old_refnum = get_window_refnum(0);
 	int	l = -1;
-	int	old_window_display = window_display;
+	int	old_window_display = get_window_display();
 	int	old_inhibit_logging = inhibit_logging;
 	int	nolog = 0;
 
@@ -1258,17 +1246,17 @@ BUILT_IN_COMMAND(xevalcmd)
 		}
 		else if (!my_strnicmp(flag + 1, "WINDOW", 1)) /* WINDOW */
 		{
-			Window *win = get_window_by_desc(next_arg(args, &args));
-			if (win)
+			int	win;
+
+			if ((win = lookup_window(next_arg(args, &args))) > 0)
 			{
-				l = message_setall(win->refnum, who_from, 
-							who_level);
-				current_window = win;
+				l = message_setall(win, get_who_from(), get_who_level());
+				make_window_current_by_refnum(win);
 			}
 		}
 		/* This does the reverse of ^ */
 		else if (!my_strnicmp(flag + 1, "NOISY", 1)) /* NOISY */
-			window_display = 1;
+			set_window_display(1);
 
 		else if (!my_strnicmp(flag + 1, "NOLOG", 2)) /* NOLOG */
 			nolog = 1;
@@ -1284,7 +1272,7 @@ BUILT_IN_COMMAND(xevalcmd)
 
 	make_window_current_by_refnum(old_refnum);
 	from_server = old_from_server;
-	window_display = old_window_display;
+	set_window_display(old_window_display);
 	if (nolog)
 		inhibit_logging = old_inhibit_logging;
 }
@@ -1353,7 +1341,7 @@ BUILT_IN_COMMAND(funny_stuff)
 	}
 
 	if (strcmp(stuff, "*") == 0)
-		if (!(stuff = get_echannel_by_refnum(0)))
+		if (!(stuff = get_window_echannel(0)))
 			stuff = empty_string;
 
 	/* Channel names can contain stars! */
@@ -1729,8 +1717,7 @@ BUILT_IN_COMMAND(load)
 	load_level[load_depth].start_line = 0;
 	/* What to do with load_level[load_depth].sb? */
 
-	display = window_display;
-	window_display = 0;
+	display = swap_window_display(0);
 	permit_status_update(0);	/* No updates to the status bar! */
 
 	/*
@@ -1847,8 +1834,18 @@ BUILT_IN_COMMAND(load)
 	/*
 	 * Restore some sanity
 	 */
+	/*
+	 * XXX This looks "clever", but it's not.
+	 * In other places in the client, we would just unconditionally
+	 * restore the value of 'set_window_display(display)', but there
+	 * is a historical practice where users expect to be able to do 
+	 * /SET DISPLAY OFF in their scripts, and expect it to stay off.
+	 * Because we turned the display off (above), honoring 
+	 * /set display off is as simple as not restoring the original 
+	 * display value.
+	 */
 	if (get_int_var(DISPLAY_VAR))
-	       window_display = display;
+	       set_window_display(display);
 	permit_status_update(1);
 	update_all_status();
 
@@ -2295,7 +2292,7 @@ BUILT_IN_COMMAND(mecmd)
 		const char	*target;
 		int	l;
 
-		if ((target = get_target_by_refnum(0)) != NULL)
+		if ((target = get_window_target(0)) != NULL)
 		{
 			send_ctcp(1, target, "ACTION", "%s", args);
 
@@ -2386,7 +2383,7 @@ BUILT_IN_COMMAND(push_cmd)
  */
 BUILT_IN_COMMAND(query)
 {
-	window_query(current_window, &args);
+	windowcmd_query(get_window_by_refnum(0), &args);
 }
 
 /*
@@ -2476,7 +2473,7 @@ BUILT_IN_COMMAND(redirect)
 		return;
 	}
 
-	if (!strcmp(who, "*") && !(who = get_echannel_by_refnum(0)))
+	if (!strcmp(who, "*") && !(who = get_window_echannel(0)))
 	{
 		say("Must be on a channel to redirect to '*'");
 		return;
@@ -2544,7 +2541,7 @@ BUILT_IN_COMMAND(send_2comm)
 
 	if (!target || !*target || !strcmp(target, "*"))
 	{
-		target = get_echannel_by_refnum(0);
+		target = get_window_echannel(0);
 		if (!target || !*target)
 			target = "*";	/* what-EVER */
 	}
@@ -2587,7 +2584,7 @@ BUILT_IN_COMMAND(send_invite)
 	const char *currchan;
 	int	invites = 0;
 
-	currchan = get_echannel_by_refnum(0);
+	currchan = get_window_echannel(0);
 	if (!currchan || !*currchan)
 		currchan = "*";		/* what-EVER */
 
@@ -2651,7 +2648,7 @@ BUILT_IN_COMMAND(send_kick)
 
 	comment = args?args:empty_string;
 	if (!strcmp(channel, "*"))
-		channel = get_echannel_by_refnum(0);
+		channel = get_window_echannel(0);
 
 	recode_text = outbound_recode(channel, from_server, comment, &extra);
 	send_to_server_with_payload(recode_text, "KICK %s %s", channel, kickee);
@@ -2674,7 +2671,7 @@ BUILT_IN_COMMAND(send_channel_com)
 
 	if (ptr && !strcmp(ptr, "*"))
 	{
-		if ((s = get_echannel_by_refnum(0)) != NULL)
+		if ((s = get_window_echannel(0)) != NULL)
 			send_to_server("%s %s %s", command, s, args?args:empty_string);
 		else
 			say("%s * is not valid since you are not on a channel", command);
@@ -2692,11 +2689,10 @@ BUILT_IN_COMMAND(sendlinecmd)
 	int	display;
 
 	server = from_server;
-	display = window_display;
-	window_display = 1;
+	display = swap_window_display(1);
 	parse_statement(args, 1, NULL);
 	update_input(NULL, UPDATE_ALL);
-	window_display = display;
+	swap_window_display(display);
 	from_server = server;
 }
 
@@ -3151,7 +3147,7 @@ void 	send_text (int server, const char *nick_list, const char *text, const char
 		*next_nick,
 		*line;
 	Crypt	*key;
-	int	old_window_display = window_display;
+	int	old_window_display;
 	int	old_from_server;
 static	int	recursion = 0;
 	const char *target_encoding;
@@ -3174,9 +3170,6 @@ struct target_type target[4] =
 	if (!nick_list || !text)
 		return;
 
-	old_from_server = from_server;
-	from_server = server;
-
 	/*
 	 * If we are called recursively, it is because the user has 
 	 * /redirect'ed the output, or the user is sending something from
@@ -3197,9 +3190,11 @@ struct target_type target[4] =
 		hook = 0;
 	else if (recursion >= 2)
 		return;
-
-	window_display = hook;
 	recursion++;
+
+	old_from_server = from_server;
+	from_server = server;
+	old_window_display = swap_window_display(hook);
 	next_nick = LOCAL_COPY(nick_list);
 
 	if (command && !strcmp(command, "MSG"))
@@ -3419,7 +3414,7 @@ struct target_type target[4] =
 		pop_message_from(l);
 	}
 
-	window_display = old_window_display;
+	swap_window_display(old_window_display);
 	from_server = old_from_server;
 	recursion--;
 }
@@ -3693,7 +3688,7 @@ static void	parse_block (const char *org_line, const char *args, int interactive
 int	parse_statement (const char *stmt, int interactive, const char *subargs)
 {
 static	unsigned 	level = 0;
-	unsigned 	display;
+	unsigned 	old_window_display;
 	int		old_display_var;
 	int		cmdchar_used = 0;
 	int		quiet = 0;
@@ -3705,7 +3700,7 @@ static	unsigned 	level = 0;
 	this_stmt = LOCAL_COPY(stmt);
 	set_current_command(this_stmt);
 
-	display = window_display;
+	old_window_display = get_window_display();
 	old_display_var = get_int_var(DISPLAY_VAR);
 
 	if (get_int_var(DEBUG_VAR) & DEBUG_COMMANDS)
@@ -3741,14 +3736,14 @@ static	unsigned 	level = 0;
 	}
 
 	if (quiet)
-		window_display = 0;
+		set_window_display(0);
 
 	/* 
 	 * Statement in interactive mode w/o command chars sends the
 	 * statement to the current target.
 	 */
 	if (interactive && cmdchar_used == 0)
-		send_text(from_server, get_target_by_refnum(0), stmt, NULL, 1, 0);
+		send_text(from_server, get_window_target(0), stmt, NULL, 1, 0);
 
 	/*
 	 * Statement that looks like () {} is an block-with-arglist statement
@@ -3874,10 +3869,15 @@ expression_statement:
 		new_free(&cmd);
 	}
 
+	/* 
+	 * Just as in /LOAD -- if the user just did /set display,
+	 * honor their new value; otherwise, put everything back
+	 * the way we found it.
+	 */
 	if (old_display_var != get_int_var(DISPLAY_VAR))
-		window_display = get_int_var(DISPLAY_VAR);
+		set_window_display(get_int_var(DISPLAY_VAR));
 	else
-		window_display = display;
+		set_window_display(old_window_display);
 
 	level--;
 	unset_current_command();
