@@ -778,7 +778,7 @@ int	make_status (Window *window, Status *status)
 		     * windows (although they might change their minds)
 		     */
 		    do_hook(STATUS_UPDATE_LIST, "%d %d %s", 
-					window->user_refnum, line, buffer);
+					window->user_refnum, status_line, buffer);
 		}
 	}
 

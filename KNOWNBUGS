@@ -1068,3 +1068,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * De-cruftify the /set automargin_override stuff (rb skered)
 * Begin a larger project to transition (Window *) ptrs to winrefs.
 * The intention is to make (Window *) a pure data object and not a linked list
+* Repair regression with lineno in /set status_update (rb ce)
