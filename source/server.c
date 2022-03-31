@@ -1819,9 +1819,11 @@ return_from_ssl_detour:
 
 				case -1:	/* EOF or other error */
 				{
+					int	server_was_registered = is_server_registered(i);
+
 					parsing_server_index = i;
 					server_is_unregistered(i);
-					if (is_server_registered(i))
+					if (server_was_registered)
 						do_hook(RECONNECT_REQUIRED_LIST, "%d", i);
 					close_server(i, NULL);
 					say("Connection closed from %s", s->info->host);
