@@ -1070,3 +1070,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * The intention is to make (Window *) a pure data object and not a linked list
 * Repair regression with lineno in /set status_update (rb ce)
 * Fix /on reconnect_required (doh)
+* Continue the work on reducing (Window *)s outside of window.h

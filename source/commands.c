@@ -565,12 +565,12 @@ void	do_defered_commands (void)
 	if (defer_list)
 	{
 	    int old_from_server = from_server;
-	    int old_winref = get_winref_by_servref(from_server);
+	    int old_window = get_server_current_window(from_server);
 
 	    for (i = 0; defer_list[i].cmds; i++)
 	    {
 		from_server = defer_list[i].servref;
-		make_window_current_by_refnum(get_winref_by_servref(from_server));
+		make_window_current_by_refnum(get_server_current_window(from_server));
 
 		call_lambda_command("deferred", defer_list[i].cmds,
 						defer_list[i].subargs);
@@ -579,7 +579,7 @@ void	do_defered_commands (void)
 	    }
 
 	    from_server = old_from_server;
-	    make_window_current_by_refnum(old_winref);
+	    make_window_current_by_refnum(old_window);
 	}
 
 	defer_list_size = 1;
@@ -671,7 +671,7 @@ BUILT_IN_COMMAND(e_channel)
 
 	l = message_from(NULL, LEVEL_OTHER);
 	if (args && *args)
-		windowcmd_rejoin(get_window_by_refnum(0), &args);
+		windowcmd_rejoin(0, &args);
 	else
 		list_channels();
 	pop_message_from(l);
@@ -1013,7 +1013,7 @@ BUILT_IN_COMMAND(xechocmd)
 				break;
 
 			if (((w = lookup_window(flag_arg)) < 0) && 
-			    ((w = get_channel_winref(flag_arg, from_server)) < 1))
+			    ((w = get_channel_window(flag_arg, from_server)) < 1))
 			{
 			    /* 
 			     * This is a special favor to Blackjac for
@@ -1170,15 +1170,16 @@ BUILT_IN_COMMAND(xechocmd)
 
 	if (all_windows == 1 || all_windows_for_server == 1)
 	{
-		Window *win = NULL;
-		while ((traverse_all_windows(&win)))
+		int	win = 0;
+
+		while ((traverse_all_windows2(&win)))
 		{
 			int	l;
 
-			if (all_windows == 0 && win->server != from_server)
+			if (all_windows == 0 && get_window_server(win) != from_server)
 				continue;
 
-			l = message_setall(win->refnum, to_from, to_level);
+			l = message_setall(win, to_from, to_level);
 			put_echo(args);
 			pop_message_from(l);
 		}
@@ -2383,7 +2384,7 @@ BUILT_IN_COMMAND(push_cmd)
  */
 BUILT_IN_COMMAND(query)
 {
-	windowcmd_query(get_window_by_refnum(0), &args);
+	windowcmd_query(0, &args);
 }
 
 /*

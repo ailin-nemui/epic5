@@ -405,15 +405,22 @@ static void	build_status_format (Status *s, int k)
  *    1. 'w' is permitted to be NULL, but 's' is never NULL
  *    2. $status_oneoff() will pass in its own 's' 
  */
-void	compile_status (Window *w, Status *s)
+void	compile_status (int window_, Status *s)
 {
 	int 	i,
 		k;
+	Window *w;
 
-	if (w)
-		debuglog("compile_status for window %d", w->user_refnum);
+	if (window_ > 0)
+	{
+		w = get_window_by_refnum_direct(window_);
+		debuglog("compile_status for window %d", get_window_user_refnum(window_));
+	}
 	else
+	{
+		w = NULL;
 		debuglog("compile_status for global");
+	}
 
 	for (k = 0; k < 3; k++)
 	{
@@ -944,9 +951,9 @@ void	build_status	(void *stuff)
 		init_status();
 
 	/* Recompile every status */
-	compile_status(NULL, &main_status);
+	compile_status(0, &main_status);
 	while (traverse_all_windows(&w))
-		compile_status(w, &w->status);
+		compile_status(w->refnum, &w->status);
 
 	/* This forces make_status() and redraw_status() */
 	update_all_status();
@@ -1613,13 +1620,11 @@ STATUS_FUNCTION(status_holdmode)
 	const char *text;
 
 	/* If hold mode is on... */
-	if (window->holding_top_of_display)
+	if (get_window_hold_mode(window->refnum))
 	{
 	    /* ... and we're not holding anything */
-	    if (window->holding_distance_from_display_ip <
-				window->display_lines  &&
-	         window->scrollback_distance_from_display_ip <
-				window->display_lines)
+	    if (window->holding_distance_from_display_ip < window->display_lines  &&
+	         window->scrollback_distance_from_display_ip < window->display_lines)
 	    {
 		if ((text = get_string_var(STATUS_HOLDMODE_VAR)))
 			return text;
@@ -1652,7 +1657,7 @@ STATUS_FUNCTION(status_window)
 		case 0:
 			if (!window->screen)
 				break;
-			if (number_of_windows_on_screen(window) <= 1)
+			if (number_of_windows_on_screen(window->screen) <= 1)
 				break;
 			/* FALLTHROUGH */
 		case 3:
@@ -1877,16 +1882,18 @@ BUILT_IN_FUNCTION(function_status_oneoff, input)
 	char *	windesc;
 	Window	*w;
 	char	*retval;
+	int	window;
 
 	GET_FUNC_ARG(windesc, input);
 
-	if (!(w = get_window_by_desc(windesc)))
+	if (!(window = lookup_window(windesc)))
 		RETURN_EMPTY;
 
+	w = get_window_by_refnum_direct(window);
 	s = new_status();
 	malloc_strcpy(&s->line[0].raw, input);
 
-	compile_status(w, s);
+	compile_status(window, s);
 	make_status(w, s);
 
 	retval = denormalize_string(s->line[0].result);

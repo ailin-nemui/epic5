@@ -52,7 +52,7 @@ const char internal_version[] = "20220327";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 2017;
+const unsigned long	commit_id = 2018;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -926,7 +926,7 @@ static	int		level = 0,
 	timer = TimerTimeout();
 
 	/* GO AHEAD AND WAIT FOR SOME DATA TO COME IN */
-	make_window_current(NULL);
+	make_window_current_by_refnum(0);
 	switch (do_wait(&timer))
 	{
 		/* Timeout -- Need to do timers */

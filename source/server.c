@@ -2881,7 +2881,7 @@ int	is_server_registered (int refnum)
 void  server_is_registered (int refnum, const char *itsname, const char *ourname)
 {
 	Server *s;
-	int	winref;
+	int	window;
 
 	if (!(s = get_server(refnum)))
 		return;
@@ -2896,9 +2896,9 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 	accept_server_nickname(refnum, ourname);
 	set_server_itsname(refnum, itsname);
 
-	if ((winref = get_winref_by_servref(refnum)) != -1)
+	if ((window = get_server_current_window(refnum)) != -1)
 	    if (new_server_lastlog_mask)
-		renormalize_window_levels(winref, *new_server_lastlog_mask);
+		renormalize_window_levels(window, *new_server_lastlog_mask);
 
 	/*
 	 * This hack is required by a race condition with freebsd that 

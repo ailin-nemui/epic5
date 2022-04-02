@@ -16,6 +16,9 @@
 /* To get the definition of Status */
 #include "status.h"
 
+/* To get the definition of List */
+#include "list.h"
+
 /* 
  * Screen and Window are mutually referencial.
  * That means we cant include "screen.h", so we kind of fake it.
@@ -48,12 +51,14 @@ struct WNickListStru *	next;
 } WNickList;
 
 
+#define NEED_WINDOWSTRU
+#ifdef NEED_WINDOWSTRU
 typedef	struct	WindowStru
 {
 	/* List stuff */
-struct	WindowStru	*next;			/* Window below us on screen */
-struct	WindowStru	*prev;			/* Window above us on screen */
-struct	ScreenStru	*screen;		/* The screen we belong to */
+struct	WindowStru *	next;			/* Window below us on screen */
+struct	WindowStru *	prev;			/* Window above us on screen */
+struct	ScreenStru *	screen;			/* The screen we belong to */
 	short		deceased;		/* Set when the window is killed */
 
 	unsigned 	refnum;			/* Unique refnum for window */
@@ -196,24 +201,27 @@ struct	window_stack_stru *	next;
 	unsigned 		refnum;
 }	WindowStack;
 
-#if 0
-extern	Window	*	current_window;
+
+	int	traverse_all_windows		(Window **);
+	Window *new_window 			(struct ScreenStru *);
+	Window *get_window_by_refnum		(int);
+	Window *get_window_by_refnum_direct	(int refnum);
+	Window *get_window_by_desc		(const char *);
 #endif
-extern	Window	*	invisible_list;
-#if 0
-extern	unsigned 	window_display;
-#endif
+
 extern	unsigned 	current_window_priority;
 
-
 	BUILT_IN_COMMAND(windowcmd);
+	int	window_is_holding		(int);
+	int	unhold_a_window			(int);
+	int	window_is_scrolled_back		(int);
+	int	trim_scrollback			(int);
+	int	add_to_scrollback		(int, const unsigned char *, intmax_t);
 
-	Window 	*new_window 			(struct ScreenStru *);
+	void	add_to_invisible_list		(int);
 	void	delete_all_windows		(void);
-	int	traverse_all_windows		(Window **);
-	void	add_to_invisible_list		(Window *);
-	void	window_statusbar_needs_update	(Window *);
-	void	window_body_needs_redraw	(Window *);
+	int     traverse_all_windows2 		(int *refnum);
+	void	window_statusbar_needs_update	(int);
 	void	redraw_all_windows		(void);
 	void	recalculate_windows		(struct ScreenStru *);
 	void	update_all_windows		(void);
@@ -222,9 +230,7 @@ extern	unsigned 	current_window_priority;
 	BUILT_IN_KEYBINDING(swap_next_window);
 	BUILT_IN_KEYBINDING(previous_window);
 	BUILT_IN_KEYBINDING(swap_previous_window);
-	Window 	*get_window_by_refnum		(int);
-	Window  *get_window_by_desc		(const char *);
-	char	*get_window_status_line		(int, int);
+	char *	get_window_status_line		(int, int);
 	void	update_all_status		(void);
 	void	set_window_prompt		(int, const char *);
 	Char *	get_window_prompt		(int);
@@ -258,71 +264,56 @@ const	char	*get_window_echannel		(int);
 	void	set_scrollback_size		(void *);
 	void	set_scroll_lines		(void *);
 	void	set_continued_line		(void *);
-	int	number_of_windows_on_screen	(Window *);
-	int	add_to_scrollback		(Window *, const unsigned char *, intmax_t);
-	int	trim_scrollback			(Window *);
 	BUILT_IN_KEYBINDING(scrollback_backwards);
 	BUILT_IN_KEYBINDING(scrollback_forwards);
 	BUILT_IN_KEYBINDING(scrollback_end);
 	BUILT_IN_KEYBINDING(scrollback_start);
 	BUILT_IN_KEYBINDING(unstop_all_windows);
 	BUILT_IN_KEYBINDING(toggle_stop_screen);
-	int	window_is_holding		(Window *);
-	int	unhold_a_window			(Window *);
-	void	recalculate_window_cursor_and_display_ip	(Window *);
 	void	make_window_current_by_refnum	(int);
-	void	make_window_current		(Window *);
 	int	make_window_current_informally	(int);
-	Window  *windowcmd_query		(Window *, char **);
-	Window	*windowcmd_rejoin		(Window *, char **);
+	int	windowcmd_query			(int, char **);
+	int	windowcmd_rejoin		(int, char **);
 	void	window_check_channels		(void);
 
-	int     get_geom_by_winref 		(const char *, int *, int *);
-	int	get_indent_by_winref		(int);
-	int	get_winref_by_servref		(int);
-
 	char *	windowctl			(char *);
-	void    window_scrollback_needs_rebuild (Window *);
-	int	window_is_scrolled_back		(Window *);
-
-	void   check_message_from_queue 	(int);
+	void    window_scrollback_needs_rebuild (int);
+	void	check_message_from_queue 	(int);
 
 	/* * * * */
-struct ScreenStru *get_window_screen		(int);
-	int	get_window_refnum		(int);
-	int	get_window_user_refnum		(int);
-	int	get_window_display_lines	(int);
-	int	set_window_change_line		(int, int);
+	int     lookup_window 			(const char *desc);
 	int	lookup_any_visible_window	(void);
-	int	get_window_lastlog_size		(int);
+	int	lookup_window_by_server		(int);
+	int     get_server_current_channel	(int);
+	int	set_window_change_line		(int, int);
+	int	get_window_display_lines	(int);
+	int     get_window_geometry 		(int, int *co, int *li);
+	int    	get_window_indent 		(int);
+	int	clear_window_lastlog_mask	(int);
 	int	get_window_lastlog_mask		(int, Mask *);
 	int	set_window_lastlog_mask		(int, Mask);
-	int	set_window_notify_mask		(int, Mask);
-	int	clear_window_lastlog_mask	(int);
-	int	set_window_priority		(int, int);
+	int	get_window_lastlog_max		(int);
+	int     set_window_lastlog_max          (int, int);
+	int	get_window_lastlog_size		(int);
+	int	set_window_lastlog_size_incr	(int);
+	int	set_window_lastlog_size_decr	(int);
 	FILE *	get_window_log_fp		(int);
-
-#if 0
-   	Char *	 get_window_name		(unsigned);
-   	Char *   get_window_uuid		(unsigned);
-	unsigned get_window_priority		(unsigned);
-
-	int	get_window_server		(unsigned);
-	int	set_window_server		(unsigned, int);
-	Mask	get_window_mask			(unsigned);
-	int	set_window_mask			(unsigned, Mask);
-	int	get_window_query_counter	(unsigned);
-	int	set_window_query_counter	(unsigned, int);
-	Char *	get_window_claimed_channel	(unsigned);
-	int	set_window_claimed_channel	(unsigned, Char);
-
-	short	get_window_change_line		(unsigned);
-
-struct ScreenStru *get_window_screen		(unsigned);
-#endif
-
-	int    	get_window_indent 		(int winref);
-	int     get_window_geometry 		(int, int *co, int *li);
-	int     lookup_window 			(const char *desc);
+	int	get_window_mask			(int, Mask *);
+	int	get_window_notified		(int);
+	int	set_window_notify_mask		(int, Mask);
+	int	set_window_priority		(int, int);
+	int	get_window_refnum		(int);
+struct ScreenStru *get_window_screen		(int);
+	int	get_window_user_refnum		(int);
+	int     get_server_current_window	(int server);
+	int     get_window_priority		(int refnum);
+	int	window_is_valid			(int);
+	int	get_window_skip			(int);
+	int	get_window_fixed_size		(int);
+	int	set_window_indent		(int, int);
+	List **	get_window_nicks		(int);
+	int	get_window_hold_mode		(int);
 
 #endif /* __window_h__ */
+
+

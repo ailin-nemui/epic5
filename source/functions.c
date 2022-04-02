@@ -1879,7 +1879,7 @@ BUILT_IN_FUNCTION(function_channels, input)
 		/* 
 		 * You may be wondering what I'm doing here.  It used to 
 		 * be a historical idiom that you could do $mychannels(serv)
-		 * or $mychannels(#winref).  The "#" thing was handled else-
+		 * or $mychannels(#window).  The "#" thing was handled else-
 		 * where, but I took it out becuase it had evil side effects.
 		 * But people need to be able to use "#" here, so specifically
 		 * support "#" here if needed.
@@ -4142,15 +4142,15 @@ BUILT_IN_FUNCTION(function_geom, words)
 {
         const char *refnum;
         int  col, li;
-	int	winref;
+	int	window;
 
         if (!words || !*words)
                 refnum = zero;
         else
                 GET_FUNC_ARG(refnum, words);
 
-	winref = lookup_window(refnum);
-        if (get_window_geometry(winref, &col, &li))
+	window = lookup_window(refnum);
+        if (get_window_geometry(window, &col, &li))
                 RETURN_EMPTY;
 
         return malloc_sprintf(NULL, "%d %d", col, li);
@@ -4687,7 +4687,7 @@ BUILT_IN_FUNCTION(function_winchan, input)
 			servnum = str_to_servref(input);
 
 		/* Now return window for *any* channel. */
-		if ((win = get_channel_winref(chan, servnum)))
+		if ((win = get_channel_window(chan, servnum)))
 			RETURN_INT(win);
 
 		RETURN_INT(-1);
@@ -4901,7 +4901,7 @@ BUILT_IN_FUNCTION(function_isconnected, input)
 BUILT_IN_FUNCTION(function_currchans, input)
 {
 	int server = -1;
-	Window *blah = NULL;
+	int	win = 0;
 	char *retval = NULL;
 	const char *chan;
 	size_t	clue;
@@ -4915,15 +4915,15 @@ BUILT_IN_FUNCTION(function_currchans, input)
 		server = from_server;
 
 	clue = 0;
-	while (traverse_all_windows(&blah))
+	while (traverse_all_windows2(&win))
 	{
-		if (server != -2 && blah->server != server)
+		if (server != -2 && get_window_server(win) != server)
 			continue;
-		if (!(chan = get_window_echannel(blah->refnum)))
+		if (!(chan = get_window_echannel(win)))
 			continue;
 
 		malloc_strcat_wordlist_c(&retval, space, "\"", &clue);
-		malloc_strcat_wordlist_c(&retval, empty_string, ltoa(blah->server), &clue);
+		malloc_strcat_wordlist_c(&retval, empty_string, ltoa(get_window_server(win)), &clue);
 		malloc_strcat_wordlist_c(&retval, space, chan, &clue);
 		malloc_strcat_wordlist_c(&retval, empty_string, "\"", &clue);
 	}
@@ -5582,7 +5582,7 @@ BUILT_IN_FUNCTION(function_uname, input)
 
 BUILT_IN_FUNCTION(function_querywin, args)
 {
-	Window *w = NULL;
+	int	w = 0;
 	char *	nick = NULL;
 	int	servref = -1;
 	const char *q;
@@ -5591,12 +5591,12 @@ BUILT_IN_FUNCTION(function_querywin, args)
 	if (args && *args)
 		GET_INT_ARG(servref, args);
 
-	while (traverse_all_windows(&w))
+	while (traverse_all_windows2(&w))
 	{
-	    q = get_window_equery(w->refnum);
+	    q = get_window_equery(w);
 	    if (q && !my_stricmp(q, nick))
-		if (servref < 0 || servref == w->server)
-			RETURN_INT(w->user_refnum);
+		if (servref < 0 || servref == get_window_server(w))
+			RETURN_INT(get_window_user_refnum(w));
 	}
 
 	RETURN_INT(-1);
@@ -5837,20 +5837,21 @@ BUILT_IN_FUNCTION(function_getpgrp, input)
 
 BUILT_IN_FUNCTION(function_iscurchan, input)
 {
-	Window 	*w = NULL;
-	const char *chan;
-	char *arg;
+	int	window = 0;
+const 	char *	chan;
+	char *	arg;
 
 	GET_FUNC_ARG(arg, input);
-	while (traverse_all_windows(&w))
+	while (traverse_all_windows2(&window))
 	{
 		/*
 		 * Check to see if the channel specified is the current
 		 * channel on *any* window for the current server.
 		 */
-		if ((chan = get_window_echannel(w->refnum)) &&
-			!my_stricmp(arg, chan) && w->server == from_server)
-				RETURN_INT(1);
+		if ((chan = get_window_echannel(window)) &&
+				!my_stricmp(arg, chan) && 
+				get_window_server(window) == from_server)
+			RETURN_INT(1);
 	}
 
 	RETURN_INT(0);
@@ -6772,12 +6773,11 @@ BUILT_IN_FUNCTION(function_notifywindows, input)
 {
 	char *	retval = NULL;
 	size_t	rvclue=0;
-	Window *window;
+	int	window = 0;
 
-	window = NULL;
-	while (traverse_all_windows(&window))
-		if (window->notified)
-			malloc_strcat_word_c(&retval, space, ltoa(window->user_refnum), DWORD_NO, &rvclue);
+	while (traverse_all_windows2(&window))
+		if (get_window_notified(window))
+			malloc_strcat_word_c(&retval, space, ltoa(get_window_user_refnum(window)), DWORD_NO, &rvclue);
 
 	RETURN_MSTR(retval);
 }
@@ -7209,27 +7209,26 @@ BUILT_IN_FUNCTION(function_outputinfo, input)
 
 BUILT_IN_FUNCTION(function_levelwindow, input)
 {
-	Mask	mask;
-	Window	*w = NULL;
+	Mask	mask, window_mask;
+	int	window = 0;
 	int	server;
 	int	i;
 	char 	*rejects = NULL;
 
 	GET_INT_ARG(server, input);
 	str_to_mask(&mask, input, &rejects);	/* Errors are just ignored */
-	while (traverse_all_windows(&w))
+	while (traverse_all_windows2(&window))
 	{
-	    if (mask_isset(&mask, LEVEL_DCC) && 
-		mask_isset(&w->window_mask, LEVEL_DCC))
-		RETURN_INT(w->user_refnum);
+	    get_window_mask(window, &window_mask);
+	    if (mask_isset(&mask, LEVEL_DCC) && mask_isset(&window_mask, LEVEL_DCC))
+		RETURN_INT(get_window_user_refnum(window));
 
-	    if (w->server != server)
+	    if (get_window_server(window) != server)
 		continue;
 
 	    for (i = 1; BIT_VALID(i); i++)
-		if (mask_isset(&mask, i) &&
-		    mask_isset(&w->window_mask, i))
-			RETURN_INT(w->user_refnum);
+		if (mask_isset(&mask, i) && mask_isset(&window_mask, i))
+			RETURN_INT(get_window_user_refnum(window));
 	}
 	RETURN_INT(-1);
 }
@@ -7237,13 +7236,13 @@ BUILT_IN_FUNCTION(function_levelwindow, input)
 BUILT_IN_FUNCTION(function_serverwin, input)
 {
 	int     	sval = from_server;
-	int		winref;
+	int		window;
 
 	if (*input)
 		GET_INT_ARG(sval, input);
 
-	winref = get_winref_by_servref(sval);
-	RETURN_INT(winref);
+	window = get_server_current_window(sval);
+	RETURN_INT(window);
 }
 
 BUILT_IN_FUNCTION(function_ignorectl, input)

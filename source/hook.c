@@ -38,7 +38,6 @@
 #include "ircaux.h"
 #define __need_ArgList_t__
 #include "alias.h"
-#include "window.h"
 #include "output.h"
 #include "commands.h"
 #include "ifcmd.h"

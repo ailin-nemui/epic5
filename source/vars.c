@@ -1275,13 +1275,13 @@ void    set_indent (void *stuff)
 {
         VARIABLE *v;
         int     indent;
-        Window  *window = NULL;
+	int	window = 0;
  
         v = (VARIABLE *)stuff;
         indent = v->integer;
 
-        while (traverse_all_windows(&window))
-                window->indent = indent;
+        while (traverse_all_windows2(&window))
+		set_window_indent(window, indent);
 }
 
 

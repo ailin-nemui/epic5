@@ -57,20 +57,20 @@ typedef struct	lastlog_stru
 	time_t	expires;
 	int	visible;
 	intmax_t refnum;
-	Window *window;
+	int	window;
 	int	dead;
 }	Lastlog;
 
 static	intmax_t global_lastlog_refnum = 0;
 	double	output_expires_after = 0.0;
 
-static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, char *nomatch, regex_t *norex, int *max, const char *target, int mangler, Window *window, int exempt, char **, int, int);
-static Lastlog *oldest_lastlog_for_window (Window *window);
-static Lastlog *newer_lastlog_entry (Lastlog *item, Window *window);
-static Lastlog *older_lastlog_entry (Lastlog *item, Window *window);
-static Lastlog *newest_lastlog_for_window (Window *window);
+static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, char *nomatch, regex_t *norex, int *max, const char *target, int mangler, int window, int exempt, char **, int, int);
+static Lastlog *oldest_lastlog_for_window (int window);
+static Lastlog *newer_lastlog_entry (Lastlog *item, int window);
+static Lastlog *older_lastlog_entry (Lastlog *item, int window);
+static Lastlog *newest_lastlog_for_window (int window);
 static void	remove_lastlog_item (Lastlog *item);
-static void	move_lastlog_item (Lastlog *item, Window *newwin);
+static void	move_lastlog_item (Lastlog *item, int newwin);
 static void	expire_lastlog_entries (void);
 
 Lastlog *	lastlog_oldest = NULL;
@@ -204,12 +204,10 @@ void	set_current_window_mask (void *stuff)
  * messages, channel messages, wall's, and any outgoing messages) are
  * recorded, otherwise, everything is recorded 
  */
-intmax_t	add_to_lastlog (Window *window, const char *line)
+intmax_t	add_to_lastlog (int window, const char *line)
 {
 	Lastlog *new_l;
-
-	if (!window)
-		window = get_window_by_refnum(0);
+	Mask	mask;
 
 	new_l = (Lastlog *)new_malloc(sizeof(Lastlog));
 	new_l->dead = 0;
@@ -246,10 +244,11 @@ intmax_t	add_to_lastlog (Window *window, const char *line)
 	if (!lastlog_oldest)
 		lastlog_oldest = lastlog_newest;
 
-	if (mask_isset(&window->lastlog_mask, new_l->level))
+	get_window_lastlog_mask(window, &mask);
+	if (mask_isset(&mask, new_l->level))
 	{
 		new_l->visible = 1;
-		window->lastlog_size++;
+		set_window_lastlog_size_incr(window);
 		trim_lastlog(window);
 	}
 	else
@@ -267,24 +266,26 @@ intmax_t	add_to_lastlog (Window *window, const char *line)
  * was trimmed, so if the newest lastlog entries for a window are
  * invisible then this function will never trim them.
  */
-void 	trim_lastlog (Window *window)
+void 	trim_lastlog (int window)
 {
 	Lastlog *item;
 
-	if (window->lastlog_size <= window->lastlog_max)
+	if (get_window_lastlog_size(window) <= get_window_lastlog_max(window))
 		return;
 
 	debuglog("trim_lastlog: Preparing to trim lastlog for window %d -- "
 		 "(current size: %d, maximum allowable size %d", 
-			window->user_refnum, window->lastlog_size, window->lastlog_max);
+			get_window_user_refnum(window), 
+			get_window_lastlog_size(window), 
+			get_window_lastlog_max(window));
 	debuglog("trim_lastlog: Will remove %d entr(y/ies) from window %d",
-			window->lastlog_size - window->lastlog_max,
-			window->user_refnum);
+			get_window_lastlog_size(window) - get_window_lastlog_max(window),
+			get_window_user_refnum(window));
 
 	/* This must eventually terminate, because it will reach the end
 	 * of the linked-list of lastlog items. */
 	item = oldest_lastlog_for_window(window);
-	while (item && window->lastlog_size > window->lastlog_max)
+	while (item && get_window_lastlog_size(window) > get_window_lastlog_max(window))
 	{
 		Lastlog *next_item = newer_lastlog_entry(item, window);
 
@@ -297,14 +298,14 @@ void 	trim_lastlog (Window *window)
  * truncate_lastlog: Removes all lastlog entries, both visible
  * and invisible, from the given window.
  */
-void 	truncate_lastlog (Window *window)
+void 	truncate_lastlog (int window)
 {
 	Lastlog *item;
 
 	debuglog("truncate_lastlog: Preparing to truncate lastlog for window %d.",
-			window->user_refnum);
+			get_window_user_refnum(window));
 	debuglog("truncate_lastlog: Will remove %d entr(y/ies) from window %d",
-			window->lastlog_size, window->user_refnum);
+			get_window_lastlog_size(window), get_window_user_refnum(window));
 
 	item = oldest_lastlog_for_window(window);
 	while (item)
@@ -320,7 +321,7 @@ void 	truncate_lastlog (Window *window)
  * clear_level_from_lastlog: Removes all items of the given level(s)
  * from a window, unconditionally and irreversibly
  */
-void 	clear_level_from_lastlog (Window *window, Mask *levels)
+void 	clear_level_from_lastlog (int window, Mask *levels)
 {
 	Lastlog *item;
 
@@ -343,7 +344,7 @@ void 	clear_level_from_lastlog (Window *window, Mask *levels)
  * clear_regex_from_lastlog: Removes all items whose text matches a given regex
  * from a window, unconditionally and irreversibly
  */
-void 	clear_regex_from_lastlog (Window *window, const char *regex)
+void 	clear_regex_from_lastlog (int window, const char *regex)
 {
 	Lastlog *item;
 	regex_t	preg;
@@ -389,21 +390,21 @@ void	set_lastlog_size (void *stuff)
 {
 	VARIABLE *v;
 	int	size;
-	Window	*window = NULL;
+	int	window = 0;
 
 	v = (VARIABLE *)stuff;
 	size = v->integer;
 
-	while (traverse_all_windows(&window))
+	while (traverse_all_windows2(&window))
 	{
-		window->lastlog_max = size;
+		set_window_lastlog_max(window, size);
 		trim_lastlog(window);
 		window_scrollback_needs_rebuild(window);
 
-		if (window->lastlog_max < window->display_lines * 2)
-			window->lastlog_max = window->display_lines * 2;
-		if (v->integer < window->display_lines * 2)
-			v->integer = window->display_lines * 2;
+		if (get_window_lastlog_max(window) < get_window_display_lines(window) * 2)
+			set_window_lastlog_max(window, get_window_display_lines(window) * 2);
+		if (v->integer < get_window_display_lines(window) * 2)
+			v->integer = get_window_display_lines(window) * 2;
 	}
 }
 
@@ -502,14 +503,15 @@ BUILT_IN_COMMAND(lastlog)
 	int		mangler = 0;
 	int		lc;
 	const char *	rewrite = NULL;
-	Window *	window = get_window_by_refnum(0);
+	int		window;
 	int		this_server = 0;
 	int		global = 0;
 
-	lc = message_setall(0, NULL, LEVEL_OTHER);
-	cnt = get_window_lastlog_size(0);
-	get_window_lastlog_mask(0, &save_mask);
-	clear_window_lastlog_mask(0);
+	window = get_window_refnum(0);
+	lc = message_setall(window, NULL, LEVEL_OTHER);
+	cnt = get_window_lastlog_size(window);
+	get_window_lastlog_mask(window, &save_mask);
+	clear_window_lastlog_mask(window);
 	mask_unsetall(&level_mask);
 	rewrite = get_string_var(LASTLOG_REWRITE_VAR);
 
@@ -669,11 +671,11 @@ BUILT_IN_COMMAND(lastlog)
 	    }
 	    else if (!my_strnicmp(arg, "-WINDOW", len))
 	    {
-		Window *w;
+		int	w;
 		char *x;
 
 		x = new_next_arg(args, &args);
-		if (!(w = get_window_by_desc(x)))
+		if (!(w = lookup_window(x)))
 		{
 			yell("LASTLOG -WINDOW %s is not a valid window "
 				"name or number", x);
@@ -861,12 +863,10 @@ BUILT_IN_COMMAND(lastlog)
 	    {
 		if (start->visible && 
 		      (global || 
-			(this_server && 
-				start->window->server == window->server) ||
+			(this_server && get_window_server(start->window) == get_window_server(window)) ||
 			(start->window == window)))
 		{
-		    if (mask_isnone(&level_mask) || 
-				(mask_isset(&level_mask, start->level)))
+		    if (mask_isnone(&level_mask) || (mask_isset(&level_mask, start->level)))
 			i++;
 		    if (i == number)
 			break;
@@ -1024,7 +1024,7 @@ restart:
 					"%ld %ld %ld %ld . . . %s %s",
 						(long)l->refnum,
 						(long)l->created,
-						(long)l->window->user_refnum,
+						(long)get_window_user_refnum(l->window),
 						(long)l->level,
 						l->target?l->target:".",
 						result?result:".");
@@ -1060,7 +1060,7 @@ restart:
 		if (end->visible && 
 		      (global || 
 			(this_server && 
-				end->window->server == window->server) ||
+				get_window_server(end->window) == get_window_server(window)) ||
 			(end->window == window)))
 		{
 		    if (mask_isnone(&level_mask) || 
@@ -1222,7 +1222,7 @@ restart2:
 					"%ld %ld %ld %ld . . . %s %s",
 						(long)l->refnum,
 						(long)l->created,
-						(long)l->window->user_refnum,
+						(long)get_window_user_refnum(l->window),
 						(long)l->level,
 						l->target?l->target:".",
 						result?result:".");
@@ -1261,7 +1261,7 @@ bail:
  * This returns 1 if the current item pointed to by 'l' is something that
  * should be displayed based on the criteron provided.
  */
-static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, char *nomatch, regex_t *norex, int *max, const char *target, int mangler, Window *window, int exempt, char **result, int global, int this_server)
+static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, char *match, regex_t *rex, char *nomatch, regex_t *norex, int *max, const char *target, int mangler, int window, int exempt, char **result, int global, int this_server)
 {
 	const char *str = NULL;
 	int	retval = 1;
@@ -1269,7 +1269,7 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, 
 	*result = NULL;
 
 	if ( global == 1 ||
-	    (this_server == 1 && ((*l)->window->server == window->server)) ||
+	    (this_server == 1 && (get_window_server((*l)->window) == get_window_server(window))) ||
 	    ((*l)->window == window))
 		;	/* It's ok if this matches. */
 	else
@@ -1398,7 +1398,7 @@ static int	show_lastlog (Lastlog **l, int *skip, int *number, Mask *level_mask, 
  * making sure to reset the level and all that jazz.  This will cause the 
  * scrollback to be rebroken, etc.
  */
-void	reconstitute_scrollback (Window *window)
+void	reconstitute_scrollback (int window)
 {
 	Lastlog *li;
 
@@ -1424,7 +1424,7 @@ BUILT_IN_FUNCTION(function_line, word)
 	int	line = 0;
 	const char *	windesc = zero;
 	Lastlog	*start_pos;
-	Window	*win;
+	int	win;
 	char	*extra;
 	int	do_level = 0;
 	int	do_timestamp = 0;
@@ -1446,11 +1446,11 @@ BUILT_IN_FUNCTION(function_line, word)
 	}
 
 	/* Get the current window, default to current window */
-	if (!(win = get_window_by_desc(windesc)))
+	if (!(win = lookup_window(windesc)))
 		RETURN_EMPTY;
 
 	/* Make sure that the line request is within reason */
-	if (line < 1 || line > win->lastlog_size)
+	if (line < 1 || line > get_window_lastlog_size(win))
 		RETURN_EMPTY;
 
 	/* Get the line from the lastlog */
@@ -1500,7 +1500,7 @@ BUILT_IN_FUNCTION(function_lastlog, word)
 	char *	pattern = NULL;
 	char *	retval = NULL;
 	Lastlog	*iter;
-	Window *win;
+	int	win;
 	Mask	lastlog_levels;
 	int	line = 1;
 	size_t	rvclue = 0;
@@ -1512,7 +1512,7 @@ BUILT_IN_FUNCTION(function_lastlog, word)
 		standard_level_warning("$lastlog()", &rejects);
 
 	/* Get the current window, default to current window */
-	if (!(win = get_window_by_desc(windesc)))
+	if (!(win = lookup_window(windesc)))
 		RETURN_EMPTY;
 
 	for (iter = lastlog_newest; iter; iter = iter->older)
@@ -1611,12 +1611,12 @@ BUILT_IN_FUNCTION(function_lastlogctl, input)
 
 /************************************************************************/
 
-static Lastlog *oldest_lastlog_for_window (Window *window)
+static Lastlog *oldest_lastlog_for_window (int window)
 {
 	return newer_lastlog_entry(NULL, window);
 }
 
-static Lastlog *newer_lastlog_entry (Lastlog *item, Window *window)
+static Lastlog *newer_lastlog_entry (Lastlog *item, int window)
 {
 	Lastlog *i;
 
@@ -1628,7 +1628,7 @@ static Lastlog *newer_lastlog_entry (Lastlog *item, Window *window)
 	return i;
 }
 
-static Lastlog *older_lastlog_entry (Lastlog *item, Window *window)
+static Lastlog *older_lastlog_entry (Lastlog *item, int window)
 {
 	Lastlog *i;
 
@@ -1640,12 +1640,12 @@ static Lastlog *older_lastlog_entry (Lastlog *item, Window *window)
 	return i;
 }
 
-static Lastlog *newest_lastlog_for_window (Window *window)
+static Lastlog *newest_lastlog_for_window (int window)
 {
 	return older_lastlog_entry(NULL, window);
 }
 
-int	recount_window_lastlog (Window *window)
+int	recount_window_lastlog (int window)
 {
 	Lastlog *i;
 	int	count = 0;
@@ -1695,7 +1695,7 @@ static void	remove_lastlog_item (Lastlog *item)
 	 */
 	if (item->visible)
 	{
-		item->window->lastlog_size--;
+		set_window_lastlog_size_decr(item->window);
 	}
 
 	if (item->older)
@@ -1711,22 +1711,22 @@ static void	remove_lastlog_item (Lastlog *item)
 }
 
 /***************************************************************************/
-static void	move_lastlog_item (Lastlog *item, Window *newwin)
+static void	move_lastlog_item (Lastlog *item, int newwin)
 {
-	Window *oldwin = item->window;
+	int	oldwin = item->window;
 
 	item->window = newwin;
 	if (item->visible)
 	{
-		oldwin->lastlog_size--;
-		newwin->lastlog_size++;
+		set_window_lastlog_size_decr(oldwin);
+		set_window_lastlog_size_incr(newwin);
 	}
 
 	window_scrollback_needs_rebuild(oldwin);
 	window_scrollback_needs_rebuild(newwin);
 }
 
-void	move_all_lastlog (Window *oldwin, Window *newwin)
+void	move_all_lastlog (int oldwin, int newwin)
 {
 	Lastlog *l;
 
@@ -1737,7 +1737,7 @@ void	move_all_lastlog (Window *oldwin, Window *newwin)
 	}
 }
 
-void	move_lastlog_item_by_string (Window *oldwin, Window *newwin, const char *str)
+void	move_lastlog_item_by_string (int oldwin, int newwin, const char *str)
 {
 	Lastlog *l;
 
@@ -1748,7 +1748,7 @@ void	move_lastlog_item_by_string (Window *oldwin, Window *newwin, const char *st
 	}
 }
 
-void	move_lastlog_item_by_target (Window *oldwin, Window *newwin, const char *str)
+void	move_lastlog_item_by_target (int oldwin, int newwin, const char *str)
 {
 	Lastlog *l;
 
@@ -1759,7 +1759,7 @@ void	move_lastlog_item_by_target (Window *oldwin, Window *newwin, const char *st
 	}
 }
 
-void	move_lastlog_item_by_level (Window *oldwin, Window *newwin, Mask *levels)
+void	move_lastlog_item_by_level (int oldwin, int newwin, Mask *levels)
 {
 	Lastlog *l;
 
@@ -1770,7 +1770,7 @@ void	move_lastlog_item_by_level (Window *oldwin, Window *newwin, Mask *levels)
 	}
 }
 
-void	move_lastlog_item_by_regex (Window *oldwin, Window *newwin, const char *str)
+void	move_lastlog_item_by_regex (int oldwin, int newwin, const char *str)
 {
 	Lastlog *l;
 	regex_t preg;

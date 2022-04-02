@@ -111,7 +111,7 @@
  * The front-end api to output stuff to windows is:
  *
  * 1) Set the window, either directly or indirectly:
- *     a) Directly with		l = message_setall(winref, target, level);
+ *     a) Directly with		l = message_setall(window, target, level);
  *     b) Indirectly with	l = message_from(target, level);
  * 2) Call an output routine:
  *	say(), output(), yell(), put_it(), put_echo(), etc.
@@ -126,7 +126,7 @@
 static void 	do_screens	(int fd);
 static int 	rite 		(Window *, const unsigned char *);
 static void 	scroll_window   (Window *);
-static void 	add_to_window	(Window *, const unsigned char *);
+static void 	add_to_window	(int, const unsigned char *);
 static	int	ok_to_output	(Window *);
 static	void	edit_codepoint (u_32int_t key);
 static ssize_t read_esc_seq     (const unsigned char *, void *, int *);
@@ -1888,7 +1888,7 @@ unsigned char *	normalized_string_to_plain_text (const unsigned char *str)
  * word to the next line. ($leftpc() depends on this)
  */
 #define SPLIT_EXTENT 40
-unsigned char **prepare_display (int winref,
+unsigned char **prepare_display (int window,
 				 const unsigned char *str,
                                  int max_cols,
                                  int *lused,
@@ -1936,10 +1936,10 @@ const	unsigned char	*cont_ptr;
         saved_a.color_fg = saved_a.color_bg = saved_a.fg_color = 0;
 	saved_a.bg_color = saved_a.italic = 0;
 
-	if (winref < 0)
+	if (window < 0)
 		do_indent = get_int_var(INDENT_VAR);
 	else
-		do_indent = get_window_indent(winref);
+		do_indent = get_window_indent(window);
 	if (!(words = get_string_var(WORD_BREAK_VAR)))
 		words = " \t";
 	if (!(cont_ptr = get_string_var(CONTINUED_LINE_VAR)))
@@ -2657,7 +2657,8 @@ size_t 	output_with_count (const unsigned char *str1, int clreol, int output)
 void 	add_to_screen (const unsigned char *buffer)
 {
 	Window *tmp = NULL;
-	int	winref;
+	int	window;
+	int	w = 0;
 
 	/*
 	 * Just paranoia.
@@ -2670,9 +2671,9 @@ void 	add_to_screen (const unsigned char *buffer)
 
 	if (dumb_mode)
 	{
-		add_to_lastlog(get_window_by_refnum(0), buffer);
+		add_to_lastlog(get_window_refnum(0), buffer);
 		if (privileged_output || 
-		    do_hook(WINDOW_LIST, "%u %s", get_window_by_refnum(0)->user_refnum, buffer))
+		    do_hook(WINDOW_LIST, "%u %s", get_window_user_refnum(0), buffer))
 			puts(buffer);
 		fflush(stdout);
 		return;
@@ -2685,11 +2686,11 @@ void 	add_to_screen (const unsigned char *buffer)
 	 * The highest priority is if we have explicitly stated what
 	 * window we want this output to go to.
 	 */
-	if ((winref = get_to_window()) > 0)
+	if ((window = get_to_window()) > 0)
 	{
-		if ((tmp = get_window_by_refnum(winref)))
+		if (window_is_valid(window))
 		{
-			add_to_window(tmp, buffer);
+			add_to_window(window, buffer);
 			return;
 		}
 	}
@@ -2700,10 +2701,10 @@ void 	add_to_screen (const unsigned char *buffer)
 	 * useful.  Maybe I'll think about this again later.
 	 */
 	else if ((get_who_level() == LEVEL_NONE) && 
-	        ((winref = get_winref_by_servref(from_server)) > -1) && 
-                (tmp = get_window_by_refnum(winref)))
+	        ((window = get_server_current_window(from_server)) > -1) && 
+                (window_is_valid(window)))
 	{
-		add_to_window(tmp, buffer);
+		add_to_window(window, buffer);
 		return;
 	}
 
@@ -2715,32 +2716,32 @@ void 	add_to_screen (const unsigned char *buffer)
 	{
 	    if (is_channel(get_who_from()))
 	    {
-		if (from_server == NOSERV)
-		    panic(0, "Output to channel [%s:NOSERV]: %s",
-				get_who_from(), buffer);
+		int	w;
 
-	        if ((tmp = get_window_by_refnum(
-				get_channel_winref(get_who_from(), from_server))))
+		if (from_server == NOSERV)
+		    panic(0, "Output to channel [%s:NOSERV]: %s", get_who_from(), buffer);
+
+		w = get_channel_window(get_who_from(), from_server);
+	        if (window_is_valid(w))
 		{
-		    add_to_window(tmp, buffer);
+		    add_to_window(w, buffer);
 		    return;
 		}
 	    }
 	    else
 	    {
-		tmp = NULL;
-		while (traverse_all_windows(&tmp))
+		w = 0;
+		while (traverse_all_windows2(&w))
 		{
 		    /* Must be for our server */
-		    if (get_who_level() != LEVEL_DCC && (tmp->server != from_server))
+		    if (get_who_level() != LEVEL_DCC && (get_window_server(w) != from_server))
 			continue;
 
 		    /* Must be on the nick list */
-		    if (!find_in_list((List **)&(tmp->nicks), 
-					get_who_from(), !USE_WILDCARDS))
+		    if (!find_in_list((List *)get_window_nicks(w), get_who_from(), !USE_WILDCARDS))
 			continue;
 
-		    add_to_window(tmp, buffer);
+		    add_to_window(w, buffer);
 		    return;
 		}
 	    }
@@ -2750,32 +2751,35 @@ void 	add_to_screen (const unsigned char *buffer)
 	 * Check to see if this level should go to current window
 	 */
 	if ((mask_isset(&current_window_mask, get_who_level())) &&
-	    ((winref = get_winref_by_servref(from_server)) > -1) && 
-            (tmp = get_window_by_refnum(winref)))
+	    ((window = get_server_current_window(from_server)) > -1) && 
+            (window_is_valid(window)))
 	{
-		add_to_window(tmp, buffer);
+		add_to_window(window, buffer);
 		return;
 	}
 
 	/*
 	 * Check to see if any window can claim this level
 	 */
-	tmp = NULL;
-	while (traverse_all_windows(&tmp))
+	w = 0;
+	while (traverse_all_windows2(&w))
 	{
+		Mask	window_mask;
+		get_window_mask(w, &window_mask);
+
 		/*
 		 * Check for /WINDOW LEVELs that apply
 		 */
 		if (get_who_level() == LEVEL_DCC && 
-			mask_isset(&tmp->window_mask, get_who_level()))
+			mask_isset(&window_mask, get_who_level()))
 		{
-			add_to_window(tmp, buffer);
+			add_to_window(w, buffer);
 			return;
 		}
-		if ((from_server == tmp->server || from_server == NOSERV)
-			&& mask_isset(&tmp->window_mask, get_who_level()))
+		if ((from_server == get_window_server(w) || from_server == NOSERV)
+			&& mask_isset(&window_mask, get_who_level()))
 		{
-			add_to_window(tmp, buffer);
+			add_to_window(w, buffer);
 			return;
 		}
 	}
@@ -2786,7 +2790,7 @@ void 	add_to_screen (const unsigned char *buffer)
 	 */
 	if (get_window_server(0) == from_server)
 	{
-		add_to_window(get_window_by_refnum(0), buffer);
+		add_to_window(0, buffer);
 		return;
 	}
 
@@ -2794,13 +2798,13 @@ void 	add_to_screen (const unsigned char *buffer)
 	 * And if that fails, look for ANY window that is bound to the
 	 * given server (this never fails if we're connected.)
 	 */
-	tmp = NULL;
-	while (traverse_all_windows(&tmp))
+	w = 0;
+	while (traverse_all_windows2(&w))
 	{
-		if (tmp->server != from_server)
+		if (get_window_server(w) != from_server)
 			continue;
 
-		add_to_window(tmp, buffer);
+		add_to_window(w, buffer);
 		return;
 	}
 
@@ -2808,7 +2812,7 @@ void 	add_to_screen (const unsigned char *buffer)
 	 * No window found for a server is usually because we're
 	 * disconnected or not yet connected.
 	 */
-	add_to_window(get_window_by_refnum(0), buffer);
+	add_to_window(0, buffer);
 	return;
 }
 
@@ -2826,7 +2830,7 @@ void 	add_to_screen (const unsigned char *buffer)
  * rite() handles the *appearance* of the display, writing to the screen as
  * neccesary.
  */
-static void 	add_to_window (Window *window, const unsigned char *str)
+static void 	add_to_window (int window_, const unsigned char *str)
 {
 	const char *	pend;
 	unsigned char *	strval;
@@ -2837,6 +2841,7 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 	intmax_t	refnum;
 	char *		rewriter = NULL;
 	int		mangler = 0;
+	Window *	window = get_window_by_refnum_direct(window_);
 
 	if (get_server_redirect(window->server))
 		if (redirect_text(window->server, 
@@ -2877,21 +2882,21 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 		mangler = window->log_mangle;
 	add_to_log(0, window->log_fp, window->refnum, str, mangler, rewriter);
 	add_to_logs(window->refnum, from_server, get_who_from(), get_who_level(), str);
-	refnum = add_to_lastlog(window, str);
+	refnum = add_to_lastlog(window->refnum, str);
 
 	/* Add to scrollback + display... */
 	cols = window->my_columns;	/* Don't -1 this! already -1'd */
 	strval = new_normalize_string(str, 0, display_line_mangler);
         for (my_lines = prepare_display(window->refnum, strval, cols, &numl, 0); *my_lines; my_lines++)
 	{
-		if (add_to_scrollback(window, *my_lines, refnum))
+		if (add_to_scrollback(window->refnum, *my_lines, refnum))
 		    if (ok_to_output(window))
 			rite(window, *my_lines);
 	}
 	new_free(&strval);
 
 	/* Check the status of the window and scrollback */
-	trim_scrollback(window);
+	trim_scrollback(window->refnum);
 
 	cursor_to_input();
 
@@ -2926,7 +2931,7 @@ static void 	add_to_window (Window *window, const unsigned char *str)
 
 	    if (type)
 	    {
-		int l = message_setall(get_window_by_refnum(0)->refnum, get_who_from(), get_who_level());
+		int l = message_setall(get_window_refnum(0), get_who_from(), get_who_level());
 		say("%s in window %d", type, window->user_refnum);
 		pop_message_from(l);
 	    }
@@ -2941,18 +2946,19 @@ static void 	add_to_window (Window *window, const unsigned char *str)
  * for the purpose of reconstituting the scrollback of a window after
  * a resize event.
  */
-void 	add_to_window_scrollback (Window *window, const unsigned char *str, intmax_t refnum)
+void 	add_to_window_scrollback (int window, const unsigned char *str, intmax_t refnum)
 {
 	unsigned char *	strval;
         unsigned char **       my_lines;
         int             cols;
 	int		numl = 0;
+	Window *	w = get_window_by_refnum_direct(window);
 
 	/* Normalize the line of output */
-	cols = window->my_columns;	/* Don't -1 this! Already -1'd! */
+	cols = w->my_columns;			/* Don't -1 this! Already -1'd! */
 	strval = new_normalize_string(str, 0, display_line_mangler);
-        for (my_lines = prepare_display(window->refnum, strval, cols, &numl, 0); *my_lines; my_lines++)
-		add_to_scrollback(window, *my_lines, refnum);
+        for (my_lines = prepare_display(w->refnum, strval, cols, &numl, 0); *my_lines; my_lines++)
+		add_to_scrollback(w->refnum, *my_lines, refnum);
 	new_free(&strval);
 }
 
@@ -2974,15 +2980,13 @@ static int	ok_to_output (Window *window)
 	 */
 	if (window->scrollback_top_of_display)
 	{
-	    if (window->scrollback_distance_from_display_ip >
-				window->display_lines)
+	    if (window->scrollback_distance_from_display_ip > window->display_lines)
 		return 0;	/* Definitely no output here */
 	}
 
-	if (window->holding_top_of_display)
+	if (get_window_hold_mode(window->refnum))
 	{
-	    if (window->holding_distance_from_display_ip >
-				window->display_lines)
+	    if (window->holding_distance_from_display_ip > window->display_lines)
 		return 0;	/* Definitely no output here */
 	}
 
@@ -3567,7 +3571,7 @@ void 	kill_screen (Screen *screen)
 	while ((window = screen->window_list))
 	{
 		screen->window_list = window->next;
-		add_to_invisible_list(window);
+		add_to_invisible_list(window->refnum);
 	}
 
 #ifdef WITH_THREADED_STDOUT
@@ -3594,8 +3598,13 @@ void 	kill_screen (Screen *screen)
 		last_input_screen = main_screen;
 
 	screen->alive = 0;
-	make_window_current(NULL);
+	make_window_current_by_refnum(0);
 	say("The screen is now dead.");
+}
+
+int     number_of_windows_on_screen (Screen *screen)
+{
+        return screen->visible_windows;
 }
 
 
@@ -3697,7 +3706,7 @@ static void 	do_screens (int fd)
 		 */
 		last_input_screen = screen;
 		output_screen = screen;
-		make_window_current(get_window_by_refnum(screen->input_window));
+		make_window_current_by_refnum(screen->input_window);
 		from_server = get_window_server(0);
 
 		/*

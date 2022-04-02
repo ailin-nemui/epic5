@@ -278,7 +278,7 @@ static Binding *	find_binding (const char *name)
 	if (!name)
 		return NULL;
 
-	return (Binding *)find_in_list((List **)&binding_list, name, 0);
+	return (Binding *)find_in_list((List *)binding_list, name, 0);
 }
 
 /*

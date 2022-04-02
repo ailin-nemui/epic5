@@ -757,8 +757,7 @@ static int	foreach_ignore (const char *nicklist, int create, int (*callback) (Ig
 		    /*
 		     * Create a new ignore item if this one does not exist.
 		     */
-		    if ((item = (Ignore *)find_in_list((List **)&ignored_nicks, 
-							new_nick, 0)) == NULL)
+		    if ((item = (Ignore *)find_in_list((List *)ignored_nicks, new_nick, 0)) == NULL)
 		    {
 			if (create == 0)
 			{
@@ -1014,8 +1013,7 @@ char *	ignorectl (char *input)
 	GET_FUNC_ARG(listc, input);
 	len = strlen(listc);
 	if (!my_strnicmp(listc, "REFNUM", len)) {
-		if ((i = (Ignore *)find_in_list((List **)&ignored_nicks,
-					input, 0)) == NULL)
+		if ((i = (Ignore *)find_in_list((List *)ignored_nicks, input, 0)) == NULL)
 			RETURN_EMPTY;
 
 		RETURN_INT(i->refnum);

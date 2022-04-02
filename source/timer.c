@@ -69,8 +69,8 @@ static	void	list_timers (const char *command);
  *		Delete timer with name <refnum>
  *	/TIMER -DELETE ALL
  *		Delete all timers
- *	/TIMER -DELETE_FOR_WINDOW <winref>
- *		Delete all WINDOW timers that are bound to <winref>.
+ *	/TIMER -DELETE_FOR_WINDOW <window>
+ *		Delete all WINDOW timers that are bound to <window>.
  *		<Winref> must be a number.  Use $winnum() to get that.
  *
  *  Updating Timers:
@@ -228,13 +228,13 @@ BUILT_IN_COMMAND(timercmd)
 	    else if (!my_strnicmp(flag + 1, "WINDOW", len))	/* WINDOW */
 	    {
 		char 	*na;
-		Window *win = NULL;
+		int	window = 0;
 
 		domain = WINDOW_TIMER;
 		if ((na = next_arg(args, &args)))
-			win = get_window_by_desc(na);
+			window = lookup_window(na);
 
-		if (!win)
+		if (!window)
 		{
 		    if (my_stricmp(na, "-1"))
 		    {
@@ -245,7 +245,7 @@ BUILT_IN_COMMAND(timercmd)
 			domref = -1;
 		}
 		else
-			domref = win->refnum;
+			domref = window;
 	    }
 	    else if (!my_strnicmp(flag + 1, "SERVER", len))	/* SERVER */
 	    {
@@ -1103,8 +1103,7 @@ void 	ExecuteTimers (void)
 		    else
 		    {
 			from_server = current->domref;
-			make_window_current_by_refnum(
-					get_winref_by_servref(from_server));
+			make_window_current_by_refnum(get_server_current_window(from_server));
 		    }
 		}
 		else if (current->domain == WINDOW_TIMER)
@@ -1132,7 +1131,7 @@ void 	ExecuteTimers (void)
 		    else
 		    {
 			if (from_server != NOSERV)
-			    make_window_current_by_refnum(get_winref_by_servref(from_server));
+			    make_window_current_by_refnum(get_server_current_window(from_server));
 		    }
 		}
 
@@ -1301,7 +1300,7 @@ char *	timerctl (char *input)
  * The /WINDOW NUMBER command actually swaps the refnums of two windows:
  * It's possible that 'newref' isn't in use, so that's ok.
  */
-void    timers_swap_winrefs (unsigned oldref, unsigned newref)
+void    timers_swap_windows (unsigned oldref, unsigned newref)
 {
 	Timer *ref;
 
@@ -1319,7 +1318,7 @@ void    timers_swap_winrefs (unsigned oldref, unsigned newref)
         }
 }
 
-void    timers_merge_winrefs (unsigned oldref, unsigned newref)
+void    timers_merge_windows (unsigned oldref, unsigned newref)
 {
 	Timer *ref;
 

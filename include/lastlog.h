@@ -11,11 +11,13 @@
 
 #include "levels.h"
 
+#if 0
 /* 
  * Window and Lastlog are mutually referential.  So we cant include
  * window.h here. so to break the loop we forward declare Window here.
  */
 struct WindowStru;
+#endif
 
 extern	Mask	current_window_mask;
 extern	Mask *	new_server_lastlog_mask;
@@ -29,25 +31,25 @@ extern	double	output_expires_after;
 	void	set_lastlog_mask 		(void *);
 	void	set_lastlog_size 		(void *);
 	void	set_notify_mask 		(void *);
-	int		recount_window_lastlog	(struct WindowStru *);
-	void	trim_lastlog			(struct WindowStru *);
+	int	recount_window_lastlog		(int);
+	void	trim_lastlog			(int);
 	void	set_current_window_mask 	(void *);
-	intmax_t add_to_lastlog 	(struct WindowStru *, const char *);
+	intmax_t add_to_lastlog 		(int, const char *);
 	char *	function_line			(char *);
 	char *	function_lastlog		(char *);
 	void	set_new_server_lastlog_mask	(void *);
 	void	set_old_server_lastlog_mask	(void *);
-	void	reconstitute_scrollback		(struct WindowStru *);
+	void	reconstitute_scrollback		(int);
 	int	do_expire_lastlog_entries	(void *);
-	void	truncate_lastlog		(struct WindowStru *);
+	void	truncate_lastlog		(int);
 
-	void	move_all_lastlog		(struct WindowStru *, struct WindowStru *);
-	void	move_lastlog_item_by_string	(struct WindowStru *, struct WindowStru *, Char *);
-	void	move_lastlog_item_by_target	(struct WindowStru *, struct WindowStru *, Char *);
-	void	move_lastlog_item_by_level	(struct WindowStru *, struct WindowStru *, Mask *);
-	void	move_lastlog_item_by_regex	(struct WindowStru *, struct WindowStru *, Char *);
+	void	move_all_lastlog		(int, int);
+	void	move_lastlog_item_by_string	(int, int, Char *);
+	void	move_lastlog_item_by_target	(int, int, Char *);
+	void	move_lastlog_item_by_level	(int, int, Mask *);
+	void	move_lastlog_item_by_regex	(int, int, Char *);
 
-	void    clear_level_from_lastlog 	(struct WindowStru *, Mask *);
-	void    clear_regex_from_lastlog 	(struct WindowStru *, const char *);
+	void    clear_level_from_lastlog 	(int, Mask *);
+	void    clear_regex_from_lastlog 	(int, const char *);
 
 #endif /* __lastlog_h_ */

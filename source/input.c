@@ -1452,8 +1452,8 @@ BUILT_IN_KEYBINDING(send_line)
 
 	update_input(last_input_screen, UPDATE_ALL);
 
-	holding_already = window_is_holding(get_window_by_refnum(last_input_screen->input_window));
-	do_unscroll = window_is_scrolled_back(get_window_by_refnum(last_input_screen->input_window));
+	holding_already = window_is_holding(last_input_screen->input_window);
+	do_unscroll = window_is_scrolled_back(last_input_screen->input_window);
 
 	/*
 	 * Hold_mode is weird.  Hold_mode gets even weirder when you're in
@@ -1463,7 +1463,7 @@ BUILT_IN_KEYBINDING(send_line)
 	 * whether to do the scrolldown before or after you run the command.
 	 */
 	if (holding_already == 0)
-		unhold_a_window(get_window_by_refnum(last_input_screen->input_window));
+		unhold_a_window(last_input_screen->input_window);
 
 	/* XXX This should be rolled together with fire_wait_prompt */
 	if (last_input_screen->promptlist && 
@@ -1482,9 +1482,9 @@ BUILT_IN_KEYBINDING(send_line)
 	}
 
 	if (holding_already == 1)
-		unhold_a_window(get_window_by_refnum(last_input_screen->input_window));
+		unhold_a_window(last_input_screen->input_window);
 
-	if (get_window_by_refnum(last_input_screen->input_window)->holding_top_of_display &&
+	if (get_window_hold_mode(last_input_screen->input_window) &&
 			do_unscroll == 1)
 		scrollback_forwards(0, NULL);	/* XXX - Keybinding */
 

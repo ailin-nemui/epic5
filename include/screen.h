@@ -61,7 +61,7 @@ struct	PromptStru *	next;
 	InputLine *	saved_input_line;
 }	WaitPrompt;
 
-
+#ifdef NEED_WINDOWSTRU
 typedef	struct	ScreenStru
 {
 struct	ScreenStru *	prev;			/* Next screen in list */
@@ -70,9 +70,6 @@ struct	ScreenStru *	next;			/* Previous screen in list */
 
 	/* List stuff and overhead */
 	int		screennum;		/* Refnum for this screen */
-#if 0
-	Window *	current_window;		/* Current primary window target */
-#endif
 	int		input_window;		/* Window that has the input focus */
 	unsigned 	last_window_refnum;	/* The previous input window (for /window back) */
 	Window *	window_list;		/* The top window on me */
@@ -107,14 +104,15 @@ struct	ScreenStru *	next;			/* Previous screen in list */
 
 }	Screen;
 
+	void		repaint_window_body		(Window *);
+	Window *	create_additional_screen 	(void);
+#endif
 	void		add_wait_prompt 		(const char *, void (*)(char *, const char *), const char *, int, int);
 	void		fire_wait_prompt		(u_32int_t);
 	void		fire_normal_prompt		(const char *);
 	void		add_to_screen			(const unsigned char *);
 	void		translate_user_input		(unsigned char byte);
-	void		repaint_window_body		(Window *);
 	void		create_new_screen		(void);
-	Window *	create_additional_screen 	(void);
 	void		kill_screen			(struct ScreenStru *);
 
 const	unsigned char *	all_off				(void);
@@ -123,12 +121,14 @@ const	unsigned char *	all_off				(void);
 	unsigned char *	normalized_string_to_plain_text (const unsigned char *str);
 	unsigned char **prepare_display			(int, const unsigned char *, int, int *, int);
 	size_t		output_with_count		(const unsigned char *, int, int);
-	void    	add_to_window_scrollback 	(Window *, const unsigned char *, intmax_t);
+	void    	add_to_window_scrollback 	(int, const unsigned char *, intmax_t);
 
 	unsigned char *	prepare_display2		(const unsigned char *, int, int, char, int);
 
 	void		chop_columns 			(unsigned char **, size_t);
 	void		chop_final_columns 		(unsigned char **, size_t);
+
+	int		number_of_windows_on_screen	(struct ScreenStru *);
 
 /* Dont do any word-wrapping, just truncate each line at its place. */
 #define PREPARE_NOWRAP	0x01

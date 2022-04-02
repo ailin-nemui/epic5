@@ -269,7 +269,7 @@ static Logfile *	logfile_add (Logfile *log, char **args)
 
 		if (log->type == LOG_TARGETS)
 		{
-                    if (!find_in_list((List **)&log->targets, arg, !USE_WILDCARDS))
+                    if (!find_in_list((List *)log->targets, arg, !USE_WILDCARDS))
                     {
                         say("Added %s to log name list", arg);
                         new_w = (WNickList *)new_malloc(sizeof(WNickList));
@@ -706,7 +706,7 @@ BUILT_IN_COMMAND(logcmd)
 }
 
 /****************************************************************************/
-void	add_to_logs (long winref, int servref, const char *target, int level, const char *orig_str)
+void	add_to_logs (long window, int servref, const char *target, int level, const char *orig_str)
 {
 	Logfile *log;
 	int	i;
@@ -716,11 +716,11 @@ void	add_to_logs (long winref, int servref, const char *target, int level, const
 	    if (log->type == LOG_WINDOWS)
 	    {
 		for (i = 0; i < MAX_TARGETS; i++) {
-		    if (log->refnums[i] == winref) {
+		    if (log->refnums[i] == window) {
 			if (!mask_isset(&log->mask, level))
 				continue;
 			time(&log->activity);
-			add_to_log(log->refnum, log->log, winref, orig_str, log->mangler, log->rewrite);
+			add_to_log(log->refnum, log->log, window, orig_str, log->mangler, log->rewrite);
 		    }
 		}
 	    }
@@ -734,7 +734,7 @@ void	add_to_logs (long winref, int servref, const char *target, int level, const
 			if (!mask_isset(&log->mask, level))
 				continue;
 			time(&log->activity);
-			add_to_log(log->refnum, log->log, winref, orig_str, log->mangler, log->rewrite);
+			add_to_log(log->refnum, log->log, window, orig_str, log->mangler, log->rewrite);
 		    }
 		}
 	    }
@@ -750,12 +750,12 @@ void	add_to_logs (long winref, int servref, const char *target, int level, const
 		if (log->targets && !target)
 			continue;
 
-		if (target && !find_in_list((List **)&log->targets, target, USE_WILDCARDS))
+		if (target && !find_in_list((List *)log->targets, target, USE_WILDCARDS))
 			continue;
 
 		/* OK!  We want to log it now! */
 		time(&log->activity);
-		add_to_log(log->refnum, log->log, winref, orig_str, log->mangler, log->rewrite);
+		add_to_log(log->refnum, log->log, window, orig_str, log->mangler, log->rewrite);
 	    }
 	}
 }
@@ -925,7 +925,7 @@ char *logctl	(char *input)
  * The /WINDOW NUMBER command actually swaps the refnums of two windows:
  * It's possible that 'newref' isn't in use, so that's ok.
  */
-void    logfiles_swap_winrefs (int oldref, int newref)
+void    logfiles_swap_windows (int oldref, int newref)
 {
 	Logfile *log;
 	int	i;
@@ -945,7 +945,7 @@ void    logfiles_swap_winrefs (int oldref, int newref)
         }
 }
 
-void    logfiles_merge_winrefs (int oldref, int newref)
+void    logfiles_merge_windows (int oldref, int newref)
 {
 	Logfile *log;
 	int	i;

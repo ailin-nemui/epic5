@@ -25,8 +25,8 @@ typedef enum {
 	Timeval	TimerTimeout 	(void);
 	char *	timerctl	(char *);
 	void	dump_timers	(void);
-	void    timers_swap_winrefs (unsigned oldref, unsigned newref);
-	void	timers_merge_winrefs (unsigned oldref, unsigned newref);
+	void    timers_swap_windows (unsigned oldref, unsigned newref);
+	void	timers_merge_windows (unsigned oldref, unsigned newref);
 	void    unload_timers	(char *filename);
 
 #endif /* _TIMER_H_ */

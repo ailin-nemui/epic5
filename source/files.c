@@ -209,7 +209,6 @@ static File *	lookup_window_logfile (int refnum)
 	FILE *			x = NULL;
 static struct epic_loadfile	elf;
 static File 			retval = {0 , &elf, NULL};
-	Window *		w;
 
 	if (refnum == -1)
 		x = irclog_fp;
@@ -263,7 +262,7 @@ static int	file_write (int logtype, int fd, const char *stuff)
  * 	fd - A logical target to a logfile: 
  *	    Syntax: @ + [<domain>] + <number>
  *	    Specifically:
- *		@W<winref>	Write to the /WINDOW LOG for <winref>
+ *		@W<window>	Write to the /WINDOW LOG for <window>
  *		@L<logref>	Write to a /LOG file
  *		@<openref>	Write to an $open() file
  *	stuff - A UTF8 string to be sent to the log

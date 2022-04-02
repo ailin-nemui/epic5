@@ -232,7 +232,7 @@ void	set_logfile (void *stuff)
  * (Note:  "logref" should be -1 unless we are logging from a /log log, ie,
  * any place that is not inside logfiles.c)
  */
-void 	add_to_log (int logref, FILE *fp, long winref, const unsigned char *line, int mangler, const char *rewriter)
+void 	add_to_log (int logref, FILE *fp, long window, const unsigned char *line, int mangler, const char *rewriter)
 {
 	char	*local_line = NULL;
 	int	old_logref;
@@ -273,9 +273,10 @@ static	int	recursive = 0;
 	{
 		char    *prepend_exp;
 		char    argstuff[10240];
+		int	user_refnum = get_window_user_refnum(window);
 
 		/* First, create the $* list for the expando */
-		snprintf(argstuff, 10240, "%ld %s", winref, local_line);
+		snprintf(argstuff, 10240, "%d %s", user_refnum, local_line);
 		new_free(&local_line);
 
 		/* Now expand the expando with the above $* */
