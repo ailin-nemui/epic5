@@ -16,7 +16,7 @@ struct 	WindowStru;
 typedef struct  status_line {
         char *		raw;
         char *		format;
-        const char *	(*func[MAX_FUNCTIONS]) (struct WindowStru *, short, char);
+        const char *	(*func[MAX_FUNCTIONS]) (int, short, char);
 	short		map[MAX_FUNCTIONS];
 	char		key[MAX_FUNCTIONS];
         int   		count;

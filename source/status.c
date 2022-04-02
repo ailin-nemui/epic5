@@ -63,7 +63,7 @@
  * Maximum number of "%" expressions in a status line format.  If you change
  * this number, you must manually change the snprintf() in make_status 
  */
-#define STATUS_FUNCTION(x) Char * x (Window *window, short map, char key)
+#define STATUS_FUNCTION(x) Char * x (int window_, short map, char key)
 #define MAX_FUNCTIONS 40
 #define MAX_STATUS_USER 39
 
@@ -140,7 +140,7 @@ static	int	defered_status_updates = 0;
 struct status_formats {
 	short	map;
 	char 	key;
-	Char	*(*callback_function)(Window *, short, char);
+	Char	*(*callback_function)(int, short, char);
 	char	**format_var;
 	int	*format_set;
 };
@@ -361,8 +361,7 @@ static void	build_status_format (Status *s, int k)
 			*format++ = '%';
 			*format++ = 's';
 
-			s->line[k].func[cp] = 
-				status_expandos[i].callback_function;
+			s->line[k].func[cp] = status_expandos[i].callback_function;
 			s->line[k].map[cp] = map;
 			s->line[k].key[cp] = key;
 			cp++;
@@ -583,8 +582,8 @@ int	make_status (Window *window, Status *status)
 /* 				panic(1, "status callback null.  Window [%d], line [%d], function [%d]", window->user_refnum, line, i); */
 			}
 			func_value[i] = status->line[line].func[i]
-				(window, status->line[line].map[i],
-				 status->line[line].key[i]);
+				(window->refnum, status->line[line].map[i],
+						 status->line[line].key[i]);
 		}
 
 		/*
@@ -997,7 +996,7 @@ int     permit_status_update (int flag)
 /*
  * This tests to see if the window IS the current window on its screen
  */
-#define IS_CURRENT_WINDOW (window->screen && window->screen->input_window == window->refnum)
+#define IS_CURRENT_WINDOW (get_window_screen(window_) && get_window_screen(window_)->input_window == window_)
 
 /*
  * This tests to see if all expandoes are to appear in all status bars
@@ -1061,6 +1060,9 @@ int     permit_status_update (int flag)
 	static int my_bufferxsize = 64; \
 	int	actual_size;
 
+#define NEED_WINDOW \
+	Window *window = get_window_by_refnum_direct(window_);
+
 /* After you change 'my_bufferxspace', call this to update 'my_bufferx' */
 #define CHECK \
 	RESIZE(my_bufferx, char, my_bufferxsize);
@@ -1112,7 +1114,7 @@ STATUS_FUNCTION(status_nickname)
 {
 	STATUS_VARS
 
-	PRESS(nick_format, get_server_nickname(window->server))
+	PRESS(nick_format, get_server_nickname(get_window_server(window_)))
 	RETURN
 }
 
@@ -1134,7 +1136,7 @@ const	char	*n = NULL;
 	/*
 	 * If this window isnt connected to a server, say so.
 	 */
-	if (window->server == NOSERV)
+	if (get_window_server(window_) == NOSERV)
 		return "No Server";
 
 	/* Map 0 uses the shortname, shown when multi-connected */
@@ -1143,14 +1145,14 @@ const	char	*n = NULL;
 	/* Map 3 uses the groupname, shown at all times */
 	/* Map 4 uses the full itsname, shown at all times */
 	if (map == 0 || map == 1) 
-		n = get_server_altname(window->server, 0);
+		n = get_server_altname(get_window_server(window_), 0);
 	else if (map == 3)
-		n = get_server_group(window->server);
+		n = get_server_group(get_window_server(window_));
 	else if (map == 4)
-		n = get_server_itsname(window->server);
+		n = get_server_itsname(get_window_server(window_));
 
 	if (!n)
-		n = get_server_name(window->server);
+		n = get_server_name(get_window_server(window_));
 	if (!n)
 		return "Unknown";
 
@@ -1162,7 +1164,7 @@ STATUS_FUNCTION(status_server_status)
 {
 	const char *	state = NULL;
 
-	state = get_server_state_str(window->server);
+	state = get_server_state_str(get_window_server(window_));
 	return state ? state : "Unknown";
 }
 
@@ -1173,8 +1175,8 @@ STATUS_FUNCTION(status_network)
 {
 	const char *text = NULL;
 
-	if (window->server != NOSERV)
-		text = get_server_005(window->server, "NETWORK");
+	if (get_window_server(window_) != NOSERV)
+		text = get_server_005(get_window_server(window_), "NETWORK");
 
 	return text ? text : "Unknown";
 }
@@ -1188,7 +1190,7 @@ STATUS_FUNCTION(status_query_nick)
 	STATUS_VARS
 	const char *q;
 
-	if (!(q = get_window_equery(window->refnum)))
+	if (!(q = get_window_equery(window_)))
 		return empty_string;
 
 	PRESS(query_format, q)
@@ -1218,6 +1220,7 @@ STATUS_FUNCTION(status_notify_windows)
 	STATUS_VARS
 	int	doneone = 0;
 	char	buf2[BIG_BUFFER_SIZE];
+	int	w = 0;
 
 	/*
 	 * This only goes to a current-type window.
@@ -1230,22 +1233,19 @@ STATUS_FUNCTION(status_notify_windows)
 	 * they have been hidden and collect their refnums.
 	 */
 	*buf2 = 0;
-	window = NULL;
-	while (traverse_all_windows(&window))
+	while (traverse_all_windows2(&w))
 	{
-		if (window->notified)
+		if (get_window_notified(w))
 		{
-			char *s = NULL;
+			const char *s = NULL;
 
-			if (window->notify_name)
-				s = window->notify_name;
-			else if (window->name)
-				s = window->name;
+			if (!(s = get_window_notify_name(w)))
+				s = get_window_name(w);
 
 			if (doneone++)
 				strlcat(buf2, ",", sizeof buf2);
 			strlcat(buf2, (map == 1 && s) ? s :
-					ltoa(window->user_refnum), sizeof buf2);
+					ltoa(get_window_user_refnum(window_)), sizeof buf2);
 		}
 	}
 
@@ -1283,12 +1283,12 @@ STATUS_FUNCTION(status_mode)
 	const char *	chan = NULL;
 
 	/* If the user has no mode format, or we're not connected, punt. */
-        if (window->server == NOSERV)
+        if (get_window_server(window_) == NOSERV)
 		return empty_string;
 
 	/* If there is a current channel, get it's mode */
-	if ((chan = get_window_echannel(window->refnum)))
-		mode = get_channel_mode(chan, window->server);
+	if ((chan = get_window_echannel(window_)))
+		mode = get_channel_mode(chan, get_window_server(window_));
 	if (!mode)
 		mode = empty_string;
 
@@ -1342,10 +1342,10 @@ STATUS_FUNCTION(status_umode)
 	/*
 	 * Punt if the window isnt connected to a server.
 	 */
-	if (window->server < 0)
+	if (get_window_server(window_) < 0)
 		return empty_string;
 
-	strlcpy(localbuf, get_umode(window->server), sizeof localbuf);
+	strlcpy(localbuf, get_umode(get_window_server(window_)), sizeof localbuf);
 	if (!*localbuf)
 		return empty_string;
 
@@ -1362,15 +1362,15 @@ STATUS_FUNCTION(status_chanop)
 	const char	*text;
 	const char *chan;
 
-	if (window->server == NOSERV ||
-           (!(chan = get_window_echannel(window->refnum))))
+	if (get_window_server(window_) == NOSERV ||
+           (!(chan = get_window_echannel(window_))))
 		return empty_string;
 	
-	if (get_channel_oper(chan, window->server) &&
+	if (get_channel_oper(chan, get_window_server(window_)) &&
 		(text = get_string_var(STATUS_CHANOP_VAR)))
 			return text;
 
-	if (get_channel_halfop(chan, window->server) &&
+	if (get_channel_halfop(chan, get_window_server(window_)) &&
 		(text = get_string_var(STATUS_HALFOP_VAR)))
 			return text;
 
@@ -1384,7 +1384,8 @@ STATUS_FUNCTION(status_ssl)
 {
 	const char *text;
 
-	if (window->server != NOSERV && get_server_ssl_enabled(window->server) &&
+	if (get_window_server(window_) != NOSERV && 
+		get_server_ssl_enabled(get_window_server(window_)) &&
 		(text = get_string_var(STATUS_SSL_ON_VAR)))
 			return text;
 	else if ((text = get_string_var(STATUS_SSL_OFF_VAR)))
@@ -1401,16 +1402,16 @@ STATUS_FUNCTION(status_hold_lines)
 {
 	STATUS_VARS
 	int	num;
-	int	interval = window->hold_interval;
+	int	interval = get_window_hold_interval(window_);
 	int	lines_held;
 
 	if (interval == 0)
 		interval = 1;		/* XXX WHAT-ever */
 
-	if (window->holding_distance_from_display_ip > window->scrollback_distance_from_display_ip)
-		lines_held = window->holding_distance_from_display_ip - window->display_lines;
+	if (get_window_holding_distance_from_display_ip(window_) > get_window_scrollback_distance_from_display_ip(window_))
+		lines_held = get_window_holding_distance_from_display_ip(window_) - get_window_display_lines(window_);
 	else
-		lines_held = window->scrollback_distance_from_display_ip - window->display_lines;
+		lines_held = get_window_scrollback_distance_from_display_ip(window_) - get_window_display_lines(window_);
 
 	if (lines_held <= 0)
 		return empty_string;
@@ -1432,14 +1433,14 @@ STATUS_FUNCTION(status_channel)
 	char 	channel[IRCD_BUFFER_SIZE + 1];
 	int	num;
 
-	if (window->server == NOSERV || !channel_format)
+	if (get_window_server(window_) == NOSERV || !channel_format)
 		return empty_string;
 
-	if (!(chan = get_window_echannel(window->refnum)))
+	if (!(chan = get_window_echannel(window_)))
 		return empty_string;
 
 	if (get_int_var(HIDE_PRIVATE_CHANNELS_VAR) && 
-	    is_channel_private(chan, window->server))
+	    is_channel_private(chan, get_window_server(window_)))
 		strlcpy(channel, "*private*", sizeof channel);
 	else
 		strlcpy(channel, chan, sizeof channel);
@@ -1462,12 +1463,12 @@ STATUS_FUNCTION(status_voice)
 	const char *text;
 	const char *chan;
 
-	if (window->server == NOSERV ||
-           (chan = get_window_echannel(window->refnum)) == NULL)
+	if (get_window_server(window_) == NOSERV ||
+           (chan = get_window_echannel(window_)) == NULL)
 		return empty_string;
 
-	if (get_channel_voice(chan, window->server) &&
-	    !get_channel_oper(chan, window->server) &&
+	if (get_channel_voice(chan, get_window_server(window_)) &&
+	    !get_channel_oper(chan, get_window_server(window_)) &&
 	    (text = get_string_var(STATUS_VOICE_VAR)))
 		return text;
 
@@ -1540,8 +1541,8 @@ STATUS_FUNCTION(status_away)
 	if (connected_to_server == 1 && !DISPLAY_ON_WINDOW)
 		return empty_string;
 
-	if (window->server != NOSERV && 
-	    get_server_away(window->server) && 
+	if (get_window_server(window_) != NOSERV && 
+	    get_server_away(get_window_server(window_)) && 
 	    (text = get_string_var(STATUS_AWAY_VAR)))
 		return text;
 
@@ -1608,8 +1609,8 @@ STATUS_FUNCTION(status_hold)
 {
 	const char *text;
 
-	if (window->holding_distance_from_display_ip > window->display_lines  ||
-	    window->scrollback_distance_from_display_ip > window->display_lines)
+	if (get_window_holding_distance_from_display_ip(window_) > get_window_display_lines(window_) ||
+	    get_window_scrollback_distance_from_display_ip(window_) > get_window_display_lines(window_))
 		if ((text = get_string_var(STATUS_HOLD_VAR)))
 			return text;
 	return empty_string;
@@ -1620,11 +1621,11 @@ STATUS_FUNCTION(status_holdmode)
 	const char *text;
 
 	/* If hold mode is on... */
-	if (get_window_hold_mode(window->refnum))
+	if (get_window_hold_mode(window_))
 	{
 	    /* ... and we're not holding anything */
-	    if (window->holding_distance_from_display_ip < window->display_lines  &&
-	         window->scrollback_distance_from_display_ip < window->display_lines)
+	    if (get_window_holding_distance_from_display_ip(window_) < get_window_display_lines(window_) &&
+	        get_window_scrollback_distance_from_display_ip(window_) < get_window_display_lines(window_))
 	    {
 		if ((text = get_string_var(STATUS_HOLDMODE_VAR)))
 			return text;
@@ -1637,7 +1638,7 @@ STATUS_FUNCTION(status_oper)
 {
 	const char *text;
 
-	if (window->server != NOSERV && get_server_operator(window->server) &&
+	if (get_window_server(window_) != NOSERV && get_server_operator(get_window_server(window_)) &&
 	    (text = get_string_var(STATUS_OPER_VAR)) &&
 	    (connected_to_server != 1 || DISPLAY_ON_WINDOW))
 		return text;
@@ -1655,9 +1656,9 @@ STATUS_FUNCTION(status_window)
 	switch (map)
 	{
 		case 0:
-			if (!window->screen)
+			if (!get_window_screen(window_))
 				break;
-			if (number_of_windows_on_screen(window->screen) <= 1)
+			if (number_of_windows_on_screen(get_window_screen(window_)) <= 1)
 				break;
 			/* FALLTHROUGH */
 		case 3:
@@ -1676,10 +1677,8 @@ STATUS_FUNCTION(status_refnum)
 	STATUS_VARS
 	const char *value;
 
-	if (window->name)
-		value = window->name;
-	else
-		value = ltoa(window->user_refnum);
+	if (!(value = get_window_name(window_)))
+		value = ltoa(get_window_user_refnum(window_));
 
 	PRESS("%s", value)
 	RETURN
@@ -1689,7 +1688,7 @@ STATUS_FUNCTION(status_refnum_real)
 {
 	STATUS_VARS
 
-	PRESS("%s", ltoa(window->user_refnum))
+	PRESS("%d", get_window_user_refnum(window_));
 	RETURN
 }
 
@@ -1714,9 +1713,13 @@ STATUS_FUNCTION(status_null_function)
  */
 STATUS_FUNCTION(status_dcc)
 {
+	Mask	mask;
+
+	get_window_mask(window_, &mask);
+
 	if ((mask_isset(&current_window_mask, LEVEL_DCC) && 
 				IS_CURRENT_WINDOW) ||
-	    (mask_isset(&window->window_mask, LEVEL_DCC)))
+	    (mask_isset(&mask, LEVEL_DCC)))
 		return DCC_get_current_transfer();
 
 	return empty_string;
@@ -1756,10 +1759,11 @@ STATUS_FUNCTION(status_position)
 	static char my_buffer[81];
 
 	snprintf(my_buffer, sizeof my_buffer, "(%d/%d/%d-%d-%d)", 
-			window->scrolling_distance_from_display_ip,
-			window->holding_distance_from_display_ip,
-			window->scrollback_distance_from_display_ip,
-			window->display_lines, window->cursor);
+			get_window_scrolling_distance_from_display_ip(window_),
+			get_window_holding_distance_from_display_ip(window_),
+			get_window_scrollback_distance_from_display_ip(window_),
+			get_window_display_lines(window_),
+			get_window_cursor(window_));
 	return my_buffer;
 }
 
@@ -1771,7 +1775,7 @@ STATUS_FUNCTION(status_scrollback)
 {
 	const char *stuff;
 
-	if (window->scrollback_top_of_display &&
+	if (get_window_scrollback_top_of_display_exists(window_) &&
 	    (stuff = get_string_var(STATUS_SCROLLBACK_VAR)))
 		return stuff;
 	else
@@ -1782,26 +1786,27 @@ STATUS_FUNCTION(status_scroll_info)
 {
 	static char my_buffer[81];
 
-	if (!window->scrollback_top_of_display)
+	if (!get_window_scrollback_top_of_display_exists(window_))
 		return empty_string;
 
 	snprintf(my_buffer, sizeof my_buffer, " (Scroll: %d of %d)", 
-			window->scrollback_distance_from_display_ip,
-			window->display_buffer_size - 1);
+			get_window_scrollback_distance_from_display_ip(window_),
+			get_window_display_buffer_size(window_) - 1);
 	return my_buffer;
 }
 
 
 STATUS_FUNCTION(status_windowspec)
 {
-	if (window->status.special)
-		return window->status.special;
+	if (get_window_status(window_)->special)
+		return get_window_status(window_)->special;
 	else
 		return empty_string;
 }
 
 STATUS_FUNCTION(status_window_prefix)
 {
+	NEED_WINDOW
 	if (IS_CURRENT_WINDOW)
 	{
 		if (window->status.prefix_when_current)
@@ -1842,7 +1847,7 @@ STATUS_FUNCTION(status_swappable)
 {
 	const char *stuff;
 
-	if (!window->swappable && 
+	if (!get_window_swappable(window_) &&
 	    (stuff = get_string_var(STATUS_NOSWAP_VAR)))
 		return stuff;
 	else
@@ -1854,6 +1859,7 @@ STATUS_FUNCTION(status_activity)
 	const char *format, *data;
 	char *result;
 	static char retval[80];
+	NEED_WINDOW
 
 	if (window->current_activity == 0)
 		return empty_string;

@@ -3648,11 +3648,11 @@ int	set_window_indent (int refnum, int value)
 		return -1;
 }
 
-List **	get_window_nicks (int refnum)
+List *	get_window_nicks (int refnum)
 {
 	Window *w = get_window_by_refnum_direct(refnum);
 
-	return (List **)&w->nicks;
+	return (List *)w->nicks;
 }
 
 int	get_window_hold_mode (int refnum)
@@ -3664,6 +3664,117 @@ int	get_window_hold_mode (int refnum)
 	else
 		return 0;
 }
+
+int	get_window_hold_interval (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->hold_interval;
+	else
+		return 0;
+}
+
+int	get_window_holding_distance_from_display_ip (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->holding_distance_from_display_ip;
+	else
+		return 0;
+}
+
+int	get_window_scrollback_distance_from_display_ip (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->scrollback_distance_from_display_ip;
+	else
+		return 0;
+}
+
+const char *	get_window_notify_name (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->notify_name;
+	else
+		return 0;
+}
+
+const char *	get_window_name (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->name;
+	else
+		return 0;
+}
+
+int	get_window_scrolling_distance_from_display_ip (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->scrolling_distance_from_display_ip;
+	else
+		return 0;
+}
+
+int	get_window_cursor (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->cursor;
+	else
+		return 0;
+}
+
+int	get_window_scrollback_top_of_display_exists (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w && w->scrollback_top_of_display)
+		return 1;
+	else
+		return 0;
+}
+
+int	get_window_display_buffer_size (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->display_buffer_size;
+	else
+		return 0;
+}
+
+Status *get_window_status (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return &w->status;
+	else
+		return NULL;
+}
+
+int	get_window_swappable (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->swappable;
+	else
+		return 0;
+}
+
 
 /*
  * set_lastlog_size: sets up a lastlog buffer of size given.  If the lastlog
