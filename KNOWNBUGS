@@ -1072,3 +1072,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /on reconnect_required (doh)
 * Continue the work on reducing (Window *)s outside of window.h
 * More work (mostly focused on status)
+* No more Window ptrs in status.c yay!

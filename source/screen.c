@@ -2952,13 +2952,12 @@ void 	add_to_window_scrollback (int window, const unsigned char *str, intmax_t r
         unsigned char **       my_lines;
         int             cols;
 	int		numl = 0;
-	Window *	w = get_window_by_refnum_direct(window);
 
 	/* Normalize the line of output */
-	cols = w->my_columns;			/* Don't -1 this! Already -1'd! */
+	cols = get_window_my_columns(window);			/* Don't -1 this! Already -1'd! */
 	strval = new_normalize_string(str, 0, display_line_mangler);
-        for (my_lines = prepare_display(w->refnum, strval, cols, &numl, 0); *my_lines; my_lines++)
-		add_to_scrollback(w->refnum, *my_lines, refnum);
+        for (my_lines = prepare_display(window, strval, cols, &numl, 0); *my_lines; my_lines++)
+		add_to_scrollback(window, *my_lines, refnum);
 	new_free(&strval);
 }
 

@@ -9,8 +9,6 @@
 #ifndef __status_h__
 #define __status_h__
 
-struct 	WindowStru;
-
 #define MAX_FUNCTIONS 40
 
 typedef struct  status_line {
@@ -34,11 +32,11 @@ typedef struct  status_stuff {
 
 extern	Status	main_status;
 
-	char *	convert_sub_format (const char *, char);
-	void	compile_status 	(int, struct status_stuff *);
-	int	make_status 	(struct WindowStru *, struct status_stuff *);
-	int	redraw_status	(struct WindowStru *, struct status_stuff *);
-	void	build_status 	(void *);
+	char *	convert_sub_format 	(const char *, char);
+	void	compile_status 		(int, struct status_stuff *);
+	int	make_status 		(int, struct status_stuff *);
+	int	redraw_status		(int, struct status_stuff *);
+	void	build_status 		(void *);
 	int	permit_status_update	(int);
 	char *	function_status_oneoff	(char *);
 

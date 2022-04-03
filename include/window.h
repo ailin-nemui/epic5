@@ -314,16 +314,32 @@ struct ScreenStru *get_window_screen		(int);
 	List *	get_window_nicks		(int);
 	int	get_window_hold_mode		(int);
 	int     get_window_hold_interval 	(int);
-	int     get_window_holding_distance_from_display_ip (int);
-	int     get_window_scrollback_distance_from_display_ip (int);
-	Char *	get_window_notify_name 		(int);
-	Char *	get_window_name 		(int);
-	int     get_window_scrolling_distance_from_display_ip (int refnum);
-	int     get_window_cursor 		(int refnum);
-	int     get_window_scrollback_top_of_display_exists (int refnum);
-	int     get_window_display_buffer_size 	(int refnum);
-	Status *get_window_status 		(int refnum);
-	int     get_window_swappable 		(int refnum);
+	int     get_window_holding_distance_from_display_ip 	(int);
+	int     get_window_scrollback_distance_from_display_ip 	(int);
+	Char *	get_window_notify_name 				(int);
+	Char *	get_window_name 				(int);
+	int     get_window_scrolling_distance_from_display_ip 	(int refnum);
+	int     get_window_cursor 				(int refnum);
+	int     get_window_scrollback_top_of_display_exists 	(int refnum);
+	int     get_window_display_buffer_size 			(int refnum);
+	Status *get_window_status 				(int refnum);
+	int     get_window_swappable 				(int refnum);
+	int	get_window_current_activity			(int);
+	Char *	get_window_current_activity_format		(int refnum);
+	Char *	get_window_current_activity_data 		(int refnum);
+	int	get_window_bottom			(int);
+
+	Display *get_window_scrollback_top_of_display 	(int refnum);
+	Display *get_window_scrolling_top_of_display 	(int refnum);
+	Display *get_window_display_ip 			(int refnum);
+	Display *get_window_holding_top_of_display 	(int refnum);
+	int	get_window_toplines_showing 		(int refnum);
+	Char *	get_window_topline 			(int refnum, int topline);
+	int	get_window_top 				(int refnum);
+	int	get_window_my_columns 			(int refnum);
+	int	set_window_cursor 			(int refnum, int value);
+	int	set_window_cursor_decr 			(int refnum);
+	int	set_window_cursor_incr 			(int refnum);
 
 #endif /* __window_h__ */
 

@@ -408,18 +408,15 @@ void	compile_status (int window_, Status *s)
 {
 	int 	i,
 		k;
-	Window *w;
 
 	if (window_ > 0)
 	{
-		w = get_window_by_refnum_direct(window_);
+		if (!window_is_valid(window_))
+			return;
 		debuglog("compile_status for window %d", get_window_user_refnum(window_));
 	}
 	else
-	{
-		w = NULL;
 		debuglog("compile_status for global");
-	}
 
 	for (k = 0; k < 3; k++)
 	{
@@ -430,14 +427,14 @@ void	compile_status (int window_, Status *s)
 		 * If we have an overriding status_format, then we parse
 		 * that out.
 		 */
-		if (w && s->line[k].raw)
+		if (window_ > 0 && s->line[k].raw)
 			build_status_format(s, k);
 
 		/*
 		 * Otherwise, If this is for a window, just copy the essential
 		 * information over from the main status lines.
 		 */
-		else if (w)
+		else if (window_ > 0)
 		{
 			s->line[k].format = malloc_strdup(main_status.line[k].format);
 			for (i = 0; i < MAX_FUNCTIONS; i++)
@@ -481,11 +478,11 @@ void	compile_status (int window_, Status *s)
  * Return value:
  *	-1 	Something bad happened:
  *		* Status updates are forbidden (status_updates_permitted == 0)
- *		* Window or Status were NULL (what do you want me to do?)
+ *		* window was 0 or Status was NULL (what do you want me to do?)
  * 	0	The status bar was updated, but nothing changed
  *	>= 1	The status bar was updated -- you should call redraw_status()
  */
-int	make_status (Window *window, Status *status)
+int	make_status (int window_, Status *status)
 {
 	int		status_line;
 	unsigned char	buffer	    [BIG_BUFFER_SIZE + 1];
@@ -495,27 +492,28 @@ int	make_status (Window *window, Status *status)
 	size_t		save_size;
 	Screen	*	screen;
 	int		anything_changed = 0;
+	int		user_refnum;
 
 	/* Should this be a panic? */
-	if (window == NULL || status == NULL)
+	if (window_ == 0 || status == NULL)
 	{
 		debuglog("make_status -- window is null or status is null");
 		return -1;
 	}
 
+	user_refnum = get_window_user_refnum(window_);
+
 	if (!status_updates_permitted)
 	{
-		debuglog("make_status(%d) -- no status updates right now",
-				window->user_refnum);
+		debuglog("make_status(%d) -- no status updates right now", user_refnum);
 		defered_status_updates++;
 		return -1;
 	}
 
 	/* For hidden windows, we just pretend they're on the main screen */
-	if (!(screen = window->screen))
+	if (!(screen = get_window_screen(window_)))
 	{
-		debuglog("make_status(%d) -- updating hidden window", 
-				window->user_refnum);
+		debuglog("make_status(%d) -- updating hidden window", user_refnum);
 		screen = main_screen;
 	}
 
@@ -550,10 +548,10 @@ int	make_status (Window *window, Status *status)
 		else
 			panic(1, "make_status: for window [%d], status->number is [%d] and status_line "
 				"is [%d] and that makes no sense!", 
-				window->user_refnum, status->number, status_line);
+				user_refnum, status->number, status_line);
 
 		debuglog("make_status(%d): status line %d, number %d, line %d",
-			window->user_refnum, status_line, status->number, line);
+			user_refnum, status_line, status->number, line);
 
 		/*
 		 * Sanity check:  If the status format doesnt exist, dont do
@@ -561,8 +559,7 @@ int	make_status (Window *window, Status *status)
 		 */
 		if (!status->line[line].format)
 		{
-			debuglog("make_status(%d/%d): no status format",
-				window->user_refnum, line);
+			debuglog("make_status(%d/%d): no status format", user_refnum, line);
 			continue;
 		}
 
@@ -576,14 +573,12 @@ int	make_status (Window *window, Status *status)
 		{
 			if (status->line[line].func[i] == NULL)
 			{
-				debuglog("make_status(%d/%d/%d): Not set up",
-					window->user_refnum, line, i);
+				debuglog("make_status(%d/%d/%d): Not set up", line, i);
 				return -1;	/* Not set up yet */
-/* 				panic(1, "status callback null.  Window [%d], line [%d], function [%d]", window->user_refnum, line, i); */
+/* 				panic(1, "status callback null.  window [%d], line [%d], function [%d]", user_refnum, line, i); */
 			}
 			func_value[i] = status->line[line].func[i]
-				(window->refnum, status->line[line].map[i],
-						 status->line[line].key[i]);
+				(window_, status->line[line].map[i], status->line[line].key[i]);
 		}
 
 		/*
@@ -618,9 +613,8 @@ int	make_status (Window *window, Status *status)
 			int	ocw = get_window_refnum(0);
 			int	owd;
 
-			debuglog("make_status(%d/%d): expanding expandos",
-					window->user_refnum, line);
-			make_window_current_informally(window->refnum);
+			debuglog("make_status(%d/%d): expanding expandos", user_refnum, line);
+			make_window_current_informally(window_);
 			from_server = get_window_server(0);
 			owd = swap_window_display(0);
 
@@ -768,8 +762,7 @@ int	make_status (Window *window, Status *status)
 		    /*
 		     * Roll the new back onto the old
 		     */
-		    debuglog("Make_status(%d/%d/%d): changed",
-				window->user_refnum, status_line, line);
+		    debuglog("Make_status(%d/%d/%d): changed", user_refnum, status_line, line);
 		    malloc_strcpy(&status->line[line].result, buffer);
 		    anything_changed++;
 
@@ -783,8 +776,7 @@ int	make_status (Window *window, Status *status)
 		     * because people want this thrown for invisible
 		     * windows (although they might change their minds)
 		     */
-		    do_hook(STATUS_UPDATE_LIST, "%d %d %s", 
-					window->user_refnum, status_line, buffer);
+		    do_hook(STATUS_UPDATE_LIST, "%d %d %s", user_refnum, status_line, buffer);
 		}
 	}
 
@@ -807,20 +799,23 @@ int	make_status (Window *window, Status *status)
  * Return value:
  *	-1 	Something bad happened:
  *		* Status updates are forbidden (status_updates_permitted == 0)
- *		* Window or Status were NULL (what do you want me to do?)
+ *		* window was 0 or Status was NULL (what do you want me to do?)
  *	0	The status bars were updated
  */
-int	redraw_status (Window *window, Status *status)
+int	redraw_status (int window_, Status *status)
 {
 	int	status_line, line;
 	char *	status_str;
+	int	user_refnum;
 
 	/* Should this be a panic? */
-	if (window == NULL || status == NULL)
+	if (window_ < 1 || status == NULL)
 	{
 		debuglog("redraw_status: window or status is null!");
 		return -1;
 	}
+
+	user_refnum = get_window_user_refnum(window_);
 
 	if (!status_updates_permitted)
 	{
@@ -828,7 +823,7 @@ int	redraw_status (Window *window, Status *status)
 		defered_status_updates++;
 		return -1;
 	}
-	debuglog("redraw_status(%d): redrawing", window->user_refnum);
+	debuglog("redraw_status(%d): redrawing", user_refnum);
 
 	for (status_line = 0; status_line < status->number; status_line++)
 	{
@@ -847,25 +842,25 @@ int	redraw_status (Window *window, Status *status)
 		if (!(status_str = status->line[line].result))
 		{
 			debuglog("redraw_status(%d/%d/%d): no status bar",
-				window->user_refnum, status_line, line);
+				user_refnum, status_line, line);
 			continue;
 		}
 
-		if (dumb_mode || !foreground || !window->screen)
+		if (dumb_mode || !foreground || !get_window_screen(window_))
 		{
 			debuglog("redraw_status(%d/%d/%d): dumb/bg/hidden",
-				window->user_refnum, status_line, line);
+				user_refnum, status_line, line);
 			continue;
 		}
 
 		/*
 		 * Output the status line to the screen
 		 */
-		output_screen = window->screen;
-		term_move_cursor(0, window->bottom + status_line);
+		output_screen = get_window_screen(window_);
+		term_move_cursor(0, get_window_bottom(window_) + status_line);
 		output_with_count(status_str, 1, 1);
 		debuglog("redraw_status(%d/%d/%d): status redrawn",
-			window->user_refnum, status_line, line);
+			user_refnum, status_line, line);
 	}
 	return 0;
 }
@@ -944,15 +939,15 @@ static void	destroy_status (Status **s)
  */
 void	build_status	(void *stuff)
 {
-	Window 	*w = NULL;
+	int	window = 0;
 
 	if (!main_status_init)
 		init_status();
 
 	/* Recompile every status */
 	compile_status(0, &main_status);
-	while (traverse_all_windows(&w))
-		compile_status(w->refnum, &w->status);
+	while (traverse_all_windows2(&window))
+		compile_status(window, get_window_status(window));
 
 	/* This forces make_status() and redraw_status() */
 	update_all_status();
@@ -1056,12 +1051,9 @@ int     permit_status_update (int flag)
  *
  */
 #define STATUS_VARS \
-	static char *my_bufferx = NULL; \
-	static int my_bufferxsize = 64; \
-	int	actual_size;
-
-#define NEED_WINDOW \
-	Window *window = get_window_by_refnum_direct(window_);
+	static char *	my_bufferx = NULL; \
+	static int 	my_bufferxsize = 64; \
+	       int	actual_size;
 
 /* After you change 'my_bufferxspace', call this to update 'my_bufferx' */
 #define CHECK \
@@ -1806,11 +1798,10 @@ STATUS_FUNCTION(status_windowspec)
 
 STATUS_FUNCTION(status_window_prefix)
 {
-	NEED_WINDOW
 	if (IS_CURRENT_WINDOW)
 	{
-		if (window->status.prefix_when_current)
-			return window->status.prefix_when_current;
+		if (get_window_status(window_)->prefix_when_current)
+			return get_window_status(window_)->prefix_when_current;
 		else if (get_string_var(STATUS_PREFIX_WHEN_CURRENT_VAR))
 			return get_string_var(STATUS_PREFIX_WHEN_CURRENT_VAR);
 		else
@@ -1818,8 +1809,8 @@ STATUS_FUNCTION(status_window_prefix)
 	}
 	else
 	{
-		if (window->status.prefix_when_not_current)
-			return window->status.prefix_when_not_current;
+		if (get_window_status(window_)->prefix_when_not_current)
+			return get_window_status(window_)->prefix_when_not_current;
 		else if (get_string_var(STATUS_PREFIX_WHEN_NOT_CURRENT_VAR))
 			return get_string_var(STATUS_PREFIX_WHEN_NOT_CURRENT_VAR);
 		else
@@ -1859,22 +1850,12 @@ STATUS_FUNCTION(status_activity)
 	const char *format, *data;
 	char *result;
 	static char retval[80];
-	NEED_WINDOW
 
-	if (window->current_activity == 0)
+	if (!get_window_current_activity(window_))
 		return empty_string;
 
-	format = window->activity_format[window->current_activity];
-	if (!format || !*format)
-		format = window->activity_format[0];
-	if (!format || !*format)
-		return empty_string;
-
-	data = window->activity_data[window->current_activity];
-	if (!data || !*data)
-		data = window->activity_data[0];
-	if (!data || !*data)
-		data = empty_string;
+	format = get_window_current_activity_format(window_);
+	data = get_window_current_activity_data(window_);
 
 	result = expand_alias(format, data);
 	strlcpy(retval, result, sizeof(retval));
@@ -1886,7 +1867,6 @@ BUILT_IN_FUNCTION(function_status_oneoff, input)
 {
 	Status *s;
 	char *	windesc;
-	Window	*w;
 	char	*retval;
 	int	window;
 
@@ -1895,12 +1875,11 @@ BUILT_IN_FUNCTION(function_status_oneoff, input)
 	if (!(window = lookup_window(windesc)))
 		RETURN_EMPTY;
 
-	w = get_window_by_refnum_direct(window);
 	s = new_status();
 	malloc_strcpy(&s->line[0].raw, input);
 
 	compile_status(window, s);
-	make_status(w, s);
+	make_status(window, s);
 
 	retval = denormalize_string(s->line[0].result);
 	destroy_status(&s);

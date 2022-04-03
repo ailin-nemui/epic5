@@ -252,7 +252,7 @@ Window	*new_window (Screen *screen)
 	new_w->status.number = 1;
 	new_w->status.special = NULL;
 	compile_status(new_w->refnum, &new_w->status);
-	make_status(new_w, &new_w->status);
+	make_status(new_w->refnum, &new_w->status);
 	window_statusbar_needs_update(new_w->refnum);
 	window_statusbar_needs_redraw(new_w->refnum);
 	new_w->status.prefix_when_current = NULL;
@@ -1734,7 +1734,7 @@ static	int	restart = 0;
 			int	status_changed;
 
 			debuglog("update_all_windows(%d), regen status", tmp->user_refnum);
-			status_changed = make_status(tmp, &tmp->status);
+			status_changed = make_status(tmp->refnum, &tmp->status);
 
 			/* If they are both set, REDRAW takes precedence. */
 			if ((tmp->update & REDRAW_STATUS) && (tmp->update & UPDATE_STATUS))
@@ -1793,7 +1793,7 @@ static	int	restart = 0;
 		if (tmp->update & FORCE_STATUS)
 		{
 			/* If redrawing failed this time, try next time */
-			if (redraw_status(tmp, &tmp->status) < 0)
+			if (redraw_status(tmp->refnum, &tmp->status) < 0)
 			{
 				debuglog("update_all_windows(%d) (redraw_status), OK, status not redrawn -- lets try update later",
 					tmp->user_refnum);
@@ -3775,6 +3775,167 @@ int	get_window_swappable (int refnum)
 		return 0;
 }
 
+int	get_window_current_activity (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->current_activity;
+	else
+		return 0;
+}
+
+const char *	get_window_current_activity_format (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+	const char *format;
+
+        format = w->activity_format[w->current_activity];
+        if (!format || !*format)
+                format = w->activity_format[0];
+        if (!format || !*format)
+                return empty_string;
+
+	return format;
+}
+
+const char *	get_window_current_activity_data (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+	const char *data;
+
+        data = w->activity_data[w->current_activity];
+        if (!data || !*data)
+                data = w->activity_data[0];
+        if (!data || !*data)
+                data = empty_string;
+
+	return data;
+}
+
+int	get_window_bottom (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->bottom;
+	else
+		return 0;
+}
+
+Display *	get_window_scrollback_top_of_display (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->scrollback_top_of_display;
+	else
+		return NULL;
+}
+
+Display *	get_window_scrolling_top_of_display (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->scrolling_top_of_display;
+	else
+		return NULL;
+}
+
+Display *	get_window_display_ip (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->display_ip;
+	else
+		return NULL;
+}
+
+Display *	get_window_holding_top_of_display (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->holding_top_of_display;
+	else
+		return NULL;
+}
+
+int	get_window_toplines_showing (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->toplines_showing;
+	else
+		return 0;
+}
+
+const char *	get_window_topline (int refnum, int topline)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->topline[topline];
+	else
+		return NULL;
+}
+
+int	get_window_top (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->top;
+	else
+		return 0;
+}
+
+int	get_window_my_columns (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->my_columns;
+	else
+		return 0;
+}
+
+int	set_window_cursor (int refnum, int value)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+		return w->cursor;
+	else
+		return 0;
+}
+
+int	set_window_cursor_decr (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+	{
+		w->cursor--;
+		return w->cursor;
+	}
+	return 0;
+}
+
+int	set_window_cursor_incr (int refnum)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+	{
+		w->cursor++;
+		return w->cursor;
+	}
+	return 0;
+}
 
 /*
  * set_lastlog_size: sets up a lastlog buffer of size given.  If the lastlog

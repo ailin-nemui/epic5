@@ -50,20 +50,24 @@ package reconnect;
 ## http://help.epicsol.org/server_description.
 ##
 ## If you use group <default> - reconnects will be made only to original server,
-## no switching to other servers in the default group will happen.
+## no switching to other servers in the default group will happen.  Reconnection
+## will unconditionally abort after $auto_reconnect_retries. To reconnect
+## manually use /reconnect command or change the server with /server.
 ##
 ## Another limitation is that the script won't catch 'Connection refused', or
 ## any DNS errors, since it's not considered as action for 'reconnect_required'
 ## hook. It means, that if you start the client, and it can't connect to the
-## specified server, reconnect won't happen. Bans should be handled correctly,
-## though. If you're connected to server '4' (with server 0 1 2 3 4 in the same
-## group), your first reonnect will be made to server '4', but subsequent
-## reconnects will go by order from 0 to 4, starting from 0.
+## specified server, reconnect won't happen.
 ##
 ## All of this has been sacrificed for simplicity of the implementation.
 ##
 ## If you encounter any bugs - please save the log with '/lastlog -file <path>'
 ## and report it to #epic@efnet.
+
+## TODO
+##
+## Currently there is not much testing done with servers, which have round
+## robin DNS, like irc.libera.chat.
 
 addset auto_reconnect_delay int;
 set auto_reconnect_delay 75;
@@ -95,6 +99,7 @@ addset auto_reconnect bool {
 				@ :group_enc = encode($serverctl(GET $0 GROUP));
 			};
 
+			## Stop reconnection timers on successful connect
 			timer -delete auto_reconnect.$group_enc;
 			^assign -auto_reconnect.failures[$group_enc];
 
