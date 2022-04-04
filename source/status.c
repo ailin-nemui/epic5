@@ -1872,7 +1872,7 @@ BUILT_IN_FUNCTION(function_status_oneoff, input)
 
 	GET_FUNC_ARG(windesc, input);
 
-	if (!(window = lookup_window(windesc)))
+	if ((window = lookup_window(windesc)) < 1)
 		RETURN_EMPTY;
 
 	s = new_status();

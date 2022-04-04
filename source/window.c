@@ -7445,7 +7445,7 @@ BUILT_IN_COMMAND(windowcmd)
 			int	s_window;
 			nargs++;
 
-			if ((s_window = lookup_window(arg)))
+			if ((s_window = lookup_window(arg)) > 0)
 				refnum = s_window;
 			else
 			{

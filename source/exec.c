@@ -1633,7 +1633,7 @@ BUILT_IN_COMMAND(execcmd)
 			const char *desc = flags[++i];
 			int	w;
 
-			if (!desc || (w = lookup_window(desc)) <= 0)
+			if (!desc || (w = lookup_window(desc)) < 1)
 				say("Target window not found");
 			else
 			{

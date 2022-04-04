@@ -675,7 +675,7 @@ BUILT_IN_COMMAND(lastlog)
 		char *x;
 
 		x = new_next_arg(args, &args);
-		if (!(w = lookup_window(x)))
+		if ((w = lookup_window(x)) < 1)
 		{
 			yell("LASTLOG -WINDOW %s is not a valid window "
 				"name or number", x);
@@ -1446,7 +1446,7 @@ BUILT_IN_FUNCTION(function_line, word)
 	}
 
 	/* Get the current window, default to current window */
-	if (!(win = lookup_window(windesc)))
+	if ((win = lookup_window(windesc)) < 1)
 		RETURN_EMPTY;
 
 	/* Make sure that the line request is within reason */
@@ -1512,7 +1512,7 @@ BUILT_IN_FUNCTION(function_lastlog, word)
 		standard_level_warning("$lastlog()", &rejects);
 
 	/* Get the current window, default to current window */
-	if (!(win = lookup_window(windesc)))
+	if ((win = lookup_window(windesc)) < 1)
 		RETURN_EMPTY;
 
 	for (iter = lastlog_newest; iter; iter = iter->older)

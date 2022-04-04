@@ -234,7 +234,7 @@ BUILT_IN_COMMAND(timercmd)
 		if ((na = next_arg(args, &args)))
 			window = lookup_window(na);
 
-		if (!window)
+		if (window < 1)
 		{
 		    if (my_stricmp(na, "-1"))
 		    {

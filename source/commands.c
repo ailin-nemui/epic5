@@ -1012,7 +1012,7 @@ BUILT_IN_COMMAND(xechocmd)
 			if (!(flag_arg = next_arg(args, &args)))
 				break;
 
-			if (((w = lookup_window(flag_arg)) < 0) && 
+			if (((w = lookup_window(flag_arg)) < 1) && 
 			    ((w = get_channel_window(flag_arg, from_server)) < 1))
 			{
 			    /* 

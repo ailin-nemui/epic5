@@ -1078,3 +1078,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix a bug with output going to the wrong window (rb fro, me)
 * Fix bug with /window number (rb zlonix)
 * Fix %F showing the wrong window refnum (rb zlonix, fro)
+* Ensure lookup_window() is always handled for error correctly

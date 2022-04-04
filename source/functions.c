@@ -4149,7 +4149,8 @@ BUILT_IN_FUNCTION(function_geom, words)
         else
                 GET_FUNC_ARG(refnum, words);
 
-	window = lookup_window(refnum);
+	if ((window = lookup_window(refnum) < 1))
+                RETURN_EMPTY;
         if (get_window_geometry(window, &col, &li))
                 RETURN_EMPTY;
 
@@ -4705,7 +4706,7 @@ BUILT_IN_FUNCTION(function_winchan, input)
 		else
 			win = get_window_refnum(0);
 
-		if (win)
+		if (win > 0)
 			RETURN_STR(get_window_echannel(win));
 		RETURN_EMPTY;
 	}
