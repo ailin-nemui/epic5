@@ -314,9 +314,6 @@ static	IrcCommand irc_command[] =
 	{ "STUB",	stubcmd		}, /* alias.c */
 	{ "SUBPACKAGE",	subpackagecmd	},
 	{ "SWITCH",	switchcmd	}, /* if.c */
-#ifdef HAVE_TCL
-	{ "TCL",	tclcmd		}, /* tcl.c */
-#endif
 	{ "TIME",	send_comm	},
 	{ "TIMER",	timercmd	},
 	{ "TOPIC",	e_topic		},

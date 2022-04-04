@@ -1,5 +1,17 @@
 EPIC5-2.2
 
+*** News 04/04/2022 -- TCL support removed
+	TCL support passed away quietly this afternoon.  It was 19 years old
+
+*** News 04/04/2022 -- Install target de-cruftified
+	EPIC has been doing lots of strange stuff when you 'make install'
+	since its earliest days.  But in these modern worlds with silicon
+	chips and whatnots, it makes little sense to compile our own version
+	of test and ship a weird version of 'bsdinstall'.  Make install
+	is now optimized for how package maintainers actually use it, so
+	hopefully they'll not have to patch the heck out of epic to make 
+	it behave like all the other programs
+
 *** News 03/28/2021 -- New /SET, /SET AUTOMARGIN_OVERRIDE (default OFF)
 	Previously, automargin support was conditionally built into 
 	the client at compile time.  The default was to include it.

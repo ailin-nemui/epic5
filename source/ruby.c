@@ -97,7 +97,7 @@ static VALUE epic_call (VALUE module, VALUE string)
 	return rb_str_new(funcval, strlen(funcval));
 }
 
-/* Called by the epic hooks to activate tcl on-demand. */
+/* Called by the epic hooks to activate ruby on-demand. */
 void ruby_startstop (int value)
 {
 	VALUE	rubyval;

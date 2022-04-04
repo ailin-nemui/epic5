@@ -633,9 +633,6 @@ PYTHON_O
 PERLLIBS
 PERLCFLAGS
 PERLDOTOH
-TCLLIBS
-TCLCFLAGS
-TCLDOTOH
 RUBYLIBS
 RUBYCFLAGS
 RUBYDOTOH
@@ -708,7 +705,6 @@ with_iconv
 with_wserv
 with_valgrind
 with_perl
-with_tcl
 with_ruby
 with_python
 '
@@ -1342,7 +1338,6 @@ Optional Packages:
   --without-wserv                   Refuse to support wserv (for multiple screens)
   --with-valgrind                   Include support for Valgrind Memcheck
   --with-perl=PATH_TO_PERL_EXE    Compile with perl support.
-  --with-tcl=PATH_TO_tclConfig.sh Compile with tcl support.
   --with-ruby=PATH_TO_RUBY_EXE    Compile with ruby support.
   --with-python=PATH_TO_PYTHON_CONFIG_EXE   Compile with Python support.
 
@@ -6671,106 +6666,6 @@ $as_echo "no" >&6; }
 fi
 
 
-# Check whether --with-tcl was given.
-if test "${with_tcl+set}" = set; then :
-  withval=$with_tcl;
-else
-  with_tcl=maybe
-fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to support TCL" >&5
-$as_echo_n "checking whether to support TCL... " >&6; }
-if test "x$with_tcl" = "xno"; then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-else
-	with_tcl_errormsg="You specified --with-tcl=$with_tcl but I could not find TCL. Please specify --with-tcl=/path/to/tclConfig.sh or remove --with-tcl from ./configure's commandline."
-	if test "x$with_tcl" = "xmaybe" -o "x$with_tcl" = "xyes"; then
-		for i in /usr/lib /usr/local/lib /usr/local/lib/tcl8.4 /usr/local/lib/tcl8.6 ; do
-			if test -r "$i"/tclConfig.sh ; then
-				tclconfig="$i"/tclConfig.sh
-				break;
-			fi
-		done
-	else
-		tclconfig="$with_tcl"
-	fi
-	if test ! -r "$tclconfig" ; then
-				if test "x$with_tcl" != "xmaybe" ; then
-			as_fn_error $? "$with_tcl_errormsg" "$LINENO" 5
-		fi
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-	else
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-		TCLCFLAGS=`(. "$tclconfig" && echo $TCL_INCLUDE_SPEC)`
-		TCLLIBS=`(. "$tclconfig" && echo $TCL_LIB_SPEC $TCL_LIBS)`
-		TCLDOTOH="tcl.o"
-
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether embedded tcl works the way I expect" >&5
-$as_echo_n "checking whether embedded tcl works the way I expect... " >&6; }
-		have_embedded_tcl="no"
-		old_CFLAGS="$CFLAGS"
-		old_LIBS="$LIBS"
-		CFLAGS="$CFLAGS $TCLCFLAGS"
-		LIBS="$LIBS $TCLLIBS"
-		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-			#include <tcl.h>
-			Tcl_Interp *my_tcl;
-			int Tcl_echoCmd (ClientData clientData, Tcl_Interp *interp, int objc, const char **objv)
-			{
-				return TCL_OK;
-			}
-
-int
-main ()
-{
-
-			my_tcl = Tcl_CreateInterp();
-			Tcl_Init(my_tcl);
-			Tcl_CreateCommand(my_tcl, "echo", Tcl_echoCmd,
-				(ClientData)NULL, (void (*)()) NULL);
-			Tcl_DeleteInterp(my_tcl);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  have_embedded_tcl="yes"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-		CFLAGS="$old_CFLAGS"
-		LIBS="$old_LIBS"
-		if test $have_embedded_tcl = "yes" ; then
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-$as_echo "#define HAVE_TCL 1" >>confdefs.h
-
-
-$as_echo "#define TCLCFLAGS 1" >>confdefs.h
-
-
-$as_echo "#define TCLLIBS 1" >>confdefs.h
-
-		else
-			if test "$with_tcl" != "xmaybe" ; then
-				as_fn_error $? "$with_tcl_errormsg" "$LINENO" 5
-			fi
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-		fi
-	fi
-fi
-
-
 # Check whether --with-ruby was given.
 if test "${with_ruby+set}" = set; then :
   withval=$with_ruby;
@@ -7146,7 +7041,6 @@ fi
 if test -z "$CFLAGS"; then CFLAGS="-g -O"; fi
 if test -z "$LDFLAGS"; then LDFLAGS= ; fi
 if test -z "$PERLDOTOH"; then PERLDOTOH= ; fi
-if test -z "$TCLDOTOH"; then TCLDOTOH= ; fi
 if test -z "$RUBYDOTOH"; then RUBYDOTOH= ; fi
 if test -z "$PYTHON_O"; then PYTHON_OH= ; fi
 if test -z "$WSERV_BIN"; then WSERV_BIN= ; fi
@@ -7250,9 +7144,6 @@ else
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 fi
-
-
-
 
 
 

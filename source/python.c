@@ -55,7 +55,7 @@ static	PyObject *global_vars = NULL;
  * So Python is a language like ircII where there is a distinction made between
  * "statements" and "expressions".  In both languages, a "statement" is a call
  * that does not result in a return value, and expression is.  I can't blame 
- * python for this.  But it is different from Perl, Ruby, and TCL, which treat
+ * python for this.  But it is different from Perl, and Ruby, which treat
  * everything as a "callable" and then you either get a return value (for an 
  * expression) or an empty string (for a statement).
  *

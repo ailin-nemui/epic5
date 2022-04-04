@@ -1,0 +1,18 @@
+#
+# Here's the plan
+#
+# I need a script that dumps what's in an (n)dbm file, since there aren't a 
+# lot of tools that support them any more.  Maybe I should be using some other 
+# file format....
+#
+alias dbmdump (filename, ...) {
+	@ :dbm = dbmctl(OPEN STD $filename);
+	@ :key = dbmctl(NEXT_KEY $dbm 1);
+	do
+	{
+		@ :value = dbmctl(READ $dbm $key);
+		echo $filename - $key - $db = $value;
+	}
+	while ((key = dbmctl(NEXT_KEY $dbm 0)));
+};
+

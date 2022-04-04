@@ -414,9 +414,6 @@ static	char
 	*function_tanh		(char *),
 	*function_tell		(char *),
 	*function_timerctl	(char *),
-#ifdef HAVE_TCL
-	*function_tcl		(char *),
-#endif
 	*function_tobase	(char *),
         *function_tow		(char *),
 	*function_translate 	(char *),
@@ -749,9 +746,6 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "SYMBOLCTL",		function_symbolctl	},
 	{ "TAN",		function_tan		},
 	{ "TANH",		function_tanh		},
-#ifdef HAVE_TCL
-	{ "TCL",		function_tcl		},
-#endif
 	{ "TDIFF",		function_tdiff 		},
 	{ "TDIFF2",		function_tdiff2 	},
 	{ "TIME",		function_time 		},
@@ -6973,15 +6967,6 @@ BUILT_IN_FUNCTION(function_perlxcall, input)
 	if (input && *input) GET_DWORD_ARG(out, input);
 	if (input && *input) GET_INT_ARG(item, input);
 	return perlcall ( sub, in, out, item, input );
-}
-
-#endif
-
-#ifdef HAVE_TCL
-
-BUILT_IN_FUNCTION(function_tcl, input)
-{
-	return tcleval ( input );
 }
 
 #endif

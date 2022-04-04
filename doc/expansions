@@ -350,12 +350,6 @@ The "evaluator" is parse_line, and it is called by the following:
 	* Full expansion (double expansion if {} is not used)
 	* $* is [] in every case
 
-* tcl.c			Tcl_epicCmd
-	* Runs a command passed in from the tcl commands "cmd" or "eval"
-	  as in the perl case.
-	* Expansion depends on the command (see perl case)
-	* $* is [] in every case
-
 * timer.c		ExecuteTimers
 	* Runs commands scheduled for later execution with /TIMER time ...
 	* Full expansion (double expansion if {} is not used)

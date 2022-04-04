@@ -52,20 +52,20 @@ These run ircII code, but expressly in an existing atomic scope
 * /FE, /FOR .. NEXT, /FOR .. IN, /FOR (,,) run a string (argument)
 * /SWITCH, /REPEAT run a string (provided as argument)
 * The PARSE_COMMAND keybinding runs a string (provided as argument)
-* Perl, Ruby, and TCL can all call-back to ircII blocks
+* Perl, Ruby, and Python can all call-back to ircII blocks
 
 These call ircII expressions
 ----------------------------
 * Statements starting with @ or surrounded by () are expressions.
 * The ${...} expando is an expression
 * /IF, /DO, /WHILE, /FOR, /REPEAT all take expressions
-* Perl, Ruby, and TCL can all call-back to ircII expressions
+* Perl, Ruby, and Python can all call-back to ircII expressions
 
 These call ircII functions directly
 -----------------------------------
 * Expression parser calls functions
 * do_hook() calls the $cparse() function for implied hooks
-* Perl, Ruby, and TCL can all call-back to ircII functions.
+* Perl, Ruby, and Python can all call-back to ircII functions.
 * /POP, /PUSH, /SHIFT, and /UNSHIFT call functions directly
 * $tow(), $afterw() $fromw(), and $beforew() calls $findw() directly
 * $uniq() calls $findw() directly

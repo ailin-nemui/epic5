@@ -38,12 +38,6 @@ extern	char *	perleval (char *);
 BUILT_IN_COMMAND(perlcmd);
 #endif
 
-#ifdef HAVE_TCL
-extern	void	tclstartstop (int);
-extern	char *	tcleval (char *);
-BUILT_IN_COMMAND(tclcmd);
-#endif
-
 #ifdef HAVE_RUBY
 extern	void	ruby_startstop (int);
 extern	char *	rubyeval (char *);

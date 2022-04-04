@@ -19,7 +19,7 @@ OBJECTS = alias.o alist.o array.o cJSON.o clock.o commands.o compat.o \
 	ircaux.o ircsig.o keys.o lastlog.o levels.o list.o log.o logfiles.o \
 	mail.o names.o network.o newio.o notify.o numbers.o output.o parse.o \
 	@PERLDOTOH@ @PYTHON_O@ queue.o recode.o reg.o @RUBYDOTOH@ screen.o \
-	sdbm.o server.o sha2.o ssl.o status.o @TCLDOTOH@ term.o timer.o \
+	sdbm.o server.o sha2.o ssl.o status.o term.o timer.o \
 	vars.o wcwidth.o who.o window.o words.o 
 
 INCLUDES = -I@srcdir@/../include -I../include
@@ -41,7 +41,7 @@ all: epic5
 epic5: $(OBJECTS)
 	sh info.c.sh
 	$(CC) $(CFLAGS) $(INCLUDES) -c info.c
-	$(CC) $(CFLAGS) $(LDFLAGS) -o epic5 $(OBJECTS) info.o @PERLLIBS@ @TCLLIBS@ @RUBYLIBS@ @PYTHON_LDFLAGS@ $(LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o epic5 $(OBJECTS) info.o @PERLLIBS@ @RUBYLIBS@ @PYTHON_LDFLAGS@ $(LIBS)
 	$(RM) info.c info.o
 clean::
 	$(RM) epic5 $(OBJECTS)
@@ -76,9 +76,6 @@ vars.o: Makefile ../Makefile
 perl.o: perl.c Makefile ../Makefile
 	$(CC) $(CFLAGS) $(ansiflags) $(INCLUDES) -c @srcdir@/perl.c @PERLCFLAGS@
 
-tcl.o: tcl.c Makefile ../Makefile
-	$(CC) $(CFLAGS) $(ansiflags) $(INCLUDES) -c @srcdir@/tcl.c @TCLCFLAGS@
-
 ruby.o: ruby.c Makefile ../Makefile
 	$(CC) $(CFLAGS) $(ansiflags) $(INCLUDES) -c @srcdir@/ruby.c @RUBYCFLAGS@
 
@@ -93,7 +90,7 @@ depend:
 	echo 'Making dependencies.  This takes a while'
 	sed -n '1,/^# Dont even THINK of deleting this line$$/p' < Makefile.in > tmp
 	for i in *.c ; do 				\
-		cpp -MM -I../include @TCLCFLAGS@ @RUBYCFLAGS@ @PERLCFLAGS@ $(CFLAGS) $$i >> tmp ;	\
+		cpp -MM -I../include @RUBYCFLAGS@ @PERLCFLAGS@ $(CFLAGS) $$i >> tmp ;	\
 	done
 	mv -f tmp Makefile.in
 	(cd ..;./config.status)
@@ -493,12 +490,6 @@ status.o: status.c ../include/irc.h ../include/defs.h ../include/config.h \
   ../include/compat.h ../include/network.h ../include/words.h \
   ../include/alias.h ../include/clock.h ../include/keys.h \
   ../include/functions.h
-tcl.o: tcl.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/ircaux.h ../include/compat.h ../include/network.h \
-  ../include/words.h ../include/array.h ../include/alias.h \
-  ../include/vars.h ../include/commands.h ../include/functions.h \
-  ../include/output.h ../include/ifcmd.h ../include/extlang.h 
 term.o: term.c ../include/irc.h ../include/defs.h ../include/config.h \
   ../include/irc_std.h ../include/debug.h \
   ../include/ircaux.h ../include/compat.h ../include/network.h \

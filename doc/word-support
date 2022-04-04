@@ -297,7 +297,6 @@ perl(			XXX		)
 ruby(			XXX		)
 serverctl(		XXX		)
 symbolctl(		XXX		)		ok
-tcl(			XXX		)
 timerctl(		XXX		)
 windowctl(		XXX		)
 

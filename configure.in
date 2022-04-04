@@ -989,79 +989,6 @@ fi
 
 dnl ----------------------------------------------------------
 dnl
-dnl Tcl support?
-dnl
-AC_ARG_WITH([tcl], 
-[  --with-tcl[=PATH_TO_tclConfig.sh] Compile with tcl support.],
-	[], [with_tcl=maybe])
-
-AC_MSG_CHECKING(whether to support TCL)
-if test "x$with_tcl" = "xno"; then
-	AC_MSG_RESULT(no)
-else
-	with_tcl_errormsg="You specified --with-tcl=$with_tcl but I could not find TCL. Please specify --with-tcl=/path/to/tclConfig.sh or remove --with-tcl from ./configure's commandline."
-	if test "x$with_tcl" = "xmaybe" -o "x$with_tcl" = "xyes"; then
-		for i in /usr/lib /usr/local/lib /usr/local/lib/tcl8.4 /usr/local/lib/tcl8.6 ; do
-			if test -r "$i"/tclConfig.sh ; then
-				tclconfig="$i"/tclConfig.sh
-				break;
-			fi
-		done
-	else
-		tclconfig="$with_tcl"
-	fi
-	if test ! -r "$tclconfig" ; then
-		dnl Avoid being automagic unless if the user wants us to be.
-		if test "x$with_tcl" != "xmaybe" ; then
-			AC_MSG_ERROR([$with_tcl_errormsg])
-		fi
-		AC_MSG_RESULT(no)
-	else
-		AC_MSG_RESULT(yes)
-		TCLCFLAGS=`(. "$tclconfig" && echo $TCL_INCLUDE_SPEC)`
-		TCLLIBS=`(. "$tclconfig" && echo $TCL_LIB_SPEC $TCL_LIBS)`
-		TCLDOTOH="tcl.o"
-
-		AC_MSG_CHECKING(whether embedded tcl works the way I expect)
-		have_embedded_tcl="no"
-		old_CFLAGS="$CFLAGS"
-		old_LIBS="$LIBS"
-		CFLAGS="$CFLAGS $TCLCFLAGS"
-		LIBS="$LIBS $TCLLIBS"
-		AC_LINK_IFELSE([AC_LANG_PROGRAM([[
-			#include <tcl.h>
-			Tcl_Interp *my_tcl;
-			int Tcl_echoCmd (ClientData clientData, Tcl_Interp *interp, int objc, const char **objv)
-			{
-				return TCL_OK;
-			}
-		]],[[
-			my_tcl = Tcl_CreateInterp();
-			Tcl_Init(my_tcl);
-			Tcl_CreateCommand(my_tcl, "echo", Tcl_echoCmd,
-				(ClientData)NULL, (void (*)()) NULL);
-			Tcl_DeleteInterp(my_tcl);
-		]])],
-			have_embedded_tcl="yes")
-
-		CFLAGS="$old_CFLAGS"
-		LIBS="$old_LIBS"
-		if test $have_embedded_tcl = "yes" ; then
-		    AC_MSG_RESULT(yes)
-		    AC_DEFINE([HAVE_TCL], 1, [Define this if you want to add tcl support])
-		    AC_DEFINE([TCLCFLAGS], 1, [Stuff to add to CFLAGS to support tcl])
-		    AC_DEFINE([TCLLIBS], 1, [Stuff to add to LDFLAGS to support tcl])
-		else
-			if test "$with_tcl" != "xmaybe" ; then
-				AC_MSG_ERROR([$with_tcl_errormsg])
-			fi
-			AC_MSG_RESULT(no, sorry)
-		fi
-	fi
-fi
-
-dnl ----------------------------------------------------------
-dnl
 dnl Ruby support?
 dnl
 AC_ARG_WITH([ruby], 
@@ -1312,7 +1239,6 @@ dnl
 if test -z "$CFLAGS"; then CFLAGS="-g -O"; fi
 if test -z "$LDFLAGS"; then LDFLAGS= ; fi
 if test -z "$PERLDOTOH"; then PERLDOTOH= ; fi
-if test -z "$TCLDOTOH"; then TCLDOTOH= ; fi
 if test -z "$RUBYDOTOH"; then RUBYDOTOH= ; fi
 if test -z "$PYTHON_O"; then PYTHON_OH= ; fi
 if test -z "$WSERV_BIN"; then WSERV_BIN= ; fi
@@ -1370,9 +1296,6 @@ AC_SUBST(LDFLAGS)
 AC_SUBST(RUBYDOTOH)
 AC_SUBST(RUBYCFLAGS)
 AC_SUBST(RUBYLIBS)
-AC_SUBST(TCLDOTOH)
-AC_SUBST(TCLCFLAGS)
-AC_SUBST(TCLLIBS)
 AC_SUBST(PERLDOTOH)
 AC_SUBST(PERLCFLAGS)
 AC_SUBST(PERLLIBS)

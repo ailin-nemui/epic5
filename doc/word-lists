@@ -16,7 +16,6 @@ Does not double quote words with spaces
 	This is the one function that can be used to canonicalize 
 	double quotes via $unsplit(" " $*)
 * $bindctl(SEQUENCE)
-* $tcl()
 * /FE's variable-rewriting
 
 Double quotes words with spaces

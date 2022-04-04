@@ -57,7 +57,6 @@ glob.c		The $glob() function
 hook.c		The /ON command
 perl.c		The $perl() function
 queue.c		The /QUEUE command
-tcl.c		The $tcl() function
 vars.c		The /SET command (runtime configurables)
 
 Files that regard the user interface

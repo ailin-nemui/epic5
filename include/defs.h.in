@@ -261,9 +261,6 @@
 /* Define to 1 if you have the <sys/un.h> header file. */
 #undef HAVE_SYS_UN_H
 
-/* Define this if you want to add tcl support */
-#undef HAVE_TCL
-
 /* Define if you have tcsetpgrp() */
 #undef HAVE_TCSETPGRP
 
@@ -373,12 +370,6 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
-
-/* Stuff to add to CFLAGS to support tcl */
-#undef TCLCFLAGS
-
-/* Stuff to add to LDFLAGS to support tcl */
-#undef TCLLIBS
 
 /* Define if <term.h> requires <curses.h> to be included first */
 #undef TERM_H_REQUIRES_CURSES_H
