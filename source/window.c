@@ -4195,6 +4195,8 @@ WINDOWCMD(add)
 	char 		*arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4261,6 +4263,8 @@ WINDOWCMD(balance)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4283,6 +4287,8 @@ WINDOWCMD(beep_always)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4313,6 +4319,8 @@ WINDOWCMD(channel)
 	int		l;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4442,6 +4450,8 @@ WINDOWCMD(claim)
 	Window *	window = get_window_by_refnum_direct(refnum);
 	char *channel;
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4456,6 +4466,9 @@ WINDOWCMD(claim)
 WINDOWCMD(clear)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4499,6 +4512,8 @@ WINDOWCMD(delete)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4517,6 +4532,8 @@ WINDOWCMD(delete_kill)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4535,6 +4552,9 @@ WINDOWCMD(describe)
 	const char *chan;
 	char *c;
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 
         if (window->name)
 	    say("Window %s (%u)", 
@@ -4649,6 +4669,9 @@ WINDOWCMD(describe)
 WINDOWCMD(discon)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4673,6 +4696,8 @@ WINDOWCMD(double)
 	short	newval = 0;
 	int	current = window->status.number;
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4709,6 +4734,8 @@ WINDOWCMD(echo)
 	int	l;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4736,6 +4763,9 @@ WINDOWCMD(echo)
 WINDOWCMD(fixed)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4752,6 +4782,9 @@ WINDOWCMD(fixed)
 WINDOWCMD(flush)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4765,6 +4798,9 @@ WINDOWCMD(flush)
 WINDOWCMD(flush_scrollback)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4780,6 +4816,9 @@ WINDOWCMD(flush_scrollback)
 WINDOWCMD(goto)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4799,6 +4838,9 @@ WINDOWCMD(goto)
 WINDOWCMD(grow)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4816,6 +4858,9 @@ WINDOWCMD(grow)
 WINDOWCMD(hide)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4833,6 +4878,8 @@ WINDOWCMD(hide_others)
 	Window *tmp, *next;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4862,6 +4909,8 @@ WINDOWCMD(hold_interval)
 	char *arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4894,6 +4943,8 @@ WINDOWCMD(hold_mode)
 	int	i;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4939,6 +4990,9 @@ WINDOWCMD(hold_slider)
 {
 	char *arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4969,6 +5023,9 @@ WINDOWCMD(hold_slider)
 WINDOWCMD(indent)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -4987,6 +5044,9 @@ WINDOWCMD(indent)
 WINDOWCMD(kill)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -5009,6 +5069,8 @@ WINDOWCMD(kill_all_hidden)
 	Window *tmp, *next;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -5043,6 +5105,8 @@ WINDOWCMD(kill_others)
 	Window *tmp, *next;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -5068,6 +5132,9 @@ WINDOWCMD(kill_others)
 WINDOWCMD(killable)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -5085,6 +5152,9 @@ WINDOWCMD(killable)
 WINDOWCMD(killswap)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -5114,6 +5184,9 @@ WINDOWCMD(killswap)
 WINDOWCMD(last)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -5132,6 +5205,8 @@ WINDOWCMD(lastlog)
 	char *arg = next_arg(*args, args);
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -5175,6 +5250,8 @@ WINDOWCMD(lastlog_mask)
 	char *rejects = NULL;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -5205,6 +5282,8 @@ WINDOWCMD(level)
 	char *	rejects = NULL;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -5292,6 +5371,8 @@ WINDOWCMD(log)
 	char buffer[BIG_BUFFER_SIZE + 1];
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -5339,6 +5420,8 @@ WINDOWCMD(logfile)
 	char *arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 	{
 		new_free(&window->logfile);
@@ -5387,6 +5470,8 @@ WINDOWCMD(log_rewrite)
 	char *arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -5408,6 +5493,8 @@ WINDOWCMD(log_mangle)
 	char *	nv;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -5431,6 +5518,8 @@ WINDOWCMD(merge)
 	Window *tmp;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -5468,6 +5557,9 @@ WINDOWCMD(merge)
 WINDOWCMD(move)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -5478,6 +5570,9 @@ WINDOWCMD(move)
 WINDOWCMD(move_to)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -5490,6 +5585,8 @@ WINDOWCMD(name)
 	char *arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 	{
 windowcmd_name__unset_name:
@@ -5535,6 +5632,8 @@ WINDOWCMD(new)
 	Window *tmp;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if ((tmp = new_window(window->screen)))
 		window = tmp;
 
@@ -5556,6 +5655,8 @@ WINDOWCMD(next)
 	Window	*smallest = NULL;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	smallest = window;
 	for (tmp = invisible_list; tmp; tmp = tmp->next)
 	{
@@ -5584,6 +5685,9 @@ WINDOWCMD(next)
 WINDOWCMD(notify)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -5596,6 +5700,9 @@ WINDOWCMD(notify)
 WINDOWCMD(notify_list)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -5751,8 +5858,12 @@ WINDOWCMD(number)
 			newref = i;
 
 			if ((other = get_window_by_refnum_direct(i)))
+			{
 				other->user_refnum = oldref;
+				windows[oldref] = other;
+			}
 			window->user_refnum = newref;
+			windows[newref] = window;
 
 			if (other)
 				window_statusbar_needs_update(other->refnum);
@@ -6250,6 +6361,8 @@ WINDOWCMD(refnum)
 	Window *tmp;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6272,6 +6385,8 @@ WINDOWCMD(refnum_or_swap)
 	Window  *tmp;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6293,6 +6408,7 @@ WINDOWCMD(refnum_or_swap)
 WINDOWCMD(refresh)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
 	if (!args)
 		return refnum;
 
@@ -6306,6 +6422,8 @@ WINDOWCMD(remove)
 	char *arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6371,6 +6489,9 @@ WINDOWCMD(scroll)
 WINDOWCMD(scrolladj)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6385,6 +6506,8 @@ WINDOWCMD(scroll_lines)
 	int new_value = 0;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6424,6 +6547,8 @@ WINDOWCMD(scrollback)
 	int val;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6447,6 +6572,8 @@ WINDOWCMD(scroll_backward)
 	int	val;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6468,6 +6595,9 @@ WINDOWCMD(scroll_backward)
 WINDOWCMD(scroll_end)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6480,6 +6610,8 @@ WINDOWCMD(scroll_forward)
 	int	val;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6501,6 +6633,9 @@ WINDOWCMD(scroll_forward)
 WINDOWCMD(scroll_start)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6549,6 +6684,8 @@ WINDOWCMD(search_back)
 	char *arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6571,6 +6708,8 @@ WINDOWCMD(search_forward)
 	char *arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6596,6 +6735,8 @@ WINDOWCMD(scroll_seconds)
 	time_t	right_now, when;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6627,6 +6768,8 @@ WINDOWCMD(scroll_toseconds)
 	time_t	right_now, when;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6650,6 +6793,9 @@ WINDOWCMD(scroll_toseconds)
 WINDOWCMD(skip)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6664,6 +6810,8 @@ WINDOWCMD(server)
 	char *	arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6725,6 +6873,8 @@ WINDOWCMD(show)
 	Window *tmp;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6741,6 +6891,8 @@ WINDOWCMD(show_all)
 	int	governor = 0;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6758,6 +6910,9 @@ WINDOWCMD(show_all)
 WINDOWCMD(shrink)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6771,6 +6926,8 @@ WINDOWCMD(size)
 	int	number;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6794,6 +6951,8 @@ WINDOWCMD(stack)
 	size_t		len = 4;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6835,6 +6994,8 @@ WINDOWCMD(status_format)
 	char	*arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6851,6 +7012,8 @@ WINDOWCMD(status_format1)
 	char	*arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6867,6 +7030,8 @@ WINDOWCMD(status_format2)
 	char	*arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6883,6 +7048,8 @@ WINDOWCMD(status_prefix_when_current)
 	char *arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6898,6 +7065,8 @@ WINDOWCMD(status_prefix_when_not_current)
 	char *arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6914,6 +7083,8 @@ WINDOWCMD(status_special)
 	char *arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6929,6 +7100,8 @@ WINDOWCMD(swap)
 	Window *tmp;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6941,6 +7114,9 @@ WINDOWCMD(swap)
 WINDOWCMD(swappable)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -6964,6 +7140,8 @@ WINDOWCMD(topline)
 	const char *topline;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -7000,6 +7178,8 @@ WINDOWCMD(toplines)
 	int	number;
 	int	saved = window->toplines_wanted;
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -7040,6 +7220,9 @@ WINDOWCMD(toplines)
 WINDOWCMD(unclear)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 
@@ -7055,6 +7238,8 @@ WINDOWCMD(clearlevel)
 	char *	arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
+	if (!window)
+		return 0;
 	if (!args)
 		return refnum;
 

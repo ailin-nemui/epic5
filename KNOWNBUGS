@@ -5,6 +5,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Need a $shuffle() operator.
 * /on dcc_raw handling should set message_from() (rb Harz)
 * The way we handle "screen is not tall enough" underflow needs work
+* /window badverb shouold output an error/diagnostic
+* /window <invalid refnum> <anything> should not null deref
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1074,3 +1076,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * More work (mostly focused on status)
 * No more Window ptrs in status.c yay!
 * Fix a bug with output going to the wrong window (rb fro, me)
+* Fix bug with /window number (rb zlonix)
