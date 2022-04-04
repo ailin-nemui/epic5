@@ -69,21 +69,21 @@ prefix      = @prefix@
 exec_prefix = @exec_prefix@
 bindir      = @bindir@
 libexecdir  = @libexecdir@
-sharedir    = @datadir@
+datarootdir = @datarootdir@
 mandir	    = @mandir@
 
 epic5       = @epic5@
 epic5_exe   = $(bindir)/$(epic5)
 wserv_exe   = $(libexecdir)/$(epic5)-wserv4
-epic5dir    = $(sharedir)/$(epic5)
+epic5dir    = $(datarootdir)/$(epic5)
 
 ############ You ought not change anything below this line ###################
 
 RM = rm -f
 CP = cp
 MV = mv
-INSTALL_PROGRAM = @srcdir@/bsdinstall -c -m 755
-INSTALL_DATA = @srcdir@/bsdinstall -c -m 644
+INSTALL_PROGRAM = install -p -m 755
+INSTALL_DATA = install -p -m 644
 
 VERSION  = @VERSION@
 
@@ -118,19 +118,10 @@ epic5:
 EPIC 	  = $(epic5_exe)-$(VERSION)
 EPIC_OLD  = $(epic5_exe).old
 EPIC_LINK = $(epic5_exe)
-installepic5 installirc: epic5 installdirs test
-	if ./my_test \( ! -f $(IP)$(DESTDIR)$(EPIC) \) \
-			-o source/epic5 -nt $(IP)$(DESTDIR)$(EPIC); then \
-		$(INSTALL_PROGRAM) source/epic5 $(IP)$(DESTDIR)$(EPIC);	\
-		if ./my_test -f $(IP)$(DESTDIR)$(EPIC_OLD); then \
-			$(RM) $(IP)$(DESTDIR)$(EPIC_OLD); \
-		fi; \
-		if ./my_test -f $(IP)$(DESTDIR)$(EPIC_LINK); then \
-			$(MV) $(IP)$(DESTDIR)$(EPIC_LINK) $(IP)$(DESTDIR)$(EPIC_OLD); \
-		fi; \
-		$(RM) $(IP)$(DESTDIR)$(EPIC_LINK); \
-		ln -s $(epic5)-$(VERSION) $(IP)$(DESTDIR)$(EPIC_LINK); \
-	fi
+installepic5 installirc: epic5 installdirs 
+	$(INSTALL_PROGRAM) source/epic5 $(IP)$(DESTDIR)$(EPIC);	\
+	$(RM) $(IP)$(DESTDIR)$(EPIC_LINK); \
+	ln -s $(epic5)-$(VERSION) $(IP)$(DESTDIR)$(EPIC_LINK); 
 
 #
 # wserv
@@ -139,73 +130,36 @@ wserv4:
 	@+cd source; $(MAKE2) wserv4
 
 WSERV	 = $(wserv_exe)
-installwserv4: wserv4 installdirs test
-	if ./my_test \( \! -f $(IP)$(DESTDIR)$(WSERV) \) -o \
-			source/wserv4 -nt $(IP)$(DESTDIR)$(WSERV); then	\
-		$(INSTALL_PROGRAM) source/wserv4 $(IP)$(DESTDIR)$(WSERV);	\
-	fi
+installwserv4: wserv4 installdirs 
+	$(INSTALL_PROGRAM) source/wserv4 $(IP)$(DESTDIR)$(WSERV)
 
 
 #
 # Script library
 #
 scriptdir = $(epic5dir)/script
-installscript: installdirs test
-	-@(								\
-		if ./my_test -f $(IP)$(DESTDIR)$(scriptdir)/local; then		\
-			if ./my_test -f script/local; then 		\
-				$(MV) @srcdir@/script/local 		\
-					@srcdir@/script/local.orig;	\
-			fi;						\
-		fi;							\
-	)
+installscript: installdirs 
 	for i in @srcdir@/script/*; \
 	do \
-		if ./my_test -f $$i; then \
-			target=$(IP)$(DESTDIR)$(scriptdir)/`basename $$i`; \
-			if ./my_test -f $$target; then \
-				if ./my_test $$i -nt $$target; then \
-					$(INSTALL_DATA) $$i $$target; \
-				fi; \
-			elif ./my_test -f $$target.gz; then \
-				if ./my_test $$i -nt $$target.gz; then \
-					$(INSTALL_DATA) $$i $$target; \
-					gzip -f $$target; \
-				fi; \
-			else \
-				$(INSTALL_DATA) $$i $$target; \
-				if ./my_test -f $(IP)$(DESTDIR)$(scriptdir)/gzip-scripts; then \
-					gzip -f $$target; \
-				fi; \
-			fi; \
-		fi; \
+		target=$(IP)$(DESTDIR)$(scriptdir)/`basename $$i`; \
+		$(INSTALL_DATA) $$i $$target; \
 	done
-
-helpdir   = $(epic5dir)/help
-installhelp: installdirs
-	if ./my_test -d help ; then \
-		(cd @srcdir@/help; tar cf - .) | (cd $(IP)$(DESTDIR)$(helpdir); tar xf -)  ; \
-	else \
-		echo No help files to install. ; \
-	fi
 
 installman: installdirs
 	$(INSTALL_DATA) @srcdir@/doc/epic5.1 $(IP)$(DESTDIR)$(mandir)/man1/$(epic5).1
 
 installdirs:
 	umask 022; \
-	@srcdir@/mkinstalldirs $(IP)$(DESTDIR)$(epic5dir) $(IP)$(DESTDIR)$(scriptdir) \
-		$(IP)$(DESTDIR)$(helpdir) $(IP)$(DESTDIR)$(bindir) $(IP)$(DESTDIR)$(libexecdir) \
-		$(IP)$(DESTDIR)$(mandir)/man1
-
-test.o: @srcdir@/test.c
-	$(CC) -c @srcdir@/test.c
-test: test.o
-	$(CC) test.o -o my_test
+	for i in $(IP)$(DESTDIR)$(epic5dir) \
+		 $(IP)$(DESTDIR)$(scriptdir) \
+		 $(IP)$(DESTDIR)$(bindir) \
+		 $(IP)$(DESTDIR)$(libexecdir) \
+		 $(IP)$(DESTDIR)$(mandir)/man1 ; do \
+	    if ! test -d $$i ; then mkdir -p $$i ; fi \
+	done
 
 clean:
 	@-if test -f source/Makefile; then cd source; $(MAKE2) clean; fi
-	$(RM) test.o my_test
 
 distclean cleandir realclean: clean
 	$(RM) Makefile source/Makefile config.status config.cache config.log include/defs.h source/info.c.sh

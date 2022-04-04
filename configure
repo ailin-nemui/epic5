@@ -2329,9 +2329,9 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
-VERSION=`sed -n -e 's/";$//' -e '/const char irc_version.. = .EPIC.-/s///p' -e '/const char irc_version/q' < $srcdir/source/irc.c`
+VERSION=`sed -n -e 's/;$//' -e '/const unsigned long	commit_id = /s///p' -e '/const unsigned long	commit_id/q' < $srcdir/source/irc.c`
 
-echo this is EPIC5 version $VERSION
+echo this is EPIC5 commit $VERSION
 echo
 
 ac_ext=c
@@ -7250,6 +7250,8 @@ else
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 fi
+
+
 
 
 

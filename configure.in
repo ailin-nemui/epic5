@@ -14,9 +14,9 @@ dnl ----------------------------------------------------------
 dnl
 dnl grok the version number - from source/irc.c
 dnl
-VERSION=`sed -n -e 's/";$//' -e '/const char irc_version.. = .EPIC.-/s///p' -e '/const char irc_version/q' < $srcdir/source/irc.c` 
+VERSION=`sed -n -e 's/;$//' -e '/const unsigned long	commit_id = /s///p' -e '/const unsigned long	commit_id/q' < $srcdir/source/irc.c` 
 AC_SUBST([VERSION])
-echo this is EPIC5 version $VERSION
+echo this is EPIC5 commit $VERSION
 echo
 
 AC_PROG_CC
@@ -1390,6 +1390,8 @@ AC_SUBST(epic5)
 AC_SUBST(program_transform_name)
 AC_SUBST(program_prefix)
 AC_SUBST(mandir)
+AC_SUBST(datadir)
+AC_SUBST(datarootdir)
 
 AC_CONFIG_FILES([Makefile source/Makefile source/info.c.sh])
 AC_OUTPUT
