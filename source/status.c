@@ -1237,7 +1237,7 @@ STATUS_FUNCTION(status_notify_windows)
 			if (doneone++)
 				strlcat(buf2, ",", sizeof buf2);
 			strlcat(buf2, (map == 1 && s) ? s :
-					ltoa(get_window_user_refnum(window_)), sizeof buf2);
+					ltoa(get_window_user_refnum(w)), sizeof buf2);
 		}
 	}
 

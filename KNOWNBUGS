@@ -1077,3 +1077,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * No more Window ptrs in status.c yay!
 * Fix a bug with output going to the wrong window (rb fro, me)
 * Fix bug with /window number (rb zlonix)
+* Fix %F showing the wrong window refnum (rb zlonix, fro)
