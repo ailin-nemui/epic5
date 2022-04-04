@@ -2663,7 +2663,7 @@ void 	add_to_screen (const unsigned char *buffer)
 	/*
 	 * Just paranoia.
 	 */
-	if (!get_window_by_refnum(0))
+	if (!get_window_by_refnum_direct(0))
 	{
 		puts(buffer);
 		return;
@@ -3081,7 +3081,7 @@ void 	repaint_window_body (Window *window)
 	int 	count;
 
 	if (!window)
-		window = get_window_by_refnum(0);
+		window = get_window_by_refnum_direct(0);
 
 	if (dumb_mode || !window->screen)
 		return;

@@ -232,8 +232,10 @@ extern	unsigned 	current_window_priority;
 	BUILT_IN_KEYBINDING(swap_previous_window);
 	char *	get_window_status_line		(int, int);
 	void	update_all_status		(void);
+#if 0
 	void	set_window_prompt		(int, const char *);
 	Char *	get_window_prompt		(int);
+#endif
 	Char *	get_window_target		(int);
 	Char *	get_window_equery		(int);
 	BUILT_IN_KEYBINDING(switch_query);
@@ -300,6 +302,7 @@ const	char	*get_window_echannel		(int);
 	FILE *	get_window_log_fp		(int);
 	int	get_window_mask			(int, Mask *);
 	int	get_window_notified		(int);
+	int     set_window_notified		(int refnum, int value);
 	int	set_window_notify_mask		(int, Mask);
 	int	set_window_priority		(int, int);
 	int	get_window_refnum		(int);

@@ -557,11 +557,17 @@ int 		text_to_process (const char *target, const char *text, int show)
 	if (write(proc->p_stdin, recoded_text, strlen(recoded_text)) <= 0)
 		yell("Was unable to write text %s to process %s", text, target);
 	new_free(&extra);
+#if 0
 	set_window_prompt(proc->window_refnum, empty_string);
+#endif
 
 	if (show)
 		if ((do_hook(SEND_EXEC_LIST, "%s %d %s", logical_name, process_refnum, text)))
+#if 0
 			put_it("%s%s", get_window_prompt(proc->window_refnum), text);
+#else
+			put_it("%s", text);
+#endif
 
 	pop_message_from(l);
 	return (0);

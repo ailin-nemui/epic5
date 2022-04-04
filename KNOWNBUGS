@@ -1073,3 +1073,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Continue the work on reducing (Window *)s outside of window.h
 * More work (mostly focused on status)
 * No more Window ptrs in status.c yay!
+* Fix a bug with output going to the wrong window (rb fro, me)

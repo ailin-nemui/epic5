@@ -633,8 +633,10 @@ const char *	prompt;
 	 */
 	if (last_input_screen->il->input_prompt_raw)
 		prompt = last_input_screen->il->input_prompt_raw;
+#if 0
 	else if (is_valid_process(get_window_target(0)))
 		prompt = get_window_prompt(0);
+#endif
 	else
 		prompt = input_prompt;
 
