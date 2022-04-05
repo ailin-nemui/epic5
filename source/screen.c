@@ -3203,9 +3203,6 @@ void	create_new_screen (void)
 	new_s->quote_hit = 0;
 	new_s->fdout = 1;
 	new_s->fpout = stdout;
-#ifdef WITH_THREADED_STDOUT
-	new_s->tio_file = tio_open(new_s->fpout);
-#endif
 	new_s->fdin = 0;
 	if (use_input)
 		new_open(0, do_screens, NEWIO_READ, 0, -1);
@@ -3513,9 +3510,6 @@ Window	*create_additional_screen (void)
 			}
 			new_open(new_s->fdin, do_screens, NEWIO_RECV, 1, -1);
 			new_s->fpin = new_s->fpout = fdopen(new_s->fdin, "r+");
-#ifdef WITH_THREADED_STDOUT
-			new_s->tio_file = tio_open(new_s->fpout);
-#endif
 			continue;
 		}
 		else
@@ -3572,10 +3566,6 @@ void 	kill_screen (Screen *screen)
 		screen->window_list = window->next;
 		add_to_invisible_list(window->refnum);
 	}
-
-#ifdef WITH_THREADED_STDOUT
-	tio_close(screen->tio_file);
-#endif
 
 	/* Take out some of the garbage left around */
 	screen->input_window = -1;

@@ -1191,12 +1191,10 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	else if (family == AF_INET && V4ADDR(dcc->local_sockaddr).s_addr == 
 						htonl(INADDR_ANY))
 		my_sockaddr = get_server_local_addr(server);
-#ifdef INET6
 	else if (family == AF_INET6 && memcmp(&V6ADDR(dcc->local_sockaddr), 
 						&in6addr_any, 
 						sizeof(in6addr_any)) == 0)
 		my_sockaddr = get_server_local_addr(server);
-#endif
 	else
 		my_sockaddr = dcc->local_sockaddr;
 
@@ -1214,11 +1212,9 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	    else if (family == AF_INET)
 		yell("I do not know what your IPv4 address is.  You can tell "
 		     "me your IPv4 hostname with /HOSTNAME and retry the /DCC");
-#ifdef INET6
 	    else if (family == AF_INET6)
 		yell("I do not know what your IPv6 address is.  You can tell "
 		     "me your IPv6 hostname with /HOSTNAME and retry the /DCC");
-#endif
 	    else
 		yell("I do not know what your address is because you asked "
 		     "me for an address family that I don't support.");
@@ -1229,10 +1225,8 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 
 	if (family == AF_INET)
 		V4PORT(my_sockaddr) = V4PORT(dcc->local_sockaddr);
-#ifdef INET6
 	else if (family == AF_INET6)
 		V6PORT(my_sockaddr) = V6PORT(dcc->local_sockaddr);
-#endif
 	else
 	{
 		yell("Could not send a CTCP handshake becuase the address "
@@ -1561,10 +1555,8 @@ DCC_SUBCOMMAND(dcc_chat_subcmd)
 	{
 	    if (!strcmp(argv[i], "-4"))
 		family = AF_INET;
-#ifdef INET6
 	    else if (!strcmp(argv[i], "-6"))
 		family = AF_INET6;
-#endif
 	    else if (!strcmp(argv[i], "-p"))
 	    {
 		if (i + 1 == argc)
@@ -2281,10 +2273,8 @@ static	void	dcc_filesend (char *args)
 				if (args && *args)
 				    portnum = my_atol(next_arg(args, &args));
 			}
-#ifdef INET6
 			else if (this_arg[1] == '6')
 				family = AF_INET6;
-#endif
 			else if (this_arg[1] == '4')
 				family = AF_INET;
 
@@ -2615,12 +2605,10 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 		break;
 	    }
 	}
-#ifdef INET6
 	else if (FAMILY(offer) == AF_INET6)
 	{
 		/* Reserved for future expansion */
 	}
-#endif
 
 #ifdef HACKED_DCC_WARNING
 	/*
@@ -2664,12 +2652,10 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 		   }
 		}
 	}
-#ifdef INET6
 	else if (FAMILY(offer) == AF_INET6)
 	{
 		/* Reserved for future expansion */
 	}
-#endif
 #endif
 
 	/* 	CHECK HANDSHAKE PORT FOR VALIDITY 	*/
@@ -3356,11 +3342,9 @@ static void	process_dcc_raw_connected (DCC_list *dcc)
 	if (((SA *)&dcc->peer_sockaddr)->sa_family == AF_INET)
 		malloc_strcpy(&dcc->othername, 
 				ltoa(ntohs(V4PORT(dcc->peer_sockaddr))));
-#ifdef INET6
 	else if (((SA *)&dcc->peer_sockaddr)->sa_family == AF_INET6)
 		malloc_strcpy(&dcc->othername, 
 				ltoa(ntohs(V6PORT(dcc->peer_sockaddr))));
-#endif
 	else
 		malloc_strcpy(&dcc->othername, "<any>");
 

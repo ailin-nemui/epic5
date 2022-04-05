@@ -121,31 +121,17 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 		return -1;
 	}
 
-	if (family == AF_UNIX || family == AF_INET 
-#ifdef INET6
-			      || family == AF_INET6
-#endif
-							 )
+	if (l && bind(fd, l, ll))
 	{
-		if (l && bind(fd, l, ll))
-		{
-		    syserr(-1, "client_connect: bind(%d) failed: %s", 
-						fd, strerror(errno));
-		    close(fd);
-		    return -1;
-		}
-
-		if (Connect(fd, r))
-		{
-		    syserr(-1, "client_connect: connect(%d) failed: %s", 
-						fd, strerror(errno));
-		    close(fd);
-		    return -1;
-		}
+	    syserr(-1, "client_connect: bind(%d) failed: %s", fd, strerror(errno));
+	    close(fd);
+	    return -1;
 	}
-	else
+
+	if (Connect(fd, r))
 	{
-	    syserr(-1, "client_connect: protocol (%d) not supported", family);
+	    syserr(-1, "client_connect: connect(%d) failed: %s", fd, strerror(errno));
+	    close(fd);
 	    return -1;
 	}
 
@@ -305,12 +291,9 @@ int	inet_vhostsockaddr (int family, int port, const char *wanthost, SS *storage,
 	 * so we need to use LocalIPv(4|6)HostName, even if it's NULL.  If you 
 	 * return *len == 0 for port != -1, then /dcc breaks.
 	 */
-	if ((family == AF_UNIX) || 
-            (family == AF_INET && port == -1 && empty(wanthost) && LocalIPv4HostName == NULL) 
-#ifdef INET6
-	 || (family == AF_INET6 && port == -1 && empty(wanthost) && LocalIPv6HostName == NULL)
-#endif
-									   )
+	if ((family == AF_UNIX) 
+         || (family == AF_INET && port == -1 && empty(wanthost) && LocalIPv4HostName == NULL) 
+	 || (family == AF_INET6 && port == -1 && empty(wanthost) && LocalIPv6HostName == NULL))
 	{
 		*len = 0;
 		return 0;		/* No vhost needed */
@@ -320,10 +303,8 @@ int	inet_vhostsockaddr (int family, int port, const char *wanthost, SS *storage,
 		lhn = wanthost;
 	else if (family == AF_INET)
 		lhn = LocalIPv4HostName;
-#ifdef INET6
 	else if (family == AF_INET6)
 		lhn = LocalIPv6HostName;
-#endif
 	else
 		lhn = NULL;
 
@@ -817,10 +798,8 @@ static socklen_t	socklen (SA *sockaddr)
 {
 	if (sockaddr->sa_family == AF_INET)
 		return sizeof(ISA);
-#ifdef INET6
 	else if (sockaddr->sa_family == AF_INET6)
 		return sizeof(ISA6);
-#endif
 	else if (sockaddr->sa_family == AF_UNIX)
 		return strlen(((USA *)sockaddr)->sun_path) + 2;
 	else

@@ -693,7 +693,6 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 with_localdir
-with_threaded_stdout
 with_multiplex
 with_libarchive
 with_ssl
@@ -1326,7 +1325,6 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-localdir=/usr/local        An extra directory to look for stuff.
-  --with-threaded-stdout=yes      Threaded stdout so the client doesn't block when gnu screen malfunctions.
   --with-multiplex=TYPE           Multiplexer type (select,poll,freebsd-kqueue,pthread,solaris-ports)
   --without-libarchive              Disable libarchive support.
   --with-ssl=PATH                 Help me find your SSL installation (DIR is OpenSSL's install dir).
@@ -3366,64 +3364,6 @@ $as_echo_n "checking for Macintosh OS X... " >&6; }
        CFLAGS="$CFLAGS $perl_arch_flags"
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok" >&5
 $as_echo "ok" >&6; }
-
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if you want threaded stdout" >&5
-$as_echo_n "checking if you want threaded stdout... " >&6; }
-
-# Check whether --with-threaded-stdout was given.
-if test "${with_threaded_stdout+set}" = set; then :
-  withval=$with_threaded_stdout;
-	if test "x$withval" = "x" ; then
-		with_threaded_stdout="no"
-	elif test "x$withval" = "xy" ; then
-		with_threaded_stdout="yes"
-		if  "x$sun_compiler" = "xyes"  ; then
-			CFLAGS="CFLAGS -mt"
-		else
-			CFLAGS="$CFLAGS -pthread"
-		fi
-	elif test "x$withval" = "xY" ; then
-		with_threaded_stdout="yes"
-		if  "x$sun_compiler" = "xyes"  ; then
-			CFLAGS="CFLAGS -mt"
-		else
-			CFLAGS="$CFLAGS -pthread"
-		fi
-	elif test "x$withval" = "xyes" ; then
-		with_threaded_stdout="yes"
-		if  "x$sun_compiler" = "xyes"  ; then
-			CFLAGS="CFLAGS -mt"
-		else
-			CFLAGS="$CFLAGS -pthread"
-		fi
-	elif test "x$withval" = "xYES" ; then
-		with_threaded_stdout="yes"
-		if  "x$sun_compiler" = "xyes"  ; then
-			CFLAGS="CFLAGS -mt"
-		else
-			CFLAGS="$CFLAGS -pthread"
-		fi
-	else
-		with_threaded_stdout="no"
-	fi
-
-else
-
-	with_threaded_stdout="no"
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $with_threaded_stdout" >&5
-$as_echo "$with_threaded_stdout" >&6; }
-if test "x$with_threaded_stdout" = "xyes" ; then
-
-$as_echo "#define WITH_THREADED_STDOUT 1" >>confdefs.h
-
-	threading=1
-fi
-
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking which multiplexer function to use" >&5
 $as_echo_n "checking which multiplexer function to use... " >&6; }

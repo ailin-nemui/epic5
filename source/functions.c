@@ -1793,10 +1793,8 @@ BUILT_IN_FUNCTION(function_connect, input)
 			v++;
 		if (*v == '4')
 			family = AF_INET;
-#ifdef INET6
 		else if (*v == '6')
 			family = AF_INET6;
-#endif
 		else if (*v == 'u' || *v == 'U')
 			family = AF_UNSPEC;
 	}
@@ -1830,10 +1828,8 @@ BUILT_IN_FUNCTION(function_listen, input)
 				v++;
 			if (*v == '4')
 				family = AF_INET;
-#ifdef INET6
 			else if (*v == '6')
 				family = AF_INET6;
-#endif
 			else if (*v == 'u' || *v == 'U')
 				family = AF_UNSPEC;
 		}

@@ -113,111 +113,6 @@
  */
 #define NEED_GLOB
 
-/*
- *  ircII has a security feature for paranoid sysadmins or for those
- *  users whose sysadmins are paranoid.  The security feature allows
- *  you to restrict who may use the ircII client.  You have four options:
- *
- *	1) compile into the binary a list of uids who can use the program
- *		*Pros: cant be hacked -- very secure
- *		*Cons: cant be changed w/o recompiling
- *	2) compile into the binary a file which will contain the uids of
- *	   the people who can use the program
- *		*Pros: can be changed as you need by just editing the file
- *		*Cons: since the uids are in a file, prone to hacking
- *	3) compile into the binary a file which will contain the uids of
- *	   the people who cannot use the program
- *		*Pros: allows for public use and allow you to exclude
- *		       troublemakers without enumerating everyone else
- *		*Cons: since the uids are in a file, prone to hacking
- *	4) compile into the binary a password
- *		*Pros: cant be hacked -- secure
- *		*Cons: cant be changed w/o recompiling
- *
- *    The first two options are mutually exclusive.  The third and fourth
- *    options can be specified at your option.  If you specify both the
- *    first and second options, the first option has precedence.
- */
-
-/*
- *   To use the first security feature, #define HARD_SECURE.  You will also
- *   have to #define VALID_UIDS which will be a list of those uids (integers,
- *   not usernames) which will be allowed to execute the resulting program.
- *   If you #define HARD_SECURE but do not define #VALID_UIDS, then noone
- *   will be able to execute the program!
- */
-#undef HARD_SECURE
-#define VALID_UIDS "100 101"
-
-/*
- *  To use the second security measure, simply #define SOFT_SECURE to a 
- *  filename that will be world-readable that will contain the uids of
- *  all the users who will be allowed to execute the program.  It is important
- *  that this file be readable by at least every person who can execute the
- *  program or this security measure will be comprimised.
- *
- *  The uid file should have one uid per line (integer, not username).
- *
- *  You can define VALID_UID_FILE, but if SOFT_SECURE is not defined, it will
- *  not be used.
- */
-#undef SOFT_SECURE
-#define VALID_UID_FILE "/home/user/..."
-
-/*
- *  This allows you to use the third security option.  If you define this,
- *  it should be assigned to a file that will contain a listing of all of
- *  the uids (integers, not usernames) that will not be allowed to execute
- *  the resulting program.
- */
-/*#define INVALID_UID_FILE "/home/user/...."*/
-
-/*
- * This part lets you deny certain hosts from running your irc client.
- * For instance, my university does not allow irc'ing from dialup machines,
- * So by putting the dialup's hostnames in the specified file, they can't
- * Run irc.
- *  -- Chris Mattingly <Chris_Mattingly@ncsu.edu>
- *
- * If you define this, it *absolutely* must be in double quotes ("s)!
- */
-#undef HOST_SECURE
-
-#ifdef HOST_SECURE
-#define INVALID_HOST_FILE "/home/user/...host.deny"
-#endif
-
-
-/*
- *  This allows you to use the fourth security option.  If you define this,
- *  the program will prompt the user to enter this prompt before it will
- *  continue executing the program.  This password does not affect in any
- *  way the other protection schemes.  A user who is not allowed to run
- *  the program will not be allowed to use the program even if they know
- *  the password.
- */
-/*#define PASSWORD "booya"*/
-
-/*
- * This is the fun part.  If someone runs your program who shouldnt run
- * it, either because the dont know the password or because they arent
- * on the valid list or whatever, ircII will execute this program to 
- * "spoof" them into thinking your program is actually some other program.
- *
- * This can be defined to any valid C expression that will resolve to a
- * character string. (ie, a character literal or function call)
- */
-#define SPOOF_PROGRAM getenv("SHELL")
-
-/* 
- * If you define UNAME_HACK, the uname information displayed in the
- * CTCP VERSION info will appear as "*IX" regardless of any other
- * settings.  Useful for paranoid users who dont want others to know
- * that theyre running a buggy SunOS machine. >;-)
- */
-#undef UNAME_HACK
-
-
 /* And here is the port number for default client connections.  */
 #define IRC_PORT 6667
 
@@ -229,17 +124,6 @@
  * optional).  This server list will supercede the DEFAULT_SERVER
  */
 #define SERVERS_FILE "ircII.servers"
-
-/*
- * The compile sequence records the user/host/time of the compile,
- * which can be useful for tampering and newbie reasons.  If you want
- * the compile to remain anonymous, define this option.  In this case,
- * the host and the time will remain, but the 'user' field will not
- * be displayed to the user.
- * 
- * Please dont define this on a whim -- be sure you really want it.
- */
-#undef ANONYMOUS_COMPILE
 
 /*
  * The /LOAD path is now generated at runtime, rather than at compile time.
@@ -458,7 +342,6 @@
  * some minor debugging in that case (send patches along to me if
  * you do =)  Dont change any of these unless you know what it will do.
  */
-#undef EMACS_KEYBINDINGS	/* meta-key keybindings. */
 #undef HACKED_DCC_WARNING	/* warn if handshake != sender */
 #undef HARD_UNFLASH		/* do a hard reset instead of soft on refresh */
 #undef NO_BOTS			/* no bots allowed */
@@ -479,32 +362,6 @@
 				   the I_AM_A_FASCIST_BASTARD define which
 				   several people found offensive because
 				   they wanted to define it =) */
-
-/* Dont change these -- theyre important. */
-#if defined(VALID_UIDS) && !defined(HARD_SECURE)
-#undef VALID_UIDS
-#endif
-
-#if defined(PASSWORD) && !defined(HARD_SECURE) && !defined(SOFT_SECURE)
-#undef PASSWORD
-#endif
-
-#if defined(HARD_SECURE) && !defined(VALID_UIDS)
-#error You must #define VALID_UIDS if you #define HARD_SECURE
-#endif
-
-#if defined(VALID_UID_FILE) && !defined(SOFT_SECURE)
-#undef VALID_UID_FILE
-#endif
-
-#if defined(SOFT_SECURE) && !defined(VALID_UID_FILE)
-#error You must #define VALID_UID_FILE if you #define SOFT_SECURE
-#endif
-
-#ifndef SPOOF_PROGRAM
-#define SPOOF_PROGRAM "/bin/sh"
-#endif
-/* end of section not to change */
 
 #undef ALLOC_DEBUG
 

@@ -95,55 +95,6 @@ AC_MSG_CHECKING([for Macintosh OS X])
        CFLAGS="$CFLAGS $perl_arch_flags"
 AC_MSG_RESULT([ok])
 
-
-
-dnl ----------------------------------------------------------
-AC_MSG_CHECKING([if you want threaded stdout])
-AC_ARG_WITH(threaded-stdout,
-[  --with-threaded-stdout[=yes]      Threaded stdout so the client doesn't block when gnu screen malfunctions.],[
-	if test "x$withval" = "x" ; then
-		with_threaded_stdout="no"
-	elif test "x$withval" = "xy" ; then
-		with_threaded_stdout="yes"
-		if [ "x$sun_compiler" = "xyes" ] ; then
-			CFLAGS="CFLAGS -mt"
-		else
-			CFLAGS="$CFLAGS -pthread"
-		fi
-	elif test "x$withval" = "xY" ; then
-		with_threaded_stdout="yes"
-		if [ "x$sun_compiler" = "xyes" ] ; then
-			CFLAGS="CFLAGS -mt"
-		else
-			CFLAGS="$CFLAGS -pthread"
-		fi
-	elif test "x$withval" = "xyes" ; then
-		with_threaded_stdout="yes"
-		if [ "x$sun_compiler" = "xyes" ] ; then
-			CFLAGS="CFLAGS -mt"
-		else
-			CFLAGS="$CFLAGS -pthread"
-		fi
-	elif test "x$withval" = "xYES" ; then
-		with_threaded_stdout="yes"
-		if [ "x$sun_compiler" = "xyes" ] ; then
-			CFLAGS="CFLAGS -mt"
-		else
-			CFLAGS="$CFLAGS -pthread"
-		fi
-	else
-		with_threaded_stdout="no"
-	fi
-],[
-	with_threaded_stdout="no"
-])
-AC_MSG_RESULT($with_threaded_stdout)
-if test "x$with_threaded_stdout" = "xyes" ; then
-	AC_DEFINE([WITH_THREADED_STDOUT], 1, [Define this if you want to use threaded stdout])
-	threading=1
-fi
-
-
 dnl ----------------------------------------------------------
 dnl   Where does this belong?
 AC_MSG_CHECKING([which multiplexer function to use])

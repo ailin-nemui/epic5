@@ -4135,14 +4135,19 @@ static Window *get_invisible_window (const char *name, char **args)
 
 
 /* get_number: parses out an integer number and returns it */
-static int 	get_number (const char *name, char **args)
+static int 	get_number (const char *name, char **args, int *var)
 {
 	char	*arg;
 
 	if ((arg = next_arg(*args, args)) != NULL)
-		return (my_atol(arg));
-	else
-		say("%s: You must specify the number of lines", name);
+	{
+		if (is_number(arg))
+		{
+			*var = my_atol(arg);
+			return 1;
+		}
+	}
+	say("%s: You must specify a number", name);
 	return 0;
 }
 
@@ -4157,25 +4162,25 @@ static int 	get_boolean (const char *name, char **args, short *var)
 	int	newval;
 
 	if (!args)
-		return -1;
+		return 0;
 
 	newval = *var;
 	if (!(arg = next_arg(*args, args)))
 	{
 		say("Window %s is %s", name, onoff[newval]);
-		return -1;
+		return 0;
 	}
 
 	if (do_boolean(arg, &newval))
 	{
 		say("Value for %s must be ON, OFF, or TOGGLE", name);
-		return -1;
+		return 0;
 	}
 
 	/* The say() MUST BE DONE BEFORE THE ASSIGNMENT! */
 	say("Window %s is %s", name, onoff[newval]);
 	*var = newval;
-	return (0);
+	return 1;
 }
 
 /* * * * * * * * * * * WINDOW OPERATIONS * * * * * * * * * */
@@ -4292,7 +4297,7 @@ WINDOWCMD(beep_always)
 	if (!args)
 		return refnum;
 
-	if (get_boolean("BEEP_ALWAYS", args, &window->beep_always))
+	if (!get_boolean("BEEP_ALWAYS", args, &window->beep_always))
 		return 0;
 	return refnum;
 }
@@ -4702,7 +4707,7 @@ WINDOWCMD(double)
 		return refnum;
 
 	newval = window->status.number - 1;
-	if (get_boolean("DOUBLE", args, &newval))
+	if (!get_boolean("DOUBLE", args, &newval))
 		return 0;
 
 	if (newval == 0)
@@ -4769,7 +4774,7 @@ WINDOWCMD(fixed)
 	if (!args)
 		return refnum;
 
-	if (get_boolean("FIXED", args, &window->fixed_size))
+	if (!get_boolean("FIXED", args, &window->fixed_size))
 		return 0;
 	return refnum;
 }
@@ -4816,14 +4821,18 @@ WINDOWCMD(flush_scrollback)
 WINDOWCMD(goto)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+	int	value;
 
 	if (!window)
 		return 0;
 	if (!args)
 		return refnum;
 
-	my_goto_window(window->screen, get_number("GOTO", args));
-	from_server = get_window_server(0);
+	if (get_number("GOTO", args, &value))
+	{
+		my_goto_window(window->screen, value);
+		from_server = get_window_server(0);
+	}
 	return current_window->refnum;
 }
 
@@ -4838,13 +4847,15 @@ WINDOWCMD(goto)
 WINDOWCMD(grow)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+	int	value;
 
 	if (!window)
 		return 0;
 	if (!args)
 		return refnum;
 
-	resize_window(RESIZE_REL, window, get_number("GROW", args));
+	if (get_number("GROW", args, &value))
+		resize_window(RESIZE_REL, window, value);
 	return refnum;
 }
 
@@ -4953,7 +4964,7 @@ WINDOWCMD(hold_mode)
 	else
 		hold_mode = 0;
 
-	if (get_boolean("HOLD_MODE", args, &hold_mode))
+	if (!get_boolean("HOLD_MODE", args, &hold_mode))
 		return 0;
 
 	if (hold_mode && !window->holding_top_of_display)
@@ -5029,7 +5040,7 @@ WINDOWCMD(indent)
 	if (!args)
 		return refnum;
 
-	if (get_boolean("INDENT", args, &window->indent))
+	if (!get_boolean("INDENT", args, &window->indent))
 		return 0;
 	return refnum;
 }
@@ -5138,7 +5149,7 @@ WINDOWCMD(killable)
 	if (!args)
 		return refnum;
 
-	if (get_boolean("KILLABLE", args, &window->killable))
+	if (!get_boolean("KILLABLE", args, &window->killable))
 		return 0;
 
 	return refnum;
@@ -5376,7 +5387,7 @@ WINDOWCMD(log)
 	if (!args)
 		return refnum;
 
-	if (get_boolean("LOG", args, &window->log))
+	if (!get_boolean("LOG", args, &window->log))
 		return 0;
 
 	if ((logfile = window->logfile))
@@ -5557,26 +5568,30 @@ WINDOWCMD(merge)
 WINDOWCMD(move)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+	int	value;
 
 	if (!window)
 		return 0;
 	if (!args)
 		return refnum;
 
-	move_window(window, get_number("MOVE", args));
+	if (get_number("MOVE", args, &value))
+		move_window(window, value);
 	return refnum;
 }
 
 WINDOWCMD(move_to)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+	int	value;
 
 	if (!window)
 		return 0;
 	if (!args)
 		return refnum;
 
-	move_window_to(window, get_number("MOVE_TO", args));
+	if (get_number("MOVE_TO", args, &value))
+		move_window_to(window, value);
 	return refnum;
 }
 
@@ -5691,7 +5706,7 @@ WINDOWCMD(notify)
 	if (!args)
 		return refnum;
 
-	if (get_boolean("NOTIFY", args, &window->notify_when_hidden))
+	if (!get_boolean("NOTIFY", args, &window->notify_when_hidden))
 		return 0;
 
 	return refnum;
@@ -5706,7 +5721,7 @@ WINDOWCMD(notify_list)
 	if (!args)
 		return refnum;
 
-	if (get_boolean("NOTIFIED", args, &window->notified))
+	if (!get_boolean("NOTIFIED", args, &window->notified))
 		return 0;
 
 	return refnum;
@@ -6465,7 +6480,7 @@ WINDOWCMD(scratch)
 	if (!args)
 		return refnum;
 
-	if (get_boolean("SCRATCH", args, &scratch))
+	if (!get_boolean("SCRATCH", args, &scratch))
 		return 0;
 
 	return refnum;
@@ -6480,7 +6495,7 @@ WINDOWCMD(scroll)
 	if (!args)
 		return refnum;
 
-	if (get_boolean("SCROLL", args, &scroll))
+	if (!get_boolean("SCROLL", args, &scroll))
 		return 0;
 
 	return refnum;
@@ -6495,7 +6510,7 @@ WINDOWCMD(scrolladj)
 	if (!args)
 		return refnum;
 
-	if (get_boolean("SCROLLADJ", args, &window->scrolladj))
+	if (!get_boolean("SCROLLADJ", args, &window->scrolladj))
 		return 0;
 
 	return refnum;
@@ -6520,24 +6535,26 @@ WINDOWCMD(scroll_lines)
 		return 0;
 	}
 
-	new_value = get_number("SCROLL_LINES", args);
-	if (new_value == 0 || new_value < -1)
+	if (get_number("SCROLL_LINES", args, &new_value))
 	{
-		say("Window SCROLL_LINES must be -1 or a positive value");
-		return 0;
-	}
-	else if (new_value > window->display_lines)
-	{
-		say("Maximum lines that may be scrolled is %d [%d]", 
-			window->display_lines, new_value);
-		new_value = current_window->display_lines;
-	}
+		if (new_value == 0 || new_value < -1)
+		{
+			say("Window SCROLL_LINES must be -1 or a positive value");
+			return 0;
+		}
+		else if (new_value > window->display_lines)
+		{
+			say("Maximum lines that may be scrolled is %d [%d]", 
+				window->display_lines, new_value);
+			new_value = current_window->display_lines;
+		}
 
-	window->scroll_lines = new_value;
-	if (window->scroll_lines < 0)
-		say("Window SCROLL_LINES is <default>");
-	else
-		say("Window SCROLL_LINES is %d", window->scroll_lines);
+		window->scroll_lines = new_value;
+		if (window->scroll_lines < 0)
+			say("Window SCROLL_LINES is <default>");
+		else
+			say("Window SCROLL_LINES is %d", window->scroll_lines);
+	}
 
 	return refnum;
 }
@@ -6554,12 +6571,13 @@ WINDOWCMD(scrollback)
 
 	if (args && *args && **args)
 	{
-		val = get_number("SCROLLBACK", args);
-
-		if (val < window->display_lines * 2)
-			window->display_buffer_max = window->display_lines * 2;
-		else
-			window->display_buffer_max = val;
+		if (get_number("SCROLLBACK", args, &val))
+		{
+			if (val < window->display_lines * 2)
+				window->display_buffer_max = window->display_lines * 2;
+			else
+				window->display_buffer_max = val;
+		}
 	}
 
 	say("Window scrollback size set to %d", window->display_buffer_max);
@@ -6579,12 +6597,13 @@ WINDOWCMD(scroll_backward)
 
 	if (args && *args && **args)
 	{
-		val = get_number("SCROLL_BACKWARD", args);
-
-		if (val == 0)
-			window_scrollback_backward(window);
-		else
-			window_scrollback_backwards_lines(window, val);
+		if (get_number("SCROLL_BACKWARD", args, &val))
+		{
+			if (val == 0)
+				window_scrollback_backward(window);
+			else
+				window_scrollback_backwards_lines(window, val);
+		}
 	}
 	else
 		window_scrollback_backward(window);
@@ -6617,12 +6636,13 @@ WINDOWCMD(scroll_forward)
 
 	if (args && *args && **args)
 	{
-		val = get_number("SCROLL_FORWARD", args);
-
-		if (val == 0)
-			window_scrollback_forward(window);
-		else
-			window_scrollback_forwards_lines(window, val);
+		if (get_number("SCROLL_FORWARD", args, &val))
+		{
+			if (val == 0)
+				window_scrollback_forward(window);
+			else
+				window_scrollback_forwards_lines(window, val);
+		}
 	}
 	else
 		window_scrollback_forward(window);
@@ -6741,7 +6761,10 @@ WINDOWCMD(scroll_seconds)
 		return refnum;
 
 	if (args && *args && **args)
-		val = get_number("SCROLL_SECONDS", args);
+	{
+		if (!get_number("SCROLL_SECONDS", args, &val))
+			return refnum;
+	}
 	else
 		val = last_scroll_seconds_interval;
 
@@ -6774,7 +6797,10 @@ WINDOWCMD(scroll_toseconds)
 		return refnum;
 
 	if (args && *args && **args)
-		val = get_number("SCROLL_SECONDS", args);
+	{
+		if (!get_number("SCROLL_TOSECONDS", args, &val))
+			return refnum;
+	}
 	else
 		return refnum;
 
@@ -6799,7 +6825,7 @@ WINDOWCMD(skip)
 	if (!args)
 		return refnum;
 
-	if (get_boolean("SKIP", args, &window->skip))
+	if (!get_boolean("SKIP", args, &window->skip))
 		return 0;
 
 	return refnum;
@@ -6910,13 +6936,16 @@ WINDOWCMD(show_all)
 WINDOWCMD(shrink)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
+	int	value;
 
 	if (!window)
 		return 0;
 	if (!args)
 		return refnum;
 
-	resize_window(RESIZE_REL, window, -get_number("SHRINK", args));
+	if (get_number("SHRINK", args, &value))
+		resize_window(RESIZE_REL, window, -value);
+
 	return refnum;
 }
 
@@ -7120,7 +7149,7 @@ WINDOWCMD(swappable)
 	if (!args)
 		return refnum;
 
-	if (get_boolean("SWAPPABLE", args, &window->swappable))
+	if (!get_boolean("SWAPPABLE", args, &window->swappable))
 		return 0;
 
 	window_statusbar_needs_update(window->refnum);
@@ -8439,8 +8468,8 @@ void	make_window_current_by_refnum (int refnum)
 static void 	make_window_current (Window *window)
 {
 	Window *old_current_window = current_window;
-	int	old_screen, old_window;
-	int	new_screen, new_window;
+	int	old_screen, old_window, old_window_user_refnum;
+	int	new_screen, new_window, new_window_user_refnum;
 
 	if (!window)
 		current_window = get_window_by_refnum_direct(last_input_screen->input_window);
@@ -8476,9 +8505,12 @@ static void 	make_window_current (Window *window)
 	else
 		new_screen = current_window->screen->screennum;
 
+	old_window_user_refnum = get_window_user_refnum(old_window);
+	new_window_user_refnum = get_window_user_refnum(new_window);
+
 	do_hook(SWITCH_WINDOWS_LIST, "%d %d %d %d",
-		old_screen, old_window,
-		new_screen, new_window);
+		old_screen, old_window_user_refnum,
+		new_screen, new_window_user_refnum);
 }
 
 int	make_window_current_informally (int refnum)

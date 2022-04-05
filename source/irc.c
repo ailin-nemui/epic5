@@ -52,7 +52,7 @@ const char internal_version[] = "20220327";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 2026;
+const unsigned long	commit_id = 2027;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -1032,9 +1032,6 @@ int 	main (int argc, char *argv[])
 	SOCKSinit(argv[0]);
 #endif
         get_time(&start_time);
-#ifdef WITH_THREADED_STDOUT
-	tio_init();
-#endif
 
 	init_levels();
 	init_transforms();

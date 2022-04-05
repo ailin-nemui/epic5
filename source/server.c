@@ -2160,14 +2160,12 @@ int	grab_server_address (int server)
 	      || !my_stricmp(s->info->proto_type, "v4") 
 	      || !my_stricmp(s->info->proto_type, "ip4") )
 		hints.ai_family = AF_INET;
-#ifdef INET6
 	else if (!my_stricmp(s->info->proto_type, "6")
 	      || !my_stricmp(s->info->proto_type, "tcp6") 
 	      || !my_stricmp(s->info->proto_type, "ipv6") 
 	      || !my_stricmp(s->info->proto_type, "v6") 
 	      || !my_stricmp(s->info->proto_type, "ip6") )
 		hints.ai_family = AF_INET6;
-#endif
 	else
 		hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
@@ -4550,10 +4548,8 @@ char 	*serverctl 	(char *input)
 			x = (SA *)&a;
 			if (x->sa_family == AF_INET)
 				RETURN_STR("ipv4");
-#ifdef INET6
 			else if (x->sa_family == AF_INET6)
 				RETURN_STR("ipv6");
-#endif
 			else if (x->sa_family == AF_UNIX)
 				RETURN_STR("unix");
 			else

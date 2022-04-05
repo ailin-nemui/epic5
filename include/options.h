@@ -65,7 +65,7 @@ const char compile_time_options[] = {
  					'n',
 #endif /* LONG NICKNAMES are now the default */
 
-#ifdef WITH_THREADED_STDOUT
+#if 0		/* Used to be WITH_THREADED_STDOUT */
 					'o',
 #endif
 

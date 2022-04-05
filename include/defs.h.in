@@ -395,9 +395,6 @@
 /* Define this if you want to use Solaris ports as the multiplexer */
 #undef USE_SOLARIS_PORTS
 
-/* Define this if you want to use threaded stdout */
-#undef WITH_THREADED_STDOUT
-
 /* Define for Solaris 2.5.1 so the uint32_t typedef from <sys/synch.h>,
    <pthread.h>, or <semaphore.h> is not used. If the typedef were allowed, the
    #define below would cause a syntax error. */

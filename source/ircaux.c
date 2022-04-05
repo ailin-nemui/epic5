@@ -3572,18 +3572,14 @@ char *	switch_hostname (const char *new_hostname)
 	char 	*retval4 = NULL, *retval6 = NULL, *retval = NULL;
 	char 	*v4_error = NULL, *v6_error = NULL;
 	ISA 	new_4;
-#ifdef INET6
 	ISA6 	new_6;
-#endif
 	int	accept4 = 0, accept6 = 0;
 	int	fd;
 
 	if (new_hostname == NULL)
 	{
 		new_free(&LocalIPv4HostName);
-#ifdef INET6
 		new_free(&LocalIPv6HostName);
-#endif
 		goto summary;
 	}
 
@@ -3616,7 +3612,6 @@ char *	switch_hostname (const char *new_hostname)
 	else
 		malloc_strcpy(&v4_error, "not specified");
 
-#ifdef INET6
 	if (v6 && *v6)
 	{
 	    new_6.sin6_family = AF_INET6;
@@ -3636,7 +3631,6 @@ char *	switch_hostname (const char *new_hostname)
 	}
 	else
 		malloc_strcpy(&v6_error, "not specified");
-#endif
 
 summary:
 	if (v4_error)
@@ -3654,7 +3648,6 @@ summary:
 	else
 		malloc_sprintf(&retval4, "IPv4 vhost unset");
 
-#ifdef INET6
 	if (v6_error)
 		malloc_sprintf(&retval6, "IPv6 vhost not changed because (%s)",
 						v6_error);
@@ -3669,7 +3662,6 @@ summary:
 	}
 	else
 		malloc_sprintf(&retval6, "IPv6 vhost unset");
-#endif
 
 	if (retval6)
 		malloc_sprintf(&retval, "%s, %s", retval4, retval6);
