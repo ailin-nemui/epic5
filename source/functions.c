@@ -349,6 +349,7 @@ static	char
 	*function_perlcall	(char *),
 	*function_perlxcall	(char *),
 #endif
+	*function_pledge	(char *),
 #ifdef HAVE_PYTHON
 	*function_pydirect	(char *),
 	*function_python	(char *),
@@ -428,6 +429,7 @@ static	char
 	*function_uniq		(char *),
 	*function_unlink 	(char *),
 	*function_unsplit	(char *),
+	*function_unveil	(char *),
 	*function_uuid4		(char *),
 	*function_which 	(char *),
 	*function_winchan	(char *),
@@ -670,6 +672,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "PERLCALL",		function_perlcall	},
 	{ "PERLXCALL",		function_perlxcall	},
 #endif
+	{ "PLEDGE",		function_pledge		},
 #ifdef HAVE_PYTHON
 	{ "PYDIRECT",		function_pydirect	},
 	{ "PYTHON",		function_python		},
@@ -766,6 +769,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "UNLINK",		function_unlink 	},
 	{ "UNSHIFT",		function_unshift 	},
 	{ "UNSPLIT",		function_unsplit	},
+	{ "UNVEIL",		function_unveil		},
 	{ "USERHOST",		function_userhost 	},
 	{ "USERMODE",		function_umode		},
 	{ "USETITEM",           function_usetitem 	},
@@ -8354,4 +8358,164 @@ BUILT_IN_FUNCTION(function_rgb, input)
 	RETURN_STR(retval_str);
 }
 
+
+/*
+ * Pledge is supported only on OpenBSD. FreeBSD support is undergoing
+ * development.
+ *
+ * This system call restricts epic5 process to certain system operations
+ * taking "promises" string as argument, for example, if there are no
+ * "exec" and "id" promises, epic5 won't be able to execve() another
+ * process, if there are no "wpath", "cpath" and "fattr" - writes and
+ * file creation won't be possible, but it will prevent /log from
+ * working.
+ *
+ * If epic5 will try to execute operations which are not permitted by
+ * promises, the process will be killed. This can be changed by "error"
+ * promise, in that case ENOSYS will be returned to unsupported
+ * operation.
+ *
+ * This approach allows to raise security level of the system, because
+ * user can choose operations that he is intended to do with the client,
+ * and forbid any unwanted behavior, which intruder also won't be able
+ * to use in case of security incident in the client.
+ *
+ * This functionality is intended for audience which understands how
+ * unix processes works and what permissions they want to grant to epic5
+ * process.
+ *
+ * Minimum set of promises for epic5 is (no logging, no /exec):
+ *
+ *     stdio rpath inet dns tty proc
+ *
+ * Possible usage:
+ *
+ * if (pledge(stdio rpath inet dns tty proc) == 0) {
+ *     xecho -b Successfully pledged!
+ * } else {
+ *     xecho -b Pledge failed!
+ * }
+ *
+ * https://man.openbsd.org/pledge
+ *
+ */
+BUILT_IN_FUNCTION(function_pledge, input)
+{
+	const char *	promises = NULL;
+	const char *	execpromises = NULL;
+	int		test = 0;
+
+	while (input && *input && my_isspace(*input))
+		input++;
+
+	if (input && *input == '{')
+	{
+		struct kwargs kwargs[] = {
+			{ "promises", KWARG_TYPE_STRING, &promises, 0 },
+			{ "execpromises", KWARG_TYPE_STRING, &execpromises, 0 },
+			{ "test", KWARG_TYPE_BOOL, &test, 0 },
+			{ NULL, KWARG_TYPE_SENTINAL, NULL, 0 }
+		};
+
+		parse_kwargs(kwargs, input);
+	}
+	else
+		promises = input;
+
+#ifdef HAVE_PLEDGE
+	if (test)
+		RETURN_INT(1);
+	else
+		RETURN_INT(pledge(promises, execpromises));
+#else
+	if (test)
+		RETURN_INT(0);
+	else
+		RETURN_EMPTY;
+#endif
+}
+
+/*
+ * Unveil is supported only on OpenBSD. FreeBSD support is undergoing
+ * development.
+ *
+ * This system call hides filesystem from epic5 process, best explained
+ * by the example:
+ *
+ * @ unveil(/home/user/work/epic5/script r)
+ * @ unveil(/home/user/irclogs wc)
+ * @ unveil()
+ *
+ * Such usage will allow the client to access script directory in
+ * read-only mode and logs directory for writing and creating log files.
+ * In case of compromise epic5 won't be able to access to other files in
+ * the system, for example, it won't be able to get your ~/.ssh keys.
+ *
+ * After unveil() with no arguments no future calls to it are available,
+ * and filesystem becomes locked.
+ *
+ * The function returns 0 on success, -1 on error.
+ *
+ * There are special notes:
+ *
+ * - use full paths, don't use ~ and ~user modifiers
+ * - don't forget to unveil() paths to your shell for /exec (it grabs
+ *   the shell from '/set shell' to execute commands, if you don't
+ *   specify -direct flag)
+ * - if you connect to ssl servers - unveil() path to ssl cert file
+ * - if you don't use pledge() with dns promise - unveil()
+ *   /etc/resolv.conf
+ *
+ * https://man.openbsd.org/unveil
+ *
+ */
+BUILT_IN_FUNCTION(function_unveil, input)
+{
+	const char *	path = NULL;
+	const char *	permissions = NULL;
+	int		test = 0;
+	int		close = 0;
+
+	while (input && *input && my_isspace(*input))
+		input++;
+
+	if (input && *input == '{')
+	{
+		struct kwargs kwargs[] = {
+			{ "path", KWARG_TYPE_STRING, &path, 0 },
+			{ "permissions", KWARG_TYPE_STRING, &permissions, 0 },
+			{ "test", KWARG_TYPE_INTEGER, &test, 0 },
+			{ "close", KWARG_TYPE_BOOL, &close, 0 },
+			{ NULL, KWARG_TYPE_SENTINAL, NULL, 0 }
+		};
+
+		parse_kwargs(kwargs, input);
+	}
+	else
+	{
+		/* no future unveil() calls are allowed, FS becomes closed */
+		if (!*input)
+			close = 1;
+		else
+		{
+			GET_DWORD_ARG(path, input);
+			GET_DWORD_ARG(permissions, input);
+		}
+	}
+
+
+#ifdef HAVE_UNVEIL
+	if (test)
+		RETURN_INT(1);
+	else if (close)
+		RETURN_INT(unveil(NULL, NULL));
+	else
+		RETURN_INT(unveil(path, permissions));
+#else
+	if (test)
+		RETURN_INT(0);
+	else
+		RETURN_EMPTY;
+#endif
+}
 

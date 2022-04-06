@@ -377,6 +377,8 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 AC_CHECK_FUNC(finite, AC_DEFINE([HAVE_FINITE], 1, [Define if you have finite()]),)
 AC_CHECK_FUNC(tparm, AC_DEFINE([HAVE_TPARM], 1, [Define if you have tparm()]),)
 AC_CHECK_FUNC(newlocale, AC_DEFINE([HAVE_NEWLOCALE], 1, [Define if you have newlocale()]),)
+AC_CHECK_FUNC(unveil, AC_DEFINE([HAVE_UNVEIL], 1, [Define if you have unveil()]),)
+AC_CHECK_FUNC(pledge, AC_DEFINE([HAVE_PLEDGE], 1, [Define if you have pledge()]),)
 
 dnl -- Because someone is trying to use CentOS 5.11...
 AC_MSG_CHECKING(whether you are using a gnu libc that is so old it needs a hack to use newlocale)

@@ -239,6 +239,7 @@ Hookables hook_function_templates[] =
 	{ "WALLOP",		NULL,	3,	0,	0,	NULL, 0 },
 	{ "WHO",		NULL,	6,	0,	0,	NULL, 0 },
 	{ "WINDOW",		NULL,	2,	0,	HF_NORECURSE,	NULL, 0 },
+	{ "WINDOW_REBUILT",	NULL,	1,	0,	0,	NULL, 0 },
 	{ "WINDOW_COMMAND",	NULL,	1, 	0,	0,	NULL, 0 },
 	{ "WINDOW_CREATE",	NULL,	1, 	0,	0,	NULL, 0 },
 	{ "WINDOW_BEFOREKILL",	NULL,	1,	0,	0,	NULL, 0 },

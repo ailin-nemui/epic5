@@ -31,9 +31,9 @@ const char compile_time_options[] = {
  					'e',
 #endif /* EXEC_COMMAND */
  
-#ifdef USE_FLOW_CONTROL
+#if 0
  					'f',
-#endif /* USE_FLOW_CONTROL */
+#endif /* Used to be USE_FLOW_CONTROL, but was off */
  
 #if 1
  					'g',
@@ -51,10 +51,8 @@ const char compile_time_options[] = {
 					'k',
 #endif /* HACKED_DCC_WARNING */
 
-#ifdef HAVE_LONG_LONG
-#if defined(HAVE_STRTOLL) || defined(HAVE_ATOQ)
+#if defined(HAVE_LONG_LONG_INT) || defined(HAVE_INTMAX_T)
 					'l',
-#endif
 #endif
 
 #if 1

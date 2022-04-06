@@ -2126,6 +2126,7 @@ static	void	rebuild_scrollback (Window *w)
 	reconstitute_scrollback(w->refnum);
 	restore_window_positions(w, scrolling, holding, scrollback);
 	w->rebuild_scrollback = 0;
+	do_hook(WINDOW_REBUILT_LIST, "%d", w->user_refnum);
 }
 
 static void	save_window_positions (Window *w, intmax_t *scrolling, intmax_t *holding, intmax_t *scrollback)
@@ -5697,32 +5698,68 @@ WINDOWCMD(next)
 	return current_window->refnum;
 }
 
+/*
+ * Usage:	/WINDOW NOTIFY		Display current value
+ *		/WINDOW NOTIFY ON	Turn on 
+ *		/WINDOW NOTIFY OFF	Turn off
+ *		/WINDOW -NOTIFY		Turn off (silently)
+ *
+ * When this is on, a window will "notify" (show up in %F)
+ * automatically when it is:
+ *   1) Hidden, and has
+ *   2) Output to /window notify_level, and
+ *   3. This setting (/window notify) is ON.
+ * 
+ * Warnings:
+ *	Invalid value		is a no-op
+ */
 WINDOWCMD(notify)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
 
 	if (!window)
 		return 0;
-	if (!args)
-		return refnum;
 
-	if (!get_boolean("NOTIFY", args, &window->notify_when_hidden))
-		return 0;
+	if (!args)
+		window->notify_when_hidden = 0;
+	else
+	{
+		if (!get_boolean("NOTIFY", args, &window->notify_when_hidden))
+			return 0;
+	}
 
 	return refnum;
 }
 
-WINDOWCMD(notify_list)
+/*
+ * Usage:	/WINDOW NOTIFIED	Display current value
+ *		/WINDOW NOTIFIED ON	Turn on 
+ *		/WINDOW NOTIFIED OFF	Turn off
+ *		/WINDOW -NOTIFIED	Turn off (silently)
+ *
+ * Normally a window "notifies" when it is
+ *  1) Hidden, and has
+ *  2) Output to /window notifiy_level, and
+ *  3) /window notify is ON
+ * You can manually notify or un-notify a window with this verb.
+ *
+ * Warnings:
+ *	Invalid value		is a no-op
+ */
+WINDOWCMD(notified)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
 
 	if (!window)
 		return 0;
-	if (!args)
-		return refnum;
 
-	if (!get_boolean("NOTIFIED", args, &window->notified))
-		return 0;
+	if (!args)
+		window->notified = 0;
+	else 
+	{
+		if (!get_boolean("NOTIFIED", args, &window->notified))
+			return 0;
+	}
 
 	return refnum;
 }
@@ -7355,7 +7392,7 @@ static const window_ops options [] = {
 	{ "NEW_HIDE",		windowcmd_new_hide		}, /* * */
 	{ "NEXT",		windowcmd_next 			},
 	{ "NOSERV",		windowcmd_discon		},
-	{ "NOTIFIED",		windowcmd_notify_list 		},
+	{ "NOTIFIED",		windowcmd_notified 		},
 	{ "NOTIFY",		windowcmd_notify 		},
 	{ "NOTIFY_LEVEL",	windowcmd_notify_mask 		},
 	{ "NOTIFY_NAME",	windowcmd_notify_name 		},

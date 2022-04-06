@@ -130,6 +130,9 @@
 /* Define this if you have perl */
 #undef HAVE_PERL
 
+/* Define if you have pledge() */
+#undef HAVE_PLEDGE
+
 /* Define this to support python */
 #undef HAVE_PYTHON
 
@@ -293,6 +296,9 @@
 
 /* Define to 1 if the system has the type `unsigned long long int'. */
 #undef HAVE_UNSIGNED_LONG_LONG_INT
+
+/* Define if you have unveil() */
+#undef HAVE_UNVEIL
 
 /* Define to 1 if you have the <valgrind/memcheck.h> header file. */
 #undef HAVE_VALGRIND_MEMCHECK_H

@@ -1084,3 +1084,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove legacy compat for people without getaddrinfo()
 * Remove dead #define's in config.h
 * Fix /on switch_windows (rb zlonix)
+* Add $pledge() and $unveil() for openbsd (zlonix)
+* Add a "newlist" type for migrating linked lists to.
