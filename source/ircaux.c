@@ -1076,7 +1076,16 @@ int	normalize_filename (const char *str, Filename result)
 	}
 
 	if (realpath(str, result) == NULL)
+	{
+		/* 
+		 * We don't know what is in 'result' 
+		 * if realpath(3) fails, so let's make
+		 * it an empty string so it can't possibly
+		 * be a valid filename
+		 */
+		*result = 0;
 		return -1;
+	}
 
 	return 0;
 }

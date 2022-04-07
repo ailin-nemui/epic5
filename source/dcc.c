@@ -1787,8 +1787,7 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 	lock_dcc(NULL);
 
 	/* Handle directory as the last argument */
-	normalize_filename(argv[argc-1], pathname);
-	if (isdir(pathname))
+	if (!normalize_filename(argv[argc-1], pathname) && isdir(pathname))
 	{
 		/* Pretend the user did /set dcc_store_path argv[argc-1] */
 		x = pathname;

@@ -89,9 +89,9 @@ static FILE *	open_log (const char *logfile, FILE **fp)
 	if (normalize_filename(tempname, fullname))
 	{
 		yell("Warning: I could not normalize the filename [%s] "
-			"(the result was [%s] -- watch out", 
-			logfile, fullname);
-		(void)0;		/* Do nothing... */
+			"-- using it as is.", tempname);
+		/* Use the original (it will probably fail */
+		strlcpy(fullname, tempname, sizeof(fullname));
 	}
 
 	if ((*fp = fopen(fullname, "a")) != NULL)

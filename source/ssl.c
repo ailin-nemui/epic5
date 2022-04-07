@@ -170,7 +170,7 @@ void	set_ssl_root_certs_location (void *stuff)
 	    *path = 0;
 
 	    if (normalize_filename(p, path))
-		(void) 0;   /* File doesn't exist or is nonsense. just do the recovery */
+		*path = 0;   /* File doesn't exist or is nonsense. just do the recovery */
 
 	    /* 
 	     * If you set it to a directory, we overrule the directory default.

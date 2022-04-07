@@ -5520,15 +5520,48 @@ WINDOWCMD(log_mangle)
 
 
 /*
- * /WINDOW MERGE <newwin>
- * This moves everything (channels, queries, and lastlog) from the current
- * window into another window <newwin>.  For now, <newwin> must be on the
- * same server.  Finally, it does a window kill on this window.
+ * Usage:	/WINDOW MERGE <window>		Merge this window into <window>
+ * 		/WINDOW NAME "one two"		Double quoted names are OK
+ *		/WINDOW NAME -			Unset (clear) the window's name
+ *		/WINDOW -NAME			Unset (clear) the window's name
+ *		/WINDOW NAME			Output the window's name
+ * 
+ * The window's NAME is used for status expando %R and can be used to refer to
+ * a window (along side its refnum) in the /WINDOW command.
+ *
+ * Warnings:
+ *	/WINDOW -MERGE		is a no-op
+ *
+ * Return value:
+ *	The window represented by <window>
+ *
+ * Errors:
+ *	If the target window <window> is not a valid window, it is an error.
+ *	If the target window <window> is connected to a different server, it is an error
+ *
+ * Side effects:
+ *	Upon success, the current window is killed
+ *	Upon success, the current window is changed to <window>
+ *	The following things in the current window are moved to <window>:
+ *	 * All lastlog items (which will cascade to scrollback)
+ *	 * All scrollback items
+ *	 * All channels
+ *	 * All /LOG files
+ *	 * All /TIMERs
+ *	 * All /WINDOW ADDs (nicklists)
+ *	The scrollback for <window> will be rebuilt
+ *	The following things in the current window will be closed:
+ *	 * /WINDOW QUERY
+ *	 * /WINDOW LOG/LOGFILE
+ *
+ * Problems:
+ *	There are probably other things that track windows that 
+ *	need to be migrated/handled
  */
 WINDOWCMD(merge)
 {
 	Window *tmp;
-	Window *	window = get_window_by_refnum_direct(refnum);
+	Window *window = get_window_by_refnum_direct(refnum);
 
 	if (!window)
 		return 0;
@@ -5541,6 +5574,14 @@ WINDOWCMD(merge)
 
 		oldref = window->refnum;
 		newref = tmp->refnum;
+
+		if (get_window_server(oldref) != get_window_server(newref))
+		{
+			say("Cannot merge window %d into window %d - different server", 
+				get_window_user_refnum(oldref),
+				get_window_user_refnum(newref));
+			return 0;
+		}
 
 		move_all_lastlog(oldref, newref);
 		channels_merge_windows(oldref, newref);
@@ -5565,7 +5606,24 @@ WINDOWCMD(merge)
 	return 0;
 }
 
-
+/*
+ * Usage:	/WINDOW MOVE <number>	Move window up or down <number> positions
+ *
+ * Move a visible (split) window up or down <number> spots on the screen.
+ * <number> may wrap both directions.  That is to say, if you go to the bottom
+ * window on a screen and /WINDOW MOVE 2, it will move to be the 2nd window from
+ * the top.  Similarly, if you /WINDOW MOVE -2 from the top window it will become
+ * the 2nd window from the bottom.
+ *
+ * Warnings:
+ *	When <number> == 0			is a no-op
+ *	When window is hidden			is a no-op
+ *	When there is only one window on screen	is a no-op
+ *	/WINDOW -MOVE				is a no-op
+ *
+ * Side effects:
+ *	The order of the windows will be changed
+ */
 WINDOWCMD(move)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
@@ -5581,6 +5639,24 @@ WINDOWCMD(move)
 	return refnum;
 }
 
+/*
+ * Usage:	/WINDOW MOVE_TO <number>	Move window to <number>th from the top
+ *
+ * Move a visible (split) window to an absolute order position on the screen 
+ * (ie, /WINDOW MOVE_TO 1 makes it the top window; 2 the second-to-top window, etc)
+ *
+ * If <number> is greater than the number of windows on the screen, then it is moved
+ * to the bottom place (ie, /window move_to 999 moves window to bottom)
+ *
+ * Warnings:
+ *	When <number> < 1			is a no-op
+ *	When window is hidden			is a no-op
+ *	When there is only one window on screen	is a no-op
+ *	/WINDOW -MOVE_TO			is a no-op
+ *
+ * Side effects:
+ *	The order of the windows will be changed
+ */
 WINDOWCMD(move_to)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
@@ -5596,6 +5672,21 @@ WINDOWCMD(move_to)
 	return refnum;
 }
 
+/*
+ * Usage:	/WINDOW NAME <string>		Set the window's name
+ * 		/WINDOW NAME "one two"		Double quoted names are OK
+ *		/WINDOW NAME -			Unset (clear) the window's name
+ *		/WINDOW -NAME			Unset (clear) the window's name
+ *		/WINDOW NAME			Output the window's name
+ * 
+ * The window's NAME is used for status expando %R and can be used to refer to
+ * a window (along side its refnum) in the /WINDOW command.
+ *
+ * Warnings:
+ *	/WINDOW NAME ""		is a no-op
+ *	/WINDOW NAME <number>	is a no-op
+ *	/WINDOW NAME <name>	where <name> is already in use is a no-op
+ */
 WINDOWCMD(name)
 {
 	char *arg;
@@ -5628,14 +5719,13 @@ windowcmd_name__unset_name:
 		}
 		else if (is_number(arg))
 			say("You cannot name your window a number, that could confuse your script.");
-		else if (is_window_name_unique(arg))
+		else if (!is_window_name_unique(arg))
+			say("%s is not unique!", arg);
+		else
 		{
 			malloc_strcpy(&window->name, arg);
 			window_statusbar_needs_update(window->refnum);
 		}
-
-		else
-			say("%s is not unique!", arg);
 	}
 	else
 		say("You must specify a name for the window!");
@@ -5643,6 +5733,24 @@ windowcmd_name__unset_name:
 	return refnum;
 }
 
+/*
+ * Usage:	/WINDOW NEW
+ * 		/WINDOW -NEW	(is permitted but not recommended)
+ *
+ * Create a new visible ("split") window, connected to the same server
+ * as the current window.
+ *
+ * Return value:
+ *	The new window is returned
+ *
+ * Warnings:
+ *	/WINDOW NEW in dumb mode	is a no-op
+ *
+ * Side effects;
+ *	The new window is made the current window
+ *	The new window is made the input window
+ *	Other windows on the screen will be resized
+ */
 WINDOWCMD(new)
 {
 	Window *tmp;
@@ -5658,18 +5766,52 @@ WINDOWCMD(new)
 	return window->refnum;
 }
 
+/*
+ * Usage:	/WINDOW NEW_HIDE
+ * 		/WINDOW -NEW_HIDE	(is permitted but not recommended)
+ *
+ * Create a new window that is hidden from its inception.
+ * This is an atomic version of /WIDNDOW NEW HIDE.
+ */
 WINDOWCMD(new_hide)
 {
 	new_window(NULL);
 	return refnum;
 }
 
+/*
+ * Usage:	/WINDOW NEXT
+ * 		/WINDOW -NEXT	(is permitted but not recommended)
+ *
+ * Do a /WINDOW SWAP with the hidden window whose user refnum is 
+ * immediately after this window's.
+ *
+ * Conceptually, every window is sorted according to its "user_refnum".
+ * You can use /WINDOW NEXT to cycle through your invisible windows
+ * in user_refnum sort order.  It will wrap around to the highest refnum
+ * when you reach the lowest hidden window.
+ *
+ * Return value:
+ *	The next higher hidden window is returned
+ *
+ * Errors:
+ *	No hidden windows		is an error
+ *
+ * Warnings:
+ *	No warnings
+ *
+ * Side effects;
+ *	The current window is hidden
+ *	The next higher hidden window is made visible
+ *	The next higher hidden window is made the current window
+ *	The next higher hidden window is made the current input window
+ */
 WINDOWCMD(next)
 {
-	Window	*tmp;
-	Window	*next = NULL;
-	Window	*smallest = NULL;
-	Window *	window = get_window_by_refnum_direct(refnum);
+	Window *tmp;
+	Window *next = NULL;
+	Window *smallest = NULL;
+	Window *window = get_window_by_refnum_direct(refnum);
 
 	if (!window)
 		return 0;
@@ -5813,6 +5955,7 @@ WINDOWCMD(notify_mask)
 
 /*
  * Usage:	/WINDOW NOTIFY_NAME <string>	Set the notify name
+ * 		/WINDOW NOTIFY_NAME "one two"	Double quoted names are OK
  *		/WINDOW NOTIFY_NAME -		Unset (clear) the notify name
  *		/WINDOW -NOTIFY_NAME		Unset (clear) the notify name
  *		/WINDOW NOTIFY_NAME		Output the notify name
@@ -5852,9 +5995,13 @@ WINDOWCMD(notify_name)
 			say("Window NOTIFY NAME unset");
 		}
 
-		/* /window name to existing name -- ignore this. */
+		/* /window name to existing name -- allow to change case */
 		else if (window->notify_name && (my_stricmp(window->notify_name, arg) == 0))
+		{
+			malloc_strcpy(&window->notify_name, arg);
+			window_statusbar_needs_update(window->refnum);
 			say("Window NOTIFY NAME is %s", window->notify_name);
+		}
 
 		else
 		{
