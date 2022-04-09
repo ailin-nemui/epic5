@@ -716,7 +716,8 @@ void	add_to_logs (long window, int servref, const char *target, int level, const
 	    if (log->type == LOG_WINDOWS)
 	    {
 		for (i = 0; i < MAX_TARGETS; i++) {
-		    if (log->refnums[i] == window) {
+		    if (get_window_refnum(window) == log->refnums[i] ||
+		        get_window_user_refnum(window) == log->refnums[i]) {
 			if (!mask_isset(&log->mask, level))
 				continue;
 			time(&log->activity);

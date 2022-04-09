@@ -408,7 +408,7 @@ static void 	delete_window (Window *window)
 	        (!fixed && window->screen->visible_windows - fixed_wins <= 1
 			&& !invisible_list))
 	    {
-		say("You can't kill the last window!");
+		say("You can't kill the only window!");
 		return;
 	    }
 	}
@@ -4334,10 +4334,29 @@ WINDOWCMD(add)
 }
 
 /*
- * /WINDOW BACK
- * Changes the current window pointer to the window that was most previously
- * the current window.  If that window is now hidden, then it is swapped with
- * the current window.
+ * Usage:	/WINDOW BACK 	Go back to the previous window on screen
+ * 
+ * Switches the screen's current window to the window that was previously
+ * the current window.  
+ *  - If the previous window does not exist, the top window on the screen is used.
+ *  - If the previous window is visible, then it behaves as /WINDOW REFNUM.   
+ *  - If the previous window is hidden, then it behaves as /WINDOW SWAP 
+ *
+ * Caveats:
+ *  - If the previous window is on a different screen, then it is made the
+ *    current window of whatever screen it is on.
+ *
+ * Side effects:
+ *	The previous window is made the current window
+ *	If the previous window is hidden, it is made visible and the current window
+ *		is made hidden.
+ *
+ * Return value:
+ *	The previous window is returned (see above)
+ *
+ * Warnings:
+ *	/WINDOW -BACK		is a no-op
+ *	/WINDOW ADD		is a no-op
  */
 WINDOWCMD(back)
 {

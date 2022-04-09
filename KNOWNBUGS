@@ -1090,3 +1090,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make /log on fail (ie, reset to OFF) if the log can't be opened (rb zlonix)
 * More improvements to window.c, refactor of /window query
 * Several scripting changes by zlonix
+* When writing to /log-files, check both refnum and user-refnum (rb zlonix)
+
