@@ -198,7 +198,7 @@ struct	ScreenStru *	screen;			/* The screen we belong to */
 typedef	struct	window_stack_stru
 {
 struct	window_stack_stru *	next;
-	unsigned 		refnum;
+	int			refnum;
 }	WindowStack;
 
 
@@ -247,11 +247,11 @@ const	char	*get_window_echannel		(int);
 	int	set_window_server		(int, int);
 	void	change_window_server		(int, int);
 	void	window_check_servers		(void);
-	int	renormalize_window_levels	(unsigned, Mask);
+	int	renormalize_window_levels	(int, Mask);
 #define message_from(x, y) real_message_from(x, y, __FILE__, __LINE__)
 	int	real_message_from		(const char *, int, const char *, int);
 #define message_setall(x, y, z) real_message_setall(x, y, z, __FILE__, __LINE__)
-	int     real_message_setall		(unsigned, const char *, int, const char *, int);
+	int     real_message_setall		(int , const char *, int, const char *, int);
 	void	pop_message_from		(int);
 	Char *	get_who_from			(void);
 	int	get_who_level			(void);
@@ -260,9 +260,9 @@ const	char	*get_window_echannel		(int);
 	int	get_to_window			(void);
 
 	void	clear_all_windows		(int, int, int);
-	void	clear_window_by_refnum		(unsigned, int);
+	void	clear_window_by_refnum		(int, int);
 	void	unclear_all_windows		(int, int, int);
-	void	unclear_window_by_refnum	(unsigned, int);
+	void	unclear_window_by_refnum	(int, int);
 	void	set_scrollback_size		(void *);
 	void	set_scroll_lines		(void *);
 	void	set_continued_line		(void *);
@@ -283,66 +283,70 @@ const	char	*get_window_echannel		(int);
 	void	check_message_from_queue 	(int);
 
 	/* * * * */
+	int	clear_window_lastlog_mask	(int);
 	int     lookup_window 			(const char *desc);
 	int	lookup_any_visible_window	(void);
 	int	lookup_window_by_server		(int);
-	int     get_server_current_channel	(int);
-	int	set_window_change_line		(int, int);
-	int	get_window_display_lines	(int);
-	int     get_window_geometry 		(int, int *co, int *li);
-	int    	get_window_indent 		(int);
-	int	clear_window_lastlog_mask	(int);
-	int	get_window_lastlog_mask		(int, Mask *);
-	int	set_window_lastlog_mask		(int, Mask);
-	int	get_window_lastlog_max		(int);
-	int     set_window_lastlog_max          (int, int);
-	int	get_window_lastlog_size		(int);
-	int	set_window_lastlog_size_incr	(int);
-	int	set_window_lastlog_size_decr	(int);
-	FILE *	get_window_log_fp		(int);
-	int	get_window_mask			(int, Mask *);
-	int	get_window_notified		(int);
-	int     set_window_notified		(int refnum, int value);
-	int	set_window_notify_mask		(int, Mask);
-	int	set_window_priority		(int, int);
-	int	get_window_refnum		(int);
-struct ScreenStru *get_window_screen		(int);
-	int	get_window_user_refnum		(int);
-	int     get_server_current_window	(int);
-	int     get_window_priority		(int);
-	int	window_is_valid			(int);
-	int	get_window_skip			(int);
-	int	get_window_fixed_size		(int);
-	int	set_window_indent		(int, int);
-	List *	get_window_nicks		(int);
-	int	get_window_hold_mode		(int);
-	int     get_window_hold_interval 	(int);
-	int     get_window_holding_distance_from_display_ip 	(int);
-	int     get_window_scrollback_distance_from_display_ip 	(int);
-	Char *	get_window_notify_name 				(int);
-	Char *	get_window_name 				(int);
-	int     get_window_scrolling_distance_from_display_ip 	(int refnum);
-	int     get_window_cursor 				(int refnum);
-	int     get_window_scrollback_top_of_display_exists 	(int refnum);
-	int     get_window_display_buffer_size 			(int refnum);
-	Status *get_window_status 				(int refnum);
-	int     get_window_swappable 				(int refnum);
-	int	get_window_current_activity			(int);
-	Char *	get_window_current_activity_format		(int refnum);
-	Char *	get_window_current_activity_data 		(int refnum);
-	int	get_window_bottom			(int);
 
-	Display *get_window_scrollback_top_of_display 	(int refnum);
-	Display *get_window_scrolling_top_of_display 	(int refnum);
-	Display *get_window_display_ip 			(int refnum);
-	Display *get_window_holding_top_of_display 	(int refnum);
-	int	get_window_toplines_showing 		(int refnum);
-	Char *	get_window_topline 			(int refnum, int topline);
-	int	get_window_top 				(int refnum);
+	int     get_server_current_channel	(int);
+	int     get_server_current_window	(int);
+
+	int	get_window_bottom			(int);
+	int	get_window_current_activity		(int);
+	Char *	get_window_current_activity_data 	(int);
+	Char *	get_window_current_activity_format	(int);
+	int     get_window_cursor 			(int);
+	int     get_window_display_buffer_size 		(int);
+	Display *get_window_display_ip 			(int);
+	int	get_window_display_lines		(int);
+	int	get_window_fixed_size			(int);
+	int     get_window_geometry 			(int, int *, int *);
+	int     get_window_hold_interval 		(int);
+	int	get_window_hold_mode			(int);
+	int     get_window_holding_distance_from_display_ip 	(int);
+	Display *get_window_holding_top_of_display 	(int);
+	int	get_window_lastlog_mask			(int, Mask *);
+	int	get_window_lastlog_max			(int);
+	int	get_window_lastlog_size			(int);
+	int    	get_window_indent 			(int);
+	FILE *	get_window_log_fp			(int);
+	int	get_window_mask				(int, Mask *);
 	int	get_window_my_columns 			(int refnum);
-	int	set_window_cursor 			(int refnum, int value);
-	int	set_window_cursor_decr 			(int refnum);
-	int	set_window_cursor_incr 			(int refnum);
+	Char *	get_window_name 			(int);
+	List *	get_window_nicks			(int);
+	int	get_window_notified			(int);
+	Char *	get_window_notify_name 			(int);
+	int     get_window_priority			(int);
+	int	get_window_refnum			(int);
+struct ScreenStru *get_window_screen			(int);
+	int     get_window_scrollback_distance_from_display_ip 	(int);
+	Display *get_window_scrollback_top_of_display 		(int);
+	int     get_window_scrollback_top_of_display_exists 	(int);
+	Display *get_window_scrolling_top_of_display 		(int);
+	int     get_window_scrolling_distance_from_display_ip 	(int);
+	int	get_window_skip				(int);
+	Status *get_window_status 			(int);
+	int     get_window_swappable 			(int);
+	int	get_window_top 				(int);
+	Char *	get_window_topline 			(int, int);
+	int	get_window_toplines_showing 		(int);
+	int	get_window_user_refnum			(int);
+
+	int	set_window_change_line			(int, int);
+	int	set_window_cursor 			(int, int);
+	int	set_window_cursor_decr 			(int);
+	int	set_window_cursor_incr 			(int);
+	int	set_window_indent			(int, int);
+	int	set_window_lastlog_mask			(int, Mask);
+	int     set_window_lastlog_max         		(int, int);
+	int	set_window_lastlog_size_incr		(int);
+	int	set_window_lastlog_size_decr		(int);
+	int     set_window_notified			(int, int);
+	int	set_window_notify_mask			(int, Mask);
+	int	set_window_priority			(int, int);
+
+	int	window_is_valid				(int);
+
 
 #endif /* __window_h__ */
 

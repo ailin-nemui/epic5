@@ -1,5 +1,34 @@
 EPIC5-2.2
 
+*** News 04/08/2022 -- Restatement of /WINDOW QUERY
+	The behavior of /WINDOW QUERY, /WINDOW ADD, and /WINDOW REMOVE 
+	was unified some time ago, but the behavior was inconsistent
+	and unclear.  So the code has been harmonized and now has the
+	following behavior:
+
+	/WINDOW QUERY nick
+		Add 'nick' to target list and make current target (query)
+	/WINDOW QUERY nick1,nick2
+		Add 'nick1' and 'nick2' to target list and make the last
+		target (nick2) the current target (query)
+	/WINDOW QUERY
+		Remove the current target (query) from the target list.
+		If there are other targets in the target list, then the 
+		previous query will become the new current target (query)
+	/WINDOW -QUERY
+		Remove all targets from the window's target list.
+		There will be no query.
+
+	/WINDOW ADD nick
+		Add 'nick' to target list, but not as the current target
+	/WINDOW REMOVE nick
+		Remove 'nick' from the target list.  If you REMOVE the
+		current target (query) then another target will become
+		the new current target (query)
+
+	Don't forget the SWITCH_QUERY keybinding, to cycle between the
+	targets in a window.
+
 *** News 04/06/2022 -- New functtions $pledge() and $unveil()
 	These functions call the OpenBSD syscalls, if you're running on 
 	OpenBSD.

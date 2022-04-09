@@ -114,8 +114,8 @@ static	Window *	windows[INTERNAL_REFNUM_CUTOVER * 2 + 1] = { NULL };
 
 static 	void 	remove_from_invisible_list 	(Window *);
 static 	void 	swap_window 			(Window *, Window *);
-static	Window	*get_next_window  		(Window *);
-static	Window	*get_previous_window 		(Window *);
+static	int	get_next_window  		(int);
+static	int	get_previous_window 		(int);
 static 	void 	revamp_window_masks 		(Window *);
 static	void 	clear_window 			(Window *);
 static	void	resize_window_display 		(Window *);
@@ -144,7 +144,7 @@ static	void	rebuild_scrollback 		(Window *w);
 static	void	window_check_columns 		(Window *w);
 static void	restore_window_positions 	(Window *w, intmax_t scrolling, intmax_t holding, intmax_t scrollback);
 static void	save_window_positions 		(Window *w, intmax_t *scrolling, intmax_t *holding, intmax_t *scrollback);
-static void	adjust_context_windows 		(unsigned old_win, unsigned new_win);
+static void	adjust_context_windows 		(int old_win, int new_win);
 static void	window_statusbar_needs_redraw 	(int);
 static void	window_change_server 		(Window * win, int server) ;
 static Window *	add_to_window_list 		(Screen *screen, Window *new_w);
@@ -2287,17 +2287,16 @@ BUILT_IN_KEYBINDING(swap_last_window)
  */
 BUILT_IN_KEYBINDING(next_window)
 {
-	Window *w;
+	int	refnum;
 
 	if (!last_input_screen)
 		return;
 	if (last_input_screen->visible_windows == 1)
 		return;
 
-	w = get_next_window(get_window_by_refnum_direct(last_input_screen->input_window));
-	make_window_current_by_refnum(w->refnum);
-	/* XXX This is dangerous -- 'make_window_current' might nuke 'w'! */
-	set_screens_current_window(last_input_screen, w->refnum);
+	refnum = get_next_window(last_input_screen->input_window);
+	make_window_current_by_refnum(refnum);
+	set_screens_current_window(last_input_screen, refnum);
 	update_all_windows();
 }
 
@@ -2319,17 +2318,16 @@ BUILT_IN_KEYBINDING(swap_next_window)
  */
 BUILT_IN_KEYBINDING(previous_window)
 {
-	Window *w;
+	int	refnum;
 
 	if (!last_input_screen)
 		return;
 	if (last_input_screen->visible_windows == 1)
 		return;
 
-	w = get_previous_window(get_window_by_refnum_direct(last_input_screen->input_window));
-	make_window_current_by_refnum(w->refnum);
-	/* XXX This is dangerous -- 'make_window_current' might nuke 'w'! */
-	set_screens_current_window(last_input_screen, w->refnum);
+	refnum = get_previous_window(last_input_screen->input_window);
+	make_window_current_by_refnum(refnum);
+	set_screens_current_window(last_input_screen, refnum);
 	update_all_windows();
 }
 
@@ -2347,6 +2345,9 @@ BUILT_IN_KEYBINDING(swap_previous_window)
 /* show_window: This makes the given window visible.  */
 static void 	show_window (Window *window)
 {
+	Screen *s;
+	int	refnum;
+
 	if (!window->swappable)
 	{
 		if (window->name)
@@ -2371,10 +2372,10 @@ static void 	show_window (Window *window)
 		}
 	}
 
-	make_window_current_by_refnum(window->refnum);
-	/* XXX This is dangerous -- 'make_window_current' might nuke 'w'! */
-	set_screens_current_window(window->screen, window->refnum);
-	return;
+	s = window->screen;
+	refnum = window->refnum;
+	make_window_current_by_refnum(refnum);
+	set_screens_current_window(s, refnum);
 }
 
 
@@ -2482,8 +2483,9 @@ int	get_server_current_window (int server)
  * needs to be able to deal with wrapping over to the top of the screen,
  * if the next window is at the bottom, or isnt selectable, YGTI.
  */
-static	Window	*get_next_window  (Window *w)
+static	int	get_next_window  (int window_)
 {
+	Window *w = get_window_by_refnum_direct(window_);
 	Window *last = w;
 	Window *new_w = w;
 
@@ -2499,7 +2501,7 @@ static	Window	*get_next_window  (Window *w)
 	}
 	while (new_w && new_w->skip && new_w != last);
 
-	return new_w;
+	return new_w->refnum;
 }
 
 /*
@@ -2507,8 +2509,9 @@ static	Window	*get_next_window  (Window *w)
  * window list.  This automatically wraps to the last window in the window
  * list 
  */
-static	Window	*get_previous_window (Window *w)
+static	int	get_previous_window (int window_)
 {
+	Window *w = get_window_by_refnum_direct(window_);
 	Window *last = w;
 	Window *new_w = w;
 
@@ -2524,7 +2527,7 @@ static	Window	*get_previous_window (Window *w)
 	}
 	while (new_w->skip && new_w != last);
 
-	return new_w;
+	return new_w->refnum;
 }
 
 /* 
@@ -2613,6 +2616,38 @@ const char 	*get_window_prompt (int refnum)
 #endif
 
 /* * * * * * * * * * * * * * * TARGETS AND QUERIES * * * * * * * * * * * */
+
+const char *	get_target_special (int window, int server, const char *target)
+{
+	if (!strcmp(target, "."))
+	{
+		if (!(target = get_server_sent_nick(server)))
+			say("You have not messaged anyone yet");
+	}
+	else if (!strcmp(target, ","))
+	{
+		if (!(target = get_server_recv_nick(server)))
+			say("You have not recieved a message yet");
+	}
+	else if (!strcmp(target, "*") && 
+		!(target = get_window_echannel(window)))
+	{
+		say("You are not on a channel");
+	}
+	else if (*target == '%')
+	{
+		/* 
+		 * You are allowed to query non-existant /exec's.
+		 * This allows you to capture all output from the
+		 * /exec by redirecting it to the window before it
+		 * is launched.  Be careful not to send a message
+		 * to a non-existing process!
+		 */
+	}
+
+	return target;
+}
+
 /*
  * get_window_target: returns the target for the window with the given
  * refnum (or for the current window).  The target is either the query nick
@@ -2690,9 +2725,13 @@ BUILT_IN_KEYBINDING(switch_query)
 		win->user_refnum, old_query, winner->nick);
 }
 
-static void	recheck_queries (Window *win)
+static void	recheck_queries (int window_)
 {
+	Window *win = get_window_by_refnum_direct(window_);
 	WNickList *nick;
+
+	if (!win)
+		return;
 
 	win->query_counter = 0;
 
@@ -2706,47 +2745,123 @@ static void	recheck_queries (Window *win)
 	window_statusbar_needs_update(win->refnum);
 }
 
+/*
+ * check_window_target -- is this target owned by this window?
+ */
+static	int	check_window_target (int window_, int server, const char *nick)
+{
+	Window *	w = get_window_by_refnum_direct(window_);
+
+	if (get_window_server(window_) != server)
+		return 0;
+
+	if (find_in_list((List *)w->nicks, nick, !USE_WILDCARDS))
+		return 1;
+
+	return 0;
+}
+
+/*
+ * get_window_for_target -- given a target, which window (if any) owns it?
+ */
+int	get_window_for_target (int server, const char *nick)
+{
+	int	window = 0;
+
+	while (traverse_all_windows2(&window))
+		if (check_window_target(window, server, nick))
+			return window;
+
+	return 0;
+}
+
+int	remove_window_target (int window_, int server, const char *nick)
+{
+	Window *	w = get_window_by_refnum_direct(window_);
+	WNickList *	item;
+
+	if (get_window_server(window_) != server)
+		return 0;
+
+	if ((item = (WNickList *)remove_from_list((List **)&w->nicks, nick)))
+	{
+		int	l;
+
+		l = message_setall(w->refnum, get_who_from(), get_who_level());
+		say("Removed %s from window target list", item->nick);
+		pop_message_from(l);
+
+		new_free(&item->nick);
+		new_free((char **)&item);
+
+		recheck_queries(window_);
+		return 1;
+	}
+
+	return 0;
+}
+
 /* 
+ * add_window_target -- assure the target 'nick' on server 'server' belongs to 'window_'
+ *
  * This forces any window for the server to release its claim upon
  * a nickname (so it can be claimed by another window)
  */
-static int	window_claims_nickname (unsigned window_, int server, const char *nick)
+static int	add_window_target (int window_, int server, const char *target, int as_current)
 {
-        Window *w = NULL;
-	WNickList *item;
-	int 	l;
-	int	already_claimed = 0;
-	int	window;
+	int		other_window;
+	int		l;
+	Window *	w;
+	WNickList *	new_w;
 
-	window = get_window_refnum(window_);
-        while (traverse_all_windows(&w))
-        {
-            if (w->server != server)
-		continue;
+	if (!(w = get_window_by_refnum_direct(window_)))
+		return 0;
 
-	    if (w->refnum != window)
-	    {
-		if ((item = (WNickList *)remove_from_list((List **)&w->nicks, nick)))
+	if (get_window_server(window_) != server)
+		return 0;
+
+	/*
+	 * Do I already own this target?  If not, go looking for it elsewhere
+	 */
+	if (!(new_w = (WNickList *)find_in_list((List *)w->nicks, target, !USE_WILDCARDS)))
+	{
+		int	need_create;
+
+		if ((other_window = get_window_for_target(server, target)))
 		{
-			l = message_setall(w->refnum, get_who_from(), get_who_level());
-			say("Removed %s from window name list", item->nick);
+			if (other_window == window_)
+				need_create = 0;	/* XXX I just checked for this! */
+			else
+			{
+				remove_window_target(other_window, server, target);
+				need_create = 1;
+			}
+		}
+		else
+			need_create = 1;
+
+		if (need_create)
+		{
+			l = message_setall(window_, get_who_from(), get_who_level());
+			say("Added %s to window target list", target);
 			pop_message_from(l);
 
-			new_free(&item->nick);
-			new_free((char **)&item);
+			new_w = (WNickList *)new_malloc(sizeof(WNickList));
+			new_w->nick = malloc_strdup(target);
+			add_to_list((List **)&(w->nicks), (List *)new_w);
 		}
-	    }
-	    else
-	    {
-		if (find_in_list((List *)w->nicks, nick, !USE_WILDCARDS))
-			already_claimed = 1;
-	    }
 	}
 
-	if (already_claimed)
-		return -1;
+	if (as_current)
+	{
+		new_w->counter = current_query_counter++;
+		w->query_counter = new_w->counter;
+		recheck_queries(window_);
+	}
 	else
-		return 0;
+		new_w->counter = 0;
+
+	return 1;
 }
 
 
@@ -2893,7 +3008,7 @@ int 	set_window_server (int refnum, int servref)
  * so at the next sequence point it will be closed.
  * 
  * This is used by the /SERVER command (via /SERVER +, /SERVER -, or 
- * /SERVER <name>), and by the 465 numeric (YOUREBANNEDCREPP).
+ * /SERVER <name>), and by the 465 numeric (YOUREBANNEDCREEP).
  */
 void	change_window_server (int old_server, int new_server)
 {
@@ -3018,7 +3133,7 @@ void 	window_check_channels (void)
  * to NONE you're definitely gonna want to /set new_server_lastlog_level NONE
  * if you haven't done that already.
  */
-int	renormalize_window_levels (unsigned refnum, Mask mask)
+int	renormalize_window_levels (int refnum, Mask mask)
 {
 	Window	*win, *tmp;
 	int	i, claimed;
@@ -3087,13 +3202,13 @@ struct output_context {
 	int		who_level;
 	const char *	who_file;
 	int		who_line;
-	unsigned	to_window;
+	int		to_window;
 };
 struct output_context *	contexts = NULL;
 int			context_max = -1;
 int 			context_counter = -1;
 
-int	real_message_setall (unsigned refnum, const char *who, int level, const char *file, int line)
+int	real_message_setall (int refnum, const char *who, int level, const char *file, int line)
 {
 	if (context_max < 0)
 	{
@@ -3134,7 +3249,7 @@ int	real_message_setall (unsigned refnum, const char *who, int level, const char
  * This is needed when a window is killed, so that further output
  * in any contexts using that window has somewhere to go.
  */
-static void	adjust_context_windows (unsigned old_win, unsigned new_win)
+static void	adjust_context_windows (int old_win, int new_win)
 {
 	int context;
 
@@ -3183,12 +3298,6 @@ int	real_message_from (const char *who, int level, const char *file, int line)
 	contexts[context_counter].who_file = file;
 	contexts[context_counter].who_line = line;
 	contexts[context_counter].to_window = -1;
-
-#if 0
-	who_from = who;
-	who_level = level;
-	to_window = NULL;
-#endif
 	return context_counter++;
 }
 
@@ -3210,12 +3319,6 @@ void	pop_message_from (int context)
 	contexts[context_counter].who_file = NULL;
 	contexts[context_counter].who_line = -1;
 	contexts[context_counter].to_window = -1;
-
-#if 0
-	who_from = contexts[context_counter - 1].who_from;
-	who_level = contexts[context_counter - 1].who_level;
-	to_window = get_window_by_refnum_direct(contexts[context_counter - 1].to_window);
-#endif
 }
 
 /* 
@@ -3310,7 +3413,7 @@ void 	clear_all_windows (int visible, int hidden, int unhold)
  * clear_window_by_refnum: just like clear_window(), but it uses a refnum. If
  * the refnum is invalid, the current window is cleared. 
  */
-void 	clear_window_by_refnum (unsigned refnum, int unhold)
+void 	clear_window_by_refnum (int refnum, int unhold)
 {
 	Window	*tmp;
 
@@ -3354,7 +3457,7 @@ void	unclear_all_windows (int visible, int hidden, int unhold)
 	}
 }
 
-void	unclear_window_by_refnum (unsigned refnum, int unhold)
+void	unclear_window_by_refnum (int refnum, int unhold)
 {
 	Window *tmp;
 
@@ -4189,15 +4292,21 @@ static int 	get_boolean (const char *name, char **args, short *var)
 #define EXT_WINDOWCMD(x) int windowcmd_ ## x (int refnum, char **args)
 
 /*
- * /WINDOW ADD nick<,nick>
- * Adds a list of one or more nicknames to the current list of usupred
- * targets for the current window.  These are matched up with the nick
- * argument for message_from().
+ * Usage:	/WINDOW ADD <target>		Add target to window
+ *		/WINDOW ADD <target>[,<target>]	Add multiple targets to window
+ * 
+ * Adds one or more non-current targets to this window.  
+ * (The "current target" is also known as the "query").
+ *
+ * Messages to or from a target associated with a window are routed to that 
+ * window rather than to the output level they would otherwise go to.
+ *
+ * Warnings:
+ *	/WINDOW -ADD		is a no-op
+ *	/WINDOW ADD		is a no-op
  */
 WINDOWCMD(add)
 {
-	char		*ptr;
-	WNickList 	*new_w;
 	char 		*arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
@@ -4206,26 +4315,19 @@ WINDOWCMD(add)
 	if (!args)
 		return refnum;
 
-	arg = next_arg(*args, args);
-	if (!arg)
+	if (!(arg = next_arg(*args, args)))
 		say("ADD: Add nicknames to be redirected to this window");
-
-	else while (arg)
+	else 
 	{
-		if ((ptr = strchr(arg, ',')))
-			*ptr++ = 0;
-		if (!window_claims_nickname(window->refnum, window->server, arg))
-		{
-			say("Added %s to window name list", arg);
-			new_w = (WNickList *)new_malloc(sizeof(WNickList));
-			new_w->nick = malloc_strdup(arg);
-			new_w->counter = 0;
-			add_to_list((List **)&(window->nicks), (List *)new_w);
-		}
-		else
-			say("%s already on window name list", arg);
+		char *	a = LOCAL_COPY(arg);
+		const char *	target;
 
-		arg = ptr;
+		while (a && *a)
+		{
+			if ((target = next_in_comma_list(a, &a)))
+				if ((target = get_target_special(refnum, get_window_server(refnum), target)))
+					add_window_target(refnum, get_window_server(refnum), target, 0);
+		}
 	}
 
 	return refnum;
@@ -4240,23 +4342,23 @@ WINDOWCMD(add)
 WINDOWCMD(back)
 {
 	Window *tmp;
-	Window *	window = get_window_by_refnum_direct(refnum);
+	Window *window = get_window_by_refnum_direct(refnum);
+	int	other_refnum;
 
 	if (!args)
 		return refnum;
 
-	tmp = get_window_by_refnum_direct(last_input_screen->last_window_refnum);
-	if (!tmp)
-		tmp = last_input_screen->window_list;
+	if (!(other_refnum = last_input_screen->last_window_refnum))
+		other_refnum = last_input_screen->window_list->refnum;
 
-	make_window_current_by_refnum(tmp->refnum);
-	/* XXX This is dangerous, 'make_window_current' might nuke 'tmp' */
-	if (tmp->screen)
-		set_screens_current_window(tmp->screen, tmp->refnum);
+	make_window_current_by_refnum(other_refnum);
+
+	if (get_window_screen(other_refnum))
+		set_screens_current_window(get_window_screen(other_refnum), other_refnum);
 	else
-		swap_window(window, tmp);
+		swap_window(window, get_window_by_refnum_direct(other_refnum));
 
-	return get_window_refnum(0);
+	return get_window_refnum(other_refnum);
 }
 
 /*
@@ -6126,8 +6228,7 @@ WINDOWCMD(pop)
 		new_free((char **)&window->screen->window_stack);
 		window->screen->window_stack = tmp;
 
-		win = get_window_by_refnum_direct(stack_refnum);
-		if (!win)
+		if (!(win = get_window_by_refnum_direct(stack_refnum)))
 			continue;
 
 		if (win->screen)
@@ -6267,12 +6368,17 @@ WINDOWCMD(push)
 	return refnum;
 }
 
+/*
+ * Usage:	/WINDOW QUERY target	Add 'target' to target list and make current query
+ *		/WINDOW QUERY		Remove the current query target (If there are other
+ *					targets, they become the new current query)
+ * 		/WINDOW -QUERY		Remove all targets for the window
+ *
+ * Add a target to the window and ensure it is the current query
+ */
 EXT_WINDOWCMD(query)
 {
-	WNickList *	tmp;
-	const char *	oldnick;
-	const char *	nick;
-	char *		a;
+	const char *	targets;
 	int		l;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
@@ -6280,93 +6386,54 @@ EXT_WINDOWCMD(query)
 		return 0;
 
 	/*
-	 * Nuke the old query list
+	 * /WINDOW -QUERY
+	 *	Remove all items from the target list, and there will be no
+	 * 	query after this.
 	 */
-	if ((!args || (oldnick = get_window_equery(refnum))))
+	if (!args)
 	{
-	    l = message_setall(refnum, get_who_from(), get_who_level());
-	    say("Ending conversation with %s", oldnick);
-	    pop_message_from(l);
+		const char *	oldnick;
 
-	    /* Only remove from nick lists if canceling the query */
-	    if (!nick)
-	    {
-		a = LOCAL_COPY(oldnick);
-		while (a && *a)
-		{
-			oldnick = next_in_comma_list(a, &a);
-			if ((tmp = (WNickList *)remove_from_list((List **)&window->nicks, oldnick)))
-			{
-				new_free(&tmp->nick);
-				new_free((char **)&tmp);
-			}
-		}
-	    }
+		while ((oldnick = get_window_equery(refnum)))
+			remove_window_target(refnum, get_window_server(refnum), oldnick);
 
-	    recheck_queries(window);
-	    window_statusbar_needs_update(window->refnum);
+		l = message_setall(refnum, get_who_from(), get_who_level());
+		say("All conversations in this window ended");
+		pop_message_from(l);
+		
+		recheck_queries(refnum);
+		window_statusbar_needs_update(refnum);
 	}
-
-	nick = new_next_arg(*args, args);
-
-	/* If we're not assigning a new query, then just punt here. */
-	if (!nick)
-		return window->refnum;
-
-	if (!strcmp(nick, "."))
-	{
-		if (!(nick = get_server_sent_nick(window->server)))
-			say("You have not messaged anyone yet");
-	}
-	else if (!strcmp(nick, ","))
-	{
-		if (!(nick = get_server_recv_nick(window->server)))
-			say("You have not recieved a message yet");
-	}
-	else if (!strcmp(nick, "*") && 
-		!(nick = get_window_echannel(0)))
-	{
-		say("You are not on a channel");
-	}
-	else if (*nick == '%')
-	{
-		/* 
-		 * You are allowed to query non-existant /exec's.
-		 * This allows you to capture all output from the
-		 * /exec by redirecting it to the window before it
-		 * is launched.  Be careful not to send a message
-		 * to a non-existing process!
-		 */
-	}
-
-	if (!nick)
-		return refnum;
 
 	/*
-	 * Create the new query list
-	 * Ugh.  Make sure this goes to the RIGHT WINDOW!
+ 	 * /WINDOW QUERY <target>
+	 *	Add (target> to the target list and make it the current query
 	 */
-	window_statusbar_needs_update(window->refnum);
-	a = LOCAL_COPY(nick);
-	while (a && *a)
+	else if ((targets = new_next_arg(*args, args)))
 	{
-		nick = next_in_comma_list(a, &a);
-		if (!window_claims_nickname(window->refnum, window->server, nick))
-		{
-			tmp = (WNickList *)new_malloc(sizeof(WNickList));
-			tmp->nick = malloc_strdup(nick);
-			add_to_list((List **)&window->nicks, (List *)tmp);
-		}
-		else
-			tmp = (WNickList *)find_in_list((List *)window->nicks, nick, !USE_WILDCARDS);
+		char *	a = LOCAL_COPY(targets);
+		const char *	target;
 
-		tmp->counter = current_query_counter++;
-		window->query_counter = tmp->counter;
+		while (a && *a)
+		{
+			if ((target = next_in_comma_list(a, &a)))
+				if ((target = get_target_special(refnum, get_window_server(refnum), target)))
+					add_window_target(refnum, get_window_server(refnum), target, 1);
+		}
 	}
 
-	l = message_setall(window->refnum, get_who_from(), get_who_level());
-	say("Starting conversation with %s", nick);
-	pop_message_from(l);
+	/*
+	 * /WINDOW QUERY
+	 * 	Remove the current query from the target list (whatever it is)
+	 *	If there are other targets, they will become the new /query
+	 */
+	else
+	{
+		const char *	oldnick;
+
+		if ((oldnick = get_window_equery(refnum)))
+			remove_window_target(refnum, get_window_server(refnum), oldnick);
+	}
 
 	return refnum;
 }
@@ -6628,29 +6695,16 @@ WINDOWCMD(remove)
 
 	if ((arg = next_arg(*args, args)))
 	{
-		char		*ptr;
-		WNickList 	*new_nl;
+		char *	a = LOCAL_COPY(arg);
+		char *	target;
 
-		while (arg)
+		while (a && *a)
 		{
-			if ((ptr = strchr(arg, ',')) != NULL)
-				*ptr++ = 0;
-
-			if ((new_nl = (WNickList *)remove_from_list((List **)&(window->nicks), arg)))
-			{
-				say("Removed %s from window name list", new_nl->nick);
-				new_free(&new_nl->nick);
-				new_free((char **)&new_nl);
-			}
-			else
-				say("%s is not on the list for this window!", arg);
-
-			arg = ptr;
+			target = next_in_comma_list(a, &a);
+			remove_window_target(refnum, window->server, target);
 		}
 	        window_statusbar_needs_update(window->refnum);
 	}
-	else
-		say("REMOVE: No nicks given");
 
 	return refnum;
 }
@@ -7135,8 +7189,8 @@ WINDOWCMD(shrink)
 
 WINDOWCMD(size)
 {
-	char *	ptr = *args;
-	int	number;
+	char *		ptr = *args;
+	int		number;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
 	if (!window)
@@ -7159,44 +7213,28 @@ WINDOWCMD(size)
  */
 WINDOWCMD(stack)
 {
-	WindowStack 	*last, *tmp, *holder;
-	Window 		*win = NULL;
+	WindowStack *	tmp;
+	Window *	win = NULL;
 	size_t		len = 4;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
-	if (!window)
+	if (!window || !window->screen)
 		return 0;
 	if (!args)
 		return refnum;
 
-	while (traverse_all_windows(&win))
+	while (traverse_all_windows2(&refnum))
 	{
-		if (win->name && (strlen(win->name) > len))
-			len = strlen(win->name);
+		const char *n = get_window_name(refnum);
+		if (n && strlen(n) > len)
+			len = strlen(n);
 	}
 
 	say("Window stack:");
-	last = NULL;
-	tmp = window->screen->window_stack;
-	while (tmp)
+	for (tmp = window->screen->window_stack; tmp; tmp = tmp->next)
 	{
 		if ((win = get_window_by_refnum_direct(tmp->refnum)) != NULL)
-		{
 			list_a_window(win, len);
-			last = tmp;
-			tmp = tmp->next;
-		}
-		else
-		{
-			holder = tmp->next;
-			new_free((char **)&tmp);
-			if (last)
-				last->next = holder;
-			else
-				window->screen->window_stack = holder;
-
-			tmp = holder;
-		}
 	}
 
 	return refnum;
@@ -7204,7 +7242,7 @@ WINDOWCMD(stack)
 
 WINDOWCMD(status_format)
 {
-	char	*arg;
+	char *		arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
 	if (!window)
@@ -7222,7 +7260,7 @@ WINDOWCMD(status_format)
 
 WINDOWCMD(status_format1)
 {
-	char	*arg;
+	char *		arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
 	if (!window)
@@ -7240,7 +7278,7 @@ WINDOWCMD(status_format1)
 
 WINDOWCMD(status_format2)
 {
-	char	*arg;
+	char *		arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
 	if (!window)
@@ -7258,7 +7296,7 @@ WINDOWCMD(status_format2)
 
 WINDOWCMD(status_prefix_when_current)
 {
-	char *arg;
+	char *		arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
 	if (!window)
@@ -7275,7 +7313,7 @@ WINDOWCMD(status_prefix_when_current)
 
 WINDOWCMD(status_prefix_when_not_current)
 {
-	char *arg;
+	char *		arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
 	if (!window)
@@ -7293,7 +7331,7 @@ WINDOWCMD(status_prefix_when_not_current)
 
 WINDOWCMD(status_special)
 {
-	char *arg;
+	char *		arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
 	if (!window)
@@ -7310,7 +7348,7 @@ WINDOWCMD(status_special)
 
 WINDOWCMD(swap)
 {
-	Window *tmp;
+	Window *	tmp;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
 	if (!window)
@@ -7348,9 +7386,9 @@ WINDOWCMD(swappable)
  */
 WINDOWCMD(topline)
 {
-	int	line;
-	const char *linestr;
-	const char *topline;
+	int		line;
+	const char *	linestr;
+	const char *	topline;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
 	if (!window)
@@ -7387,9 +7425,9 @@ WINDOWCMD(topline)
 WINDOWCMD(toplines)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
-	char *	ptr = *args;
-	int	number;
-	int	saved = window->toplines_wanted;
+	char *		ptr = *args;
+	int		number;
+	int		saved = window->toplines_wanted;
 
 	if (!window)
 		return 0;
@@ -7446,9 +7484,9 @@ WINDOWCMD(unclear)
 /* WINDOW CLEARLEVEL - Remove all lastlog items of certain level(s) */
 WINDOWCMD(clearlevel)
 {
-	Mask	mask;
-	char *	rejects = NULL;
-	char *	arg;
+	Mask		mask;
+	char *		rejects = NULL;
+	char *		arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
 	if (!window)
@@ -7467,9 +7505,9 @@ WINDOWCMD(clearlevel)
 /* WINDOW CLEARREGEX - Remove all lastlog items matching a regex */
 WINDOWCMD(clearregex)
 {
-	Mask	mask;
-	char *	rejects = NULL;
-	char *	arg;
+	Mask		mask;
+	char *		rejects = NULL;
+	char *		arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
 	if (!args)

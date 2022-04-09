@@ -74,7 +74,7 @@ struct	ScreenStru *	next;			/* Previous screen in list */
 	Window *	window_list;		/* The top window on me */
 	Window *	window_list_end;	/* The bottom window on me */
 	int		visible_windows;	/* Number of windows on me */
-	WindowStack	*window_stack;		/* Number of windows on my stack */
+	WindowStack *	window_stack;		/* Number of windows on my stack */
 
 	/* Output stuff */
 	FILE *		fpin;			/* The input FILE (eg, stdin) */

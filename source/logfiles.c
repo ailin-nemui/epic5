@@ -513,8 +513,8 @@ static Logfile *	logfile_on (Logfile *log, char **args)
 	}
 
 	time(&log->activity);
-	do_log(1, log->filename, &log->log);
-	log->active = 1;
+	if (do_log(1, log->filename, &log->log))
+		log->active = 1;
 	return log;
 }
 

@@ -1086,4 +1086,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /on switch_windows (rb zlonix)
 * Add $pledge() and $unveil() for openbsd (zlonix)
 * Add a "newlist" type for migrating linked lists to.
-* Improve handling of realpath() failures (rb zlonix
+* Improve handling of realpath() failures (rb zlonix)
+* Make /log on fail (ie, reset to OFF) if the log can't be opened (rb zlonix)
+* More improvements to window.c, refactor of /window query
