@@ -8443,7 +8443,7 @@ BUILT_IN_FUNCTION(function_pledge, input)
  * by the example:
  *
  * @ unveil(/home/user/work/epic5/script r)
- * @ unveil(/home/user/irclogs wc)
+ * @ unveil(/home/user/irclogs rwc)
  * @ unveil()
  *
  * Such usage will allow the client to access script directory in

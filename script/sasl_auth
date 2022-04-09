@@ -160,7 +160,7 @@ on ^odd_server_stuff '\* AUTHENTICATE \+' {
 			input -noecho "SASL password: " {
 				## local variables of the hook are not accessible here
 				@ :pass = *0;
-				@ :idx = rmatch($server $sasl_auth.servers)-1;
+				@ :idx = rmatch($servername() $sasl_auth.servers)-1;
 				@ :nick = word($idx $sasl_auth.users);
 				@ :auth = sasl_auth.plain($nick $pass);
 				sasl_auth.sendauth $auth;

@@ -63,12 +63,12 @@ EPIC5-2.2
 		anything else - the reteurn value of unveil(2)
 
 	Complex examples:
-		/@unveil({"test"; true})
+		/@unveil({"test": true})
 			Return 1 if $unveil() is supported, and 0 if not.
 
 		/@unveil({"path": "/path/to/directory", "permissions": "r"})
 		/@unveil({"path": "/path/to/another/directory", "permissions": "wc"})
-		/@unveil({"clear": true})
+		/@unveil({"close": true})
 			Does the same thing as the simple example
 
 *** News 04/04/2022 -- TCL support removed

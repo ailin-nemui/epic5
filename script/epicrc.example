@@ -60,20 +60,30 @@ on #-msg 100 * {
 	if ((querywin($0 $servernum()) == -1 || querywin($0 $servernum()) == 50) && winnum() != 50) {
 		@ ::msgs++;
 		set status_user \(Messages: $msgs\) ;
-		xecho -v -b Private message from $0 at $serverctl(GET $servernum() 005 NETWORK): $1-;
-	};
 
-	xecho ${winnam(MsgWin) ? [-w MsgWin] : []} \($serverctl(GET $servernum() 005 NETWORK)\) *$0* $1-;
+		@ :msg_net = serverctl(GET $servernum() 005 NETWORK);
+		@ :cur_net = serverctl(GET $winserv($winnum()) 005 NETWORK);
+		if (msg_net != cur_net)
+			xecho -v -b Private message from $0 at $serverctl(GET $servernum() 005 NETWORK): $1-;
+
+		if (winnam(MsgWin))
+			xecho -w MsgWin \($serverctl(GET $servernum() 005 NETWORK)\) *$0* $1-;
+	};
 };
 
 on #-notice 100 * {
 	if ((querywin($0 $servernum()) == -1 || querywin($0 $servernum()) == 50) && winnum() != 50) {
 		@ ::msgs++;
 		set status_user \(Messages: $msgs\) ;
-		xecho -v -b Notice from $0 at $serverctl(GET $servernum() 005 NETWORK): $1-;
-	};
 
-	xecho ${winnam(MsgWin) ? [-w MsgWin] : []} \($serverctl(GET $servernum() 005 NETWORK)\) -$0\- $1-;
+		@ :msg_net = serverctl(GET $servernum() 005 NETWORK);
+		@ :cur_net = serverctl(GET $winserv($winnum()) 005 NETWORK);
+		if (msg_net != cur_net)
+			xecho -v -b Notice from $0 at $serverctl(GET $servernum() 005 NETWORK): $1-;
+
+		if (winnam(MsgWin))
+			xecho -w MsgWin \($serverctl(GET $servernum() 005 NETWORK)\) -$0\- $1-;
+	};
 };
 
 on #-switch_windows 100 '% % % 50' {
@@ -228,7 +238,6 @@ alias highlight.status (chan, void) {
 		set status_user1 \(Highlight: $sar(g/ /,/$sort($highlight_wins))\) ;
 	};
 };
-set highlight_list zlonix misha terver russia kqueue _kq moscow mp4;
 #set status_user1 $${highlight_wins ? [\(Highlight: $sar(g/ /,/$sort($highlight_wins))\) ] :[]};
 on ^public '% % *\\\\[$$highlight_list\\\\]*' {
 	echo <$0> $2-;
