@@ -200,12 +200,12 @@ static char *logfile_get_targets (Logfile *log)
 	char *nicks = NULL;
 	int	i;
 
-	if (log->type == LOG_TARGETS)
+	if (log->type == LOG_TARGETS || log->type == LOG_WINDOWS)
 	{
 		for (tmp = log->targets; tmp; tmp = tmp->next)
 			malloc_strcat_wordlist(&nicks, ",", tmp->nick);
 	}
-	else if (log->type == LOG_SERVERS || log->type == LOG_WINDOWS)
+	else if (log->type == LOG_SERVERS)
 	{
 		for (i = 0; i < MAX_TARGETS; i++)
 			if (log->refnums[i] != -1)
