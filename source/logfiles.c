@@ -279,7 +279,7 @@ static Logfile *	logfile_add (Logfile *log, char **args)
                     else
                         say("%s already on log name list", arg);
 		}
-		else if (log->type == LOG_SERVERS || log->type == LOG_WINDOWS)
+		else if (log->type == LOG_SERVERS)
 		{
 		    int refnum;
 
@@ -307,6 +307,16 @@ static Logfile *	logfile_add (Logfile *log, char **args)
 		    }
 		    if (i >= MAX_TARGETS)
 			say("Could not add %d to log name list!", refnum);
+		}
+		else if (log->type == LOG_WINDOWS)
+		{
+                    if (!find_in_list((List *)log->targets, arg, !USE_WILDCARDS))
+                    {
+                        say("Added %s to log window list", arg);
+                        new_w = (WNickList *)new_malloc(sizeof(WNickList));
+                        new_w->nick = malloc_strdup(arg);
+                        add_to_list((List **)&(log->targets), (List *)new_w);
+                    }
 		}
                 arg = ptr;
         }
@@ -715,15 +725,53 @@ void	add_to_logs (long window, int servref, const char *target, int level, const
 	{
 	    if (log->type == LOG_WINDOWS)
 	    {
-		for (i = 0; i < MAX_TARGETS; i++) {
-		    if (get_window_refnum(window) == log->refnums[i] ||
-		        get_window_user_refnum(window) == log->refnums[i]) {
-			if (!mask_isset(&log->mask, level))
-				continue;
-			time(&log->activity);
-			add_to_log(log->refnum, log->log, window, orig_str, log->mangler, log->rewrite);
-		    }
+		WNickList *	item;
+		int		matched = 0;
+
+		/* Look to see if any targets apply */
+		for (item = log->targets; item; item = item->next)
+		{
+			/* 
+			 * A log target may be a number, which must match
+			 * either the internal refnum or user refnum of 
+			 * the output window.
+			 */
+			if (is_number(item->nick))
+			{
+				int	refnum = my_atol(item->nick);
+
+				if (refnum == get_window_refnum(window) ||
+				    refnum == get_window_user_refnum(window))
+					matched = 1;
+			}
+
+			/*
+			 * Or a log target may be a string, which must match
+			 * the name of the output window (which must have a
+			 * name, natch), or the uuid of the output window.
+			 */
+			else
+			{
+				if (get_window_name(window) &&
+				    !my_stricmp(item->nick, get_window_name(window)))
+					matched = 1;
+				if (get_window_uuid(window) &&
+				    !my_stricmp(item->nick, get_window_uuid(window)))
+					matched = 1;
+			}
 		}
+
+		/* If none of the targets matched the window, punt */
+		if (!matched)
+			continue;
+
+		/* Ensure this log is logging this output level */
+		if (!mask_isset(&log->mask, level))
+			continue;
+
+		/* OK, We're good! */
+		time(&log->activity);
+		add_to_log(log->refnum, log->log, window, orig_str, log->mangler, log->rewrite);
 	    }
 
 	    if (log->type == LOG_SERVERS)
@@ -928,6 +976,7 @@ char *logctl	(char *input)
  */
 void    logfiles_swap_windows (int oldref, int newref)
 {
+#if 0
 	Logfile *log;
 	int	i;
 
@@ -944,10 +993,12 @@ void    logfiles_swap_windows (int oldref, int newref)
 				log->refnums[i] = newref;
 		}
         }
+#endif
 }
 
 void    logfiles_merge_windows (int oldref, int newref)
 {
+#if 0
 	Logfile *log;
 	int	i;
 
@@ -958,9 +1009,15 @@ void    logfiles_merge_windows (int oldref, int newref)
 
 		for (i = 0; i < MAX_TARGETS; i++)
 		{
-			if (log->refnums[i] == oldref)
-				log->refnums[i] = newref;
+			/* If it is a number, an internal refnum, switch to new internal refnum */
+			if (log->refnums[i] == get_window_refnum(oldref))
+				log->refnum[i] = get_window_refnum(newref);
+			/* If it is a number, a user refnum, switch to new user refnum */
+			else if (log->refnums[i] == get_window_user_refnum(oldref))
+				log->refnum[i] = get_window_user_refnum(newref);
+			/* If it is a string, switch to new string */
 		}
         }
+#endif
 }
 

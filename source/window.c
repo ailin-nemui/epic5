@@ -4172,6 +4172,16 @@ int	get_window_indent (int window)
 	return win->indent;
 }
 
+const char *	get_window_uuid (int window)
+{
+	Window *win;
+
+	if (!(win = get_window_by_refnum_direct(window)))
+		return NULL;
+
+	return win->uuid;
+}
+
 /* below is stuff used for parsing of WINDOW command */
 
 
@@ -4334,7 +4344,7 @@ WINDOWCMD(add)
 }
 
 /*
- * Usage:	/WINDOW BACK 	Go back to the previous window on screen
+ * Usage:	/WINDOW BACK 	Switch current window to previous current window
  * 
  * Switches the screen's current window to the window that was previously
  * the current window.  
@@ -4350,13 +4360,15 @@ WINDOWCMD(add)
  *	The previous window is made the current window
  *	If the previous window is hidden, it is made visible and the current window
  *		is made hidden.
+ *	If the previous window is visible, both will remain visible.
+ *	If the previous window is on a different screen, the current window of the
+ *		current screen will remain unchanged,
  *
  * Return value:
  *	The previous window is returned (see above)
  *
  * Warnings:
  *	/WINDOW -BACK		is a no-op
- *	/WINDOW ADD		is a no-op
  */
 WINDOWCMD(back)
 {
@@ -4381,10 +4393,22 @@ WINDOWCMD(back)
 }
 
 /*
- * /WINDOW BALANCE
- * Causes all of the windows on the current screen to be adjusted so that 
- * the largest window on the screen is no more than one line larger than
- * the smallest window on the screen.
+ * Usage:	/WINDOW BALANCE    Make all non-fixed windows the same size
+ *
+ * Every non-fixed window on the screen is changed to have the same number of
+ * scrolling (discretionary) lines.
+ *
+ * Caveats:
+ * This is more complicated than it used to be.  Every window has some number
+ * of mandatory lines
+ *   - toplines
+ *   - status bars
+ *   - the whole window (if FIXED is ON)
+ * and the rest is discretionary (scrolling).
+ *
+ * Warnings:
+ *	/WINDOW BALANCE 	on a hidden window is a no-op.
+ *	/WINDOW -BALANCE	is a no-op
  */
 WINDOWCMD(balance)
 {
@@ -4404,11 +4428,18 @@ WINDOWCMD(balance)
 }
 
 /*
- * /WINDOW BEEP_ALWAYS ON|OFF
- * Indicates that when this window is HIDDEN (sorry, thats not what it seems
- * like it should do, but that is what it does), beeps to this window should
- * not be suppressed like they normally are for hidden windows.  In all cases,
- * the current window is notified when a beep occurs if this window is hidden.
+ * Usage:	/WINDOW BEEP_ALWAYS ON		Sound beeps, even when hidden
+ *		/WINDOW BEEP_ALWAYS OFF		Don't sound beeps when hidden
+ *	Controls whether you hear beeps in this window when it's hidden
+ * 
+ * Caveats:
+ *  - Whenever a beep happens in a hidden window with BEEP_ALWAYS ON,
+ *    A message will appear in the current window telling you what hidden
+ *    window had the beep
+ *  - Beeping is supplementary to notification (%F)
+ *
+ * Warnings:
+ *	/WINDOW -BEEP_ALWAYS		is a no-op
  */
 WINDOWCMD(beep_always)
 {
@@ -4425,6 +4456,23 @@ WINDOWCMD(beep_always)
 }
 
 /*
+ * /WINDOW CHANNEL		show me what the channels are in this window
+ * /WINDOW CHANNEL -invite
+ * /WINDOW CHANNEL "-invite key"
+ * /WINDOW CHANNEL #channel
+ * /WINDOW CHANNEL #channel1,#channel2
+ * /WINDOW CHANNEL "#channel key"
+ * /WINDOW CHANNEL "#channel1,#channel2 key1,key2"
+ *
+ * - The window must be connected to a server
+ * - If #channel is "-invite", join the last invited channel
+ *
+ * For every channel:
+ *	If we are on the channel, it is moved to this window
+ *	If we are not on the channel, it is added to "waiting channels"
+ * At the end we send out a JOIN if there are any channels to join
+ *
+ * 
  * /WINDOW CHANNEL ["]<#channel>[,<#channel>][ <pass>[,<pass>]]["]
  * Directs the client to make a specified channel the current channel for
  * the window -- it will JOIN the channel if you are not already on it.
@@ -6486,6 +6534,24 @@ WINDOWCMD(rebuild_scrollback)
 
 
 /*
+ * /WINDOW REJOIN #channel
+ * /WINDOW REJOIN #channel key
+ * /WINDOW REJOIN #channel1,#channel2
+ * /WINDOW REJOIN #channel1,#channel2 key1,key2
+ *
+ * - This is the back-end of the JOIN command
+ * - The current server must be connected
+ * - Opposed to /window channel, this never "steals" channels that we're not yet on
+ *   (that makes it suitable for use in /on connect)
+ * 
+ * For every channel
+ * - If it is -invite, join the last invited channel
+ * - If you are on the channel, it is moved to this window
+ * - If you are not on the channel, and a window is waiting for it, it will go to that window
+ * - If you are not on the channel, and nobody is waiting for it, it will go to this window
+ * At the end we send out a JOIN if there are any channels to join
+ *
+ * 
  * /WINDOW REJOIN <#channel>[,<#channel>]
  * Here's the plan:
  *

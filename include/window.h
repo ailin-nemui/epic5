@@ -331,6 +331,7 @@ struct ScreenStru *get_window_screen			(int);
 	Char *	get_window_topline 			(int, int);
 	int	get_window_toplines_showing 		(int);
 	int	get_window_user_refnum			(int);
+	Char *	get_window_uuid				(int);
 
 	int	set_window_change_line			(int, int);
 	int	set_window_cursor 			(int, int);

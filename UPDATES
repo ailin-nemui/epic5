@@ -1,5 +1,21 @@
 EPIC5-2.2
 
+*** News 04/10/2022 -- Window /LOGs now don't require logged window to exist
+	There is a question -- do logs log _a particular window instance_
+	or do they log _any window matching a descirption_?  Previously you
+	could not /log add a window that didn't exist because the window 
+	lookup failed.  
+
+	Starting now, you can /log add any window you want even if the window
+	does not exist -- you can /log add a refnum, a name, or a uuid, and
+	any window that ends up using that refnum, name, or uuid, will log
+	to the log; not just the window that existed when the log was created.
+
+	On the flip side of this, if you are logging a window refnum and then
+	you change a window's refnum, it might stop logging -- so if you want
+	to log _a particular window_, log its uuid, for example:
+		/log add $windowctl(GET 5 UUID)
+
 *** News 04/08/2022 -- Restatement of /WINDOW QUERY
 	The behavior of /WINDOW QUERY, /WINDOW ADD, and /WINDOW REMOVE 
 	was unified some time ago, but the behavior was inconsistent
