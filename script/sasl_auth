@@ -103,16 +103,24 @@ alias sasl_auth.plain (nick, password, void) {
 };
 
 alias sasl_auth.setstate (server, state, void) {
+	@ :enc = encode($server);
+
 	if (state != [null]) {
-		assign sasl_auth.status.$server $state;
+		assign sasl_auth.status.$enc $state;
 	} else {
-		assign -sasl_auth.status.$server;
+		assign -sasl_auth.status.$enc;
 	};
+};
+
+alias sasl_auth.getstate (server, void) {
+	@ :enc = encode($server);
+
+	return $sasl_auth.status[$enc];
 };
 
 on #-server_established 100 '\\\\[$$sasl_auth.servers\\\\] %' {
 	@ :server = servername();
-	@ :state = sasl_auth.status.$server;
+	@ :state = sasl_auth.getstate($server);
 	
 	if (state == []) {
 		sasl_auth.setstate $server req_sent;
@@ -126,7 +134,7 @@ on #-server_established 100 '\\\\[$$sasl_auth.servers\\\\] %' {
 
 on ^odd_server_stuff '\\\\[$$sasl_auth.servers\\\\] CAP % ACK *sasl*' {
 	@ :server = servername();
-	@ :state = sasl_auth.status.$server;
+	@ :state = sasl_auth.getstate($server);
 
 	if (state == [req_sent]) {
 		sasl_auth.setstate $server meth_sent;
@@ -146,7 +154,7 @@ alias sasl_auth.sendauth (auth, void) {
 
 on ^odd_server_stuff '\* AUTHENTICATE \+' {
 	@ :server = servername();
-	@ :state = sasl_auth.status.$server;
+	@ :state = sasl_auth.getstate($server);
 
 	if (state == [meth_sent]) {
 		sasl_auth.setstate $server auth_sent;
@@ -177,7 +185,7 @@ on ^odd_server_stuff '\* AUTHENTICATE \+' {
 
 on -901 '\\\\[$$sasl_auth.servers\\\\] *' {
 	@ :server = servername();
-	@ :state = sasl_auth.status.$server;
+	@ :state = sasl_auth.getstate($server);
 
 	if (state == [auth_sent]) {
 		sasl_auth.setstate $server null;
@@ -190,7 +198,7 @@ on -901 '\\\\[$$sasl_auth.servers\\\\] *' {
 
 on -903 '\\\\[$$sasl_auth.servers\\\\] *' {
 	@ :server = servername();
-	@ :state = sasl_auth.status.$server;
+	@ :state = sasl_auth.getstate($server);
 
 	if (state == [auth_sent]) {
 		sasl_auth.setstate $server null;
@@ -203,7 +211,7 @@ on -903 '\\\\[$$sasl_auth.servers\\\\] *' {
 
 on #-001 100 '\\\\[$$sasl_auth.servers\\\\] *' {
 	@ :server = servername();
-	@ :state = sasl_auth.status.$server;
+	@ :state = sasl_auth.getstate($server);
 	
 	if (state != []) {
 		xecho -b sasl_auth: 001: server $server \(real: $0\) in a state [$state] and do not support capabilities (001 received without ACK/NAK);
@@ -216,7 +224,7 @@ on #-001 100 '\\\\[$$sasl_auth.servers\\\\] *' {
 
 on ^odd_server_stuff '\\\\[$$sasl_auth.servers\\\\] CAP * NAK *sasl*' {
 	@ :server = servername();
-	@ :state = sasl_auth.status.$server;
+	@ :state = sasl_auth.getstate($server);
 	
 	xecho -b sasl_auth: odd_server_stuff: CAP NAK: server $server \(real: $0\) in a state [$state] and do not support proposed SASL capability (:sasl), NAK received;
 	xecho -b sasl_auth: odd_server_stuff: CAP NAK: disconnecting from $server \(real: $0\);
@@ -227,7 +235,7 @@ on ^odd_server_stuff '\\\\[$$sasl_auth.servers\\\\] CAP * NAK *sasl*' {
 
 on #-server_lost 100 '% \\\\[$$sasl_auth.servers\\\\] *' {
 	@ :server = servername();
-	@ :state = sasl_auth.status.$server;
+	@ :state = sasl_auth.getstate($server);
 	
 	if (state != []) {
 		xecho -b sasl_auth: server_lost: server $server \(real: $1\) in a wrong state [$state] (should be <empty>);

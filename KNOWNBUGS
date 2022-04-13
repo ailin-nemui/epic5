@@ -1095,3 +1095,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Allow adding window refnums, names, and uuids to /logs, and check them passively
 * Fix /log properly showing targets for window-type logs (rb zlonix)
 * Fix $winchan(#chan) not returning user refnum (rb zlonix)
+* Improvements to sasl script (rb harzelein) (zlonix)

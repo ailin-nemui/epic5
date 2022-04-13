@@ -99,16 +99,24 @@ alias sasl_nistp256 (server, nick, file, void) {
 };
 
 alias sasl_nistp256.setstate (server, state, void) {
+	@ :enc = encode($server);
+
 	if (state != [null]) {
-		assign sasl_nistp256.status.$server $state;
+		assign sasl_nistp256.status.$enc $state;
 	} else {
-		assign -sasl_nistp256.status.$server;
+		assign -sasl_nistp256.status.$enc;
 	};
+};
+
+alias sasl_nistp256.getstate (server, void) {
+	@ :enc = encode($server);
+
+	return $sasl_nistp256.status[$enc];
 };
 
 on #-server_established 100 '\\\\[$$sasl_nistp256.servers\\\\] %' {
 	@ :server = servername();
-	@ :state = sasl_nistp256.status.$server;
+	@ :state = sasl_nistp256.getstate($server);
 
 	if (state == []) {
 		sasl_nistp256.setstate $server req_sent;
@@ -123,7 +131,7 @@ on #-server_established 100 '\\\\[$$sasl_nistp256.servers\\\\] %' {
 
 on ^odd_server_stuff '\\\\[$$sasl_nistp256.servers\\\\] CAP % ACK *sasl*' {
 	@ :server = servername();
-	@ :state = sasl_nistp256.status.$server;
+	@ :state = sasl_nistp256.getstate($server);
 
 	if (state == [req_sent]) {
 		sasl_nistp256.setstate $server meth_sent;
@@ -138,7 +146,7 @@ on ^odd_server_stuff '\\\\[$$sasl_nistp256.servers\\\\] CAP % ACK *sasl*' {
 
 on ^odd_server_stuff '\* AUTHENTICATE \+' {
 	@ :server = servername();
-	@ :state = sasl_nistp256.status.$server;
+	@ :state = sasl_nistp256.getstate($server);
 
 	if (state == [meth_sent]) {
 		sasl_nistp256.setstate $server auth_sent;
@@ -156,7 +164,7 @@ on ^odd_server_stuff '\* AUTHENTICATE \+' {
 
 on ^odd_server_stuff '\* AUTHENTICATE %' {
 	@ :server = servername();
-	@ :state = sasl_nistp256.status.$server;
+	@ :state = sasl_nistp256.getstate($server);
 
 	if (state == [auth_sent]) {
 		sasl_nistp256.setstate $server chal_sent;
@@ -173,7 +181,7 @@ on ^odd_server_stuff '\* AUTHENTICATE %' {
 
 on -903 '\\\\[$$sasl_nistp256.servers\\\\] *' {
 	@ :server = servername();
-	@ :state = sasl_nistp256.status.$server;
+	@ :state = sasl_nistp256.getstate($server);
 
 	if (state == [chal_sent]) {
 		sasl_nistp256.setstate $server null;
