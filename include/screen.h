@@ -101,7 +101,7 @@ struct	ScreenStru *	next;			/* Previous screen in list */
 }	Screen;
 
 	void		repaint_window_body		(Window *);
-	Window *	create_additional_screen 	(void);
+	int		create_additional_screen 	(void);
 #endif
 	void		add_wait_prompt 		(const char *, void (*)(char *, const char *), const char *, int, int);
 	void		fire_wait_prompt		(u_32int_t);

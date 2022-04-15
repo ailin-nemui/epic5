@@ -160,7 +160,7 @@ static void 	recalculate_window_cursor_and_display_ip (Window *window);
  * largest window.  The new window is added to the window list and made the
  * current window 
  */
-Window	*new_window (Screen *screen)
+int	new_window (Screen *screen)
 {
 	Window	*	new_w;
 	Window	*	tmp = NULL;
@@ -168,7 +168,7 @@ Window	*new_window (Screen *screen)
 	int		i;
 
 	if (dumb_mode && current_window)
-		return NULL;
+		return -1;
 
 	new_w = (Window *) new_malloc(sizeof(Window));
 
@@ -322,7 +322,7 @@ Window	*new_window (Screen *screen)
 
 	/* Screen list stuff */
 	/* new_w->screen = screen; */	/* add_to_window_list() does this */
-	new_w->next = new_w->prev = NULL;
+	new_w->_next = new_w->_prev = NULL;
 	new_w->deceased = 0;
 
 	/*
@@ -357,7 +357,7 @@ Window	*new_window (Screen *screen)
 	 */
 	do_hook(WINDOW_CREATE_LIST, "%d", new_w->user_refnum);
 
-	return (new_w);
+	return new_w->refnum;
 }
 
 
@@ -432,7 +432,7 @@ static void 	delete_window (Window *window)
 	    (window->screen->visible_windows == 1))
 	{
 		if (window->screen->window_list != window ||
-			 window->next != NULL ||
+			 window->_next != NULL ||
 			 (window->screen->input_window > 0 && 
 			    window->screen->input_window != window->refnum))
 		{
@@ -669,8 +669,8 @@ int 	traverse_all_windows (Window **ptr)
 	/*
 	 * As long as there is another window on this screen, keep going.
 	 */
-	else if ((*ptr)->next)
-		*ptr = (*ptr)->next;
+	else if ((*ptr)->_next)
+		*ptr = (*ptr)->_next;
 
 	/*
 	 * If there are no more windows on this screen, but we do belong to
@@ -774,8 +774,8 @@ static int 	traverse_all_windows_on_screen (Window **ptr, Screen *s)
 	/*
 	 * As long as there is another window on this screen, keep going.
 	 */
-	else if ((*ptr)->next)
-		*ptr = (*ptr)->next;
+	else if ((*ptr)->_next)
+		*ptr = (*ptr)->_next;
 
 	/*
 	 * Otherwise there are no other windows, and we're not on a screen
@@ -814,7 +814,7 @@ static void 	remove_from_invisible_list (Window *window)
 	Window *w;
 
 	/* Purely a sanity check */
-	for (w = invisible_list; w && w != window; w = w->next)
+	for (w = invisible_list; w && w != window; w = w->_next)
 		;
 	if (!w)
 		panic(1, "remove_from_invisible_list: This window is _not_ invisible");
@@ -822,12 +822,12 @@ static void 	remove_from_invisible_list (Window *window)
 	/*
 	 * Unlink it from the list
 	 */
-	if (window->prev)
-		window->prev->next = window->next;
+	if (window->_prev)
+		window->_prev->_next = window->_next;
 	else
-		invisible_list = window->next;
-	if (window->next)
-		window->next->prev = window->prev;
+		invisible_list = window->_next;
+	if (window->_next)
+		window->_next->_prev = window->_prev;
 }
 
 void 	add_to_invisible_list (int window_)
@@ -839,20 +839,20 @@ void 	add_to_invisible_list (int window_)
 	 * XXX Sanity check -- probably unnecessary
 	 * If the window is already invisible, do nothing
 	 */
-	for (w = invisible_list; w; w = w->next)
+	for (w = invisible_list; w; w = w->_next)
 		if (w == window)
 			return;
 
 	/*
-	 * Because this blows away window->next, it is implicitly
+	 * Because this blows away window->_next, it is implicitly
 	 * assumed that you have already removed the window from
 	 * its screen.
 	 */
-	if ((window->next = invisible_list) != NULL)
-		invisible_list->prev = window;
+	if ((window->_next = invisible_list) != NULL)
+		invisible_list->_prev = window;
 
 	invisible_list = window;
-	window->prev = (Window *) 0;
+	window->_prev = (Window *) 0;
 	if (window->screen)
 		window->my_columns = window->screen->co;
 	else
@@ -953,7 +953,7 @@ static Window *add_to_window_list (Screen *screen, Window *new_w)
 	size = -1;
 	for (skip_fixed = 1; skip_fixed >= 0; skip_fixed--)
 	{
-		for (tmp = screen->window_list; tmp; tmp = tmp->next)
+		for (tmp = screen->window_list; tmp; tmp = tmp->_next)
 		{
 			if (skip_fixed && tmp->fixed_size)
 				continue;
@@ -998,13 +998,13 @@ static Window *add_to_window_list (Screen *screen, Window *new_w)
 	/*
 	 * Link the new window into the list.
 	 */
-	if ((new_w->prev = winner->prev) != NULL)
-		new_w->prev->next = new_w;
+	if ((new_w->_prev = winner->_prev) != NULL)
+		new_w->_prev->_next = new_w;
 	else
 		screen->window_list = new_w;
 
-	new_w->next = winner;
-	winner->prev = new_w;
+	new_w->_next = winner;
+	winner->_prev = new_w;
 
 	/*
 	 * Figure out how to share the space.
@@ -1059,15 +1059,15 @@ static void 	remove_window_from_screen (Window *window, int hide, int recalc)
 	 * we just blow away the window and then recalculate the entire
 	 * screen.
 	 */
-	if (window->prev)
-		window->prev->next = window->next;
+	if (window->_prev)
+		window->_prev->_next = window->_next;
 	else
-		s->window_list = window->next;
+		s->window_list = window->_next;
 
-	if (window->next)
-		window->next->prev = window->prev;
+	if (window->_next)
+		window->_next->_prev = window->_prev;
 	else
-		s->window_list_end = window->prev;
+		s->window_list_end = window->_prev;
 
 	if (!--s->visible_windows)
 		return;
@@ -1110,7 +1110,7 @@ static void	recalculate_window_positions (Screen *screen)
 		return;		/* Window is hidden.  Dont bother */
 
 	top = 0;
-	for (w = screen->window_list; w; w = w->next)
+	for (w = screen->window_list; w; w = w->_next)
 	{
 		top += w->toplines_showing;
 		w->top = top;
@@ -1141,7 +1141,7 @@ static void 	swap_window (Window *v_window, Window *window)
 	/* Find any invisible window to swap in.  Prefer swappable ones */
 	if (!window)
 	{
-		for (window = invisible_list; window; window = window->next)
+		for (window = invisible_list; window; window = window->_next)
 			if (window->swappable)
 				break;
 	}
@@ -1222,13 +1222,13 @@ static void 	swap_window (Window *v_window, Window *window)
 	/*
 	 * Put the window to be swapped into the screen list
 	 */
-	if ((window->prev = v_window->prev))
-		window->prev->next = window;
+	if ((window->_prev = v_window->_prev))
+		window->_prev->_next = window;
 	else
 		window->screen->window_list = window;
 
-	if ((window->next = v_window->next))
-		window->next->prev = window;
+	if ((window->_next = v_window->_next))
+		window->_next->_prev = window;
 	else
 		window->screen->window_list_end = window;
 
@@ -1297,7 +1297,7 @@ static void 	move_window_to (Window *window, int offset)
 		return;
 
 	/* This is impossible -- just a sanity check for clang's benefit */
-	if (window->prev == NULL && window->next == NULL)
+	if (window->_prev == NULL && window->_next == NULL)
 		panic(1, "window_move_to: window %d is has no prev or next; but its screen says it has %d windows", window->user_refnum, s->visible_windows);
 
 	/* Move the window to the top of the screen */
@@ -1307,20 +1307,20 @@ static void 	move_window_to (Window *window, int offset)
 		if (s->window_list == window)
 			return;
 
-		if (window->prev == NULL)
+		if (window->_prev == NULL)
 			panic(1, "window_move_to(top): Window %d prev is NULL, "
 				"but s->window_list is %d", 
 				window->user_refnum, s->window_list->user_refnum);
 
-		window->prev->next = window->next;
-		if (window->next)
-			window->next->prev = window->prev;
+		window->_prev->_next = window->_next;
+		if (window->_next)
+			window->_next->_prev = window->_prev;
 		else
-			s->window_list_end = window->prev;
+			s->window_list_end = window->_prev;
 
-		window->prev = NULL;
-		window->next = s->window_list;
-		window->next->prev = window;
+		window->_prev = NULL;
+		window->_next = s->window_list;
+		window->_next->_prev = window;
 		s->window_list = window;
 	}
 
@@ -1331,20 +1331,20 @@ static void 	move_window_to (Window *window, int offset)
 		if (s->window_list_end == window)
 			return;
 
-		if (!window->next)
+		if (!window->_next)
 		   panic(1, "window_move_to(bottom): Window %d next is NULL, "
 				"but s->window_list_end is %d", 
 				window->user_refnum, s->window_list_end->user_refnum);
 
-		if (window->prev)
-			window->prev->next = window->next;
+		if (window->_prev)
+			window->_prev->_next = window->_next;
 		else
-			s->window_list = window->next;
-		window->next->prev = window->prev;
+			s->window_list = window->_next;
+		window->_next->_prev = window->_prev;
 
-		window->prev = s->window_list_end;
-		window->prev->next = window;
-		window->next = NULL;
+		window->_prev = s->window_list_end;
+		window->_prev->_next = window;
+		window->_next = NULL;
 		s->window_list_end = window;
 	
 	}
@@ -1359,7 +1359,7 @@ static void 	move_window_to (Window *window, int offset)
 		 * We need to have a pointer to the N-1th window.
 		 * We know that it won't be the top or bottom.
 		 */
-		for (i = 0, w = s->window_list; w; w = w->next)
+		for (i = 0, w = s->window_list; w; w = w->_next)
 		{
 			if (w != window)
 				i++;		/* This is the I'th window */
@@ -1375,31 +1375,31 @@ static void 	move_window_to (Window *window, int offset)
 		 * 'w' is our "prev" window.
 		 * So if window is already in the correct place, we're done 
 		 */
-		if (w->next == window)
+		if (w->_next == window)
 			return;
 
 		/* Unlink our target window first */
-		if (window->prev)
-			window->prev->next = window->next;
+		if (window->_prev)
+			window->_prev->_next = window->_next;
 		else
-			s->window_list = window->next;
+			s->window_list = window->_next;
 
-		if (window->next)
-			window->next->prev = window->prev;
+		if (window->_next)
+			window->_next->_prev = window->_prev;
 		else
-			s->window_list_end = window->prev;
+			s->window_list_end = window->_prev;
 
-		window->prev = w;
-		window->next = w->next;
+		window->_prev = w;
+		window->_next = w->_next;
 
 		/* One last sanity check */
-		if (window->prev == NULL || window->next == NULL)
+		if (window->_prev == NULL || window->_next == NULL)
 			panic(1, "window_move_to(%d): Window %d's prev and "
 				"next are both null, but that's impossible", 
 				offset, window->user_refnum);
 
-		window->next->prev = window;
-		window->prev->next = window;
+		window->_next->_prev = window;
+		window->_prev->_next = window;
 	}
 
 	set_screens_current_window(s, window->refnum);
@@ -1428,7 +1428,7 @@ static void 	move_window (Window *window, int offset)
 	if (offset == 0)
 		return;
 
-	for (location = 1, w = s->window_list; w; location++, w = w->next)
+	for (location = 1, w = s->window_list; w; location++, w = w->_next)
 		if (w == window)
 			break;
 	if (!w)
@@ -1478,8 +1478,8 @@ static 	void 	resize_window (int how, Window *window, int offset)
 
 	do
 	{
-		if (other->next)
-			other = other->next;
+		if (other->_next)
+			other = other->_next;
 		else
 			other = window->screen->window_list;
 
@@ -1844,7 +1844,7 @@ static void	rebalance_windows (Screen *screen)
 	 * Two passes -- first figure out how much we need to balance,
 	 * and how many windows there are to balance
 	 */
-	for (tmp = screen->window_list; tmp; tmp = tmp->next)
+	for (tmp = screen->window_list; tmp; tmp = tmp->_next)
 	{
 		if (tmp->fixed_size)
 			continue;
@@ -1864,7 +1864,7 @@ static void	rebalance_windows (Screen *screen)
 	/*
 	 * And then go through and fix everybody
 	 */
-	for (tmp = screen->window_list; tmp; tmp = tmp->next)
+	for (tmp = screen->window_list; tmp; tmp = tmp->_next)
 	{
 		if (tmp->fixed_size)
 			;
@@ -1931,7 +1931,7 @@ void 	recalculate_windows (Screen *screen)
 	 * the screen has changed, the window needs to be told; this
 	 * will provoke a full redraw (later).
 	 */
-	for (tmp = screen->window_list; tmp; tmp = tmp->next)
+	for (tmp = screen->window_list; tmp; tmp = tmp->_next)
 		window_check_columns(tmp);
 
 	/*
@@ -1954,7 +1954,7 @@ void 	recalculate_windows (Screen *screen)
 	 * This will allow us to calculate how many lines to give/steal.
 	 */
 	old_li = 0;
-	for (tmp = screen->window_list; tmp; tmp = tmp->next)
+	for (tmp = screen->window_list; tmp; tmp = tmp->_next)
 		old_li += tmp->status.number + tmp->toplines_showing + tmp->display_lines;
 
 	/* How many lines did the screen change by? */
@@ -1979,7 +1979,7 @@ void 	recalculate_windows (Screen *screen)
 	 * Next, let's figure out how many lines MUST be shown.
 	 */
 	required_li = 0;
-	for (tmp = screen->window_list; tmp; tmp = tmp->next)
+	for (tmp = screen->window_list; tmp; tmp = tmp->_next)
 		required_li += tmp->status.number + tmp->toplines_showing +
 				(tmp->fixed_size ? tmp->display_lines : 0);
 
@@ -1998,7 +1998,7 @@ void 	recalculate_windows (Screen *screen)
 		winner = NULL;     /* Winner? ha~! */
 		for (skip_fixed = 1; skip_fixed >= 0; skip_fixed--)
 		{
-			for (tmp = screen->window_list; tmp; tmp = tmp->next)
+			for (tmp = screen->window_list; tmp; tmp = tmp->_next)
 			{
 				if (skip_fixed && tmp->fixed_size)
 					continue;
@@ -2030,7 +2030,7 @@ void 	recalculate_windows (Screen *screen)
 	 */
 	/* Count the non-fixed windows */
 	window_count = 0;
-	for (tmp = screen->window_list; tmp; tmp = tmp->next)
+	for (tmp = screen->window_list; tmp; tmp = tmp->_next)
 	{
 		if (tmp->fixed_size)
 			continue;
@@ -2052,7 +2052,7 @@ void 	recalculate_windows (Screen *screen)
 			 * For now, add one line to each nonfixed window,
 			 * one at a time, until we've given them all out.
 			 */
-			for (tmp = screen->window_list; tmp; tmp = tmp->next)
+			for (tmp = screen->window_list; tmp; tmp = tmp->_next)
 			{
 				/* 
 				 * If this is a fixed window, and there is 
@@ -2082,7 +2082,7 @@ void 	recalculate_windows (Screen *screen)
 			 * For now, steal one line to each nonfixed window,
 			 * one at a time, until we've given them all out.
 			 */
-			for (tmp = screen->window_list; tmp; tmp = tmp->next)
+			for (tmp = screen->window_list; tmp; tmp = tmp->_next)
 			{
 				/* 
 				 * If this is a fixed window, and there is 
@@ -2227,7 +2227,7 @@ static void 	my_goto_window (Screen *s, int which)
 	}
 	tmp = s->window_list;
 	for (i = 1; i < which; i++)
-		tmp = tmp->next;
+		tmp = tmp->_next;
 
 	set_screens_current_window(s, tmp->refnum);
 	make_window_current_by_refnum(tmp->refnum);
@@ -2385,7 +2385,7 @@ static void 	show_window (Window *window)
 /*
  * get_window_by_desc: Given either a refnum or a name, find that window
  */
-Window *get_window_by_desc (const char *stuff)
+static Window *	get_window_by_desc (const char *stuff)
 {
 	Window	*w = NULL;	/* bleh */
 
@@ -2425,6 +2425,7 @@ Window *get_window_by_uuid (const char *uuid)
 	return NULL;
 }
 
+#if 0
 /*
  * get_window_by_refnum: Given a reference number to a window, this returns a
  * pointer to that window if a window exists with that refnum, null is
@@ -2449,6 +2450,7 @@ Window *get_window_by_refnum (int refnum)
 
 	return NULL;
 }
+#endif
 
 Window *get_window_by_refnum_direct (int refnum)
 {
@@ -2494,8 +2496,8 @@ static	int	get_next_window  (int window_)
 
 	do
 	{
-		if (new_w->next)
-			new_w = new_w->next;
+		if (new_w->_next)
+			new_w = new_w->_next;
 		else
 			new_w = w->screen->window_list;
 	}
@@ -2520,8 +2522,8 @@ static	int	get_previous_window (int window_)
 
 	do
 	{
-		if (new_w->prev)
-			new_w = new_w->prev;
+		if (new_w->_prev)
+			new_w = new_w->_prev;
 		else
 			new_w = w->screen->window_list_end;
 	}
@@ -4662,18 +4664,18 @@ WINDOWCMD(clear)
  */
 WINDOWCMD(create)
 {
-	Window *tmp;
+	int	new_refnum;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
 	if (!args)
 		return refnum;
 
-	if ((tmp = (Window *)create_additional_screen()))
-		window = tmp;
-	else
+	if ((new_refnum = create_additional_screen()) < 1)
 		say("Cannot create new screen!");
+	else
+		refnum = new_refnum;
 
-	return window->refnum;
+	return refnum;
 }
 
 /*
@@ -5070,7 +5072,7 @@ WINDOWCMD(hide_others)
 
 	for (tmp = window->screen->window_list; tmp; tmp = next)
 	{
-		next = tmp->next;
+		next = tmp->_next;
 		if (tmp != window)
 			hide_window(tmp);
 	}
@@ -5258,7 +5260,7 @@ WINDOWCMD(kill_all_hidden)
 	tmp = invisible_list;
 	while (tmp)
 	{
-		next = tmp->next;
+		next = tmp->_next;
 		if (tmp->killable)
 		{
 		    if (tmp == window)
@@ -5298,7 +5300,7 @@ WINDOWCMD(kill_others)
 
 	while (tmp)
 	{
-		next = tmp->next;
+		next = tmp->_next;
 		if (tmp->killable)
 		{
 		    if (tmp != window)
@@ -5922,17 +5924,16 @@ windowcmd_name__unset_name:
  */
 WINDOWCMD(new)
 {
-	Window *tmp;
+	int		new_refnum;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
 	if (!window)
 		return 0;
-	if ((tmp = new_window(window->screen)))
-		window = tmp;
+	if ((new_refnum = new_window(window->screen)) < 0)
+		return 0;
 
-	make_window_current_by_refnum(window->refnum);
-	/* XXX This is dangerous -- 'make_window_current' might nuke 'window' */
-	return window->refnum;
+	make_window_current_by_refnum(new_refnum);
+	return new_refnum;
 }
 
 /*
@@ -5977,7 +5978,7 @@ WINDOWCMD(new_hide)
  */
 WINDOWCMD(next)
 {
-	Window *tmp;
+	Window *tmp = NULL;
 	Window *next = NULL;
 	Window *smallest = NULL;
 	Window *window = get_window_by_refnum_direct(refnum);
@@ -5985,7 +5986,7 @@ WINDOWCMD(next)
 	if (!window)
 		return 0;
 	smallest = window;
-	for (tmp = invisible_list; tmp; tmp = tmp->next)
+	for (tmp = invisible_list; tmp; tmp = tmp->_next)
 	{
 		if (!tmp->swappable || tmp->skip)
 			continue;
@@ -6339,7 +6340,7 @@ WINDOWCMD(pop)
  */
 WINDOWCMD(previous)
 {
-	Window 	*tmp,
+	Window 	*tmp = NULL,
 		*previous = NULL,
 		*largest,
 		*window = get_window_by_refnum_direct(refnum);
@@ -6350,7 +6351,7 @@ WINDOWCMD(previous)
 	/* It is ok for 'args' to be NULL -- SWAP_PREVIOUS_WINDOW uses this. */
 
 	largest = window;
-	for (tmp = invisible_list; tmp; tmp = tmp->next)
+	for (tmp = invisible_list; tmp; tmp = tmp->_next)
 	{
 		if (!tmp->swappable || tmp->skip)
 			continue;
@@ -8980,18 +8981,22 @@ char 	*windowctl 	(char *input)
 		    malloc_strcat_wordlist(&ret, space, ltoa(w->user_refnum));
 		RETURN_MSTR(ret);
 	} else if (!my_strnicmp(listc, "NEW", len)) {
+	    int new_refnum;
+
 	    old_status_update = permit_status_update(0);
-	    w = new_window(current_window->screen);
+	    new_refnum = new_window(current_window->screen);
 	    permit_status_update(old_status_update);
-	    if (w) {
-	        make_window_current(w);
-		RETURN_INT(w->user_refnum);
+	    if (new_refnum > 0) {
+	        make_window_current_by_refnum(new_refnum);
+		RETURN_INT(get_window_user_refnum(new_refnum));
 	    }
 	    else
 		RETURN_INT(-1);
 	} else if (!my_strnicmp(listc, "NEW_HIDE", len)) {
-	    if ((w = new_window(NULL)))
-		RETURN_INT(w->user_refnum);
+	    int new_refnum;
+
+	    if ((new_refnum = new_window(NULL)) > 0)
+		RETURN_INT(get_window_user_refnum(new_refnum));
 	    else
 		RETURN_INT(-1);
 	} else if (!my_strnicmp(listc, "GET", len)) {
@@ -9367,9 +9372,9 @@ char 	*windowctl 	(char *input)
 static int	count_fixed_windows (Screen *s)
 {
 	int	count = 0;
-	Window *w;
+	Window *w = NULL;
 
-	for (w = s->window_list; w; w = w->next)
+	while (traverse_all_windows_on_screen(&w, s))
 		if (w->fixed_size && w->skip)
 			count++;
 

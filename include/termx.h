@@ -614,13 +614,10 @@ int	tputs_x(char *);
 #define term_set_background(x)	tputs_x(current_term->TI_backcolors[(x) & 0xff])
 #define term_set_bold_foreground(x)	tputs_x(current_term->TI_bold_forecolors[(x) & 0x07])
 #define term_set_bold_background(x)	tputs_x(current_term->TI_bold_backcolors[(x) & 0x07])
-#define term_set_attribs(f,b)	tputs_x(term_getsgr(TERM_SGR_COLORS,(f),(b)))
-#define term_putgchar(x)	tputs_x(term_getsgr(TERM_SGR_GCHAR,(x),0))
 #define term_clear_screen()	term_clrscr()
 #define term_move_cursor(c, r)	term_gotoxy((c),(r))
 #define term_cr()		tputs_x(current_term->TI_cr)
 #define term_newline()		tputs_x(current_term->TI_nel)
-#define term_cursor_left()	term_left(1)
 #define term_cursor_right()	term_right(1)
 #define term_clear_to_eol()	term_clreol()
 #define term_all_off()          tputs_x(current_term->TI_normal);
@@ -633,18 +630,11 @@ int	tputs_x(char *);
 	BUILT_IN_KEYBINDING(term_pause);
 	void		term_inputline_putchar 	(unsigned char);
 	void		term_scroll 		(int, int, int);
-	void		term_insert 		(unsigned char);
-	void		term_delete 		(int);
-	void		term_repeat		(unsigned char, int);
 	void		term_right		(int);
-	void		term_left		(int);
 	void		term_clreol		(void);
 	void		term_clrscr		(void);
 	void		term_gotoxy		(int, int);
 	void		term_reset		(void);
-	int		term_eight_bit		(void);
-	void		set_term_eight_bit	(int);
-	void		set_meta_8bit		(void *);
 	void		set_automargin_override	(void *);
 	const char *	term_getsgr		(int, int, int);
 	const char *	get_term_capability	(const char *, int, int);

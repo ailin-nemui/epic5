@@ -56,8 +56,8 @@ struct WNickListStru *	next;
 typedef	struct	WindowStru
 {
 	/* List stuff */
-struct	WindowStru *	next;			/* Window below us on screen */
-struct	WindowStru *	prev;			/* Window above us on screen */
+struct	WindowStru *	_next;			/* Window below us on screen */
+struct	WindowStru *	_prev;			/* Window above us on screen */
 struct	ScreenStru *	screen;			/* The screen we belong to */
 	short		deceased;		/* Set when the window is killed */
 
@@ -203,11 +203,10 @@ struct	window_stack_stru *	next;
 
 
 	int	traverse_all_windows		(Window **);
-	Window *new_window 			(struct ScreenStru *);
-	Window *get_window_by_refnum		(int);
-	Window *get_window_by_refnum_direct	(int refnum);
-	Window *get_window_by_desc		(const char *);
 #endif
+
+	int	new_window 			(struct ScreenStru *);
+	Window *get_window_by_refnum_direct	(int refnum);
 
 extern	unsigned 	current_window_priority;
 

@@ -1325,26 +1325,6 @@ void	term_beep (void)
 	}
 }
 
-/* XXX Deprecated */
-void	set_meta_8bit (void *stuff)
-{
-	VARIABLE *v;
-	int	value;
-
-	v = (VARIABLE *)stuff;
-	value = v->integer;
-
-	if (dumb_mode)
-		return;
-
-	if (value == 0)
-		current_term->TI_meta_mode = 0;
-	else if (value == 1)
-		current_term->TI_meta_mode = 1;
-	else if (value == 2)
-		current_term->TI_meta_mode = (current_term->TI_km == 0 ? 0 : 1);
-}
-
 void	set_automargin_override (void *stuff)
 {
 	if (dumb_mode)
@@ -1425,27 +1405,6 @@ void	term_clrscr (void)
 	}
 }
 
-#if 0
-/*
- * Move the cursor NUM spaces to the left, non-destruvtively if we can.
- */
-void	term_left (int num)
-{
-	if (num == 1 && current_term->TI_cub1)
-		tputs_x(current_term->TI_cub1);
-	else if (current_term->TI_cub)
-		tputs_x (tparm1(current_term->TI_cub, num));
-	else if (current_term->TI_mrcup)
-		tputs_x (tparm2(current_term->TI_mrcup, -num, 0));
-	else if (current_term->TI_cub1)
-		while (num--)
-			tputs_x(current_term->TI_cub1);
-	else if (current_term->TI_kbs)
-		while (num--)
-			tputs_x (current_term->TI_kbs);
-}
-#endif
-
 /*
  * Move the cursor NUM spaces to the right
  */
@@ -1461,57 +1420,6 @@ void	term_right (int num)
 		while (num--)
 			tputs_x(current_term->TI_cuf1);
 }
-
-#if 0
-/*
- * term_delete (int num)
- * Deletes NUM characters at the current position
- */
-void	term_delete (int num)
-{
-	if (current_term->TI_smdc)
-		tputs_x(current_term->TI_smdc);
-
-	if (current_term->TI_dch)
-		tputs_x (tparm1(current_term->TI_dch, num));
-	else if (current_term->TI_dch1)
-		while (num--)
-			tputs_x (current_term->TI_dch1);
-
-	if (current_term->TI_rmdc)
-		tputs_x (current_term->TI_rmdc);
-}
-
-/*
- * Insert character C at the curent cursor position.
- */
-void	term_insert (unsigned char c)
-{
-	if (current_term->TI_smir)
-		tputs_x (current_term->TI_smir);
-	else if (current_term->TI_ich1)
-		tputs_x (current_term->TI_ich1);
-	else if (current_term->TI_ich)
-		tputs_x (tparm1(current_term->TI_ich, 1));
-
-	term_inputline_putchar (c);
-
-	if (current_term->TI_rmir)
-		tputs_x(current_term->TI_rmir);
-}
-
-/*
- * Repeat the character C REP times in the most efficient way.
- */
-void	term_repeat (unsigned char c, int rep)
-{
-	if (current_term->TI_rep)
-		tputs_x(tparm2(current_term->TI_rep, (int)c, rep));
-	else
-		while (rep--)
-			putchar_x (c);
-}
-#endif
 
 /*
  * Scroll the screen N lines between lines TOP and BOT.

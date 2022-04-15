@@ -5,7 +5,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Need a $shuffle() operator.
 * /on dcc_raw handling should set message_from() (rb Harz)
 * The way we handle "screen is not tall enough" underflow needs work
-* Make sure /window query and /query and unsetting queries works
 * Unify window query and channels in the target list.
 
 EPIC5-3.0 MAJOR PROJECTS
@@ -1096,3 +1095,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix /log properly showing targets for window-type logs (rb zlonix)
 * Fix $winchan(#chan) not returning user refnum (rb zlonix)
 * Improvements to sasl script (rb harzelein) (zlonix)
+* More changes, moving towards de-listifying the window object

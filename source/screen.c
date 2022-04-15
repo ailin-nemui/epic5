@@ -3245,7 +3245,7 @@ void	create_new_screen (void)
 #define ST_SCREEN       0
 #define ST_XTERM        1
 #define ST_TMUX		2
-Window	*create_additional_screen (void)
+int	create_additional_screen (void)
 {
 #ifdef NO_JOB_CONTROL
 	yell("Your system doesn't support job control, sorry.");
@@ -3275,12 +3275,12 @@ Window	*create_additional_screen (void)
 	oldscreen = get_window_screen(0);
 
 	if (!use_input)
-		return NULL;
+		return -1;
 
 	if (!(wserv_path = get_string_var(WSERV_PATH_VAR)))
 	{
 		say("You need to /SET WSERV_PATH before using /WINDOW CREATE");
-		return NULL;
+		return -1;
 	}
 
 	/*
@@ -3323,7 +3323,7 @@ Window	*create_additional_screen (void)
 	else
 	{
 		say("I don't know how to create new windows for this terminal");
-		return NULL;
+		return -1;
 	}
 
 	if (screen_type == ST_SCREEN)
@@ -3345,7 +3345,7 @@ Window	*create_additional_screen (void)
 	if ((new_cmd = client_bind((SA *)&local_sockaddr, sizeof(local_sockaddr))) < 0)
 	{
 		yell("Couldn't establish server side of new screen");
-		return NULL;
+		return -1;
 	}
 	port = ntohs(local_sockaddr.sin_port);
 
@@ -3492,7 +3492,7 @@ Window	*create_additional_screen (void)
                 yell("child %s with %d", (errnod < 1) ? "signaled" : "exited",
                                          (errnod < 1) ? -errnod : errnod);
 		yell("Errno is %d", old_errno);
-		return NULL;
+		return -1;
 	    }
 	    default:
 	    {
@@ -3506,7 +3506,7 @@ Window	*create_additional_screen (void)
 				kill_screen(new_s);
 				yell("Couldn't establish data connection "
 					"to new screen");
-				return NULL;
+				return -1;
 			}
 			new_open(new_s->fdin, do_screens, NEWIO_RECV, 1, -1);
 			new_s->fpin = new_s->fpout = fdopen(new_s->fdin, "r+");
@@ -3514,6 +3514,8 @@ Window	*create_additional_screen (void)
 		}
 		else
 		{
+			int	refnum;
+
 			new_s->control = accept(new_cmd, (SA *)&new_socket,
 						&new_sock_size);
 			close(new_cmd);
@@ -3522,18 +3524,18 @@ Window	*create_additional_screen (void)
                                 kill_screen(new_s);
                                 yell("Couldn't establish control connection "
                                         "to new screen");
-                                return NULL;
+                                return -1;
                         }
 
 			new_open(new_s->control, do_screens, NEWIO_RECV, 1, -1);
 
-                        if (!(win = new_window(new_s)))
+                        if ((refnum = new_window(new_s)) < 1)
                                 panic(1, "WINDOW is NULL and it shouldnt be!");
-                        return win;
+                        return refnum;
 		}
 	    }
 	}
-	return NULL;
+	return -1;
 #endif
 }
 
@@ -3563,7 +3565,7 @@ void 	kill_screen (Screen *screen)
 		screen->control = new_close(screen->control);
 	while ((window = screen->window_list))
 	{
-		screen->window_list = window->next;
+		screen->window_list = window->_next;
 		add_to_invisible_list(window->refnum);
 	}
 
