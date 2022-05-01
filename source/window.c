@@ -6233,6 +6233,9 @@ WINDOWCMD(number)
 				other->user_refnum = oldref;
 				windows[oldref] = other;
 			}
+			else
+				windows[oldref] = NULL;
+
 			window->user_refnum = newref;
 			windows[newref] = window;
 

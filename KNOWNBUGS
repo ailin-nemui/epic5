@@ -1126,3 +1126,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * - Change macros in input.c to not hardcode 'current_screen'
 * - (This required changing INPUT_LINE to INPUT_LINE_ROW)
 * - Eliminate hardocded uses of 'last_input_screen' in input.c
+* When doing /window number, be sure to clear old refnum! (rb zlonix)
