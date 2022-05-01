@@ -12,16 +12,6 @@
 #include "alist.h"
 struct notify_stru;
 
-typedef struct notify_alist
-{
-	struct notify_stru **	list;
-	int			max;
-	int			max_alloc;
-	alist_func 		func;
-	hash_type		hash;
-	char *			ison;
-} NotifyList;
-
 extern	char	notify_timeref[];
 
 	BUILT_IN_COMMAND(notify);

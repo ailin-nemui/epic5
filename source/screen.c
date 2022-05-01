@@ -2738,7 +2738,7 @@ void 	add_to_screen (const unsigned char *buffer)
 			continue;
 
 		    /* Must be on the nick list */
-		    if (!find_in_list((List *)get_window_nicks(w), get_who_from(), !USE_WILDCARDS))
+		    if (! EXISTS_IN_LIST_(get_window_nicks(w), get_who_from(), !USE_WILDCARDS))
 			continue;
 
 		    add_to_window(w, buffer);
@@ -3193,8 +3193,8 @@ void	create_new_screen (void)
 	}
 
 	new_s->last_window_refnum = 1;
-	new_s->window_list = NULL;
-	new_s->window_list_end = NULL;
+	new_s->_window_list = NULL;
+	new_s->_window_list_end = NULL;
 	new_s->input_window = -1;
 	new_s->visible_windows = 0;
 	new_s->window_stack = NULL;
@@ -3563,16 +3563,16 @@ void 	kill_screen (Screen *screen)
 	}
 	if (screen->control)
 		screen->control = new_close(screen->control);
-	while ((window = screen->window_list))
+	while ((window = screen->_window_list))
 	{
-		screen->window_list = window->_next;
+		screen->_window_list = window->_next;
 		add_to_invisible_list(window->refnum);
 	}
 
 	/* Take out some of the garbage left around */
 	screen->input_window = -1;
-	screen->window_list = NULL;
-	screen->window_list_end = NULL;
+	screen->_window_list = NULL;
+	screen->_window_list_end = NULL;
 	screen->last_window_refnum = -1;
 	screen->visible_windows = 0;
 	screen->window_stack = NULL;

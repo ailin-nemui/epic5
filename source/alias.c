@@ -134,21 +134,10 @@ const char *symbol_types[] = {
  * This is the description for a list of aliases
  * This is an ``array_set'' structure
  */
-#define ALIAS_CACHE_SIZE 4
+static array globals = 	{ NULL, 0, 0, strncmp, HASH_INSENSITIVE };
 
-typedef struct	SymbolSetStru
-{
-	Symbol **	list;
-	int		max;
-	int		max_alloc;
-	alist_func 	func;
-	hash_type	hash;
-}	SymbolSet;
-
-static SymbolSet globals = 	{ NULL, 0, 0, strncmp, HASH_INSENSITIVE };
-
-static	Symbol *lookup_symbol (const char *name);
-static	Symbol *find_local_alias   (const char *name, SymbolSet **list);
+static	Symbol *lookup_symbol 	   (const char *name);
+static	Symbol *find_local_alias   (const char *name, array **list);
 
 /*
  * This is the ``stack frame''.  Each frame has a ``name'' which is
@@ -161,7 +150,7 @@ typedef struct RuntimeStackStru
 {
 	const char *name;	/* Name of the stack */
 	char 	*current;	/* Current cmd being executed */
-	SymbolSet alias;	/* Local variables */
+	array	alias;		/* Local variables */
 	int	locked;		/* Are we locked in a wait? */
 	int	parent;		/* Our parent stack frame */
 }	RuntimeStack;
@@ -221,19 +210,18 @@ static	void	unload_var_alias   (Char *fn);
 static	void	list_cmd_alias     (Char *name);
 static	void	list_var_alias     (Char *name);
 static	void	list_local_alias   (Char *name);
-static	void 	destroy_cmd_aliases    (SymbolSet *);
-static	void 	destroy_var_aliases    (SymbolSet *);
-static	void 	destroy_builtin_commands    (SymbolSet *);
-static	void 	destroy_builtin_functions    (SymbolSet *);
-static	void 	destroy_builtin_variables    (SymbolSet *);
-static	void 	destroy_builtin_expandos    (SymbolSet *);
+static	void 	destroy_cmd_aliases    (array *);
+static	void 	destroy_var_aliases    (array *);
+static	void 	destroy_builtin_commands    (array *);
+static	void 	destroy_builtin_functions    (array *);
+static	void 	destroy_builtin_variables    (array *);
+static	void 	destroy_builtin_expandos    (array *);
 
 extern	char *  get_variable       (Char *name);
 extern	char ** glob_cmd_alias          (Char *name, int *howmany, int maxret, int start, int rev);
 extern	char ** glob_assign_alias	(Char *name, int *howmany, int maxret, int start, int rev);
 extern	const char *  get_cmd_alias     (Char *name, void **args, 
-					 void (**func) (const char *, char *, 
-					                const char *));
+					 void (**func) (const char *, char *, const char *));
 extern	char ** get_subarray_elements   (Char *root, int *howmany, int type);
 
 
@@ -244,9 +232,9 @@ void	flush_all_symbols (void)
 	int	i;
 	Symbol *s;
 
-	for (i = 0; i < globals.max; i++)
+	while (globals.max > 0)
 	{
-		s = globals.list[i];
+		s = array_pop(&globals, 0);
 		new_free(&s->name);
 		new_free(&s->user_variable);
 		new_free(&s->user_variable_package);
@@ -264,7 +252,7 @@ void	flush_all_symbols (void)
 			new_free(&s->builtin_variable->script);
 			new_free(&s->builtin_variable);
 		}
-		new_free(&globals.list[i]);
+		new_free(&s);
 	}
 	new_free(&globals.list);
 }
@@ -1113,11 +1101,11 @@ void	add_var_alias	(const char *orig_name, const char *stuff, int noisy)
 		 * If it does, and the ``stuff'' to assign to it is
 		 * empty, then we should remove the variable outright
 		 */
-		tmp = (Symbol *) find_array_item ((array *)&globals, name, &cnt, &loc);
+		tmp = (Symbol *) find_array_item(&globals, name, &cnt, &loc);
 		if (!tmp || cnt >= 0)
 		{
 			tmp = make_new_Symbol(name);
-			add_to_array ((array *)&globals, (array_item *)tmp);
+			add_to_array(&globals, name, tmp);
 		}
 
 		if (current_package())
@@ -1173,7 +1161,7 @@ void	add_var_stub_alias  (const char *orig_name, const char *stuff)
 		tmp = make_new_Symbol(name);
 		if (current_package())
 		    tmp->user_variable_package = malloc_strdup(current_package());
-		add_to_array ((array *)&globals, (array_item *)tmp);
+		add_to_array(&globals, name, tmp);
 	}
 	else if (current_package())
 	{
@@ -1194,7 +1182,7 @@ void	add_local_alias	(const char *orig_name, const char *stuff, int noisy)
 {
 	const char 	*ptr;
 	Symbol 	*tmp = NULL;
-	SymbolSet *list = NULL;
+	array *list = NULL;
 	char *	name;
 
 	name = remove_brackets(orig_name, NULL);
@@ -1220,7 +1208,7 @@ void	add_local_alias	(const char *orig_name, const char *stuff, int noisy)
 	if (!(tmp = find_local_alias (name, &list)))
 	{
 		tmp = make_new_Symbol(name);
-		add_to_array ((array *)list, (array_item *)tmp);
+		add_to_array (list, name, tmp);
 	}
 
 	/* Fill in the interesting stuff */
@@ -1250,7 +1238,7 @@ void	add_cmd_alias	(const char *orig_name, ArgList *arglist, const char *stuff)
 		tmp = make_new_Symbol(name);
 		if (current_package())
 		   tmp->user_command_package = malloc_strdup(current_package());
-		add_to_array ((array *)&globals, (array_item *)tmp);
+		add_to_array(&globals, name, tmp);
 	}
 	else if (current_package()) 
 	{
@@ -1289,7 +1277,7 @@ void	add_cmd_stub_alias  (const char *orig_name, const char *stuff)
 		tmp = make_new_Symbol(name);
 		if (current_package())
 		   tmp->user_command_package = malloc_strdup(current_package());
-		add_to_array ((array *)&globals, (array_item *)tmp);
+		add_to_array(&globals, name, tmp);
 	}
 	else if (current_package())
 	{
@@ -1312,11 +1300,11 @@ void	add_builtin_cmd_alias	(const char *name, void (*func) (const char *, char *
 	Symbol *tmp = NULL;
 	int cnt, loc;
 
-	tmp = (Symbol *) find_array_item ((array *)&globals, name, &cnt, &loc);
+	tmp = (Symbol *) find_array_item(&globals, name, &cnt, &loc);
 	if (!tmp || cnt >= 0)
 	{
 		tmp = make_new_Symbol(name);
-		add_to_array ((array *)&globals, (array_item *)tmp);
+		add_to_array(&globals, name, tmp);
 	}
 
 	tmp->builtin_command = func;
@@ -1328,11 +1316,11 @@ void	add_builtin_func_alias	(const char *name, char * (*func) (char *))
 	Symbol *tmp = NULL;
 	int cnt, loc;
 
-	tmp = (Symbol *) find_array_item ((array *)&globals, name, &cnt, &loc);
+	tmp = (Symbol *) find_array_item(&globals, name, &cnt, &loc);
 	if (!tmp || cnt >= 0)
 	{
 		tmp = make_new_Symbol(name);
-		add_to_array ((array *)&globals, (array_item *)tmp);
+		add_to_array(&globals, name, tmp);
 	}
 
 	tmp->builtin_function = func;
@@ -1344,11 +1332,11 @@ void	add_builtin_expando	(const char *name, char *(*func) (void))
 	Symbol *tmp = NULL;
 	int cnt, loc;
 
-	tmp = (Symbol *) find_array_item ((array *)&globals, name, &cnt, &loc);
+	tmp = (Symbol *) find_array_item(&globals, name, &cnt, &loc);
 	if (!tmp || cnt >= 0)
 	{
 		tmp = make_new_Symbol(name);
-		add_to_array ((array *)&globals, (array_item *)tmp);
+		add_to_array(&globals, name, tmp);
 	}
 
 	tmp->builtin_expando = func;
@@ -1360,11 +1348,11 @@ void	add_builtin_variable_alias (const char *name, IrcVariable *var)
 	Symbol *tmp = NULL;
 	int cnt, loc;
 
-	tmp = (Symbol *) find_array_item ((array *)&globals, name, &cnt, &loc);
+	tmp = (Symbol *) find_array_item(&globals, name, &cnt, &loc);
 	if (!tmp || cnt >= 0)
 	{
 		tmp = make_new_Symbol(name);
-		add_to_array((array *)&globals, (array_item *)tmp);
+		add_to_array(&globals, name, tmp);
 	}
 
 	tmp->builtin_variable = var;
@@ -1441,7 +1429,7 @@ static Symbol *	lookup_symbol (const char *name)
 	int 	loc;
 	int 	cnt = 0;
 
-	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
 	if (cnt >= 0)
 		item = NULL;
 	if (item && item->user_variable_stub)
@@ -1459,7 +1447,7 @@ static Symbol *	lookup_symbol (const char *name)
  * is an exact leading subset of ``name'' and that variable ends in a
  * period (a dot).
  */
-static Symbol *	find_local_alias (const char *orig_name, SymbolSet **list)
+static Symbol *	find_local_alias (const char *orig_name, array **list)
 {
 	Symbol 	*alias = NULL;
 	int 	c;
@@ -1508,9 +1496,9 @@ static Symbol *	find_local_alias (const char *orig_name, SymbolSet **list)
 			int x, cnt, loc;
 
 			/* We can always hope that the variable exists */
-			find_array_item((array*)&call_stack[c].alias, name, &cnt, &loc);
+			find_array_item(&call_stack[c].alias, name, &cnt, &loc);
 			if (cnt < 0)
-				alias = call_stack[c].alias.list[loc];
+				alias = call_stack[c].alias.list[loc]->data;
 
 			/* XXXX - This is bletcherous */
 			/*
@@ -1529,7 +1517,7 @@ static Symbol *	find_local_alias (const char *orig_name, SymbolSet **list)
 				Symbol *item;
 				size_t len;
 
-				item = call_stack[c].alias.list[x];
+				item = call_stack[c].alias.list[x]->data;
 				len =  strlen(item->name);
 
 				if (streq(item->name, name) == len) {
@@ -1543,7 +1531,7 @@ static Symbol *	find_local_alias (const char *orig_name, SymbolSet **list)
 			if (!alias && implicit >= 0)
 			{
 				alias = make_new_Symbol(name);
-				add_to_array ((array *)&call_stack[implicit].alias, (array_item *)alias);
+				add_to_array (&call_stack[implicit].alias, name, alias);
 			}
 		}
 
@@ -1587,7 +1575,7 @@ static void	delete_var_alias (const char *orig_name, int noisy)
 
 	name = remove_brackets(orig_name, NULL);
 	upper(name);
-	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
 	if (item && cnt < 0)
 	{
 		new_free(&item->user_variable);
@@ -1610,7 +1598,7 @@ static void	delete_cmd_alias (const char *orig_name, int noisy)
 
 	name = remove_brackets(orig_name, NULL);
 	upper(name);
-	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
 	if (item && cnt < 0)
 	{
 		new_free(&item->user_command);
@@ -1634,7 +1622,7 @@ void	delete_builtin_command (const char *orig_name)
 
 	name = remove_brackets(orig_name, NULL);
 	upper(name);
-	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
 	if (item && cnt < 0)
 	{
 		item->builtin_command = NULL;
@@ -1651,7 +1639,7 @@ void	delete_builtin_function (const char *orig_name)
 
 	name = remove_brackets(orig_name, NULL);
 	upper(name);
-	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
 	if (item && cnt < 0)
 	{
 		item->builtin_function = NULL;
@@ -1668,7 +1656,7 @@ void	delete_builtin_expando (const char *orig_name)
 
 	name = remove_brackets(orig_name, NULL);
 	upper(name);
-	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
 	if (item && cnt < 0)
 	{
 		item->builtin_expando = NULL;
@@ -1685,7 +1673,7 @@ void	delete_builtin_variable (const char *orig_name)
 
 	name = remove_brackets(orig_name, NULL);
 	upper(name);
-	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
 	if (item && cnt < 0)
 	{
 		item->builtin_variable = NULL;
@@ -1709,7 +1697,7 @@ void	bucket_ ## x (Bucket *b, const char *name)	\
 	len = strlen(name);					\
 	for (i = 0; i < globals.max; i++)			\
 	{							\
-		item = globals.list[i];				\
+		item = globals.list[i]->data;			\
 		if (!my_strnicmp(name, item->name, len))	\
 		{						\
 		    if (item-> y )				\
@@ -1750,7 +1738,7 @@ static void	list_local_alias (const char *orig_name)
 		continue;
 	    for (x = 0; x < call_stack[cnt].alias.max; x++)
 	    {
-		item = call_stack[cnt].alias.list[x];
+		item = call_stack[cnt].alias.list[x]->data;
 		if (!name || !strncmp(item->name, name, len))
 		{
 		    if ((s = strchr(item->name + len, '.')))
@@ -1796,10 +1784,10 @@ static void	list_var_alias (const char *orig_name)
 
 	for (cnt = 0; cnt < globals.max; cnt++)
 	{
-	    Symbol *item = globals.list[cnt];
+	    Symbol *item = globals.list[cnt]->data;
 
 	    if (item == NULL)
-			continue;
+		continue;
 
 	    if (!item->user_variable)
 		continue;
@@ -1860,7 +1848,7 @@ static void	list_cmd_alias (const char *orig_name)
 
 	for (cnt = 0; cnt < globals.max; cnt++)
 	{
-	    Symbol *item = globals.list[cnt];
+	    Symbol *item = globals.list[cnt]->data;
 
 	    if (item == NULL)
 		continue;
@@ -1934,7 +1922,7 @@ static void	unload_cmd_alias (const char *package)
 
 	for (cnt = 0; cnt < globals.max; cnt++)
 	{
-	    item = globals.list[cnt];
+	    item = globals.list[cnt]->data;
 
 	    if (!item->user_command_package)
 		continue;
@@ -1953,7 +1941,7 @@ static void	unload_var_alias (const char *package)
 
 	for (cnt = 0; cnt < globals.max; cnt++)
 	{
-	    item = globals.list[cnt];
+	    item = globals.list[cnt]->data;
 
 	    if (!item->user_variable_package)
 		continue;
@@ -1998,16 +1986,17 @@ char **	glob_cmd_alias (const char *name, int *howmany, int maxret, int start, i
 	len = strlen(name);
 	*howmany = 0;
 	if (len) {
-		find_array_item((array*)&globals, name, &max, &pos);
+		find_array_item(&globals, name, &max, &pos);
 	} else {
 		pos = 0;
 		max = globals.max;
 	}
-	if (0 > max) max = -max;
+	if (max < 0)
+		max = -max;
 
 	for (cnt = 0; cnt < max; cnt++, pos++)
 	{
-		if (!globals.list[pos]->user_command)
+		if (!((Symbol *)globals.list[pos]->data)->user_command)
 			continue;
 		if (strchr(globals.list[pos]->name + len, '.'))
 			continue;
@@ -2045,7 +2034,7 @@ char **	glob_assign_alias (const char *name, int *howmany, int maxret, int start
 	len = strlen(name);
 	*howmany = 0;
 	if (len) {
-		find_array_item((array*)&globals, name, &max, &pos);
+		find_array_item(&globals, name, &max, &pos);
 	} else {
 		pos = 0;
 		max = globals.max;
@@ -2054,7 +2043,7 @@ char **	glob_assign_alias (const char *name, int *howmany, int maxret, int start
 
 	for (cnt = 0; cnt < max; cnt++, pos++)
 	{
-		if (!globals.list[pos]->user_variable)
+		if (!((Symbol *)globals.list[pos]->data)->user_variable)
 			continue;
 		if (strchr(globals.list[pos]->name + len, '.'))
 			continue;
@@ -2113,7 +2102,7 @@ char **	pmatch_ ## x (const char *name, int *howmany, int maxret, int start, int
 	for (cnt1 = 0; cnt1 < globals.max; cnt1++) \
 	{ \
 		cnt = rev ? globals.max - cnt1 - 1 : cnt1; \
-		if (!globals.list[cnt]-> y ) \
+		if (!((Symbol *)(globals.list[cnt]->data)) -> y ) \
 			continue; \
 \
 		if (wild_match(name, globals.list[cnt]->name)) \
@@ -2166,7 +2155,7 @@ static PMATCH_SYMBOL(any_symbol, name)
  */
 char **	get_subarray_elements (const char *orig_root, int *howmany, int type)
 {
-	SymbolSet *as;		/* XXXX */
+	array *as;		/* XXXX */
 	Symbol *s;
 	int pos, cnt, max;
 	int cmp = 0;
@@ -2178,7 +2167,7 @@ char **	get_subarray_elements (const char *orig_root, int *howmany, int type)
 
 	as = &globals;
 	root = malloc_strdup2(orig_root, ".");
-	find_array_item((array*)as, root, &max, &pos);
+	find_array_item(as, root, &max, &pos);
 
 	if (0 > max) 
 		max = -max;
@@ -2220,7 +2209,7 @@ char **	get_subarray_elements (const char *orig_root, int *howmany, int type)
 
 
 /***************************************************************************/
-static	void	destroy_cmd_aliases (SymbolSet *my_array)
+static	void	destroy_cmd_aliases (array *my_array)
 {
 	int cnt = 0;
 	Symbol *item;
@@ -2229,7 +2218,7 @@ static	void	destroy_cmd_aliases (SymbolSet *my_array)
 	{
 	    for (cnt = 0; cnt < my_array->max; cnt++)
 	    {
-		item = my_array->list[cnt];
+		item = my_array->list[cnt]->data;
 		if (!item->user_command && !item->user_command_stub && 
 				!item->arglist && !item->user_command_package)
 			continue;
@@ -2238,7 +2227,7 @@ static	void	destroy_cmd_aliases (SymbolSet *my_array)
 		new_free((void **)&item->user_command_package);
 		item->user_command_stub = 0;
 		destroy_arglist(&item->arglist);
-		GC_symbol(item, (array *)my_array, cnt);
+		GC_symbol(item, my_array, cnt);
 		break;
 	    }
 	    if (cnt >= my_array->max)
@@ -2246,7 +2235,7 @@ static	void	destroy_cmd_aliases (SymbolSet *my_array)
 	}
 }
 
-static	void	destroy_var_aliases (SymbolSet *my_array)
+static	void	destroy_var_aliases (array *my_array)
 {
 	int cnt = 0;
 	Symbol *item;
@@ -2255,14 +2244,14 @@ static	void	destroy_var_aliases (SymbolSet *my_array)
 	{
 	    for (cnt = 0; cnt < my_array->max; cnt++)
 	    {
-		item = my_array->list[cnt];
+		item = my_array->list[cnt]->data;
 		if (!item->user_variable && !item->user_variable_stub)
 			continue;
 
 		new_free((void **)&item->user_variable);
 		new_free((void **)&item->user_variable_package);
 		item->user_variable_stub = 0;
-		GC_symbol(item, (array *)my_array, cnt);
+		GC_symbol(item, my_array, cnt);
 		break;
 	    }
 	    if (cnt >= my_array->max)
@@ -2270,7 +2259,7 @@ static	void	destroy_var_aliases (SymbolSet *my_array)
 	}
 }
 
-static	void	destroy_builtin_commands (SymbolSet *my_array)
+static	void	destroy_builtin_commands (array *my_array)
 {
 	int cnt = 0;
 	Symbol *item;
@@ -2279,7 +2268,7 @@ static	void	destroy_builtin_commands (SymbolSet *my_array)
 	{
 	    for (cnt = 0; cnt < my_array->max; cnt++)
 	    {
-		item = my_array->list[cnt];
+		item = my_array->list[cnt]->data;
 		if (!item->builtin_command)
 			continue;
 		item->builtin_command = NULL;
@@ -2291,7 +2280,7 @@ static	void	destroy_builtin_commands (SymbolSet *my_array)
 	}
 }
 
-static	void	destroy_builtin_functions (SymbolSet *my_array)
+static	void	destroy_builtin_functions (array *my_array)
 {
 	int cnt = 0;
 	Symbol *item;
@@ -2300,7 +2289,7 @@ static	void	destroy_builtin_functions (SymbolSet *my_array)
 	{
 	    for (cnt = 0; cnt < my_array->max; cnt++)
 	    {
-		item = my_array->list[cnt];
+		item = my_array->list[cnt]->data;
 		if (!item->builtin_function)
 			continue;
 		item->builtin_function = NULL;
@@ -2312,7 +2301,7 @@ static	void	destroy_builtin_functions (SymbolSet *my_array)
 	}
 }
 
-static	void	destroy_builtin_expandos (SymbolSet *my_array)
+static	void	destroy_builtin_expandos (array *my_array)
 {
 	int cnt = 0;
 	Symbol *item;
@@ -2321,7 +2310,7 @@ static	void	destroy_builtin_expandos (SymbolSet *my_array)
 	{
 	    for (cnt = 0; cnt < my_array->max; cnt++)
 	    {
-		item = my_array->list[cnt];
+		item = my_array->list[cnt]->data;
 		if (!item->builtin_expando)
 			continue;
 		item->builtin_expando = NULL;
@@ -2333,7 +2322,7 @@ static	void	destroy_builtin_expandos (SymbolSet *my_array)
 	}
 }
 
-static	void	destroy_builtin_variables (SymbolSet *my_array)
+static	void	destroy_builtin_variables (array *my_array)
 {
 	int cnt = 0;
 	Symbol *item;
@@ -2342,7 +2331,7 @@ static	void	destroy_builtin_variables (SymbolSet *my_array)
 	{
 	    for (cnt = 0; cnt < my_array->max; cnt++)
 	    {
-		item = my_array->list[cnt];
+		item = my_array->list[cnt]->data;
 		if (!item->builtin_variable)
 			continue;
 		item->builtin_variable = NULL;		/* XXX memory leak */
@@ -2381,7 +2370,7 @@ int	make_local_stack 	(const char *name)
 		for (; wind_index < max_wind; wind_index++)
 		{
 			call_stack[wind_index].alias.max = 0;
-			call_stack[wind_index].alias.max_alloc = 0;
+			call_stack[wind_index].alias.total_max = 0;
 			call_stack[wind_index].alias.list = NULL;
 			call_stack[wind_index].alias.func = strncmp;
 			call_stack[wind_index].alias.hash = HASH_INSENSITIVE;
@@ -2689,7 +2678,7 @@ static	int maxret = 0;
 		case (SETPACKAGE) :
 		{
 			Symbol *alias = NULL;
-			SymbolSet *a_list;
+			array *a_list;
 
 			upper(listc);
 			if (list == VAR_ALIAS_LOCAL)
@@ -2811,11 +2800,11 @@ int	stack_push_var_alias (const char *name)
 	Symbol *item, *sym;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 	{
 	    item = make_new_Symbol(name);
-	    add_to_array((array *)&globals, (array_item *)item);
+	    add_to_array(&globals, name, item);
 	}
 
 	sym = make_new_Symbol(name);
@@ -2833,7 +2822,7 @@ int	stack_pop_var_alias (const char *name)
 	Symbol *item, *sym, *s, *ss;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 		return -1;
 
@@ -2890,11 +2879,11 @@ int	stack_push_cmd_alias (char *name)
 	Symbol *item, *sym;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 	{
 	    item = make_new_Symbol(name);
-	    add_to_array((array *)&globals, (array_item *)item);
+	    add_to_array(&globals, name, item);
 	}
 
 	sym = make_new_Symbol(name);
@@ -2913,7 +2902,7 @@ int	stack_pop_cmd_alias (const char *name)
 	Symbol *item, *sym, *s, *ss;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 		return -1;
 
@@ -2975,11 +2964,11 @@ int	stack_push_builtin_cmd_alias (const char *name)
 	Symbol *item, *sym;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 	{
 	    item = make_new_Symbol(name);
-	    add_to_array((array *)&globals, (array_item *)item);
+	    add_to_array(&globals, name, item);
 	}
 
 	sym = make_new_Symbol(name);
@@ -2995,7 +2984,7 @@ int	stack_pop_builtin_cmd_alias (const char *name)
 	Symbol *item, *sym, *s, *n;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 		return -1;
 
@@ -3050,11 +3039,11 @@ int	stack_push_builtin_func_alias (const char *name)
 	Symbol *item, *sym;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 	{
 	    item = make_new_Symbol(name);
-	    add_to_array((array *)&globals, (array_item *)item);
+	    add_to_array(&globals, name, item);
 	}
 
 	sym = make_new_Symbol(name);
@@ -3070,7 +3059,7 @@ int	stack_pop_builtin_function_alias (const char *name)
 	Symbol *item, *sym, *s, *n;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 		return -1;
 
@@ -3124,11 +3113,11 @@ int	stack_push_builtin_expando_alias (const char *name)
 	Symbol *item, *sym;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 	{
 	    item = make_new_Symbol(name);
-	    add_to_array((array *)&globals, (array_item *)item);
+	    add_to_array(&globals, name, item);
 	}
 
 	sym = make_new_Symbol(name);
@@ -3144,7 +3133,7 @@ int	stack_pop_builtin_expando_alias (const char *name)
 	Symbol *item, *sym, *s, *n;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 		return -1;
 
@@ -3199,11 +3188,11 @@ int	stack_push_builtin_var_alias (const char *name)
 	Symbol *item, *sym;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 	{
 	    item = make_new_Symbol(name);
-	    add_to_array((array *)&globals, (array_item *)item);
+	    add_to_array(&globals, name, item);
 	}
 
 	sym = make_new_Symbol(name);
@@ -3219,7 +3208,7 @@ int	stack_pop_builtin_var_alias (const char *name)
 	Symbol *item, *sym, *s, *n;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item((array *)&globals, name, &cnt, &loc);
+	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 		return -1;
 
@@ -3446,11 +3435,11 @@ char    *symbolctl      (char *input)
         } else if (!my_strnicmp(listc, "CREATE", len)) {
             GET_FUNC_ARG(symbol, input);
 	    upper(symbol);
-	    s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l);
+	    s = (Symbol *)find_array_item(&globals, symbol, &cnt, &l);
 	    if (!s || cnt >= 0)
 	    {
 		s = make_new_Symbol(symbol);
-		add_to_array((array *)&globals, (array_item *)s);
+		add_to_array(&globals, symbol, s);
 		RETURN_INT(1);
 	    }
 	    RETURN_INT(0);
@@ -3458,7 +3447,7 @@ char    *symbolctl      (char *input)
         } else if (!my_strnicmp(listc, "DELETE", len)) {
             GET_FUNC_ARG(symbol, input);
 	    upper(symbol);
-	    s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l);
+	    s = (Symbol *)find_array_item(&globals, symbol, &cnt, &l);
 	    if (s && cnt < 0) {
 		int	all = 0;
 
@@ -3500,7 +3489,7 @@ char    *symbolctl      (char *input)
         } else if (!my_strnicmp(listc, "CHECK", len)) {
             GET_FUNC_ARG(symbol, input);
 	    upper(symbol);
-	    s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l);
+	    s = (Symbol *)find_array_item(&globals, symbol, &cnt, &l);
 	    if (s && cnt < 0) {
 		GC_symbol(s, (array *)&globals, l);
 		RETURN_INT(1);
@@ -3512,7 +3501,7 @@ char    *symbolctl      (char *input)
 
             GET_FUNC_ARG(symbol, input);
 	    upper(symbol);
-	    s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l);
+	    s = (Symbol *)find_array_item(&globals, symbol, &cnt, &l);
 	    if (!s || cnt >= 0)
                 RETURN_EMPTY;
 
@@ -3609,7 +3598,7 @@ char    *symbolctl      (char *input)
 
             GET_FUNC_ARG(symbol, input);
 	    upper(symbol);
-	    s = (Symbol *)find_array_item((array *)&globals, symbol, &cnt, &l);
+	    s = (Symbol *)find_array_item(&globals, symbol, &cnt, &l);
 	    if (!s || cnt >= 0)
                 RETURN_EMPTY;
 

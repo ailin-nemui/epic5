@@ -110,7 +110,7 @@ static int	input_move_cursor (int dir, int refresh);
  * IND_LEFT_LEN
  * IND_RIGHT
  * IND_RIGHT_LEN
- * INPUT_LINE		The line on the terminal where the input line is.
+ * INPUT_LINE_ROW	The line on the terminal where the input line is.
  * CUT_BUFFER		The saved cut buffer (for deletes)
  */
 
@@ -122,7 +122,8 @@ static int	input_move_cursor (int dir, int refresh);
  * any time you change stuff in it, you need to call retokenize_input_line()
  * to refresh the metadata and update_input() to refresh the screen.
  */
-#define INPUT_BUFFER 		current_screen->il->input_buffer
+#define INPUT_LINE		current_screen->il
+#define INPUT_BUFFER 		INPUT_LINE->input_buffer
 
 /*
  * A "LOGICAL CHARACTER" is one or more unicode code points that represent
@@ -144,10 +145,10 @@ static int	input_move_cursor (int dir, int refresh);
  *				  visible on the screen.
  *
  */
-#define LOGICAL_CHARS		current_screen->il->logical_chars
-#define LOGICAL_COLUMN		current_screen->il->logical_columns
-#define START			current_screen->il->first_display_char
-#define MAXCOLS			current_screen->il->number_of_logical_chars
+#define LOGICAL_CHARS		INPUT_LINE->logical_chars
+#define LOGICAL_COLUMN		INPUT_LINE->logical_columns
+#define START			INPUT_LINE->first_display_char
+#define MAXCOLS			INPUT_LINE->number_of_logical_chars
 
 /*
  * The "LOGICAL CURSOR" is wherever the input point is.  Most of the
@@ -155,7 +156,7 @@ static int	input_move_cursor (int dir, int refresh);
  * but it can point at any glyph.  We always keep the physical cursor on
  * top of the logical cursor.
  */
-#define LOGICAL_CURSOR          current_screen->il->logical_cursor
+#define LOGICAL_CURSOR          INPUT_LINE->logical_cursor
 
 /* This is the offset into INPUT_BUFFER where the logical cursor starts */
 #define LOGICAL_LOCATION	LOGICAL_CHARS[LOGICAL_CURSOR]
@@ -221,20 +222,20 @@ static int	input_move_cursor (int dir, int refresh);
 #define CURSOR_LEFT             LOGICAL_CURSOR--
 
 
-#define INPUT_PROMPT 		current_screen->il->input_prompt
-#define INPUT_PROMPT_LEN 	current_screen->il->input_prompt_len
+#define INPUT_PROMPT 		INPUT_LINE->input_prompt
+#define INPUT_PROMPT_LEN 	INPUT_LINE->input_prompt_len
 
-#define IND_LEFT                current_screen->il->ind_left
-#define IND_LEFT_LEN            current_screen->il->ind_left_len
+#define IND_LEFT                INPUT_LINE->ind_left
+#define IND_LEFT_LEN            INPUT_LINE->ind_left_len
 
-#define IND_RIGHT               current_screen->il->ind_right
-#define IND_RIGHT_LEN           current_screen->il->ind_right_len
+#define IND_RIGHT               INPUT_LINE->ind_right
+#define IND_RIGHT_LEN           INPUT_LINE->ind_right_len
 
 /* 
  * This is the physical line on the screen where the input line is. 
  * IE, if the terminal is 46 lines tall, then this is 46.
  */
-#define INPUT_LINE 		current_screen->il->input_line
+#define INPUT_LINE_ROW 		INPUT_LINE->input_line
 #define CUT_BUFFER		cut_buffer
 
 
@@ -278,7 +279,7 @@ BUILT_IN_KEYBINDING(debug_input_line)
 		}
 	}
 
-	yell("PHYSICAL CURSOR AT %d %d", PHYSICAL_CURSOR, INPUT_LINE);
+	yell("PHYSICAL CURSOR AT %d %d", PHYSICAL_CURSOR, INPUT_LINE_ROW);
 }
 
 int	cursor_position (void *vp)
@@ -368,8 +369,8 @@ static	int	recursive = 0;
 		{
 			output_screen = screen;
 			last_input_screen = screen;
-/*yell("moving cursor to %d %d", PHYSICAL_CURSOR, INPUT_LINE); */
-			term_move_cursor(PHYSICAL_CURSOR, INPUT_LINE);
+/*yell("moving cursor to %d %d", PHYSICAL_CURSOR, INPUT_LINE_ROW); */
+			term_move_cursor(PHYSICAL_CURSOR, INPUT_LINE_ROW);
 			term_flush();
 		}
 	}
@@ -509,7 +510,7 @@ const char *	prompt;
 	output_screen = ns;
 	make_window_current_informally(ns->input_window);
 	update = original_update;
-	do_echo = last_input_screen->il->echo;
+	do_echo = INPUT_LINE->echo;
 
 	/*
 	 * FIRST OFF -- Recalculate the metadata
@@ -631,8 +632,8 @@ const char *	prompt;
 	 * This hardly ever happens, so we malloc() this to make
 	 * the code below much simpler.
 	 */
-	if (last_input_screen->il->input_prompt_raw)
-		prompt = last_input_screen->il->input_prompt_raw;
+	if (INPUT_LINE->input_prompt_raw)
+		prompt = INPUT_LINE->input_prompt_raw;
 #if 0
 	else if (is_valid_process(get_window_target(0)))
 		prompt = get_window_prompt(0);
@@ -701,12 +702,12 @@ const char *	prompt;
 	 */
 	if ((last_input_screen->li != last_input_screen->old_li) ||
 	    (last_input_screen->co != last_input_screen->old_co) ||
-	    (INPUT_LINE != last_input_screen->li))
+	    (INPUT_LINE_ROW != last_input_screen->li))
 	{
 		/*
 		 * The input line is always the bottom line
 		 */
-		INPUT_LINE = last_input_screen->li - 1;
+		INPUT_LINE_ROW = last_input_screen->li - 1;
 
 		last_input_screen->old_co = last_input_screen->co;
 		last_input_screen->old_li = last_input_screen->li;
@@ -845,7 +846,7 @@ const char *	prompt;
 		/*
 		 * Move the cursor to the start of the input line
 		 */
-		term_move_cursor(0, INPUT_LINE);
+		term_move_cursor(0, INPUT_LINE_ROW);
 
 		/* Forcibly output the prompt */
 		old_do_echo = term_echo(1);
@@ -903,7 +904,7 @@ const char *	prompt;
 		 */
 		term_clear_to_eol();
 		term_flush();
-		term_move_cursor(PHYSICAL_CURSOR, INPUT_LINE);
+		term_move_cursor(PHYSICAL_CURSOR, INPUT_LINE_ROW);
 		term_flush();
 	}
 
@@ -918,7 +919,7 @@ const char *	prompt;
 		 * Figure out how much we can output from here,
 		 * and then output it.
 		 */
-		term_move_cursor(PHYSICAL_CURSOR, INPUT_LINE);
+		term_move_cursor(PHYSICAL_CURSOR, INPUT_LINE_ROW);
 		term_flush();
 		/* XXX 1 Col per byte assumption */
 
@@ -946,7 +947,7 @@ const char *	prompt;
 
 	if (update == UPDATE_JUST_CURSOR)
 	{
-		term_move_cursor(PHYSICAL_CURSOR, INPUT_LINE);
+		term_move_cursor(PHYSICAL_CURSOR, INPUT_LINE_ROW);
 		term_flush();
 	}
 

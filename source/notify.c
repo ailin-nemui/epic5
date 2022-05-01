@@ -74,7 +74,7 @@ static 	void	rebuild_notify_ison 	(int server);
 
 #define NOTIFY_LIST(s)		(&(s->notify_list))
 #define NOTIFY_MAX(s)  		(s->notify_list.max)
-#define NOTIFY_ITEM(s, i) 	(s->notify_list.list[i])
+#define NOTIFY_ITEM(s, i) 	((NotifyItem *)(s->notify_list.list[i]->data))
 
 static void	show_notify_list (int all)
 {
@@ -126,14 +126,11 @@ static void	rebuild_notify_ison (int refnum)
 	if (!(s = get_server(refnum)))
 		return;		/* No server, no go */
 
-	if (NOTIFY_LIST(s)->ison)
-		NOTIFY_LIST(s)->ison[0] = 0;
+	if (s->ison)
+		s->ison[0] = 0;
 
 	for (i = 0; i < NOTIFY_MAX(s); i++)
-	{
-		malloc_strcat_wordlist_c(&(NOTIFY_LIST(s)->ison),
-			space, NOTIFY_ITEM(s, i)->nick, &clue);
-	}
+		malloc_strcat_wordlist_c(&s->ison, space, NOTIFY_ITEM(s, i)->nick, &clue);
 }
 
 
@@ -173,8 +170,7 @@ BUILT_IN_COMMAND(notify)
 			    if (!(s = get_server(refnum)))
 				continue;
 
-			    if ((new_n = (NotifyItem *)remove_from_array(
-					(array *)NOTIFY_LIST(s), nick)))
+			    if ((new_n = (NotifyItem *)remove_from_array(NOTIFY_LIST(s), nick)))
 			    {
 				new_free(&(new_n->nick));
 				new_free((char **)&new_n);
@@ -202,8 +198,7 @@ BUILT_IN_COMMAND(notify)
 			    if (!(s = get_server(refnum)))
 				continue;
 
-			    while ((new_n = (NotifyItem *)array_pop(
-						(array *)NOTIFY_LIST(s), 0)))
+			    while ((new_n = (NotifyItem *)array_pop(NOTIFY_LIST(s), 0)))
 			    {
 				new_free(&new_n->nick);
 				new_free((char **)&new_n);
@@ -235,8 +230,7 @@ BUILT_IN_COMMAND(notify)
 			if (!(s = get_server(refnum)))
 			    continue;
 
-			if ((new_n = (NotifyItem *)array_lookup(
-					(array *)NOTIFY_LIST(s), nick, 0, 0)))
+			if ((new_n = (NotifyItem *)array_lookup(NOTIFY_LIST(s), nick, 0, 0)))
 			{
 			    continue;	/* Already there! */
 			}
@@ -244,8 +238,7 @@ BUILT_IN_COMMAND(notify)
 			new_n = (NotifyItem *)new_malloc(sizeof(NotifyItem));
 			new_n->nick = malloc_strdup(nick);
 			new_n->flag = 0;
-			add_to_array((array *)NOTIFY_LIST(s), 
-					(array_item *)new_n);
+			add_to_array(NOTIFY_LIST(s), nick, new_n);
 			added = 1;
 		     }
 
@@ -347,13 +340,11 @@ void 	do_notify (void)
 		}
 
 		from_server = servnum;
-		if (NOTIFY_LIST(s)->ison && *NOTIFY_LIST(s)->ison
-				&& !s->ison_wait)
+		if (s->ison && *s->ison && !s->ison_wait)
 		{
-			isonbase(servnum, NOTIFY_LIST(s)->ison, ison_notify);
+			isonbase(servnum, s->ison, ison_notify);
 			if (x_debug & DEBUG_NOTIFY)
-			    yell("Notify ISON issued for server [%d] with [%s]"
-				, servnum, NOTIFY_LIST(s)->ison);
+			    yell("Notify ISON issued for server [%d] with [%s]" , servnum, s->ison);
 		}
 		else if (NOTIFY_MAX(s))
 		{
@@ -400,9 +391,8 @@ void 	notify_mark (int refnum, const char *nick, int flag, int doit)
 	if (!(s = get_server(refnum)))
 		return;
 
-	if ((tmp = (NotifyItem *)find_array_item(
-				(array *)NOTIFY_LIST(s), nick, 
-				&count, &loc)) && count < 0)
+	if ((tmp = (NotifyItem *)find_array_item(NOTIFY_LIST(s), nick, &count, &loc)) 
+			&& count < 0)
 	{
 		if (flag)
 		{
@@ -476,7 +466,7 @@ void 	notify_userhost_reply (int refnum, const char *nick, const char *uh)
 	if (!(s = get_server(refnum)))
 		return;
 
-	if ((tmp = (NotifyItem *)array_lookup((array *)NOTIFY_LIST(s), nick, 0, 0)))
+	if ((tmp = (NotifyItem *)array_lookup(NOTIFY_LIST(s), nick, 0, 0)))
 	{
 		if (do_hook(NOTIFY_SIGNON_LIST, "%s %s", nick, uh))
 		{
@@ -509,12 +499,11 @@ void 	make_notify_list (int refnum)
 
 	s->notify_list.list = NULL;
 	s->notify_list.max = 0;
-	s->notify_list.max_alloc = 0;
+	s->notify_list.total_max = 0;
 	/* XXX - Which of these two is correct?  Neither? */
 	/* s->notify_list.func = (alist_func)my_strnicmp; */
 	s->notify_list.func = (alist_func)my_stricmp; 
 	s->notify_list.hash = HASH_INSENSITIVE;
-	s->notify_list.ison = NULL;
 
 	for (i = 0; i < number_of_servers; i++)
 		if ((sp = get_server(i)) && NOTIFY_MAX(sp))
@@ -528,7 +517,7 @@ void 	make_notify_list (int refnum)
 		tmp->nick = malloc_strdup(NOTIFY_ITEM(sp, i)->nick);
 		tmp->flag = 0;
 
-		add_to_array ((array *)NOTIFY_LIST(s), (array_item *)tmp);
+		add_to_array (NOTIFY_LIST(s), tmp->nick, tmp);
 		malloc_strcat_wordlist_c(&list, space, tmp->nick, &clue);
 	}
 
@@ -549,12 +538,12 @@ void	destroy_notify_list (int refnum)
 
 	while (NOTIFY_MAX(s))
 	{
-		item = (NotifyItem *) array_pop((array *)NOTIFY_LIST(s), 0);
+		item = (NotifyItem *) array_pop(NOTIFY_LIST(s), 0);
 		if (item) 
 			new_free(&item->nick);
 		new_free(&item);
 	}
-	new_free(&(NOTIFY_LIST(s)->ison));
+	new_free(&s->ison);
 	new_free(NOTIFY_LIST(s));
 }
 

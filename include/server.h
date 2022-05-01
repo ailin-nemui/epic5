@@ -17,19 +17,18 @@
 #include "notify.h"
 #include "alist.h"
 
-typedef array A005;
 typedef struct
 {
 	char	*name;
 	u_32int_t hash;
 	char	*value;
-} A005_item;
+} MAY_ALIAS A005_item;
 
 typedef struct WaitCmdstru
 {
         char    *stuff;
         struct  WaitCmdstru *next;
-} WaitCmd;
+} MAY_ALIAS WaitCmd;
 
 typedef struct ServerInfo 
 {
@@ -88,7 +87,7 @@ const	AI *		next_addr;		/* The next one to try upon failure */
 		/* metadata about the server */
 	char *		itsname;		/* the server's idea of its name */
 	char *		version_string;		/* what is says */
-	A005		a005;			/* 005 settings kept kere. */
+	array		a005;			/* 005 settings kept kere. */
 	int		stricmp_table;		/* Which case insensitive map to use */
 	int		line_length;		/* How long a protocol command may be */
 	int		max_cached_chan_size;	/* Bigger channels won't cache U@H */
@@ -131,7 +130,8 @@ const	AI *		next_addr;		/* The next one to try upon failure */
 	UserhostEntry *	userhost_wait;		/* Userhost wait queue */
 
 		/* /NOTIFY */
-	NotifyList	notify_list;		/* Notify list for this server */
+	array		notify_list;		/* Notify list for this server */
+	char *		ison;
 
 		/* /LIST, /NAMES */
 	int		funny_min;		/* Funny stuff */

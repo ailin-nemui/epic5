@@ -1243,6 +1243,23 @@ else
 	AC_MSG_RESULT(no)
 fi
 
+AC_MSG_CHECKING(whether your compiler supports __attribute__((may_alias)))
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[ 
+		typedef int __attribute__ ((may_alias)) int_;
+	]],[[
+		long a = 0x12345678;
+		int_ *b = (int_ *)&a;
+	]])],
+        [have_attribute_may_alias=1],
+        [have_attribute_may_alias=0])
+
+if test "x$have_attribute_may_alias" = "x1" ; then
+	AC_MSG_RESULT(yes)
+	AC_DEFINE([HAVE_ATTRIBUTE_MAY_ALIAS], 1, [Define if you can use __attribute__((may_alias))])
+else
+	AC_MSG_RESULT(no)
+fi
+
 
 AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)

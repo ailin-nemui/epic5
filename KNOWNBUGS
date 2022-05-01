@@ -6,6 +6,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /on dcc_raw handling should set message_from() (rb Harz)
 * The way we handle "screen is not tall enough" underflow needs work
 * Unify window query and channels in the target list.
+* Skered would like epic to output compile-time information at runtime, 
+  like what mutt does
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1096,3 +1098,31 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $winchan(#chan) not returning user refnum (rb zlonix)
 * Improvements to sasl script (rb harzelein) (zlonix)
 * More changes, moving towards de-listifying the window object
+* Type punning project starts here...
+* Add check for __attribute__((may_alias)) (gcc and clang)
+* Tag all socket types with "may_alias"
+* Tag all (List *) types and subtypes with "may_alias"
+* List changes:
+* - Use C99 union type casts to convert to and from (List *)
+* - Create new List macros that use union type casts
+* - Convert everything to use the macros instead of base fns
+*   - /crypt, /ignore, /bind, /log, /query, 
+* Alist (array) changes:
+* - Remove (array_item) as a type that can be inherited from
+* - Create (array_item_) as a container for a (void *)
+* - Change (array) to keep a list of (array_item_s)
+* - Change all the alist api's to take these new-style (arrays)
+* - Convert notify lists from (NotifyList) to ordinary (array)
+* - Migrate the 'ison' field from (NotifyList) out to the (Server)
+* - Convert A005 lists from (A005) to ordinary (array)
+* - Convert symbol lists from (SymbolSet) to ordinary (array)
+* - Convert symbol api from (SymbolSet *) to (array *)
+* - Convert nick lists from (NickList) to ordinary (array)
+* Type punning project ends here ^^^^^
+* Compile with -O2 instead of -O to satisfy pedants
+* Begin removing linked list from (Window) type
+* - Change window_list to _window_list in screens
+* - This revealed every place we were manipulating the list
+* - Change macros in input.c to not hardcode 'current_screen'
+* - (This required changing INPUT_LINE to INPUT_LINE_ROW)
+* - Eliminate hardocded uses of 'last_input_screen' in input.c

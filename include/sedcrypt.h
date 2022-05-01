@@ -34,7 +34,7 @@ typedef struct	CryptStru
 	int	sed_type;
 	char *	prog;
 	int	refnum;
-}	Crypt;
+}	MAY_ALIAS Crypt;
 
 	BUILT_IN_COMMAND(encrypt_cmd);
 	char *	crypt_msg 	(const unsigned char *, Crypt *);

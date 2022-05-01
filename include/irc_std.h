@@ -148,6 +148,12 @@
 # endif
 #endif
 
+#ifdef HAVE_ATTRIBUTE_MAY_ALIAS
+#define MAY_ALIAS __attribute__((may_alias))
+#else
+#define MAY_ALIAS
+#endif
+
 /*
  * Figure out how to make alloca work
  * I took this from the autoconf documentation
@@ -366,18 +372,18 @@ typedef int socklen_t;
 /*
  * Define some lazy shorthand typedefs for commonly used structures
  */
-typedef struct sockaddr 	SA;
-typedef struct sockaddr_storage	SS;
-typedef struct sockaddr_in 	ISA;
-typedef struct in_addr		IA;
+typedef struct sockaddr 	MAY_ALIAS SA;
+typedef struct sockaddr_storage	MAY_ALIAS SS;
+typedef struct sockaddr_in 	MAY_ALIAS ISA;
+typedef struct in_addr		MAY_ALIAS IA;
 
-typedef struct sockaddr_in6	ISA6;
-typedef struct sockaddr_in6	I6SA;
-typedef struct in6_addr		IA6;
-typedef struct in6_addr		I6A;
+typedef struct sockaddr_in6	MAY_ALIAS ISA6;
+typedef struct sockaddr_in6	MAY_ALIAS I6SA;
+typedef struct in6_addr		MAY_ALIAS IA6;
+typedef struct in6_addr		MAY_ALIAS I6A;
 
-typedef struct addrinfo		AI;
-typedef struct hostent		Hostent;
+typedef struct addrinfo		MAY_ALIAS AI;
+typedef struct hostent		MAY_ALIAS Hostent;
 #ifndef __no_timeval_stuff__
 typedef struct timeval		Timeval;
 #endif
@@ -419,6 +425,7 @@ typedef struct stat		Stat;
 #else
 #define FALLTHROUGH 
 #endif
+
 
 #ifndef NO_SSL
 /* Everybody needs these OpenSSL headers */

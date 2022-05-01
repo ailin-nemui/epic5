@@ -9,22 +9,6 @@
 #ifndef __parse_h__
 #define __parse_h__
 
-#if 0
-typedef struct {
-	const char	*command;
-	void 		(*inbound_handler) (const char *, const char *, const char **);
-	int		flags;
-} protocol_command;
-#endif
-#if 0
-extern 	protocol_command rfc1459[];
-extern	int		 num_protocol_cmds;
-#endif
-
-#if 0
-#define PROTO_QUOTEBAD 	(1 << 0)
-#endif
-
 	void    rfc1459_odd 	(const char *, const char *, const char **);
 const 	char	*PasteArgs 	(const char **, int);
 	void	parse_server 	(const char *, size_t);

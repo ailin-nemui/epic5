@@ -9,12 +9,14 @@
 #ifndef __list_h__
 #define __list_h__
 
+/* Your type must be congruent to this type */
 typedef	struct	list_stru
 {
 struct	list_stru *	next;
 	char *		name;
-}	List;
+}	MAY_ALIAS List;
 
+/* Don't use the internal API - Use the macros below */
 void	add_to_list 		(List **, List *);
 List *	find_in_list 		(List *, const char *, int);
 List *	remove_from_list 	(List **, const char *);
@@ -24,19 +26,20 @@ List *	remove_item_from_list	(List **, List *);
 #define REMOVE_FROM_LIST 	1
 #define USE_WILDCARDS 		1
 
+/* 
+ * These are c99 macros that implement type punning.
+ * See https://www.cocoawithlove.com/2008/04/using-pointers-to-recast-in-c-is-bad.html 
+ */
+#define CAST_TO_LISTP(x) (((union {__typeof__(x) a; List **b;})x).b)
+#define CAST_TO_LIST(x) (((union {__typeof__(x) a; List *b;})x).b)
+#define CAST_FROM_LIST(x, y) (x = ((union {__typeof__(x) a; List *b;})y).a)
 
-typedef	struct	newlist_stru
-{
-struct	newlist_stru *	next;
-	char *		name;
-	void *		data;
-}	NewList;
-
-	void		add_to_newlist 		(NewList **, NewList *);
-	NewList *	find_in_newlist 	(NewList *, const char *, int);
-	NewList *	remove_from_newlist 	(NewList **, const char *);
-	NewList *	newlist_lookup 		(NewList **, const char *, int, int);
-	NewList *	remove_item_from_newlist (NewList **, NewList *);
-
+/* Use these macros, they're c99-safe */
+#define ADD_TO_LIST_(l, i) 				add_to_list(CAST_TO_LISTP(l), CAST_TO_LIST(i))
+#define FIND_IN_LIST_(retval, list, str, flags) 	CAST_FROM_LIST(retval, find_in_list(CAST_TO_LIST(list), str, flags))
+#define EXISTS_IN_LIST_(list, str, flags)		(find_in_list(CAST_TO_LIST(list), str, flags) != NULL)
+#define REMOVE_FROM_LIST_(retval, list, str) 		CAST_FROM_LIST(retval, remove_from_list(CAST_TO_LISTP(list), str))
+#define LIST_LOOKUP_(retval, list, str, flag1, flag2)	CAST_FROM_LIST(retval, list_lookup(CAST_TO_LISTP(list), str, flag1, flag2))
+#define REMOVE_ITEM_FROM_LIST_(l, i)			remove_item_from_list(CAST_TO_LISTP(l), CAST_TO_LIST(i))
 
 #endif /* _LIST_H */

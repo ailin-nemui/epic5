@@ -30,6 +30,9 @@
 /* Define if you can use __attribute__((fallthrough)) */
 #undef HAVE_ATTRIBUTE_FALLTHROUGH
 
+/* Define if you can use __attribute__((may_alias)) */
+#undef HAVE_ATTRIBUTE_MAY_ALIAS
+
 /* Define this if your realpath() doesn't work for nonexistant files */
 #undef HAVE_BROKEN_REALPATH
 

@@ -750,6 +750,7 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	s->line_length = IRCD_BUFFER_SIZE;
 	s->max_cached_chan_size = -1;
 	s->who_queue = NULL;
+	s->ison = NULL;
 	s->ison_len = 500;
 	s->ison_max = 1;
 	s->ison_queue = NULL;
@@ -903,6 +904,7 @@ static 	void 	remove_from_server_list (int i)
 	new_free(&s->funny_match);
 	new_free(&s->default_realname);
 	new_free(&s->remote_paddr);
+	new_free(&s->ison);
 	destroy_notify_list(i);
 	destroy_005(i);
 	reset_server_altnames(i, NULL);
@@ -4184,7 +4186,7 @@ static void	destroy_005 (int refnum)
 	if (!(s = get_server(refnum)))
 		return;
 
-	while ((new_i = (A005_item*)array_pop((array*)(&s->a005), 0)))
+	while ((new_i = (A005_item*)array_pop((&s->a005), 0)))
 		destroy_a_005(new_i);
 	s->a005.max = 0;
 	s->a005.total_max = 0;
@@ -4251,7 +4253,7 @@ const char *	get_server_005 (int refnum, const char *setting)
 
 	if (!(s = get_server(refnum)))
 		return NULL;
-	item = (A005_item*)find_array_item((array*)(&s->a005), setting, &cnt, &loc);
+	item = (A005_item*)find_array_item(&s->a005, setting, &cnt, &loc);
 	if (0 > cnt)
 		return ((*item).value);
 	else
@@ -4297,7 +4299,7 @@ void	set_server_005 (int refnum, char *setting, const char *value)
 	if (!(s = get_server(refnum)))
 		return;
 
-	new_005 = (A005_item*)array_lookup((array*)(&s->a005), setting, 0, destroy);
+	new_005 = (A005_item*)array_lookup((&s->a005), setting, 0, destroy);
 
 	if (destroy) {
 		if (new_005 && !strcmp(setting, (*new_005).name))
@@ -4308,7 +4310,7 @@ void	set_server_005 (int refnum, char *setting, const char *value)
 		new_005 = (A005_item *)new_malloc(sizeof(A005_item));
 		(*new_005).name = malloc_strdup(setting);
 		(*new_005).value = malloc_strdup(value);
-		add_to_array((array*)(&s->a005), (array_item*)new_005);
+		add_to_array((&s->a005), setting, new_005);
 	}
 
 	/* XXX I hate this, i hate this, i hate this.  This is a hack XXX */

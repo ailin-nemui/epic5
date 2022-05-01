@@ -48,7 +48,7 @@ typedef struct	WNickListStru
 struct WNickListStru *	next;
 	char *		nick;
 	int		counter;
-} WNickList;
+} 	MAY_ALIAS WNickList;
 
 
 #define NEED_WINDOWSTRU
@@ -199,7 +199,7 @@ typedef	struct	window_stack_stru
 {
 struct	window_stack_stru *	next;
 	int			refnum;
-}	WindowStack;
+}	MAY_ALIAS WindowStack;
 
 
 	int	traverse_all_windows		(Window **);

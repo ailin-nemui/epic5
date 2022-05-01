@@ -269,12 +269,12 @@ static Logfile *	logfile_add (Logfile *log, char **args)
 
 		if (log->type == LOG_TARGETS)
 		{
-                    if (!find_in_list((List *)log->targets, arg, !USE_WILDCARDS))
+		    if (FIND_IN_LIST_(new_w, log->targets, arg, !USE_WILDCARDS) == NULL)
                     {
                         say("Added %s to log name list", arg);
                         new_w = (WNickList *)new_malloc(sizeof(WNickList));
                         new_w->nick = malloc_strdup(arg);
-                        add_to_list((List **)&(log->targets), (List *)new_w);
+			ADD_TO_LIST_(&log->targets, new_w);
                     }
                     else
                         say("%s already on log name list", arg);
@@ -310,12 +310,12 @@ static Logfile *	logfile_add (Logfile *log, char **args)
 		}
 		else if (log->type == LOG_WINDOWS)
 		{
-                    if (!find_in_list((List *)log->targets, arg, !USE_WILDCARDS))
+		    if (FIND_IN_LIST_(new_w, log->targets, arg, !USE_WILDCARDS) == NULL)
                     {
                         say("Added %s to log window list", arg);
                         new_w = (WNickList *)new_malloc(sizeof(WNickList));
                         new_w->nick = malloc_strdup(arg);
-                        add_to_list((List **)&(log->targets), (List *)new_w);
+			ADD_TO_LIST_(&log->targets, new_w);
                     }
 		}
                 arg = ptr;
@@ -559,7 +559,7 @@ static Logfile *	logfile_remove (Logfile *log, char **args)
 
 		if (log->type == LOG_TARGETS)
 		{
-		    if ((new_nl = (WNickList *)remove_from_list((List **)&(log->targets), arg)))
+		    if (REMOVE_FROM_LIST_(new_nl, &log->targets, arg))
 		    {
 			say("Removed %s from log target list", new_nl->nick);
 			new_free(&new_nl->nick);
@@ -799,7 +799,7 @@ void	add_to_logs (long window, int servref, const char *target, int level, const
 		if (log->targets && !target)
 			continue;
 
-		if (target && !find_in_list((List *)log->targets, target, USE_WILDCARDS))
+		if (target && ! EXISTS_IN_LIST_(log->targets, target, USE_WILDCARDS))
 			continue;
 
 		/* OK!  We want to log it now! */

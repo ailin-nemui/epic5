@@ -68,15 +68,12 @@ static __inline u_32int_t  ci_alist_hash (const char *s, u_32int_t *mask)
 }
 #endif
 
-/*
- * Everything that is to be filed with this system should have an
- * identifying name as the first item in the struct.
- */
-typedef struct
+typedef struct 
 {
 	char *		name;
-	u_32int_t	hash;		/* Dont fill this in */
-} array_item;
+	u_32int_t	hash;
+	void *		data;
+} array_item_;
 
 typedef int       (*alist_func) (const char *, const char *, size_t);
 typedef enum {
@@ -91,24 +88,20 @@ typedef enum {
  */
 typedef struct
 {
-	array_item **list;
-	int max;
-	int total_max;
-	alist_func func;
-	hash_type hash;
-} array;
+	array_item_ **	list;
+	int 		max;
+	int 		total_max;
+	alist_func 	func;
+	hash_type 	hash;
+} MAY_ALIAS array;
 
-array_item *	add_to_array 		(array *, array_item *);
-array_item *	remove_from_array 	(array *, const char *);
-array_item *	array_lookup 		(array *, const char *, int, int);
-array_item *	find_array_item 	(array *, const char *, int *, int *);
-array_item *	array_pop		(array *, int);
-/*
-void *		find_fixed_array_item 	(void *, size_t, int, const char *, 
-					 int *, int *);
-*/
+void *	add_to_array 		(array *, const char *, void *);
+void *	remove_from_array 	(array *, const char *);
+void *	array_lookup 		(array *, const char *, int, int);
+void *	find_array_item 	(array *, const char *, int *, int *);
+void *	array_pop		(array *, int);
 
-#define ARRAY_ITEM(array, loc) ((array_item *) ((array) -> list [ (loc) ]))
+#define ARRAY_ITEM(array, loc) ((array_item_ *) ((array) -> list [ (loc) ]))
 #define LARRAY_ITEM(array, loc) (((array) -> list [ (loc) ]))
 
 /* Written by panasync */

@@ -67,6 +67,12 @@ static __inline__ int	list_match (List *item1, const char *str)
  *
  * The parameters are:  "list" which is a pointer to the head of the list. "add"
  * which is a pre-allocated element to be added to the list.
+ *
+ * Don't forget to use CAST_TO_LISTP(), CAST_TO_LIST() and CAST_FROM_LIST()
+ * to make your use of these functions C99-safe. (see list.h)
+ *
+ * *** NOTE -- Use the ADD_TO_LIST_(list, add) macro.
+ *  		as it is C99-safe
  */
 void 	add_to_list (List **list, List *add)
 {
@@ -94,6 +100,9 @@ void 	add_to_list (List **list, List *add)
  * name are as described above.  If wild is true, each name in the list is
  * used as a wild card expression to match name... otherwise, normal matching
  * is done 
+ *
+ * *** NOTE -- Use the FIND_IN_LIST_(retval, list, name, wild) macro
+ *  		as it is C99-safe
  */
 List	*find_in_list (List *list, const char *name, int wild)
 {
@@ -128,6 +137,9 @@ List	*find_in_list (List *list, const char *name, int wild)
  * remove_from_list: this remove the given name from the given list (again as
  * described above).  If found, it is removed from the list and returned
  * (memory is not deallocated).  If not found, null is returned. 
+ *
+ * *** NOTE -- Use the REMOVE_FROM_LIST_(retval, list, name) macro
+ *		as it is C99-safe
  */
 List	*remove_from_list (List **list, const char *name)
 {
@@ -154,6 +166,9 @@ List	*remove_from_list (List **list, const char *name)
  * remove_item_from_list: this remove the given item from the given list 
  * (again as described above).  If found, it is removed from the list and 
  * returned (memory is not deallocated).  If not found, null is returned. 
+ *
+ * *** NOTE -- Use the REMOVE_ITEM_FROM_LIST_(retval, list, item) macro
+ *		as it is C99-safe
  */
 List *	remove_item_from_list (List **list, List *item)
 {
@@ -180,6 +195,9 @@ List *	remove_item_from_list (List **list, List *item)
  * list_lookup: this routine just consolidates remove_from_list and
  * find_in_list.  I did this cause it fit better with some already existing
  * code 
+ *
+ * *** NOTE -- Use the LIST_LOOKUP_(retval, list, name, wild, rem) macro
+ *		as it is C99-safe
  */
 List 	*list_lookup (List **list, const char *name, int wild, int rem)
 {
@@ -192,158 +210,4 @@ List 	*list_lookup (List **list, const char *name, int wild, int rem)
 
 	return (tmp);
 }
-
-
-/**************************/
-
-static __inline__ int	add_newlist_strcmp (NewList *item1, NewList *item2)
-{
-	return my_stricmp(item1->name, item2->name);
-}
-
-static __inline__ int	newlist_strcmp (NewList *item1, const char *str)
-{
-	return my_stricmp(item1->name, str);
-}
-
-static __inline__ int	newlist_match (NewList *item1, const char *str)
-{
-	return wild_match(item1->name, str);
-}
-
-/*
- * add_to_newlist: This will add an element to a newlist.  
- * A newlist is different from a traditional list because it does not use
- * type punning, but rather requires you to store a data object in a separate
- * object hung off the 'data' field.  Thus, there are not aliases of NewList,
- * there are only NewLists -- and you create data objects to hang off of it.
- *
- * The parameters are:  "list" which is a pointer to the head of the list. "add"
- * which is a pre-allocated element to be added to the list.
- */
-void 	add_to_newlist (NewList **list, NewList *add)
-{
-	NewList	*tmp,
-		*last = NULL;
-
-	for (tmp = *list; tmp; tmp = tmp->next)
-	{
-		if (add_newlist_strcmp(tmp, add) > 0)
-			break;
-		last = tmp;
-	}
-
-	if (last)
-		last->next = add;
-	else
-		*list = add;
-
-	add->next = tmp;
-	return;
-}
-
-/*
- * find_in_list: This looks up the given name in the given list.  List and
- * name are as described above.  If wild is true, each name in the list is
- * used as a wild card expression to match name... otherwise, normal matching
- * is done 
- */
-NewList	*find_in_newlist (NewList *list, const char *name, int wild)
-{
-	NewList	*tmp;
-	int	best_match = 0,
-		current_match;
-	int	(*cmp_func) (NewList *, const char *);
-
-	cmp_func = wild ? newlist_match : newlist_strcmp;
-
-	if (wild)
-	{
-		NewList	*match = (NewList *) 0;
-
-		for (tmp = list; tmp; tmp = tmp->next)
-			if ((current_match = cmp_func(tmp, name)) > best_match)
-				match = tmp, best_match = current_match;
-
-		return (match);
-	}
-	else
-	{
-		for (tmp = list; tmp; tmp = tmp->next)
-			if (cmp_func(tmp, name) == 0)
-				return (tmp);
-	}
-
-	return ((NewList *) 0);
-}
-
-/*
- * remove_from_list: this remove the given name from the given list (again as
- * described above).  If found, it is removed from the list and returned
- * (memory is not deallocated).  If not found, null is returned. 
- */
-NewList	*remove_from_newlist (NewList **list, const char *name)
-{
-	NewList	*tmp,
-		*last = NULL;
-
-	for (tmp = *list; tmp; tmp = tmp->next)
-	{
-		if (newlist_strcmp(tmp, name) == 0)
-		{
-			if (last)
-				last->next = tmp->next;
-			else
-				*list = tmp->next;
-			return (tmp);
-		}
-		last = tmp;
-	}
-
-	return ((NewList *) 0);
-}
-
-/*
- * remove_item_from_list: this remove the given item from the given list 
- * (again as described above).  If found, it is removed from the list and 
- * returned (memory is not deallocated).  If not found, null is returned. 
- */
-NewList *	remove_item_from_newlist (NewList **list, NewList *item)
-{
-	NewList	*tmp,
-		*last = NULL;
-
-	for (tmp = *list; tmp; tmp = tmp->next)
-	{
-		if (tmp == item)
-		{
-			if (last)
-				last->next = tmp->next;
-			else
-				*list = tmp->next;
-			return (tmp);
-		}
-		last = tmp;
-	}
-
-	return NULL;
-}
-
-/*
- * list_lookup: this routine just consolidates remove_from_list and
- * find_in_list.  I did this cause it fit better with some already existing
- * code 
- */
-NewList *newlist_lookup (NewList **list, const char *name, int wild, int rem)
-{
-	NewList	*tmp;
-
-	if (rem)
-		tmp = remove_from_newlist(list, name);
-	else
-		tmp = find_in_newlist(*list, name, wild);
-
-	return (tmp);
-}
-
 

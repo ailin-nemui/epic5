@@ -71,8 +71,8 @@ struct	ScreenStru *	next;			/* Previous screen in list */
 	int		screennum;		/* Refnum for this screen */
 	int		input_window;		/* Window that has the input focus */
 	unsigned 	last_window_refnum;	/* The previous input window (for /window back) */
-	Window *	window_list;		/* The top window on me */
-	Window *	window_list_end;	/* The bottom window on me */
+	Window *	_window_list;		/* The top window on me */
+	Window *	_window_list_end;	/* The bottom window on me */
 	int		visible_windows;	/* Number of windows on me */
 	WindowStack *	window_stack;		/* Number of windows on my stack */
 

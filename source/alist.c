@@ -27,19 +27,6 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  */
-/* 
- * This file presumes a good deal of chicanery.  Specifically, it assumes
- * that your compiler will allocate disparate structures congruently as 
- * long as the members match as to their type and location.  This is
- * critically important for how this code works, and this will fail 
- * ungracefully if your compiler doesn't do this. Every compiler I've ever
- * had access to does it, which is why I assume it, even though I'm not 
- * technically allowed to assume it
- *
- * This file is hideous.  Ill kill each and every one of you who made
- * me do this. ;-)
- */
-
 #define __need_cs_alist_hash__
 #define __need_ci_alist_hash__
 #include "irc.h"
@@ -47,47 +34,49 @@
 #include "ircaux.h"
 #include "output.h"
 
-u_32int_t	bin_ints;
-u_32int_t	lin_ints;
-u_32int_t	bin_chars;
-u_32int_t	lin_chars;
-u_32int_t	alist_searches;
-u_32int_t	char_searches;
-
-
 /* Function decls */
-static void check_array_size (array *list);
-void move_array_items (array *list, int start, int end, int dir);
+static	void	check_array_size (array *list);
+	void 	move_array_items (array *list, int start, int end, int dir);
+
+array **all_arrays = NULL;
+int	all_arrays_size = 0;
 
 /*
  * Returns an entry that has been displaced, if any.
+ * XXX 'item' shall be replaced with 'char *name' and 'void *data'
  */
-array_item *add_to_array (array *a, array_item *item)
+void *	add_to_array (array *a, const char *name, void *item)
 {
 	int 		count;
 	int 		location = 0;
-	array_item *	ret = NULL;
+	void *		ret = NULL;
 	u_32int_t	mask; 	/* Dummy var */
+	array_item_ *	item_;
 
+	/* Initialize our internal item */
+	item_ = (array_item_ *)new_malloc(sizeof(array_item_));
+	item_->name = NULL;
+	malloc_strcpy(&item_->name, name);	
 	if (a->hash == HASH_INSENSITIVE)
-		item->hash = ci_alist_hash(item->name, &mask);
+		item_->hash = ci_alist_hash(item_->name, &mask);
 	else
-		item->hash = cs_alist_hash(item->name, &mask);
+		item_->hash = cs_alist_hash(item_->name, &mask);
+	item_->data = item;
 
 	check_array_size(a);
 	if (a->max)
 	{
-		find_array_item(a, item->name, &count, &location);
+		find_array_item(a, name, &count, &location);
 		if (count < 0)
 		{
-			ret = ARRAY_ITEM(a, location);
+			ret = ARRAY_ITEM(a, location)->data;
 			a->max--;
 		}
 		else
 			move_array_items(a, location, a->max, 1);
 	}
 
-	a->list[location] = item;
+	a->list[location] = item_;
 	a->max++;
 	return ret;
 }
@@ -95,7 +84,7 @@ array_item *add_to_array (array *a, array_item *item)
 /*
  * Returns the entry that has been removed, if any.
  */
-array_item *remove_from_array (array *a, const char *name)
+void *	remove_from_array (array *a, const char *name)
 {
 	int 	count, 
 		location = 0;
@@ -112,21 +101,27 @@ array_item *remove_from_array (array *a, const char *name)
 }
 
 /* Remove the 'which'th item from the given array */
-array_item *array_pop (array *a, int which)
+void *	array_pop (array *a, int which)
 {
-	array_item *ret = NULL;
+	array_item_ *item_ = NULL;
+	void *ret = NULL;
 
 	if (which < 0 || which >= a->max)
 		return NULL;
 
-	ret = ARRAY_ITEM(a, which);
+	item_ = ARRAY_ITEM(a, which);
+	ret = item_->data;
+
 	move_array_items(a, which + 1, a->max, -1);
 	a->max--;
 	check_array_size(a);
+
+	new_free(&item_->name);
+	new_free((char **)&item_);
 	return ret;
 }
 
-array_item *array_lookup (array *a, const char *name, int wild, int rem)
+void *	array_lookup (array *a, const char *name, int wild, int rem)
 {
 	int 	count, 
 		location;
@@ -137,7 +132,7 @@ array_item *array_lookup (array *a, const char *name, int wild, int rem)
 		return find_array_item(a, name, &count, &location);
 }
 
-static void check_array_size (array *a)
+static void	check_array_size (array *a)
 {
 	if (a->total_max && (a->total_max < a->max))
 		panic(1, "array->max < array->total_max");
@@ -154,7 +149,7 @@ static void check_array_size (array *a)
 	else
 		return;
 
-	RESIZE(a->list, array_item *, a->total_max);
+	RESIZE(a->list, array_item_ *, a->total_max);
 }
 
 /*
@@ -162,7 +157,7 @@ static void check_array_size (array *a)
  * in the array.  If ``dir'' is negative, move them down in the array.
  * Fill in the vacated spots with NULLs.
  */
-void move_array_items (array *a, int start, int end, int dir)
+void	move_array_items (array *a, int start, int end, int dir)
 {
 	int 	i;
 
@@ -210,8 +205,7 @@ void move_array_items (array *a, int start, int end, int dir)
  *	The entry that is lowest alphabetically is returned, and its
  *	location is put into ``loc''.
  */
-array_item *
-find_array_item (array *set, const char *name, int *cnt, int *loc)
+void *	find_array_item (array *set, const char *name, int *cnt, int *loc)
 {
 	size_t		len = strlen(name);
 	int		c = 0, 
@@ -221,6 +215,7 @@ find_array_item (array *set, const char *name, int *cnt, int *loc)
 			max;
 	u_32int_t	mask;
 	u_32int_t	hash;
+	array_item_ *	item_;
 
 	if (set->hash == HASH_INSENSITIVE)
 		hash = ci_alist_hash(name, &mask);
@@ -233,8 +228,6 @@ find_array_item (array *set, const char *name, int *cnt, int *loc)
 		*loc = 0;
 		return NULL;
 	}
-
-	alist_searches++;
 
 	/*
 	 * The first search is a cheap refinement.  Using the hash
@@ -252,11 +245,9 @@ find_array_item (array *set, const char *name, int *cnt, int *loc)
 
 	while (max >= min)
 	{
-		bin_ints++;
 		pos = (max - min) / 2 + min;
 		c = (hash & mask) - (ARRAY_ITEM(set, pos)->hash & mask);
 		if (c == 0) {
-			bin_chars++;
 			c = set->func(name, ARRAY_ITEM(set, pos)->name, len);
 		}
 		if (c == 0) {
@@ -295,11 +286,9 @@ find_array_item (array *set, const char *name, int *cnt, int *loc)
 
 	while (max >= min)
 	{
-		bin_ints++;
 		pos = (min - max) / 2 + max;  /* Don't ask */
 		c = (hash & mask) - (ARRAY_ITEM(set, pos)->hash & mask);
 		if (c == 0) {
-			bin_chars++;
 			c = set->func(name, ARRAY_ITEM(set, pos)->name, len);
 		}
 		if (c == 0) {
@@ -314,8 +303,6 @@ find_array_item (array *set, const char *name, int *cnt, int *loc)
 	}
 
 	min = tospot;
-
-	char_searches++;
 
 	/*
 	 * If we've gotten this far, then we've found at least
@@ -343,6 +330,6 @@ find_array_item (array *set, const char *name, int *cnt, int *loc)
 	/*
 	 * Then we return the first item that matches.
 	 */
-	return ARRAY_ITEM(set, min);
+	return ARRAY_ITEM(set, min)->data;
 }
 

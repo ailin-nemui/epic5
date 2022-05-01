@@ -57,15 +57,6 @@ typedef struct nick_stru
 	short		half_assed;	/* 1 if they are, 0 if theyre not, -1 if uk */
 }	Nick;
 
-typedef	struct	nick_list_stru
-{
-	Nick **		list;
-	int		max;
-	int		max_alloc;
-	alist_func 	func;
-	hash_type 	hash;
-}	NickList;
-
 static	int	current_channel_counter = 0;
 
 /* ChannelList: structure for the list of channels you are current on */
@@ -82,7 +73,7 @@ struct	channel_stru *	prev;		/* pointer to previous channel */
 	int		claimable;	/* Currently up for claiming */
 	int		claiming_window; /* What window claims us */
 	int		waiting;	/* Syncing, waiting for names/who */
-	NickList	nicks;		/* alist of nicks on channel */
+	array		nicks;		/* alist of nicks on channel */
 	char 		base_modes[54];	/* Just the modes w/o args */
 	int		limit;		/* max users for the channel */
 	char *		key;		/* key for this channel */
@@ -100,6 +91,7 @@ static	Channel *	channel_list = NULL;
 
 static	void	channel_hold_election (int window);
 
+#define NICK(l, i)	((Nick *)(l . list[i] -> data))
 
 /*
  * This isnt strictly neccesary, its more of a cosmetic function.
@@ -164,7 +156,7 @@ static Channel *create_channel (const char *name, int server)
 	new_c->window = -1;
 	new_c->claimable = 0;
 	new_c->claiming_window = -1;
-	new_c->nicks.max_alloc = new_c->nicks.max = 0;
+	new_c->nicks.total_max = new_c->nicks.max = 0;
 	new_c->nicks.list = NULL;
 	if (get_server_stricmp_table(server) == 0)
 		new_c->nicks.func = (alist_func) ascii_strnicmp;
@@ -190,17 +182,19 @@ static Channel *create_channel (const char *name, int server)
 /* Nicklist destructor */
 static void 	clear_channel (Channel *chan)
 {
-	NickList *list = &chan->nicks;
+	array *list = &chan->nicks;
 	int	i;
 
-	for (i = 0; i < list->max; i++)
+	for (i = 0; i < chan->nicks.max; i++)
 	{
-		new_free(&list->list[i]->nick);
-		new_free(&list->list[i]->userhost);
-		new_free(&list->list[i]);
+		Nick *x = (Nick *)chan->nicks.list[i]->data;
+		new_free(&x->nick);
+		new_free(&x->userhost);
+		new_free(&(chan->nicks.list[i]->data));
+		new_free(&(chan->nicks.list[i]->name));
 	}
-	new_free((void **)&list->list);
-	list->max = list->max_alloc = 0;
+	new_free((void **)&chan->nicks.list);
+	chan->nicks.max = chan->nicks.total_max = 0;
 }
 
 /* Channel destructor -- caller must free "chan". */
@@ -248,7 +242,7 @@ static void 	destroy_channel (Channel *chan)
 	chan->claimable = -1;
 	chan->claiming_window = -1;
 
-	if (chan->nicks.max_alloc)
+	if (chan->nicks.total_max)
 		clear_channel(chan);
 
 	new_free(&chan->modestr);
@@ -349,8 +343,7 @@ void 	remove_channel (const char *channel, int server)
 static Nick *	find_nick_on_channel (Channel *ch, const char *nick)
 {
 	int cnt, loc;
-	Nick *new_n = (Nick *)find_array_item((array *)&ch->nicks,
-						nick, &cnt, &loc);
+	Nick *new_n = (Nick *)find_array_item(&ch->nicks, nick, &cnt, &loc);
 
 	if (cnt >= 0 || !new_n)
 		return NULL;
@@ -383,7 +376,7 @@ static Nick *	find_suspicious_on_channel (Channel *ch, const char *nick)
 	 */
 	for (pos = 0; pos < ch->nicks.max; pos++)
 	{
-		Nick *	n = ch->nicks.list[pos];
+		Nick *	n = ch->nicks.list[pos]->data;
 		char *	s = n->nick;
 		size_t	siz = strlen(s);
 
@@ -495,7 +488,7 @@ const	char	*prefix;
 	new_n->voice = isvoice;
 	new_n->half_assed = half_assed;
 
-	if ((old = (Nick *)add_to_array((array *)&chan->nicks, (array_item *)new_n)))
+	if ((old = (Nick *)add_to_array(&chan->nicks, nick, new_n)))
 	{
 		new_free(&old->nick);
 		new_free(&old->userhost);
@@ -534,9 +527,9 @@ void 	add_userhost_to_channel (const char *channel, const char *nick, int server
 		 */
 		else
 		{
-		    remove_from_array((array *)&chan->nicks, new_n->nick);
+		    remove_from_array(&chan->nicks, new_n->nick);
 		    malloc_strcpy(&new_n->nick, nick);
-		    add_to_array((array *)&chan->nicks, (array_item *)new_n);
+		    add_to_array(&chan->nicks, nick, new_n);
 		    if (x_debug & DEBUG_CHANNELS)
 		    {
 			yell("Detected and corrected a nickname mangled by "
@@ -575,7 +568,7 @@ void 	remove_from_channel (const char *channel, const char *nick, int server)
 		if (channel && server_stricmp(channel, chan->channel, server))
 			continue;
 
-		if ((tmp = (Nick *)remove_from_array((array *)&chan->nicks, nick)))
+		if ((tmp = (Nick *)remove_from_array(&chan->nicks, nick)))
 		{
 			new_free(&tmp->nick);
 			new_free(&tmp->userhost); /* Da5id reported mf here */
@@ -598,11 +591,11 @@ void 	rename_nick (const char *old_nick, const char *new_nick, int server)
 
 	while (traverse_all_channels(&chan, server, 1))
 	{
-		if ((tmp = (Nick *)remove_from_array((array *)&chan->nicks, old_nick)))
+		if ((tmp = (Nick *)remove_from_array(&chan->nicks, old_nick)))
 		{
 			malloc_strcpy(&tmp->nick, new_nick);
 			malloc_strcpy(&tmp->userhost, FromUserHost);
-			add_to_array((array *)&chan->nicks, (array_item *)tmp);
+			add_to_array(&chan->nicks, new_nick, tmp);
 		}
 	}
 }
@@ -683,7 +676,7 @@ char	*create_nick_list (const char *name, int server)
 		return NULL;
 
 	for (i = 0; i < channel->nicks.max; i++)
-		malloc_strcat_word_c(&str, space, channel->nicks.list[i]->nick, DWORD_NO, &clue);
+		malloc_strcat_word_c(&str, space, NICK(channel->nicks, i)->nick, DWORD_NO, &clue);
 
 	return str;
 }
@@ -699,8 +692,8 @@ char	*create_chops_list (const char *name, int server)
 		return malloc_strdup(empty_string);
 
 	for (i = 0; i < channel->nicks.max; i++)
-	    if (channel->nicks.list[i]->chanop)
-		malloc_strcat_word_c(&str, space, channel->nicks.list[i]->nick, DWORD_NO, &clue);
+	    if (NICK(channel->nicks, i)->chanop)
+		malloc_strcat_word_c(&str, space, NICK(channel->nicks, i)->nick, DWORD_NO, &clue);
 
 	if (!str)
 		return malloc_strdup(empty_string);
@@ -718,8 +711,8 @@ char	*create_nochops_list (const char *name, int server)
 		return malloc_strdup(empty_string);
 
 	for (i = 0; i < channel->nicks.max; i++)
-	    if (!channel->nicks.list[i]->chanop)
-		malloc_strcat_word_c(&str, space, channel->nicks.list[i]->nick, DWORD_NO, &clue);
+	    if (!NICK(channel->nicks, i)->chanop)
+		malloc_strcat_word_c(&str, space, NICK(channel->nicks, i)->nick, DWORD_NO, &clue);
 
 	if (!str)
 		return malloc_strdup(empty_string);
@@ -1064,7 +1057,6 @@ int	is_channel_anonymous (const char *channel, int server_index)
  */
 static void 	show_channel (Channel *chan)
 {
-	NickList 	*tmp = &chan->nicks;
 	char		local_buf[BIG_BUFFER_SIZE * 10 + 1];
 	char		*ptr;
 	int		nick_len;
@@ -1075,13 +1067,13 @@ static void 	show_channel (Channel *chan)
 	*ptr = 0;
 	nick_len = BIG_BUFFER_SIZE * 10;
 
-	for (i = 0; i < tmp->max; i++)
+	for (i = 0; i < chan->nicks.max; i++)
 	{
-		strlcpy(ptr, tmp->list[i]->nick, nick_len);
-		if (tmp->list[i]->userhost)
+		strlcpy(ptr, NICK(chan->nicks, i)->nick, nick_len);
+		if (NICK(chan->nicks, i)->userhost)
 		{
 			strlcat(ptr, "!", nick_len);
-			strlcat(ptr, tmp->list[i]->userhost, nick_len);
+			strlcat(ptr, NICK(chan->nicks, i)->userhost, nick_len);
 		}
 		strlcat(ptr, space, nick_len);
 
@@ -1104,7 +1096,7 @@ static void 	show_channel (Channel *chan)
 char	*scan_channel (char *cname)
 {
 	Channel 	*wc = find_channel(cname, from_server);
-	NickList 	*nicks;
+	array 	*nicks;
 	char		buffer[NICKNAME_LEN + 5];
 	char		*retval = NULL;
 	int		i;
@@ -1113,24 +1105,23 @@ char	*scan_channel (char *cname)
 	if (!wc)
 		return malloc_strdup(empty_string);
 
-	nicks = &wc->nicks;
-	for (i = 0; i < nicks->max; i++)
+	for (i = 0; i < wc->nicks.max; i++)
 	{
-		if (nicks->list[i]->chanop)
+		if (NICK(wc->nicks, i)->chanop)
 			buffer[0] = '@';
-		else if (nicks->list[i]->half_assed == 1)
+		else if (NICK(wc->nicks, i)->half_assed == 1)
 			buffer[0] = '%';
 		else
 			buffer[0] = '.';
 
-		if (nicks->list[i]->voice == 1)
+		if (NICK(wc->nicks, i)->voice == 1)
 			buffer[1] = '+';
-		else if (nicks->list[i]->voice == -1)
+		else if (NICK(wc->nicks, i)->voice == -1)
 			buffer[1] = '?';
 		else
 			buffer[1] = '.';
 
-		strlcpy(buffer + 2, nicks->list[i]->nick, sizeof(buffer) - 2);
+		strlcpy(buffer + 2, NICK(wc->nicks, i)->nick, sizeof(buffer) - 2);
 		malloc_strcat_word_c(&retval, space, buffer, DWORD_NO, &clue);
 	}
 
