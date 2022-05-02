@@ -2459,7 +2459,14 @@ Window *get_window_by_refnum_direct (int refnum)
 		return current_window;
 
 	if (refnum >= 1 && refnum <= INTERNAL_REFNUM_CUTOVER * 2)
+	{
+		if (windows[refnum] && (refnum != (int)windows[refnum]->refnum))
+		{
+			yell("Refnum (direct) %d points at window %d. fixing", windows[refnum]->refnum, refnum);
+			windows[refnum] = NULL;
+		}
 		return windows[refnum];
+	}
 
 	return NULL;
 }

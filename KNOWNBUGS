@@ -8,6 +8,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Unify window query and channels in the target list.
 * Skered would like epic to output compile-time information at runtime, 
   like what mutt does
+* get_window_by_refnum_direct() should sanity check the refnum
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1127,3 +1128,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * - (This required changing INPUT_LINE to INPUT_LINE_ROW)
 * - Eliminate hardocded uses of 'last_input_screen' in input.c
 * When doing /window number, be sure to clear old refnum! (rb zlonix)
+* Add sanity check for direct window lookups
+* Have $serverwin() return user refnum not internal refnum (rb ce)

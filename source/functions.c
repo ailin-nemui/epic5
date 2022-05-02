@@ -7228,7 +7228,7 @@ BUILT_IN_FUNCTION(function_serverwin, input)
 		GET_INT_ARG(sval, input);
 
 	window = get_server_current_window(sval);
-	RETURN_INT(window);
+	RETURN_INT(get_window_user_refnum(window));
 }
 
 BUILT_IN_FUNCTION(function_ignorectl, input)

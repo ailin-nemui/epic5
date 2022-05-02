@@ -48,20 +48,10 @@ any GNU software (however, this is _not_ GNU software)
 	  --with-ssl[=PATH]
 		Enable support for SSL connections to servers.
 
-  o  You must not try to compile epic with "gcc -O2" because -O2 will
-     generate bad code that leads to random crashes.  When you use -O2,
-     gcc assumes the source is conformant to ISO C99's requirements about
-     alias-safety, and EPIC, being a C90 program, does not conform, so the
-     result is undefined behavior (which means it crashes randomly.)  This
-     is not a bug in EPIC.  You must only compile epic with -O.
-
-  o  This software should be able to compile and run on almost
-     any modern unix (A ``modern'' unix is one that supports POSIX
-     system calls and BSD networking in addition to the most commonly
-     accepted non-standard unix extensions, like getpw*() functions.)
-     All I can say is try it and see if it works.  It should definitely
-     work on the 4.4BSDs, Linux, SVR4s (Solaris), Digital Unix/Ultrix, 
-     AIX and SCO ODT 5, and possibly others.
+  o  This version of EPIC requires a C99 compiler.  Compiling on very
+     old operating systems or compilers is (sadly) no longer likely to 
+     work.  You'll just have to use an older version of EPIC on older
+     operating systems -- sorry!
 
   o  To compile type `make'.  This will compile the `epic5' and `wserv4'
      programs that live in the `source' subdirectory.
@@ -84,7 +74,7 @@ any GNU software (however, this is _not_ GNU software)
 
   o  Help files are not shipped with the base distribution (because of their
      size and because they are not updated frequently.)  You can peruse the 
-     help files online at http://www.epicsol.org/help.  There is also a 'help'
+     help files online at http://help.epicsol.org/   There is also a 'help'
      script that implements the /help command if you want to do things the old
      way.  Make sure you /SET HELP_PATH to where you put the help files or it
      won't be able to find them.
