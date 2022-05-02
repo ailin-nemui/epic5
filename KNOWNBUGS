@@ -1130,3 +1130,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * When doing /window number, be sure to clear old refnum! (rb zlonix)
 * Add sanity check for direct window lookups
 * Have $serverwin() return user refnum not internal refnum (rb ce)
+* Fix the sanity check just above (rb ce)

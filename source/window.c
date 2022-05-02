@@ -2460,10 +2460,21 @@ Window *get_window_by_refnum_direct (int refnum)
 
 	if (refnum >= 1 && refnum <= INTERNAL_REFNUM_CUTOVER * 2)
 	{
-		if (windows[refnum] && (refnum != (int)windows[refnum]->refnum))
+		if (refnum >= 1 && refnum < INTERNAL_REFNUM_CUTOVER)
 		{
-			yell("Refnum (direct) %d points at window %d. fixing", windows[refnum]->refnum, refnum);
-			windows[refnum] = NULL;
+			if (windows[refnum] && (refnum != (int)windows[refnum]->user_refnum))
+			{
+				yell("Refnum (direct) %d points at window %d. fixing", refnum, windows[refnum]->user_refnum);
+				windows[refnum] = NULL;
+			}
+		}
+		else
+		{
+			if (windows[refnum] && (refnum != (int)windows[refnum]->refnum))
+			{
+				yell("Refnum (direct) %d points at window %d. fixing", windows[refnum]->refnum, refnum);
+				windows[refnum] = NULL;
+			}
 		}
 		return windows[refnum];
 	}

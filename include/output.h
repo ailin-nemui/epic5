@@ -14,7 +14,6 @@
 #define __output_h__
 
 extern	FILE	*irclog_fp;
-struct ScreenStru;
 
 	BUILT_IN_COMMAND(extern_write);
 	void	put_echo		(const unsigned char *);
