@@ -103,7 +103,6 @@ extern		int	use_iexten;
 extern		int	use_input;
 extern		int	waiting_out;
 extern		int	waiting_in;
-extern const	char *	compile_info;
 extern		unsigned char *	cut_buffer;
 extern		char *	default_channel;
 extern	const	char 	empty_string[];
@@ -144,6 +143,10 @@ extern struct timeval	idle_time;
 extern struct timeval	now;
 extern struct timeval	input_timeout;
 extern		jmp_buf	panic_jumpseat;
+
+extern const	char *	compile_info;
+extern const 	char 	config_flags[];
+extern const 	char 	compiler_version[];
 
 /* irc.c's extern functions */
 	void	io 			(const char *);

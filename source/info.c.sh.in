@@ -11,6 +11,8 @@ awk '{if (NF == 6) \
          { print $1 " "  $2 " " $3 " "  $6 " at " $4 " " $5 } \
 else \
          { print $1 " "  $2 " " $3 " " $7 " at " $4 " " $5 " " $6 }}'`
+config_flags=`grep \^ac_cs_config ../config.status | sed 's/.*="\(.*\)"/\1/' | ./stringify config_flags`
+compiler_version=`$CC -v 2>&1 | ./stringify compiler_version`
 
 # Dump the C file...
 cat > info.c << __E__O__F__
@@ -30,5 +32,7 @@ const char *compile_host = "$comp_host";
 const char *compile_time = "$comp_time";
 const char *info_c_sum   = "$info_c_sum";
 const char *compile_info = "Compiled by " USER "@$comp_host on $comp_time";
+$config_flags
+$compiler_version
 
 __E__O__F__

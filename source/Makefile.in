@@ -38,7 +38,7 @@ all: epic5
 #
 
 # epic5 (irc)
-epic5: $(OBJECTS)
+epic5: $(OBJECTS) stringify
 	sh info.c.sh
 	$(CC) $(CFLAGS) $(INCLUDES) -c info.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o epic5 $(OBJECTS) info.o @PERLLIBS@ @RUBYLIBS@ @PYTHON_LDFLAGS@ $(LIBS)
@@ -53,6 +53,11 @@ clean::
 	$(RM) wserv4 wserv.o
 
 
+# stringify
+stringify: stringify.c
+	$(CC) $(CFLAGS) stringify.c -o stringify
+clean::
+	$(RM) stringify
 
 # 'make install'
 install: epic5

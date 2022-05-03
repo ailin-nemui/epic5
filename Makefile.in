@@ -133,7 +133,6 @@ WSERV	 = $(wserv_exe)
 installwserv4: wserv4 installdirs 
 	$(INSTALL_PROGRAM) source/wserv4 $(IP)$(DESTDIR)$(WSERV)
 
-
 #
 # Script library
 #
