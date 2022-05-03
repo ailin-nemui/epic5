@@ -1,8 +1,11 @@
 EPIC5-2.2
 
-*** News 05/02/2022 -- New $info() values, $info(Y) and $info(Z)
-	$info(Y)  returns the parameters passed to 'configure'
-	$info(Z)  returns the output of $CC -v (the compiler)
+*** News 05/02/2022 -- New $info() values, $info(Z:*)
+	$info(Z:configure_args)		returns what you passed to 'configure'
+	$info(Z:compiler_version)	returns "$CC -v" that was used
+	$info(Z:final_link)		returns the command used to link epic5
+	$info(Z:cflags)			returns the CFLAGS used during build
+	$info(Z:libs)			returns the libs used during build
 
 *** News 04/10/2022 -- Window /LOGs now don't require logged window to exist
 	There is a question -- do logs log _a particular window instance_

@@ -145,8 +145,11 @@ extern struct timeval	input_timeout;
 extern		jmp_buf	panic_jumpseat;
 
 extern const	char *	compile_info;
-extern const 	char 	config_flags[];
+extern const 	char 	configure_args[];
 extern const 	char 	compiler_version[];
+extern const	char	final_link[];
+extern const	char	compile_cflags[];
+extern const	char	compile_libs[];
 
 /* irc.c's extern functions */
 	void	io 			(const char *);

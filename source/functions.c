@@ -4109,26 +4109,34 @@ BUILT_IN_FUNCTION(function_info, words)
 
 	     if (!my_strnicmp(which, "C", 1))
 		RETURN_STR(compile_info);
-	else if (!my_strnicmp(which, "O", 1))
-		RETURN_STR(compile_time_options);
-	else if (!my_strnicmp(which, "S", 1))
-		RETURN_STR(info_c_sum);
-	else if (!my_strnicmp(which, "W", 1))
-		RETURN_INT(1);
+	else if (!my_strnicmp(which, "I", 1))
+		RETURN_INT(commit_id);
 	else if (!my_strnicmp(which, "M", 1))
 	{
 		if (get_int_var(OLD_MATH_PARSER_VAR))
 			RETURN_INT(0);
 		RETURN_INT(1);
 	}
-	else if (!my_strnicmp(which, "V", 1))
-		RETURN_STR(useful_info);
+	else if (!my_strnicmp(which, "O", 1))
+		RETURN_STR(compile_time_options);
+	else if (!my_strnicmp(which, "S", 1))
+		RETURN_STR(info_c_sum);
 	else if (!my_strnicmp(which, "R", 1))
 		RETURN_STR(ridiculous_version_name);
-	else if (!my_strnicmp(which, "I", 1))
-		RETURN_INT(commit_id);
-	else if (!my_strnicmp(which, "Y", 1))
-		RETURN_STR(config_flags);
+	else if (!my_strnicmp(which, "V", 1))
+		RETURN_STR(useful_info);
+	else if (!my_strnicmp(which, "W", 1))
+		RETURN_INT(1);
+	else if (!my_strnicmp(which, "Z:configure_args", 8))
+		RETURN_STR(configure_args);
+	else if (!my_strnicmp(which, "Z:compiler_version", 8))
+		RETURN_STR(compiler_version);
+	else if (!my_strnicmp(which, "Z:final_link", 8))
+		RETURN_STR(final_link);
+	else if (!my_strnicmp(which, "Z:cflags", 8))
+		RETURN_STR(compile_cflags);
+	else if (!my_strnicmp(which, "Z:libs", 8))
+		RETURN_STR(compile_libs);
 	else if (!my_strnicmp(which, "Z", 1))
 		RETURN_STR(compiler_version);
 	else

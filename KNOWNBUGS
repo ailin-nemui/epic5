@@ -1136,4 +1136,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add support for grabbing configure params in info.c.sh
 * Add support for grabbing $CC -v output in info.c.sh
 * Add $info(y) and $info(z) (see UPDATES)
+* Replace $info(y) and $info(z) with $info(z:*) (see UPDATES)
 

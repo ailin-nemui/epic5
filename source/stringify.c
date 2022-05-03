@@ -12,14 +12,18 @@ int main (int argc, char **argv)
 	printf("const char %s[] = {", argv[1]);
 	while ((byte = getchar()) != EOF)
 	{
-		if (count == 0)
-			printf("%d", byte & 0xFF);
-		else
-			printf(",%d", byte & 0xFF);
+		if (byte == '\n')
+			byte = '\t';
+		if (count > 0)
+			printf(",");
+		printf("%d", byte & 0xFF);
 		if (count > 0 && count % 8 == 0)
 			printf("\n");
 		count++;
 	}
-	printf("};\n");
+	if (count > 0)
+		printf(",");
+	printf("0};\n");
+
 }
 
