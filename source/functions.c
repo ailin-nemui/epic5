@@ -4131,14 +4131,24 @@ BUILT_IN_FUNCTION(function_info, words)
 		RETURN_STR(configure_args);
 	else if (!my_strnicmp(which, "Z:compiler_version", 8))
 		RETURN_STR(compiler_version);
-	else if (!my_strnicmp(which, "Z:final_link", 8))
+	else if (!my_strnicmp(which, "Z:final_link", 6))
 		RETURN_STR(final_link);
-	else if (!my_strnicmp(which, "Z:cflags", 8))
+	else if (!my_strnicmp(which, "Z:cflags", 6))
 		RETURN_STR(compile_cflags);
-	else if (!my_strnicmp(which, "Z:libs", 8))
+	else if (!my_strnicmp(which, "Z:libs", 6))
 		RETURN_STR(compile_libs);
-	else if (!my_strnicmp(which, "Z", 1))
-		RETURN_STR(compiler_version);
+	else if (!my_strnicmp(which, "Z", 1)) {
+		char *retval;
+		retval = malloc_sprintf(NULL,
+					"{\"configure_args\": \"%s\","
+					" \"compiler_version\": \"%s\","
+					" \"final_link\": \"%s\","
+					" \"cflags\": \"%s\","
+					" \"libs\": \"%s\""
+					"}", configure_args, compiler_version, 
+					final_link, compile_cflags, compile_libs);
+		RETURN_MSTR(retval);
+	}
 	else
 		RETURN_EMPTY;
 	/* more to be added as neccesary */

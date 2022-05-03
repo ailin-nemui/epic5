@@ -52,7 +52,7 @@ const char internal_version[] = "20220327";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 2044;
+const unsigned long	commit_id = 2045;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -453,6 +453,12 @@ static	void	show_version (void)
 {
 	printf("ircII %s (Commit id: %lu) (Date of release: %s)\n\r", 
 			irc_version, commit_id, internal_version);
+	printf("Compile metadata: %s\n", compile_info);
+	printf("Compiler: %s\n", compiler_version);
+	printf("Configure options: %s\n", configure_args);
+	printf("Compilation FLAGS: %s\n", compile_cflags);
+	printf("Compilation LIBS: %s\n", compile_libs);
+	printf("Compilation link: %s\n", final_link);
 	exit (0);
 }
 

@@ -6,6 +6,7 @@ EPIC5-2.2
 	$info(Z:final_link)		returns the command used to link epic5
 	$info(Z:cflags)			returns the CFLAGS used during build
 	$info(Z:libs)			returns the libs used during build
+	$info(Z)			returns all the above in a json dict
 
 *** News 04/10/2022 -- Window /LOGs now don't require logged window to exist
 	There is a question -- do logs log _a particular window instance_
