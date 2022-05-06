@@ -829,7 +829,7 @@ static int	unix_recv (int channel, int quiet)
 static int	unix_accept (int channel, int quiet)
 {
 	int	newfd;
-	SS	addr;
+	SSu	addr;
 	socklen_t len;
 
 #ifdef USE_PTHREAD
@@ -847,8 +847,9 @@ static int	unix_accept (int channel, int quiet)
 	}
 #endif
 
-	len = sizeof(addr);
-	if ((newfd = my_accept(channel, (SA *)&addr, &len)) < 0)
+	memset(&addr.ss, 0, sizeof(addr.ss));
+	len = sizeof(addr.ss);
+	if ((newfd = my_accept(channel, &addr, &len)) < 0)
 	{
 	    if (!quiet)
 		syserr(CSRV(channel), 
@@ -856,7 +857,7 @@ static int	unix_accept (int channel, int quiet)
 	}
 
 	dgets_buffer(channel, &newfd, sizeof(newfd));
-	dgets_buffer(channel, &addr, sizeof(addr));
+	dgets_buffer(channel, &addr.ss, sizeof(addr.ss));
 	return sizeof(newfd) + sizeof(addr);
 }
 
@@ -865,9 +866,9 @@ static int	unix_connect (int channel, int quiet)
 	int	sockerr;
 	int	gso_result;
 	int	gsn_result;
-	SS	localaddr;
+	SSu	localaddr;
 	int	gpn_result;
-	SS	remoteaddr;
+	SSu	remoteaddr;
 	socklen_t len;
 
 #ifdef USE_PTHREAD
@@ -896,24 +897,24 @@ static int	unix_connect (int channel, int quiet)
 	dgets_buffer(channel, &sockerr, sizeof(sockerr));
 
 	/* * */
-	len = sizeof(localaddr);
+	len = sizeof(localaddr.ss);
 	errno = 0;
-	getsockname(channel, (SA *)&localaddr, &len);
+	getsockname(channel, &localaddr.sa, &len);
 	gsn_result = errno;
 
 	dgets_buffer(channel, &gsn_result, sizeof(gsn_result));
-	dgets_buffer(channel, &localaddr, sizeof(localaddr));
+	dgets_buffer(channel, &localaddr.ss, sizeof(localaddr.ss));
 
 	/* * */
-	len = sizeof(remoteaddr);
+	len = sizeof(remoteaddr.ss);
 	errno = 0;
-	getpeername(channel, (SA *)&remoteaddr, &len);
+	getpeername(channel, &remoteaddr.sa, &len);
 	gpn_result = errno;
 
 	dgets_buffer(channel, &gpn_result, sizeof(gpn_result));
-	dgets_buffer(channel, &remoteaddr, sizeof(localaddr));
+	dgets_buffer(channel, &remoteaddr.ss, sizeof(localaddr));
 
-	return (sizeof(int) + sizeof(SS)) * 2;
+	return (sizeof(int) + sizeof(localaddr.ss)) * 2;
 }
 
 static int	passthrough_event (int channel, int quiet)

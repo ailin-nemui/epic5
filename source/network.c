@@ -42,14 +42,9 @@
 #define ASYNC_DNS
 #endif
 
-#ifdef HAVE_SYS_UN_H
-#include <sys/un.h>
-typedef struct sockaddr_un USA;
-#endif
-
-static int	Connect 	 (int, SA *);
-static socklen_t socklen  	 (SA *);
-static int	Getnameinfo 	 (const SA *, socklen_t, char *, size_t, char *, size_t, int);
+static int	Connect 	 (int, SSu *);
+static socklen_t socklen  	 (SSu *);
+static int	Getnameinfo 	 (SSu *, socklen_t, char *, size_t, char *, size_t, int);
 static int	Socket 		(int, int, int);
 
 /*
@@ -85,10 +80,10 @@ static int	Socket 		(int, int, int);
  *       rl - The sizeof(r) -- if 0, then 'r' is treated as a NULL value.
  *            Therefore, 0 is not permitted.
  */
-int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
+int	client_connect (SSu *l, socklen_t ll, SSu *r, socklen_t rl)
 {
 	int	fd = -1;
-	int	family = AF_UNSPEC;
+	int	family_ = AF_UNSPEC;
 
 	if (ll == 0)
 		l = NULL;
@@ -101,27 +96,26 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
 		return -1;
 	}
 
-	if (l && r && l->sa_family != r->sa_family)
+	if (l && r && family(l) != family(r))
 	{
 		syserr(-1, "client_connect: local addr protocol (%d) is different "
 			"from remote addr protocol (%d)", 
-			l->sa_family, r->sa_family);
+			family(l), family(r));
 		return -1;
 	}
 
 	if (l)
-		family = l->sa_family;
+		family_ = family(l);
 	if (r)
-		family = r->sa_family;
+		family_ = family(r);
 
-	if ((fd = Socket(family, SOCK_STREAM, 0)) < 0)
+	if ((fd = Socket(family_, SOCK_STREAM, 0)) < 0)
 	{
-		syserr(-1, "client_connect: socket(%d) failed: %s", 
-						family, strerror(errno));
+		syserr(-1, "client_connect: socket(%d) failed: %s", family_, strerror(errno));
 		return -1;
 	}
 
-	if (l && bind(fd, l, ll))
+	if (l && bind(fd, &l->sa, ll))
 	{
 	    syserr(-1, "client_connect: bind(%d) failed: %s", fd, strerror(errno));
 	    close(fd);
@@ -159,15 +153,14 @@ int	client_connect (SA *l, socklen_t ll, SA *r, socklen_t rl)
  * NOTES: This function lacks IPv6 support.
  *        This function lacks Unix Domain Socket support.
  */
-int	ip_bindery (int family, unsigned short port, SS *storage)
+int	ip_bindery (int family, unsigned short port, SSu *storage)
 {
 	socklen_t len;
 	int	fd;
 
 	if (inet_vhostsockaddr(family, port, NULL, storage, &len))
 	{
-		syserr(-1, "ip_bindery: inet_vhostsockaddr(%d,%d) failed.", 
-							family, port);
+		syserr(-1, "ip_bindery: inet_vhostsockaddr(%d,%d) failed.", family, port);
 		return -1;
 	}
 
@@ -178,7 +171,7 @@ int	ip_bindery (int family, unsigned short port, SS *storage)
 		return -1;
 	}
 
-	if ((fd = client_bind((SA *)storage, len)) < 0)
+	if ((fd = client_bind(storage, len)) < 0)
 	{
 		syserr(-1, "ip_bindery: client_bind(%d,%d) failed.", family, port);
 		return -1;
@@ -196,10 +189,10 @@ int	ip_bindery (int family, unsigned short port, SS *storage)
  *       local_len - The sizeof(l) -- if 0, then 'l' is treated as a NULL 
  *		     value.  Therefore, 0 is not permitted.
  */
-int	client_bind (SA *local, socklen_t local_len)
+int	client_bind (SSu *local, socklen_t local_len)
 {
 	int	fd = -1;
-	int	family = AF_UNSPEC;
+	int	family_ = AF_UNSPEC;
 
 	if (local_len == 0)
 		local = NULL;
@@ -209,12 +202,11 @@ int	client_bind (SA *local, socklen_t local_len)
 		return -1;
 	}
 
-	family = local->sa_family;
+	family_ = family(local);
 
-	if ((fd = Socket(family, SOCK_STREAM, 0)) < 0)
+	if ((fd = Socket(family_, SOCK_STREAM, 0)) < 0)
 	{
-		syserr(-1, "client_bind: socket(%d) failed: %s", 
-					family, strerror(errno));
+		syserr(-1, "client_bind: socket(%d) failed: %s", family, strerror(errno));
 		return -1;
 	}
 
@@ -225,7 +217,7 @@ int	client_bind (SA *local, socklen_t local_len)
 	 * port range" when we ask for port 0 (any port).
 	 * Maybe some day Linux will support this.
 	 */
-	if (family == AF_INET && getenv("EPIC_USE_HIGHPORTS"))
+	if (family_ == AF_INET && getenv("EPIC_USE_HIGHPORTS"))
 	{
 		int ports = IP_PORTRANGE_HIGH;
 		setsockopt(fd, IPPROTO_IP, IP_PORTRANGE, 
@@ -233,10 +225,9 @@ int	client_bind (SA *local, socklen_t local_len)
 	}
 #endif
 
-	if (bind(fd, local, local_len))
+	if (bind(fd, &local->sa, local_len))
 	{
-		syserr(-1, "client_bind: bind(%d) failed: %s", 
-					fd, strerror(errno));
+		syserr(-1, "client_bind: bind(%d) failed: %s", fd, strerror(errno));
 		close(fd);
 		return -1;
 	}
@@ -246,18 +237,16 @@ int	client_bind (SA *local, socklen_t local_len)
 	 * specifically the port number, and stash it in
 	 * 'port' which is the return value to the caller.
 	 */	
-	if (getsockname(fd, (SA *)local, &local_len))
+	if (getsockname(fd, &local->sa, &local_len))
 	{
-		syserr(-1, "client_bind: getsockname(%d) failed: %s", 
-					fd, strerror(errno));
+		syserr(-1, "client_bind: getsockname(%d) failed: %s", fd, strerror(errno));
 		close(fd);
 		return -1;
 	}
 
 	if (listen(fd, 4) < 0)
 	{
-		syserr(-1, "client_bind: listen(%d,4) failed: %s",
-					fd, strerror(errno));
+		syserr(-1, "client_bind: listen(%d,4) failed: %s", fd, strerror(errno));
 		close(fd);
 		return -1;
 	}
@@ -276,7 +265,7 @@ int	client_bind (SA *local, socklen_t local_len)
  *             the given family.
  * NOTES: If "len" is set to 0, do not attempt to bind() 'storage'!
  */
-int	inet_vhostsockaddr (int family, int port, const char *wanthost, SS *storage, socklen_t *len)
+int	inet_vhostsockaddr (int family, int port, const char *wanthost, SSu *storage, socklen_t *len)
 {
 	char	p_port[12];
 	char	*p = NULL;
@@ -323,14 +312,13 @@ int	inet_vhostsockaddr (int family, int port, const char *wanthost, SS *storage,
 
 	if ((err = my_getaddrinfo(lhn, p, &hints, &res)))
 	{
-		syserr(-1, "inet_vhostsockaddr: my_getaddrinfo(%s,%s) failed: %s", 
-				lhn, p, gai_strerror(err));
+		syserr(-1, "inet_vhostsockaddr: my_getaddrinfo(%s,%s) failed: %s", lhn, p, gai_strerror(err));
 		return -1;
 	}
 
-	memcpy(storage, res->ai_addr, res->ai_addrlen);
+	memcpy(&storage->ss, res->ai_addr, res->ai_addrlen);
 	my_freeaddrinfo(res);
-	*len = socklen((SA *)storage);
+	*len = socklen(storage);
 	return 0;
 }
 
@@ -344,25 +332,25 @@ int	inet_vhostsockaddr (int family, int port, const char *wanthost, SS *storage,
  *		IPv6 "Presentation Address"	(A:B::C:D)
  *		Hostname			(foo.bar.com)
  *		32 bit host order ipv4 address	(2134546324)
- *	 storage - A pointer to a (struct sockaddr_storage) with the 
+ *	 storage - A pointer to a (union SSU_ (aka, a (struct sockaddr_storage)) with the 
  *		"family" argument filled in (AF_INET or AF_INET6).  
  *		If "hostname" is a p-addr, then the form of the p-addr
  *		must agree with the family in 'storage'.
  */
-int	inet_strton (const char *host, const char *port, SA *storage, int flags)
+int	inet_strton (const char *host, const char *port, SSu *storage_, int flags)
 {
-	int family = storage->sa_family;
+	int family_ = family(storage_);
 
         /* First check for legacy 32 bit integer DCC addresses */
-	if ((family == AF_INET || family == AF_UNSPEC) && host && is_number(host))
+	if ((family_ == AF_INET || family_ == AF_UNSPEC) && host && is_number(host))
 	{
-		((ISA *)storage)->sin_family = AF_INET;
+		(storage_->si).sin_family = AF_INET;
 #ifdef HAVE_SA_LEN
-		((ISA *)storage)->sin_len = sizeof(ISA);
+		(storage_->si).sin_len = sizeof(struct sockaddr_in);
 #endif
-		((ISA *)storage)->sin_addr.s_addr = htonl(strtoul(host, NULL, 10));
+		(storage_->si).sin_addr.s_addr = htonl(strtoul(host, NULL, 10));
 		if (port)
-			((ISA *)storage)->sin_port = htons((unsigned short)strtoul(port, NULL, 10));
+			(storage_->si).sin_port = htons((unsigned short)strtoul(port, NULL, 10));
 		return 0;
 	}
 	else
@@ -373,19 +361,18 @@ int	inet_strton (const char *host, const char *port, SA *storage, int flags)
 
 		memset(&hints, 0, sizeof(hints));
 		hints.ai_flags = flags;
-		hints.ai_family = family;
+		hints.ai_family = family_;
 		hints.ai_socktype = SOCK_STREAM;
 		hints.ai_protocol = 0;
 
 		if ((retval = my_getaddrinfo(host, port, &hints, &results))) 
 		{
-			syserr(-1, "inet_strton: my_getaddrinfo(%s,%s) failed: %s", 
-					host, port, gai_strerror(retval));
+			syserr(-1, "inet_strton: my_getaddrinfo(%s,%s) failed: %s", host, port, gai_strerror(retval));
 			return -1;
 		}
 
 		/* memcpy can bite me. */
-		memcpy(storage, results->ai_addr, results->ai_addrlen);
+		memcpy(&(storage_->ss), results->ai_addr, results->ai_addrlen);
 
 		my_freeaddrinfo(results);
 		return 0;
@@ -405,14 +392,13 @@ int	inet_strton (const char *host, const char *port, SA *storage, int flags)
  * NOTES: 'flags' should be set to NI_NAMEREQD if you don't want the remote
  *        host's p-addr if it does not have a DNS hostname.
  */
-int	inet_ntostr (SA *name, char *host, int hsize, char *port, int psize, int flags)
+int	inet_ntostr (SSu *name_, char *host, int hsize, char *port, int psize, int flags)
 {
 	int	retval;
 	socklen_t len;
 
-	len = socklen(name);
-	if ((retval = Getnameinfo(name, len, host, hsize, port, psize, 
-					flags | NI_NUMERICSERV))) 
+	len = socklen(name_);
+	if ((retval = Getnameinfo(name_, len, host, hsize, port, psize, flags | NI_NUMERICSERV))) 
 	{
 		syserr(-1, "inet_ntostr: Getnameinfo(sockaddr->p_addr) failed: %s", 
 					gai_strerror(retval));
@@ -430,7 +416,7 @@ int	inet_ntostr (SA *name, char *host, int hsize, char *port, int psize, int fla
  *	 flags - extra flags you want to pass to getnameinfo() 
  *		 note, NI_NUMERICHOST is always included.
  */
-char *	inet_sa_to_paddr (SA *name, int flags)
+char *	inet_ssu_to_paddr (SSu *name, int flags)
 {
 	char		buffer[8192];
 	char *		retval;
@@ -438,8 +424,7 @@ char *	inet_sa_to_paddr (SA *name, int flags)
 	socklen_t	len;
 
 	len = socklen(name);
-	if ((gni_retval = Getnameinfo(name, len, buffer, sizeof(buffer),
-					NULL, 0, flags | NI_NUMERICHOST)))
+	if ((gni_retval = Getnameinfo(name, len, buffer, sizeof(buffer), NULL, 0, flags | NI_NUMERICHOST)))
 	{
 		syserr(-1, "inet_sa_to_paddr: Getnameinfo(sockaddr->p_addr) failed: %s",
 					gai_strerror(gni_retval));
@@ -464,16 +449,16 @@ char *	inet_sa_to_paddr (SA *name, int flags)
  */
 int	inet_hntop (int family, const char *host, char *retval, int size)
 {
-	SS	buffer;
+	SSu	buffer;
 
-	((SA *)&buffer)->sa_family = family;
-	if (inet_strton(host, NULL, (SA *)&buffer, AI_ADDRCONFIG))
+	buffer.sa.sa_family = family;
+	if (inet_strton(host, NULL, &buffer, AI_ADDRCONFIG))
 	{
 		syserr(-1, "inet_hntop: inet_strton(%d,%s) failed", family, host);
 		return -1;
 	}
 
-	if (inet_ntostr((SA *)&buffer, retval, size, NULL, 0, NI_NUMERICHOST))
+	if (inet_ntostr(&buffer, retval, size, NULL, 0, NI_NUMERICHOST))
 	{
 		syserr(-1, "inet_hntop: inet_ntostr(%d,%s) failed", family, host);
 		return -1;
@@ -496,17 +481,17 @@ int	inet_hntop (int family, const char *host, char *retval, int size)
  */
 int	inet_ptohn (int family, const char *ip, char *retval, int size)
 {
-	SS	buffer;
+	SSu	buffer;
 
-	memset((char *)&buffer, 0, sizeof(buffer));
-	((SA *)&buffer)->sa_family = family;
-	if (inet_strton(ip, NULL, (SA *)&buffer, AI_NUMERICHOST))
+	memset((char *)&buffer.ss, 0, sizeof(buffer.ss));
+	buffer.sa.sa_family = family;
+	if (inet_strton(ip, NULL, &buffer, AI_NUMERICHOST))
 	{
 		syserr(-1, "inet_ptohn: inet_strton(%d,%s) failed", family, ip);
 		return -1;
 	}
 
-	if (inet_ntostr((SA *)&buffer, retval, size, NULL, 0, NI_NAMEREQD))
+	if (inet_ntostr(&buffer, retval, size, NULL, 0, NI_NAMEREQD))
 	{
 		syserr(-1, "inet_ptohn: inet_ntostr(%d,%s) failed", family, ip);
 		return -1;
@@ -639,12 +624,12 @@ int	set_blocking (int fd)
  * has been closed in the interim.  This wrapper for accept() attempts to
  * defeat this by making the accept() call nonblocking.
  */
-int	my_accept (int s, SA *addr, socklen_t *addrlen)
+int	my_accept (int s, SSu *addr, socklen_t *addrlen)
 {
 	int	retval;
 
 	set_non_blocking(s);
-	if ((retval = accept(s, addr, addrlen)) < 0)
+	if ((retval = accept(s, &addr->sa, addrlen)) < 0)
 		syserr(-1, "my_accept: accept(%d) failed: %s", 
 				s, strerror(errno));
 	set_blocking(s);
@@ -652,12 +637,12 @@ int	my_accept (int s, SA *addr, socklen_t *addrlen)
 	return retval;
 }
 
-static int Connect (int fd, SA *addr)
+static int Connect (int fd, SSu *addr)
 {
 	int	retval;
 
 	set_non_blocking(fd);
-	if ((retval = connect(fd, addr, socklen(addr))))
+	if ((retval = connect(fd, &addr->sa, socklen(addr))))
 	{
 	    if (errno != EINPROGRESS)
 		syserr(-1, "Connect: connect(%d) failed: %s", fd, strerror(errno));
@@ -676,7 +661,7 @@ int	my_getaddrinfo (const char *nodename, const char *servname, const AI *hints,
 {
 #ifdef GETADDRINFO_DOES_NOT_DO_AF_UNIX
 	int	do_af_unix = 0;
-	USA 	storage;
+	SSu 	storage;
 	AI *	results;
 	int	len;
 
@@ -690,17 +675,17 @@ int	my_getaddrinfo (const char *nodename, const char *servname, const AI *hints,
 		if (!nodename)
 			return EAI_NONAME;
 
-                memset(&storage, 0, sizeof(storage));
-                storage.sun_family = AF_UNIX;
-                strlcpy(storage.sun_path, nodename, sizeof(storage.sun_path));
+                memset(&storage.su, 0, sizeof(storage.su));
+                storage.su.sun_family = AF_UNIX;
+                strlcpy(storage.su.sun_path, nodename, sizeof(storage.su.sun_path));
 #ifdef HAVE_SA_LEN
 # ifdef SUN_LEN
-                storage.sun_len = SUN_LEN(&storage);
+                storage.su.sun_len = SUN_LEN(&storage.su);
 # else
-                storage.sun_len = strlen(nodename) + 1;
+                storage.su.sun_len = strlen(nodename) + 1;
 # endif
 #endif
-                len = strlen(storage.sun_path) + 3;
+                len = strlen(storage.su.sun_path) + 3;
 
 		(*res) = new_malloc(sizeof(*results));
 		(*res)->ai_flags = 0;
@@ -709,8 +694,8 @@ int	my_getaddrinfo (const char *nodename, const char *servname, const AI *hints,
 		(*res)->ai_protocol = 0;
 		(*res)->ai_addrlen = len;
 		(*res)->ai_canonname = malloc_strdup(nodename);
-		(*res)->ai_addr = new_malloc(sizeof(storage));
-		*(USA *)((*res)->ai_addr) = storage;
+		(*res)->ai_addr = new_malloc(sizeof(storage.su));
+		memcpy((*res)->ai_addr, &storage.su, sizeof(storage.su));
 		(*res)->ai_next = 0;
 
                 return 0;
@@ -743,21 +728,20 @@ void	my_freeaddrinfo (AI *ai)
 	freeaddrinfo(ai);
 }
 
-static int	Getnameinfo(const SA *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags)
+static int	Getnameinfo(SSu *ssu, socklen_t ssulen, char *host, size_t hostlen, char *serv, size_t servlen, int flags)
 {
 #ifdef GETADDRINFO_DOES_NOT_DO_AF_UNIX
-	if (sa->sa_family == AF_UNIX) 
+	if (family(ssu) == AF_UNIX) 
 	{
 		socklen_t	len;
-		const USA *	usa = (const USA *)sa;
 
 #ifdef HAVE_SA_LEN
-                len = usa->sun_len;
+                len = ssu->su.sun_len;
 #else
 # ifdef SUN_LEN
-		len = SUN_LEN(usa);
+		len = SUN_LEN(ssu->su);
 # else
-		len = strlen(usa->sun_path);
+		len = strlen(ssu->su.sun_path);
 # endif
 #endif
 
@@ -765,12 +749,12 @@ static int	Getnameinfo(const SA *sa, socklen_t salen, char *host, size_t hostlen
 		{
 		    if (hostlen <= len)
 		    {
-			memcpy(host, usa->sun_path, hostlen);
+			memcpy(host, ssu->su.sun_path, hostlen);
 			host[hostlen - 1] = 0;
 		    }
 		    else
 		    {
-			memcpy(host, &usa->sun_path, len);
+			memcpy(host, &ssu->su.sun_path, len);
 			host[len] = 0;
 		    }
 		}
@@ -782,28 +766,33 @@ static int	Getnameinfo(const SA *sa, socklen_t salen, char *host, size_t hostlen
 	}
 #endif
 
-	if ((flags & GNI_INTEGER) && sa->sa_family == AF_INET) 
+	if ((flags & GNI_INTEGER) && family(ssu) == AF_INET) 
 	{
 		snprintf(host, hostlen, "%lu", 
-			(unsigned long)ntohl(((const ISA *)sa)->sin_addr.s_addr));
+			(unsigned long)ntohl(ssu->si.sin_addr.s_addr));
 		host = NULL;
 		hostlen = 0;
 	}
 
 	flags = flags & ~(GNI_INTEGER);
-	return getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
+	return getnameinfo(&ssu->sa, ssulen, host, hostlen, serv, servlen, flags);
 }
 
-static socklen_t	socklen (SA *sockaddr)
+static socklen_t	socklen (SSu *sockaddr)
 {
-	if (sockaddr->sa_family == AF_INET)
-		return sizeof(ISA);
-	else if (sockaddr->sa_family == AF_INET6)
-		return sizeof(ISA6);
-	else if (sockaddr->sa_family == AF_UNIX)
-		return strlen(((USA *)sockaddr)->sun_path) + 2;
+	if (sockaddr->sa.sa_family == AF_INET)
+		return sizeof(sockaddr->si);
+	else if (sockaddr->sa.sa_family == AF_INET6)
+		return sizeof(sockaddr->si6);
+	else if (sockaddr->sa.sa_family == AF_UNIX)
+		return strlen(sockaddr->su.sun_path) + 2;
 	else
 		return 0;
+}
+
+int	family (SSu *sockaddr_)
+{
+	return (sockaddr_->sa).sa_family;
 }
 
 /* set's socket options */
@@ -885,10 +874,13 @@ pid_t	async_getaddrinfo (const char *nodename, const char *servname, const AI *h
 
 void	marshall_getaddrinfo (int fd, AI *results)
 {
-	ssize_t	len, gah;
+	ssize_t	len,
+		gah;
 	ssize_t	alignment = sizeof(void *);
-	AI 	*result, *copy;
-	char 	*retval, *ptr;
+	AI 	*result, 
+		*copy;
+	char 	*retval, 
+		*ptr;
 
 	for (len = 0, result = results; result; result = result->ai_next)
 	{
@@ -915,7 +907,7 @@ void	marshall_getaddrinfo (int fd, AI *results)
 		memcpy(ptr, result->ai_addr, result->ai_addrlen);
 
 		/* Point the AI at the ai_addr */
-		copy->ai_addr = (SA *)ptr;
+		copy->ai_addr = (struct sockaddr *)(ptr);
 
 		/* Copy over the canonname */
 		/* Point the AI at the canonname */
@@ -962,7 +954,7 @@ void	unmarshall_getaddrinfo (AI *results)
 
 		/* Copy over the ai_addr */
 		ptr += sizeof(AI);
-		result->ai_addr = (SA *)ptr;
+		result->ai_addr = (struct sockaddr *)(ptr);
 		ptr += result->ai_addrlen;
 
 		if (result->ai_canonname)

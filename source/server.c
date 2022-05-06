@@ -759,9 +759,9 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	s->userhost_queue = NULL;
 	s->userhost_wait = NULL;
 	s->uh_addr_set = 0;
-	memset(&s->uh_addr, 0, sizeof(s->uh_addr));
-	memset(&s->local_sockname, 0, sizeof(s->local_sockname));
-	memset(&s->remote_sockname, 0, sizeof(s->remote_sockname));
+	memset(&s->uh_addr.ss, 0, sizeof(s->uh_addr.ss));
+	memset(&s->local_sockname.ss, 0, sizeof(s->local_sockname.ss));
+	memset(&s->remote_sockname.ss, 0, sizeof(s->remote_sockname.ss));
 	s->remote_paddr = NULL;
 	s->redirect = NULL;
 	s->cookie = NULL;
@@ -1453,8 +1453,7 @@ void	do_server (int fd)
 			 */
 			if (s->addrs == NULL)
 			{
-				len = dgets(s->des, (char *)&s->addr_len, 
-					sizeof(s->addr_len), -2);
+				len = dgets(s->des, (char *)&s->addr_len, sizeof(s->addr_len), -2);
 				if (len < (ssize_t)sizeof(s->addr_len))
 				{
 					if (len < 0)
@@ -1558,7 +1557,9 @@ void	do_server (int fd)
 		else if (s->state == SERVER_CONNECTING)
 		{
 			ssize_t c;
-			SS	 name;
+			SSu	 name;
+
+			memset(&name.ss, 0, sizeof(name.ss));
 
 			if (x_debug & DEBUG_SERVER_CONNECT)
 				yell("do_server: server [%d] is now ready to write", i);
@@ -1583,8 +1584,8 @@ void	do_server (int fd)
 				goto something_broke;
 
 			/* This is the address returned by getsockname() */
-			c = DGETS(des, name)
-			if (c < (ssize_t)sizeof(name))
+			c = DGETS(des, name.ss)
+			if (c < (ssize_t)sizeof(name.ss))
 				goto something_broke;
 
 			/* * */
@@ -1594,8 +1595,8 @@ void	do_server (int fd)
 				goto something_broke;
 
 			/* This is the address returned by getpeername() */
-			c = DGETS(des, name)
-			if (c < (ssize_t)sizeof(name))
+			c = DGETS(des, name.ss)
+			if (c < (ssize_t)sizeof(name.ss))
 				goto something_broke;
 
 			/* XXX - I don't care if this is abusive.  */
@@ -1629,9 +1630,8 @@ something_broke:
 				continue;
 			}
 
-			/* Update this! */
-			*(SA *)&s->remote_sockname = *(SA *)&name;
-			s->remote_paddr = inet_sa_to_paddr((SA *)&name, 0);
+			memcpy(&s->remote_sockname.ss, &name.ss, sizeof(name.ss));
+			s->remote_paddr = inet_ssu_to_paddr(&name, 0);
 			say("Connected to IP address %s", s->remote_paddr);
 
 			/*
@@ -2189,7 +2189,7 @@ static int	connect_next_server_address (int server)
 {
 	Server *s;
 	int	fd = -1;
-	SS	localaddr;
+	SSu	localaddr;
 	socklen_t locallen;
 	const AI *	ai;
 	char	p_addr[256];
@@ -2212,6 +2212,10 @@ static int	connect_next_server_address (int server)
 	s->addr_counter++;
 	for (ai = s->next_addr; ai; ai = ai->ai_next, s->addr_counter++)
 	{
+	    SSu addr;
+
+	    memset(&addr.ss, 0, sizeof(addr.ss));
+
 	    if (x_debug & DEBUG_SERVER_CONNECT)
 		yell("Trying to connect to server %d using address [%d] and protocol [%d]",
 					server, s->addr_counter, ai->ai_family);
@@ -2225,8 +2229,8 @@ static int	connect_next_server_address (int server)
 		    continue;
 	    }
 
-	    if ((fd = client_connect((SA *)&localaddr, locallen, 
-					ai->ai_addr, ai->ai_addrlen)) < 0)
+	    /* memcpy(&addr.ss, &ai->ai_addr, ai->addrlen) */
+	    if ((fd = client_connect(&localaddr, locallen, (SSu *)(ai->ai_addr), ai->ai_addrlen)) < 0)
 	    {
 		syserr(server, "connect_next_server_address: "
 			"client_connect() failed for server %d address [%d].", 
@@ -2234,7 +2238,7 @@ static int	connect_next_server_address (int server)
 		continue;
 	    }
 
-	    if (inet_ntostr(ai->ai_addr, p_addr, 256, p_port, 24, NI_NUMERICHOST))
+	    if (inet_ntostr((SSu *)(&ai->ai_addr), p_addr, 256, p_port, 24, NI_NUMERICHOST))
 		say("Connecting to server refnum %d (%s), using address %d",
 					server, s->info->host, s->addr_counter);
 	    else
@@ -2312,8 +2316,8 @@ int 	connect_to_server (int new_server)
 	 */
 	set_server_state(new_server, SERVER_CONNECTING);
 	errno = 0;				/* XXX And why do we need to reset errno? */
-	memset(&s->local_sockname, 0, sizeof(s->local_sockname));
-	memset(&s->remote_sockname, 0, sizeof(s->remote_sockname));
+	memset(&s->local_sockname.ss, 0, sizeof(s->local_sockname.ss));
+	memset(&s->remote_sockname.ss, 0, sizeof(s->remote_sockname.ss));
 
 	/*
 	 * Get a nonblocking connect going
@@ -2361,8 +2365,8 @@ int 	connect_to_server (int new_server)
 	 */
 	if (*s->info->host != '/')
 	{
-		len = sizeof(s->local_sockname);
-		getsockname(des, (SA *)&s->local_sockname, &len);
+		len = sizeof(s->local_sockname.ss);
+		getsockname(des, &s->local_sockname.sa, &len);
 	}
 
 	/*
@@ -2777,9 +2781,9 @@ void	register_server (int refnum, const char *nick)
 	 * (ie, if we connected via ipv6, use the ipv6 vhost)
 	 * If we're not using a vhost, then just fallback to hostname.
 	 */
-	if (((SA *)&s->remote_sockname)->sa_family == AF_INET)
+	if (family(&s->remote_sockname) == AF_INET)
 		usehost = LocalIPv4HostName;
-	else if (((SA *)&s->remote_sockname)->sa_family == AF_INET6)
+	if (family(&s->remote_sockname) == AF_INET6)
 		usehost = LocalIPv6HostName;
 	else
 		usehost = hostname;
@@ -3070,7 +3074,7 @@ int	get_server_port (int refnum)
 		return 0;
 
 	if (is_server_open(refnum))
-	   if (!inet_ntostr((SA *)&s->remote_sockname, NULL, 0, p_port, 12, 0))
+	   if (!inet_ntostr(&s->remote_sockname, NULL, 0, p_port, 12, 0))
 		return atol(p_port);
 
 	return s->info->port;
@@ -3085,7 +3089,7 @@ int	get_server_local_port (int refnum)
 		return 0;
 
 	if (is_server_open(refnum))
-	    if (!inet_ntostr((SA *)&s->local_sockname, NULL, 0, p_port, 12, 0))
+	    if (!inet_ntostr(&s->local_sockname, NULL, 0, p_port, 12, 0))
 		return atol(p_port);
 
 	return 0;
@@ -3105,7 +3109,7 @@ static const char *	get_server_remote_paddr (int refnum)
 }
 
 
-static SS	get_server_remote_addr (int refnum)
+static SSu	get_server_remote_addr (int refnum)
 {
 	Server *s;
 
@@ -3115,7 +3119,7 @@ static SS	get_server_remote_addr (int refnum)
 	return s->remote_sockname;
 }
 
-SS	get_server_local_addr (int refnum)
+SSu	get_server_local_addr (int refnum)
 {
 	Server *s;
 
@@ -3125,7 +3129,7 @@ SS	get_server_local_addr (int refnum)
 	return s->local_sockname;
 }
 
-SS	get_server_uh_addr (int refnum)
+SSu	get_server_uh_addr (int refnum)
 {
 	Server *s;
 
@@ -3171,8 +3175,8 @@ static void	set_server_uh_addr (int refnum)
 	}
 
 	/* Ack!  Oh well, it's for DCC. */
-	FAMILY(s->uh_addr) = AF_INET;
-	if (inet_strton(host + 1, zero, (SA *)&s->uh_addr, AI_ADDRCONFIG))
+	s->uh_addr.sa.sa_family = AF_INET;
+	if (inet_strton(host + 1, zero, &s->uh_addr, AI_ADDRCONFIG))
         {
 		/* 
 		 * Once upon a time this warning was relevant to people
@@ -4543,16 +4547,14 @@ char 	*serverctl 	(char *input)
 			retval = get_server_altnames(refnum);
 			RETURN_MSTR(retval);
 		} else if (!my_strnicmp(listc, "ADDRFAMILY", len)) {
-			SS a;
-			SA *x;
+			SSu a;
 
 			a = get_server_remote_addr(refnum);
-			x = (SA *)&a;
-			if (x->sa_family == AF_INET)
+			if (family(&a) == AF_INET)
 				RETURN_STR("ipv4");
-			else if (x->sa_family == AF_INET6)
+			else if (family(&a) == AF_INET6)
 				RETURN_STR("ipv6");
-			else if (x->sa_family == AF_UNIX)
+			else if (family(&a) == AF_UNIX)
 				RETURN_STR("unix");
 			else
 				RETURN_STR("unknown");

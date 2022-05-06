@@ -60,6 +60,9 @@
 # define INCLUDE_PROTOTYPES
 # include <socks.h>
 #endif
+#ifdef HAVE_SYS_UN_H
+#include <sys/un.h>
+#endif
 
 /*
  * Some systems define tputs, etc in this header
@@ -370,20 +373,22 @@ typedef int socklen_t;
 #endif
 
 /*
- * Define some lazy shorthand typedefs for commonly used structures
+ * C99 requires that type-punned aliases must be accessed through a union.
+ * So, that's why we do this.  Always write to 'ss' and then read back
+ * through whatever type you need.
  */
-typedef struct sockaddr 	MAY_ALIAS SA;
-typedef struct sockaddr_storage	MAY_ALIAS SS;
-typedef struct sockaddr_in 	MAY_ALIAS ISA;
-typedef struct in_addr		MAY_ALIAS IA;
+typedef union SSu {
+	struct sockaddr 	sa;
+	struct sockaddr_storage	ss;
+	struct sockaddr_in	si;
+	struct sockaddr_in6	si6;
+#ifdef HAVE_SYS_UN_H
+	struct sockaddr_un	su;
+#endif
+} SSu;
 
-typedef struct sockaddr_in6	MAY_ALIAS ISA6;
-typedef struct sockaddr_in6	MAY_ALIAS I6SA;
-typedef struct in6_addr		MAY_ALIAS IA6;
-typedef struct in6_addr		MAY_ALIAS I6A;
+typedef struct addrinfo		AI;
 
-typedef struct addrinfo		MAY_ALIAS AI;
-typedef struct hostent		MAY_ALIAS Hostent;
 #ifndef __no_timeval_stuff__
 typedef struct timeval		Timeval;
 #endif

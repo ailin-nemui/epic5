@@ -3254,8 +3254,8 @@ int	create_additional_screen (void)
         Window  	*win;
         Screen  	*oldscreen, *new_s;
         int     	screen_type = ST_NOTHING;
-	ISA		local_sockaddr;
-        ISA		new_socket;
+	SSu		local_sockaddr;
+        SSu		new_socket;
 	int		new_cmd;
 	pid_t		child;
 	unsigned short 	port;
@@ -3335,19 +3335,19 @@ int	create_additional_screen (void)
 	else
 		panic(1, "Opening new wound");
 
-	local_sockaddr.sin_family = AF_INET;
+	local_sockaddr.si.sin_family = AF_INET;
 #ifndef INADDR_LOOPBACK
 #define INADDR_LOOPBACK 0x7f000001
 #endif
-	local_sockaddr.sin_addr.s_addr = htonl((INADDR_ANY));
-	local_sockaddr.sin_port = 0;
+	local_sockaddr.si.sin_addr.s_addr = htonl((INADDR_ANY));
+	local_sockaddr.si.sin_port = 0;
 
-	if ((new_cmd = client_bind((SA *)&local_sockaddr, sizeof(local_sockaddr))) < 0)
+	if ((new_cmd = client_bind(&local_sockaddr, sizeof(local_sockaddr.si))) < 0)
 	{
 		yell("Couldn't establish server side of new screen");
 		return -1;
 	}
-	port = ntohs(local_sockaddr.sin_port);
+	port = ntohs(local_sockaddr.si.sin_port);
 
 	/* Create the command line arguments... */
 	if (screen_type == ST_SCREEN)
@@ -3454,7 +3454,7 @@ int	create_additional_screen (void)
 	}
 
 	/* All the rest of this is the parent.... */
-	new_sock_size = sizeof(new_socket);
+	new_sock_size = sizeof(new_socket.ss);
 
 	/* 
 	 * This infinite loop sb kanan to allow us to trap transitory
@@ -3498,8 +3498,7 @@ int	create_additional_screen (void)
 	    {
 		if (new_s->fdin == 0) 
 		{
-			new_s->fdin = accept(new_cmd, (SA *)&new_socket,
-						&new_sock_size);
+			new_s->fdin = accept(new_cmd, &new_socket.sa, &new_sock_size);
 			if ((new_s->fdout = new_s->fdin) < 0)
 			{
 				close(new_cmd);
@@ -3516,8 +3515,7 @@ int	create_additional_screen (void)
 		{
 			int	refnum;
 
-			new_s->control = accept(new_cmd, (SA *)&new_socket,
-						&new_sock_size);
+			new_s->control = accept(new_cmd, &new_socket.sa, &new_sock_size);
 			close(new_cmd);
 			if (new_s->control < 0)
 			{

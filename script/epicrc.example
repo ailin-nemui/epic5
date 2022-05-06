@@ -63,11 +63,12 @@ on #-msg 100 * {
 
 		@ :msg_net = serverctl(GET $servernum() 005 NETWORK);
 		@ :cur_net = serverctl(GET $winserv($winnum()) 005 NETWORK);
-		if (msg_net != cur_net)
+		if (msg_net != cur_net) {
 			xecho -v -b Private message from $0 at $serverctl(GET $servernum() 005 NETWORK): $1-;
-
-		if (winnam(MsgWin))
+		}
+		if (winnam(MsgWin)) {
 			xecho -w MsgWin \($serverctl(GET $servernum() 005 NETWORK)\) *$0* $1-;
+		}
 	};
 };
 
@@ -78,11 +79,12 @@ on #-notice 100 * {
 
 		@ :msg_net = serverctl(GET $servernum() 005 NETWORK);
 		@ :cur_net = serverctl(GET $winserv($winnum()) 005 NETWORK);
-		if (msg_net != cur_net)
+		if (msg_net != cur_net) {
 			xecho -v -b Notice from $0 at $serverctl(GET $servernum() 005 NETWORK): $1-;
-
-		if (winnam(MsgWin))
+		}
+		if (winnam(MsgWin)) {
 			xecho -w MsgWin \($serverctl(GET $servernum() 005 NETWORK)\) -$0\- $1-;
+		}
 	};
 };
 
@@ -92,8 +94,9 @@ on #-switch_windows 100 '% % % 50' {
 };
 
 on #-connect 100 * {
-	if (!winnam(MsgWin))
+	if (!winnam(MsgWin)) {
 		mwn;
+	}
 };
 
 ## *****************************************************************************
@@ -122,8 +125,9 @@ alias l (chan default "$C", void) {
 alias mw msgwin 0 $$0;
 alias mwn msgwin 1 12;
 alias mwc (void) {
-	if (winnam(MsgWin))
+	if (winnam(MsgWin)) {
 		^window MsgWin flush_scrollback ;
+	}
 };
 
 alias msgwin (type default "0", size default "12", void) {
@@ -243,15 +247,17 @@ on ^public '% % *\\\\[$$highlight_list\\\\]*' {
 	echo <$0> $2-;
 	highlight.log $strftime(%H:%M:%S %d-%b %Y) <$0:$1> $2-;
 	highlight.status $1;
-	if (!winvisible($winchan($1)))
+	if (!winvisible($winchan($1))) {
 		xecho -v -b Highlight from $0 in $1 on $serverctl(GET $servernum() 005 NETWORK): $^*2-;
+	}
 };
 on ^public_other '% % *\\\\[$$highlight_list\\\\]*' {
 	echo <$0:$1> $2-;
 	highlight.log $strftime(%H:%M:%S %d-%b %Y) <$0:$1> $2-;
 	highlight.status $1;
-	if (!winvisible($winchan($1)))
+	if (!winvisible($winchan($1))) {
 		xecho -v -b Highlight from $0 in $1 on $serverctl(GET $servernum() 005 NETWORK): $^*2-;
+	}
 };
 on #-switch_windows 100 '% % % \\\\[$$highlight_wins\\\\]' {
 	@ ::highlight_wins = remw($3 $highlight_wins);

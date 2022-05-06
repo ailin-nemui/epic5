@@ -3580,8 +3580,8 @@ char *	switch_hostname (const char *new_hostname)
 	char 	*workstr = NULL, *v4 = NULL, *v6 = NULL;
 	char 	*retval4 = NULL, *retval6 = NULL, *retval = NULL;
 	char 	*v4_error = NULL, *v6_error = NULL;
-	ISA 	new_4;
-	ISA6 	new_6;
+	SSu	new_4;
+	SSu	new_6;
 	int	accept4 = 0, accept6 = 0;
 	int	fd;
 
@@ -3603,10 +3603,10 @@ char *	switch_hostname (const char *new_hostname)
 
 	if (v4 && *v4)
 	{
-	    new_4.sin_family = AF_INET;
-	    if (!inet_strton(v4, zero, (SA *)&new_4, AI_ADDRCONFIG))
+	    new_4.si.sin_family = AF_INET;
+	    if (!inet_strton(v4, zero, &new_4, AI_ADDRCONFIG))
 	    {
-		if ((fd = client_bind((SA *)&new_4, sizeof(ISA))) >= 0)
+		if ((fd = client_bind(&new_4, sizeof(new_4.si))) >= 0)
 		{
 		    close(fd);
 		    accept4 = 1;
@@ -3623,10 +3623,10 @@ char *	switch_hostname (const char *new_hostname)
 
 	if (v6 && *v6)
 	{
-	    new_6.sin6_family = AF_INET6;
-	    if (!inet_strton(v6, zero, (SA *)&new_6, AI_ADDRCONFIG)) 
+	    new_6.si6.sin6_family = AF_INET6;
+	    if (!inet_strton(v6, zero, &new_6, AI_ADDRCONFIG)) 
 	    {
-		if ((fd = client_bind((SA *)&new_6, sizeof(ISA6))) >= 0)
+		if ((fd = client_bind(&new_6, sizeof(new_6.si6))) >= 0)
 		{
 		    close(fd);
 		    accept6 = 1;

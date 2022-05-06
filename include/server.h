@@ -65,8 +65,8 @@ const	AI *		next_addr;		/* The next one to try upon failure */
 	ssize_t		addr_offset;
 
 	/* state = CONNECTING */
-	SS		local_sockname; 	/* sockname of this connection */
-	SS		remote_sockname; 	/* sockname of this connection */
+	SSu		local_sockname; 	/* sockname of this connection */
+	SSu		remote_sockname; 	/* sockname of this connection */
 	char *		remote_paddr;		/* p-addr of remote_sockname */
 
 	/* state = SSL_CONNECTING */
@@ -95,7 +95,7 @@ const	AI *		next_addr;		/* The next one to try upon failure */
 		/* metadata about us */
 	char *		unique_id;		/* Unique ID (for ircnet) */
 	char *		cookie;			/* Erf/TS4 "cookie" value */
-	SS		uh_addr;		/* ip address the server sees */
+	SSu		uh_addr;		/* ip address the server sees */
 	int		uh_addr_set;		/* 0 or 1, if set_uh_addr() has been called */
 						/* Used to guard an annoying error message */
 	char		umode[54];		/* Currently set user modes */
@@ -250,8 +250,8 @@ const	char *	get_server_ssl_cipher		(int);
 
 	int	get_server_port			(int);
 	int	get_server_local_port		(int);
-	SS	get_server_local_addr		(int);
-	SS	get_server_uh_addr		(int);
+	SSu	get_server_local_addr		(int);
+	SSu	get_server_uh_addr		(int);
 
 const	char *	get_server_userhost		(int);
 	void	use_server_cookie		(int);

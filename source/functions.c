@@ -4089,8 +4089,6 @@ BUILT_IN_FUNCTION(function_fsize, words)
  */
 BUILT_IN_FUNCTION(function_crypt, words)
 {
-	/* Some systems use (char *) and some use (const char *) as arguments. */
-	extern char *crypt(); 
 	char *pass, *salt;
 	char *ret;
 
@@ -6825,29 +6823,29 @@ BUILT_IN_FUNCTION(function_wordtoindex, input)
 
 BUILT_IN_FUNCTION(function_iptolong, word)
 {
-	ISA	addr;
+	SSu	addr;
 	char *	dotted_quad;
 
-	addr.sin_family = AF_INET;
+	addr.si.sin_family = AF_INET;
 	GET_FUNC_ARG(dotted_quad, word);
-	if (inet_strton(dotted_quad, NULL, (SA *)&addr, AI_NUMERICHOST))
+	if (inet_strton(dotted_quad, NULL, &addr, AI_NUMERICHOST))
 		RETURN_EMPTY;
 	
 	return malloc_sprintf(NULL, UINTMAX_FORMAT, 
-				(uintmax_t)ntohl(addr.sin_addr.s_addr));
+				(uintmax_t)ntohl(addr.si.sin_addr.s_addr));
 }
 
 BUILT_IN_FUNCTION(function_longtoip, word)
 {
 	char *	ip32;
-	SS	addr;
+	SSu	addr;
 	char	retval[256];
 
 	GET_FUNC_ARG(ip32, word);
-	((SA *)&addr)->sa_family = AF_INET;
-	if (inet_strton(ip32, NULL, (SA *)&addr, AI_NUMERICHOST))
+	addr.si.sin_family = AF_INET;
+	if (inet_strton(ip32, NULL, &addr, AI_NUMERICHOST))
 		RETURN_EMPTY;
-	inet_ntostr((SA *)&addr, retval, 256, NULL, 0, NI_NUMERICHOST);
+	inet_ntostr(&addr, retval, 256, NULL, 0, NI_NUMERICHOST);
 	RETURN_STR(retval);
 }
 

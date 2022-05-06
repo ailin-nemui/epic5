@@ -106,9 +106,9 @@ typedef	struct	DCC_struct
 	char *		userhost;
 struct	DCC_struct *	next;
 
-	SS		offer;			/* Their offer */
-	SS		peer_sockaddr;		/* Their saddr */
-	SS		local_sockaddr;		/* Our saddr */
+	SSu		offer;			/* Their offer */
+	SSu		peer_sockaddr;		/* Their saddr */
+	SSu		local_sockaddr;		/* Our saddr */
 	unsigned short	want_port;		/* HOST ORDER */
 
 	intmax_t	bytes_read;		/* INTMAX */
@@ -539,6 +539,9 @@ static	DCC_list *dcc_create (
 	new_client->updates_status	= 1;
 	new_client->packet_size		= 0;
 	new_client->full_line_buffer	= 0;
+	memset(&new_client->offer.ss, 0, sizeof(new_client->offer.ss));
+	memset(&new_client->peer_sockaddr.ss, 0, sizeof(new_client->peer_sockaddr.ss));
+	memset(&new_client->local_sockaddr.ss, 0, sizeof(new_client->local_sockaddr.ss));
 	get_time(&new_client->lasttime);
 
 	if (x_debug & DEBUG_DCC_XMIT)
@@ -809,8 +812,8 @@ static	int	dcc_get_connect_addrs (DCC_list *dcc)
 		goto something_broke;
 
 	/* This is the address returned by getsockname() */
-	c = DGETS(dcc->socket, dcc->local_sockaddr)
-	if (c < (ssize_t)sizeof(dcc->local_sockaddr))
+	c = DGETS(dcc->socket, dcc->local_sockaddr.ss)
+	if (c < (ssize_t)sizeof(dcc->local_sockaddr.ss))
 		goto something_broke;
 
 	/* * */
@@ -820,8 +823,8 @@ static	int	dcc_get_connect_addrs (DCC_list *dcc)
 		goto something_broke;
 
 	/* This is the address returned by getpeername() */
-	c = DGETS(dcc->socket, dcc->peer_sockaddr)
-	if (c < (ssize_t)sizeof(dcc->peer_sockaddr))
+	c = DGETS(dcc->socket, dcc->peer_sockaddr.ss)
+	if (c < (ssize_t)sizeof(dcc->peer_sockaddr.ss))
 		goto something_broke;
 
 	return 0;
@@ -867,9 +870,8 @@ static int	dcc_connected (int fd)
 		char p_addr[256];
 		char p_port[24];
 		char *encoded_description;
-		SA *addr = (SA *)&dcc->peer_sockaddr;
 
-		if (inet_ntostr(addr, p_addr, 256, p_port, 24, NI_NUMERICHOST))
+		if (inet_ntostr(&dcc->peer_sockaddr, p_addr, 256, p_port, 24, NI_NUMERICHOST))
 			yell("Couldn't get host/port for this connection.");
 
 		encoded_description = dcc_urlencode(dcc->description);
@@ -983,7 +985,7 @@ static	int	dcc_connect (DCC_list *dcc)
 {
 	int	old_server = from_server;
 	int	retval = 0;
-	SS	local;
+	SSu	local;
 	socklen_t	locallen;
 	int	seconds;
 
@@ -1005,8 +1007,7 @@ static	int	dcc_connect (DCC_list *dcc)
 	}
 
 	/* inet_vhostsockaddr doesn't usually return an error */
-	if (inet_vhostsockaddr(FAMILY(dcc->offer), -1, NULL, 
-				&local, &locallen) < 0)
+	if (inet_vhostsockaddr(family(&dcc->offer), -1, NULL, &local, &locallen) < 0)
 	{
 		say("Can't figure out your virtual host.  "
 		    "Use /HOSTNAME to reset it and try again.");
@@ -1014,8 +1015,7 @@ static	int	dcc_connect (DCC_list *dcc)
 		break;
 	}
 
-	dcc->socket = client_connect((SA *)&local, locallen, 
-					(SA *)&dcc->offer, sizeof(dcc->offer));
+	dcc->socket = client_connect(&local, locallen, &dcc->offer, sizeof(dcc->offer.ss));
 
 	if (dcc->socket < 0)
 	{
@@ -1132,7 +1132,7 @@ static	int	dcc_listen (DCC_list *dcc)
 	 * back that port number as its ID of what file it wants
 	 * to resume (rather than the filename. ick.)
 	 */
-	inet_ntostr((SA *)&dcc->local_sockaddr, NULL, 0, p_port, 12, 0);
+	inet_ntostr(&dcc->local_sockaddr, NULL, 0, p_port, 12, 0);
 	malloc_strcpy(&dcc->othername, p_port);
 #endif
 	new_open(dcc->socket, do_dcc, NEWIO_ACCEPT, 1, dcc->server);
@@ -1164,12 +1164,12 @@ dcc_listen_bail:
  */
 static void	dcc_send_booster_ctcp (DCC_list *dcc)
 {
-	SS	my_sockaddr;
+	SSu	my_sockaddr;
 	char	p_host[128];
 	char	p_port[24];
 	char *	nopath;
 	const char *	type = dcc_types[dcc->flags & DCC_TYPES];
-	int	family;
+	int	family_;
 	int	server = from_server < 0 ? primary_server : from_server;
 
 	if (!is_server_registered(server))
@@ -1178,7 +1178,7 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 		return;
 	}
 
-	family = FAMILY(dcc->local_sockaddr);
+	family_ = family(&dcc->local_sockaddr);
 
 	/*
 	 * Use the external gateway address (visible to the server) if the
@@ -1188,10 +1188,9 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	 */
 	if (get_int_var(DCC_USE_GATEWAY_ADDR_VAR))
 		my_sockaddr = get_server_uh_addr(server);
-	else if (family == AF_INET && V4ADDR(dcc->local_sockaddr).s_addr == 
-						htonl(INADDR_ANY))
+	else if (family_ == AF_INET && dcc->local_sockaddr.si.sin_addr.s_addr == htonl(INADDR_ANY))
 		my_sockaddr = get_server_local_addr(server);
-	else if (family == AF_INET6 && memcmp(&V6ADDR(dcc->local_sockaddr), 
+	else if (family_ == AF_INET6 && memcmp(&dcc->local_sockaddr.si6.sin6_addr, 
 						&in6addr_any, 
 						sizeof(in6addr_any)) == 0)
 		my_sockaddr = get_server_local_addr(server);
@@ -1203,16 +1202,16 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	 * we want to put in the handshake, something is very wrong.  Tell
 	 * the user about it and give up.
 	 */
-	if (family != FAMILY(my_sockaddr))
+	if (family_ != family(&my_sockaddr))
 	{
 	    if (get_int_var(DCC_USE_GATEWAY_ADDR_VAR))
 		yell("When using /SET DCC_USE_GATEWAY_ADDR ON, I can only "
 		     "support DCC in the same address family (IPv4 or IPv6) "
 		     "as you are using to connect to the server.");
-	    else if (family == AF_INET)
+	    else if (family_ == AF_INET)
 		yell("I do not know what your IPv4 address is.  You can tell "
 		     "me your IPv4 hostname with /HOSTNAME and retry the /DCC");
-	    else if (family == AF_INET6)
+	    else if (family_ == AF_INET6)
 		yell("I do not know what your IPv6 address is.  You can tell "
 		     "me your IPv6 hostname with /HOSTNAME and retry the /DCC");
 	    else
@@ -1223,10 +1222,10 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	    return;
 	}
 
-	if (family == AF_INET)
-		V4PORT(my_sockaddr) = V4PORT(dcc->local_sockaddr);
-	else if (family == AF_INET6)
-		V6PORT(my_sockaddr) = V6PORT(dcc->local_sockaddr);
+	if (family_ == AF_INET)
+		my_sockaddr.si.sin_port = dcc->local_sockaddr.si.sin_port;
+	else if (family_ == AF_INET6)
+		my_sockaddr.si6.sin6_port = dcc->local_sockaddr.si6.sin6_port;
 	else
 	{
 		yell("Could not send a CTCP handshake becuase the address "
@@ -1235,7 +1234,7 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 		return;
 	}
 
-	if (inet_ntostr((SA *)&my_sockaddr, p_host, 128, p_port, 24, 
+	if (inet_ntostr(&my_sockaddr, p_host, 128, p_port, 24, 
 					GNI_INTEGER | NI_NUMERICHOST)) 
 	{
 		yell("dcc_send_booster_ctcp: I couldn't figure out your hostname (or the port you tried to use was invalid).  I have to delete this DCC");
@@ -1895,9 +1894,9 @@ jumpstart_get:
 				dcc->file = file;
 				dcc->flags |= DCC_RESUME_REQ;
 	
-				if (((SA *)&dcc->offer)->sa_family == AF_INET)
+				if (family(&dcc->offer) == AF_INET)
 					malloc_strcpy(&dcc->othername, 
-						ltoa(ntohs(V4PORT(dcc->offer))));
+						ltoa(ntohs(dcc->offer.si.sin_port)));
 		
 				if (x_debug & DEBUG_DCC_XMIT)
 					yell("SENDING DCC RESUME to [%s] [%s|%s|%ld]", 
@@ -2414,7 +2413,7 @@ char	*dcc_raw_listen (int family, unsigned short port)
 char	*dcc_raw_connect (const char *host, const char *port, int family)
 {
 	DCC_list *	Client = NULL;
-	SS		my_sockaddr;
+	SSu		my_sockaddr;
 	char 		retval[12];
 	int		l;
 
@@ -2424,9 +2423,9 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
 
     do
     {
-	memset(&my_sockaddr, 0, sizeof(my_sockaddr));
-	FAMILY(my_sockaddr) = family;
-	if (inet_strton(host, port, (SA *)&my_sockaddr, AI_ADDRCONFIG))
+	memset(&my_sockaddr.ss, 0, sizeof(my_sockaddr.ss));
+	my_sockaddr.sa.sa_family = family;
+	if (inet_strton(host, port, &my_sockaddr, AI_ADDRCONFIG))
 	{
 		say("Unknown host: %s", host);
 		break;
@@ -2444,7 +2443,7 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
 	    Client = dcc_create(DCC_RAW, port, host, NULL, family, 0);
 
 	lock_dcc(Client);
-	Client->offer = my_sockaddr;
+	Client->offer.ss = my_sockaddr.ss;
 	Client->flags = DCC_THEIR_OFFER | DCC_RAW;
 	if (dcc_connect(Client))	/* Nonblocking from here */
 	{
@@ -2486,7 +2485,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	unsigned short	realport;	/* Bleh */
 	char 		p_addr[256];
 	int		err;
-	SS		offer;
+	SSu		offer;
 	intmax_t	filesize;
 	int		l;
 
@@ -2570,9 +2569,9 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	 * Convert the handshake address to a sockaddr.  If it cannot be
 	 * figured out, warn the user and punt.
 	 */
-	memset(&offer, 0, sizeof(offer));
-	V4FAM(offer) = AF_UNSPEC;
-	if ((err = inet_strton(address, port, (SA *)&offer, AI_NUMERICHOST)))
+	memset(&offer.ss, 0, sizeof(offer.ss));
+	offer.sa.sa_family = AF_UNSPEC;
+	if ((err = inet_strton(address, port, &offer, AI_NUMERICHOST)))
 	{
 		say("DCC %s (%s) request from %s had mangled return address "
 			"[%s] (%d)", type, description, user, address, err);
@@ -2584,7 +2583,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	 * What we've got now is the original handshake address, a 
 	 * sockaddr, and a p-addr.
 	 */
-	if (inet_ntostr((SA *)&offer, p_addr, 256, NULL, 0, NI_NUMERICHOST))
+	if (inet_ntostr(&offer, p_addr, 256, NULL, 0, NI_NUMERICHOST))
 	{
 		say("DCC %s (%s) request from %s could not be converted back "
 		    "into a p-addr [%s] [%s]", 
@@ -2595,16 +2594,16 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	/*
 	 * Check for invalid or illegal IP addresses.
 	 */
-	if (FAMILY(offer) == AF_INET)
+	if (family(&offer) == AF_INET)
 	{
-	    if (V4ADDR(offer).s_addr == 0)
+	    if (offer.si.sin_addr.s_addr == 0)
 	    {
 		yell("### DCC handshake from %s ignored becuase it had "
 				"an null address", user);
 		break;
 	    }
 	}
-	else if (FAMILY(offer) == AF_INET6)
+	else if (family(&offer) == AF_INET6)
 	{
 		/* Reserved for future expansion */
 	}
@@ -2618,10 +2617,10 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	 * to make your life painful, and also because a lot of networks are
 	 * using faked hostnames on irc, which makes this a waste of time.
 	 */
-	if (FAMILY(offer) == AF_INET)
+	if (family(&offer) == AF_INET)
 	{
 		char *	fromhost;
-		SS	irc_addr;
+		SSu	irc_addr;
 
 		if (!(fromhost = strchr(FromUserHost, '@')))
 		{
@@ -2630,8 +2629,8 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 		}
 
 		fromhost++;
-		FAMILY(irc_addr) = FAMILY(offer);
-		if (inet_strton(fromhost, port, (SA *)&irc_addr, AI_ADDRCONFIG))
+		irc_addr.sa.sa_family = family(&offer);
+		if (inet_strton(fromhost, port, &irc_addr, AI_ADDRCONFIG))
 		{
 			yell("### Incoming handshake has an address or port "
 				"[%s:%s] that could not be figured out!", 
@@ -2639,19 +2638,19 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 			yell("### Please use caution in deciding whether to "
 				"accept it or not");
 		}
-		else if (FAMILY(offer) == AF_INET)
+		else if (family(&offer) == AF_INET)
 		{
-		   if (V4ADDR(irc_addr).s_addr != V4ADDR(offer).s_addr)
+		   if (irc_addr.si.sin_addr.s_addr != offer.si.sin_addr..s_addr)
 		   {
 			say("WARNING: Fake dcc handshake detected! [%x]", 
-				V4ADDR(offer).s_addr);
+				V4ADDR(offer.si).s_addr);
 			say("Unless you know where this dcc request is "
 				"coming from");
 			say("It is recommended you ignore it!");
 		   }
 		}
 	}
-	else if (FAMILY(offer) == AF_INET6)
+	else if (family(&offer) == AF_INET6)
 	{
 		/* Reserved for future expansion */
 	}
@@ -2698,7 +2697,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 		    char *copy;
 
 		    say("DCC CHAT already requested by %s, connecting.", user);
-		    dcc_create(dtype, user, "chat", NULL, FAMILY(offer), filesize);
+		    dcc_create(dtype, user, "chat", NULL, family(&offer), filesize);
 		    copy = LOCAL_COPY(user);
 		    dcc_chat(copy);
 		    break;
@@ -2732,14 +2731,14 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	}
 	else
 		dcc = dcc_create(dtype, user, description, NULL, 
-					FAMILY(offer), filesize);
+					family(&offer), filesize);
 
 	/*
 	 * Otherwise, we're good to go!  Mark this dcc as being something
 	 * they offered to us, and copy over the port and address.
 	 */
 	dcc->flags |= DCC_THEIR_OFFER;
-	memcpy(&dcc->offer, &offer, sizeof offer);
+	memcpy(&dcc->offer.ss, &offer.ss, sizeof offer.ss);
 
 	/* 
 	 * DCC SEND and CHAT have different arguments, so they can't
@@ -2951,13 +2950,12 @@ static	void	process_dcc_chat_connection (DCC_list *Client)
 {
 	char	p_addr[256];
 	char	p_port[24];
-	SA *	addr;
 	int	fd;
 	int	c1, c2;
 
 	c1 = DGETS(Client->socket, fd)
-	c2 = DGETS(Client->socket, Client->peer_sockaddr)
-	if (c1 != sizeof(fd) || c2 != sizeof(Client->peer_sockaddr))
+	c2 = DGETS(Client->socket, Client->peer_sockaddr.ss)
+	if (c1 != sizeof(fd) || c2 != sizeof(Client->peer_sockaddr.ss))
 	{
 		Client->flags |= DCC_DELETE;
 		yell("### DCC Error: accept() failed.");
@@ -2977,8 +2975,7 @@ static	void	process_dcc_chat_connection (DCC_list *Client)
 	Client->flags &= ~DCC_MY_OFFER;
 	Client->flags |= DCC_ACTIVE;
 
-	addr = (SA *)&Client->peer_sockaddr;
-	inet_ntostr(addr, p_addr, 256, p_port, 24, NI_NUMERICHOST);
+	inet_ntostr(&Client->peer_sockaddr, p_addr, 256, p_port, 24, NI_NUMERICHOST);
 
 	lock_dcc(Client);
 	if (do_hook(DCC_CONNECT_LIST, "%s CHAT %s %s", 
@@ -3185,7 +3182,7 @@ static	void	process_dcc_chat (DCC_list *Client)
  */
 static	void		process_incoming_listen (DCC_list *Client)
 {
-	SS		remaddr;
+	SSu		remaddr;
 	int		new_socket;
 	char		fdstr[10];
 	DCC_list	*NewClient;
@@ -3196,9 +3193,11 @@ static	void		process_incoming_listen (DCC_list *Client)
 	char		trash[1025] = "";
 	int		c1, c2;
 
+	memset(&remaddr.ss, 0, sizeof(remaddr.ss));
+
 	c1 = DGETS(Client->socket, new_socket)
-	c2 = DGETS(Client->socket, remaddr)
-	if (c1 != sizeof(new_socket) || c2 != sizeof(remaddr))
+	c2 = DGETS(Client->socket, remaddr.ss)
+	if (c1 != sizeof(new_socket) || c2 != sizeof(remaddr.ss))
 	{
 		Client->flags |= DCC_DELETE;
 		yell("### DCC Error: accept() failed.");
@@ -3212,20 +3211,20 @@ static	void		process_incoming_listen (DCC_list *Client)
 	}
 
 	*host = 0;
-	inet_ntostr((SA *)&remaddr, host, sizeof(host), 
-				p_port, sizeof(p_port), 0);
+	inet_ntostr(&remaddr, host, sizeof(host), p_port, sizeof(p_port), 0);
 
 	strlcpy(fdstr, ltoa(new_socket), sizeof fdstr);
 	if (!(NewClient = dcc_searchlist(DCC_RAW, fdstr, host, NULL, 0)))
 		NewClient = dcc_create(DCC_RAW, fdstr, host, NULL, 0, 0);
 
 	NewClient->socket = new_socket;
-	NewClient->peer_sockaddr = remaddr;
-	NewClient->offer = remaddr;
+	memcpy(&NewClient->peer_sockaddr.ss, &remaddr.ss, sizeof(remaddr.ss));
+	memcpy(&NewClient->offer.ss, &remaddr.ss, sizeof(remaddr.ss));
 
-	len = sizeof(NewClient->local_sockaddr);
-	getsockname(NewClient->socket, (SA *)&NewClient->local_sockaddr, &len);
-	inet_ntostr((SA *)&Client->local_sockaddr, trash, sizeof(trash), 
+	len = sizeof(NewClient->local_sockaddr.ss);
+	getsockname(NewClient->socket, &NewClient->local_sockaddr.sa, &len);
+	inet_ntostr(&Client->local_sockaddr, 
+				trash, sizeof(trash), 
 				l_port, sizeof(l_port), 0);
 
 	NewClient->flags |= DCC_ACTIVE;
@@ -3338,12 +3337,12 @@ static void	process_dcc_raw_connected (DCC_list *dcc)
 	    return;
 	}
 
-	if (((SA *)&dcc->peer_sockaddr)->sa_family == AF_INET)
+	if (family(&dcc->peer_sockaddr) == AF_INET)
 		malloc_strcpy(&dcc->othername, 
-				ltoa(ntohs(V4PORT(dcc->peer_sockaddr))));
-	else if (((SA *)&dcc->peer_sockaddr)->sa_family == AF_INET6)
+				ltoa(ntohs(dcc->peer_sockaddr.si.sin_port)));
+	else if (family(&dcc->peer_sockaddr) == AF_INET6)
 		malloc_strcpy(&dcc->othername, 
-				ltoa(ntohs(V6PORT(dcc->peer_sockaddr))));
+				ltoa(ntohs(dcc->peer_sockaddr.si6.sin6_port)));
 	else
 		malloc_strcpy(&dcc->othername, "<any>");
 
@@ -3376,15 +3375,14 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 #ifdef HAVE_SO_SNDLOWAT
 	int		size;
 #endif
-	SA *		addr;
 	char		p_addr[256];
 	char		p_port[24];
 	char		*encoded_description;
 	int		c1, c2;
 
 	c1 = DGETS(dcc->socket, new_fd)
-	c2 = DGETS(dcc->socket, dcc->peer_sockaddr)
-	if (c1 != sizeof(new_fd) || c2 != sizeof(dcc->peer_sockaddr))
+	c2 = DGETS(dcc->socket, dcc->peer_sockaddr.ss)
+	if (c1 != sizeof(new_fd) || c2 != sizeof(dcc->peer_sockaddr.ss))
 	{
 		dcc->flags |= DCC_DELETE;
 		yell("### DCC Error: accept() failed.");
@@ -3414,8 +3412,7 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 		say("setsockopt failed: %s", strerror(errno));
 #endif
 
-	addr = (SA *)&dcc->peer_sockaddr;
-	inet_ntostr(addr, p_addr, 256, p_port, 24, NI_NUMERICHOST);
+	inet_ntostr(&dcc->peer_sockaddr, p_addr, 256, p_port, 24, NI_NUMERICHOST);
 
 	/*
 	 * Tell the user
@@ -4179,7 +4176,7 @@ char *	dccctl (char *input)
 			malloc_strcat_word_c(&retval, space, ltoa(client->holdtime.tv_usec), DWORD_NO, &clue);
 		} else if (!my_strnicmp(listc, "OFFERADDR", len)) {
 			char	host[1025], port[25];
-			if (inet_ntostr((SA *)&client->offer,
+			if (inet_ntostr(&client->offer,
 					host, sizeof(host),
 					port, sizeof(port), NI_NUMERICHOST))
 				RETURN_EMPTY;
@@ -4187,7 +4184,7 @@ char *	dccctl (char *input)
 			malloc_strcat_word_c(&retval, space, port, DWORD_NO, &clue);
 		} else if (!my_strnicmp(listc, "REMADDR", len)) {
 			char	host[1025], port[25];
-			if (inet_ntostr((SA *)&client->peer_sockaddr,
+			if (inet_ntostr(&client->peer_sockaddr,
 					host, sizeof(host),
 					port, sizeof(port), NI_NUMERICHOST))
 				RETURN_EMPTY;
@@ -4195,7 +4192,7 @@ char *	dccctl (char *input)
 			malloc_strcat_word_c(&retval, space, port, DWORD_NO, &clue);
 		} else if (!my_strnicmp(listc, "LOCADDR", len)) {
 			char	host[1025], port[25];
-			if (inet_ntostr((SA *)&client->local_sockaddr,
+			if (inet_ntostr(&client->local_sockaddr,
 					host, sizeof(host),
 					port, sizeof(port), NI_NUMERICHOST))
 				RETURN_EMPTY;
@@ -4280,17 +4277,17 @@ char *	dccctl (char *input)
 			client->packet_size = packet_size;
 		} else if (!my_strnicmp(listc, "OFFERADDR", len)) {
 			char *host, *port;
-			SS a;
+			SSu a;
 
 			GET_FUNC_ARG(host, input);
 			GET_FUNC_ARG(port, input);
 
-			V4FAM(a) = AF_UNSPEC;
+			a.sa.sa_family = AF_UNSPEC;
 			if ((client->flags & DCC_ACTIVE) ||
-					inet_strton(host, port, (SA *)&a, AI_ADDRCONFIG))
+					inet_strton(host, port, &a, AI_ADDRCONFIG))
 				RETURN_EMPTY;
 
-			memcpy(&client->offer, &a, sizeof client->offer);
+			memcpy(&client->offer.ss, &a.ss, sizeof(a.ss));
 			RETURN_INT(1);
 		} else if (!my_strnicmp(listc, "UPDATES_STATUS", len)) {
 			long	updates;

@@ -6,8 +6,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /on dcc_raw handling should set message_from() (rb Harz)
 * The way we handle "screen is not tall enough" underflow needs work
 * Unify window query and channels in the target list.
-* Skered would like epic to output compile-time information at runtime, 
-  like what mutt does
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1139,3 +1137,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Replace $info(y) and $info(z) with $info(z:*) (see UPDATES)
 * Add all this z-stuff to the -v cli
 * Use 'id -u -n' instead of LOGNAME in info.c.sh
+* Create (union SSu) to capture all (struct sockaddr*) types
+* Migrate all internal APIs to use (SSUs) to avoid type punning
+* This makes our socket code all c99-compliant.
