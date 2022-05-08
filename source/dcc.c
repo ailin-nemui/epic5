@@ -1969,7 +1969,9 @@ static char *	calc_speed (intmax_t sofar, Timeval sta, Timeval cur)
  */
 static char *	calc_size (intmax_t fsize, char *retval, size_t retsize)
 {
-	if (fsize < 1 << 10)
+	if (fsize < 0)
+		snprintf(retval, retsize, "!ERR!");
+	else if (fsize < 1 << 10)
 		snprintf(retval, retsize, INTMAX_FORMAT, fsize);
 	else if (fsize < 1 << 20)
 		snprintf(retval, retsize, "%3.1fKb", fsize / (double)(1 << 10));

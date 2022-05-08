@@ -336,7 +336,7 @@ static SSL_CTX	*SSL_CTX_init (int server)
 	if (ctx != NULL)
 		return ctx;
 
-	mydata_index = SSL_get_ex_new_index(0, "mydata index", NULL, NULL, NULL);
+	mydata_index = SSL_get_ex_new_index(0, malloc_strdup("mydata index"), NULL, NULL, NULL);
 	ssl_setup_locking();
 	SSL_load_error_strings();
 	SSL_library_init();

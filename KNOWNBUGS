@@ -1144,3 +1144,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix another typo (reported by ce)
 * Fix bogon with /assign output (rb ce)
 * Reduce warnings
+* Eliminate final warnings with -Wwrite-strings  -W -Wall -Wextra 
+  (except -Wno-pointer-sign -Wno-unused -Wno-unused-parameter)

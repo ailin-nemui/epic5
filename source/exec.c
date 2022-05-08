@@ -131,7 +131,7 @@ static 	void 	exec_close_in		(Process *);
 static 	void 	exec_close_out		(Process *);
 static 	void 	kill_process 		(Process *, int);
 static 	void 	kill_all_processes 	(int signo);
-static 	int 	is_logical_unique 	(char *logical);
+static 	int 	is_logical_unique 	(const char *logical);
 static	void 	do_exec 		(int fd);
 static	Process *	get_process_by_refnum (int refnum);
 static int 	get_process_refnum 	(const char *desc);
@@ -913,7 +913,7 @@ static void 	kill_all_processes (int signo)
 
 
 /* * * * * * logical stuff * * * * * * */
-static int 	is_logical_unique (char *logical)
+static int 	is_logical_unique (const char *logical)
 {
 	Process	*proc;
 	int	i;
@@ -1343,7 +1343,7 @@ static int	start_process (Process *proc)
  *		/bin/sh -c you_commands_here
  */
 
-static void	execcmd_push_arg (char **arg_list, size_t arg_list_size, int arg_list_idx, char *flag)
+static void	execcmd_push_arg (const char **arg_list, size_t arg_list_size, int arg_list_idx, const char *flag)
 {
 	if (arg_list_idx >= 0 && (unsigned long)arg_list_idx < arg_list_size - 1)
 	{
@@ -1354,9 +1354,9 @@ static void	execcmd_push_arg (char **arg_list, size_t arg_list_size, int arg_lis
 		/* yell("Not adding [%s] argument to list - overflow", flag) */ (void) 0;
 }
 
-static char **	execcmd_tokenize_arguments (const char *args, Process **process, char **free_ptr, char **extra_args, int *numargs, int *flags_size)
+static const char **	execcmd_tokenize_arguments (const char *args, Process **process, char **free_ptr, char **extra_args, int *numargs, int *flags_size)
 {
-	char **	arg_list;
+	const char **	arg_list;
 	int	arg_list_size;
 	int	arg_list_idx;
 	char *	args_copy;
@@ -1369,7 +1369,7 @@ static char **	execcmd_tokenize_arguments (const char *args, Process **process, 
 
 	/* XXX hardcoding 64 here is bogus */
 	arg_list_size = 64;
-	arg_list = (char **)new_malloc(sizeof(char *) * arg_list_size);
+	arg_list = (const char **)new_malloc(sizeof(const char *) * arg_list_size);
 	arg_list_idx = 0;
 
 	while ((args_copy && *args_copy == '-')  && (flag = next_arg(args_copy, &args_copy)))
@@ -1558,7 +1558,7 @@ BUILT_IN_COMMAND(execcmd)
 {
 	char *	free_ptr;
 	Process *process;
-	char **	flags;
+	const char **	flags;
 	int	flags_size;
 	char *	extra_args;
 	int	numargs;
@@ -1595,7 +1595,7 @@ BUILT_IN_COMMAND(execcmd)
 
 		else if (my_strnicmp(flag, "-NAME", len) == 0)
 		{
-			char *new_name = flags[++i];
+			const char *new_name = flags[++i];
 
 			if (is_logical_unique(new_name))
 			{

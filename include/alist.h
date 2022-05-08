@@ -75,7 +75,7 @@ typedef struct
 	void *		data;
 } array_item_;
 
-typedef int       (*alist_func) (const char *, const char *, size_t);
+typedef int       (*alist_func) (const unsigned char *, const unsigned char *, size_t);
 typedef enum {
 	HASH_INSENSITIVE,
 	HASH_SENSITIVE

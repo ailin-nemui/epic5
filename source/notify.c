@@ -502,7 +502,7 @@ void 	make_notify_list (int refnum)
 	s->notify_list.total_max = 0;
 	/* XXX - Which of these two is correct?  Neither? */
 	/* s->notify_list.func = (alist_func)my_strnicmp; */
-	s->notify_list.func = (alist_func)my_stricmp; 
+	s->notify_list.func = alist_stricmp; 
 	s->notify_list.hash = HASH_INSENSITIVE;
 
 	for (i = 0; i < number_of_servers; i++)

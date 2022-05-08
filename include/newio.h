@@ -77,7 +77,7 @@
 
 #define IO_BUFFER_SIZE 8192
 
-	int	dgets_buffer		(int, void *, ssize_t);
+	int	dgets_buffer		(int, const void *, ssize_t);
 	ssize_t	dgets 			(int, char *, size_t, int);
 	int	do_wait			(struct timeval *);
 	void	do_filedesc		(void);

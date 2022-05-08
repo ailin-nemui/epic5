@@ -167,7 +167,7 @@ int	get_server_by_vfd (int vfd)
  * that you would more likely have the channel than the vfd, so we require
  * that.
  */
-int	dgets_buffer (int channel, void *data, ssize_t len)
+int	dgets_buffer (int channel, const void *data, ssize_t len)
 {
 	MyIO *	ioe;
 	int	vfd;

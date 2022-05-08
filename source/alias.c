@@ -134,7 +134,7 @@ const char *symbol_types[] = {
  * This is the description for a list of aliases
  * This is an ``array_set'' structure
  */
-static array globals = 	{ NULL, 0, 0, strncmp, HASH_INSENSITIVE };
+static array globals = 	{ NULL, 0, 0, my_strncmp, HASH_INSENSITIVE };
 
 static	Symbol *lookup_symbol 	   (const char *name);
 static	Symbol *find_local_alias   (const char *name, array **list);
@@ -2372,7 +2372,7 @@ int	make_local_stack 	(const char *name)
 			call_stack[wind_index].alias.max = 0;
 			call_stack[wind_index].alias.total_max = 0;
 			call_stack[wind_index].alias.list = NULL;
-			call_stack[wind_index].alias.func = strncmp;
+			call_stack[wind_index].alias.func = my_strncmp;
 			call_stack[wind_index].alias.hash = HASH_INSENSITIVE;
 			call_stack[wind_index].current = NULL;
 			call_stack[wind_index].name = NULL;
