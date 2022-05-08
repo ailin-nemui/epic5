@@ -720,6 +720,7 @@ BUILT_IN_COMMAND(e_nick)
  */
 static	int	e_pause_cb_throw = 0;
 static	void	e_pause_cb (char *u1, const char *u2) { e_pause_cb_throw--; }
+static int e_pause_callback (void *ignored) { return 0; }
 BUILT_IN_COMMAND(e_pause)
 {
 	char *	sec;
@@ -747,7 +748,7 @@ BUILT_IN_COMMAND(e_pause)
 	 * with the arguments.
 	 */
 	add_timer(0, empty_string, seconds, 1, 
-			(int (*)(void *))commentcmd, 
+			e_pause_callback,
 			NULL, NULL, GENERAL_TIMER, -1, 0, 0);
 	while (time_diff(get_time(NULL), start) > 0)
 		io("e_pause");

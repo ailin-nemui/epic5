@@ -1141,3 +1141,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Migrate all internal APIs to use (SSUs) to avoid type punning
 * This makes our socket code all c99-compliant.
 * Fix typo (reported by ce, fro)
+* Fix another typo (reported by ce)

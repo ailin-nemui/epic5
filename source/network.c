@@ -739,7 +739,7 @@ static int	Getnameinfo(SSu *ssu, socklen_t ssulen, char *host, size_t hostlen, c
                 len = ssu->su.sun_len;
 #else
 # ifdef SUN_LEN
-		len = SUN_LEN(ssu->su);
+		len = SUN_LEN(&ssu->su);
 # else
 		len = strlen(ssu->su.sun_path);
 # endif
