@@ -1140,3 +1140,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Create (union SSu) to capture all (struct sockaddr*) types
 * Migrate all internal APIs to use (SSUs) to avoid type punning
 * This makes our socket code all c99-compliant.
+* Fix typo (reported by ce, fro)

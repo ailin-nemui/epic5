@@ -206,7 +206,7 @@ int	client_bind (SSu *local, socklen_t local_len)
 
 	if ((fd = Socket(family_, SOCK_STREAM, 0)) < 0)
 	{
-		syserr(-1, "client_bind: socket(%d) failed: %s", family, strerror(errno));
+		syserr(-1, "client_bind: socket(%d) failed: %s", family_, strerror(errno));
 		return -1;
 	}
 
