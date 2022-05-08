@@ -7769,7 +7769,7 @@ BUILT_IN_COMMAND(windowcmd)
 		else
 			pass_null = 0;
 
-		l = message_setall(refnum > 0 ? refnum : (unsigned)-1, 
+		l = message_setall(refnum > 0 ? refnum : -1, 
 					get_who_from(), get_who_level());
 
 		for (i = 0; options[i].func ; i++)

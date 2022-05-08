@@ -3440,7 +3440,7 @@ BUILT_IN_FUNCTION(function_which, word)
 	if (path_search(file1, path, result))
 		RETURN_EMPTY;
 
-	RETURN_STR(result);
+	RETURN_FSTR(result);
 }
 
 
@@ -3607,7 +3607,7 @@ BUILT_IN_FUNCTION(function_iptoname, words)
 
 	*ret = 0;
 	inet_ptohn(AF_UNSPEC, words, ret, sizeof(ret));
-	RETURN_STR(ret);		/* Dont put function call in macro! */
+	RETURN_FSTR(ret);		/* Dont put function call in macro! */
 }
 
 BUILT_IN_FUNCTION(function_nametoip, words)
@@ -3616,7 +3616,7 @@ BUILT_IN_FUNCTION(function_nametoip, words)
 
 	*ret = 0;
 	inet_hntop(AF_INET, words, ret, sizeof(ret));
-	RETURN_STR(ret);		/* Dont put function call in macro! */
+	RETURN_FSTR(ret);		/* Dont put function call in macro! */
 }
 
 BUILT_IN_FUNCTION(function_convert, words)
@@ -3625,7 +3625,7 @@ BUILT_IN_FUNCTION(function_convert, words)
 
 	*ret = 0;
 	one_to_another(AF_INET, words, ret, sizeof(ret));
-	RETURN_STR(ret);		/* Dont put function call in macro! */
+	RETURN_FSTR(ret);		/* Dont put function call in macro! */
 }
 
 /*
@@ -3908,7 +3908,7 @@ BUILT_IN_FUNCTION(function_truncate, words)
 	while (*buffer && isspace(*buffer))
 		ov_strcpy(buffer, buffer+1);
 
-	RETURN_STR(buffer);
+	RETURN_FSTR(buffer);
 }
 
 
@@ -3967,7 +3967,7 @@ BUILT_IN_FUNCTION(function_tdiff2, input)
 	else
 		*--tstr = 0;	/* chop off that space! */
 
-	RETURN_STR(tmp);
+	RETURN_FSTR(tmp);
 }
 
 /* 
@@ -4116,25 +4116,25 @@ BUILT_IN_FUNCTION(function_info, words)
 		RETURN_INT(1);
 	}
 	else if (!my_strnicmp(which, "O", 1))
-		RETURN_STR(compile_time_options);
+		RETURN_FSTR(compile_time_options);
 	else if (!my_strnicmp(which, "S", 1))
 		RETURN_STR(info_c_sum);
 	else if (!my_strnicmp(which, "R", 1))
-		RETURN_STR(ridiculous_version_name);
+		RETURN_FSTR(ridiculous_version_name);
 	else if (!my_strnicmp(which, "V", 1))
-		RETURN_STR(useful_info);
+		RETURN_FSTR(useful_info);
 	else if (!my_strnicmp(which, "W", 1))
 		RETURN_INT(1);
 	else if (!my_strnicmp(which, "Z:configure_args", 8))
-		RETURN_STR(configure_args);
+		RETURN_FSTR(configure_args);
 	else if (!my_strnicmp(which, "Z:compiler_version", 8))
-		RETURN_STR(compiler_version);
+		RETURN_FSTR(compiler_version);
 	else if (!my_strnicmp(which, "Z:final_link", 6))
-		RETURN_STR(final_link);
+		RETURN_FSTR(final_link);
 	else if (!my_strnicmp(which, "Z:cflags", 6))
-		RETURN_STR(compile_cflags);
+		RETURN_FSTR(compile_cflags);
 	else if (!my_strnicmp(which, "Z:libs", 6))
-		RETURN_STR(compile_libs);
+		RETURN_FSTR(compile_libs);
 	else if (!my_strnicmp(which, "Z", 1)) {
 		char *retval;
 		retval = malloc_sprintf(NULL,
@@ -4556,7 +4556,7 @@ BUILT_IN_FUNCTION(function_twiddle, words)
 
 	*retval = 0;
 	expand_twiddle(words, retval);
-	RETURN_STR(retval);
+	RETURN_FSTR(retval);
 }
 
 
@@ -5116,7 +5116,7 @@ BUILT_IN_FUNCTION(function_regerror, input)
 	*error_buf = 0;
 	if (last_regex_error)
 		regerror(last_regex_error, &preg, error_buf, sizeof(error_buf));
-	RETURN_STR(error_buf);
+	RETURN_FSTR(error_buf);
 }
 
 BUILT_IN_FUNCTION(function_regfree, input)
@@ -5218,7 +5218,7 @@ BUILT_IN_FUNCTION(function_randread, input)
 	chomp(buffer);
 	fclose(fp);
 
-	RETURN_STR(buffer);
+	RETURN_FSTR(buffer);
 }
 
 /* 
@@ -5591,7 +5591,7 @@ BUILT_IN_FUNCTION(function_uname, input)
 	}
 	*ptr = 0;
 
-	RETURN_STR(tmp);
+	RETURN_FSTR(tmp);
 #endif
 }
 
@@ -6385,20 +6385,20 @@ static	size_t	input_size = 0;
 		case '_':	
 			add_var_alias(optopt_var, tmpstr, 0);
 			add_var_alias(optarg_var, NULL, 0);
-			RETURN_STR(tmpstr);
+			RETURN_FSTR(tmpstr);
 		case ':':
 			add_var_alias(optopt_var, tmpstr, 0);
 			add_var_alias(optarg_var, next_arg(aptr, &aptr), 0);
 			/* add_var_alias(optarg_var, args, 0); */
-			RETURN_STR(tmpstr);
+			RETURN_FSTR(tmpstr);
 		case '-':
 			add_var_alias(optopt_var, tmpstr, 0);
 			add_var_alias(optarg_var, NULL, 0);
-			RETURN_STR("-");
+			RETURN_FSTR("-");
 		case '!':
 			add_var_alias(optopt_var, tmpstr, 0);
 			add_var_alias(optarg_var, NULL, 0);
-			RETURN_STR("!");
+			RETURN_FSTR("!");
 		default:
 			/* This shouldn't happen */
 			yell("*** getopt switch broken: %s", tmpstr);
@@ -6637,7 +6637,7 @@ BUILT_IN_FUNCTION(function_realpath, input)
 	Filename	resolvedname;
 
 	if (!normalize_filename(input, resolvedname))
-		RETURN_STR(resolvedname);
+		RETURN_FSTR(resolvedname);
 
 	RETURN_EMPTY;
 }
@@ -6724,7 +6724,7 @@ BUILT_IN_FUNCTION(function_stat, words)
 		(intmax_t)sb.st_ctime		/* Last-change time */
 			);
 
-	RETURN_STR(retval);
+	RETURN_FSTR(retval);
 }
 
 BUILT_IN_FUNCTION(function_isdisplaying, input)
@@ -6846,7 +6846,7 @@ BUILT_IN_FUNCTION(function_longtoip, word)
 	if (inet_strton(ip32, NULL, &addr, AI_NUMERICHOST))
 		RETURN_EMPTY;
 	inet_ntostr(&addr, retval, 256, NULL, 0, NI_NUMERICHOST);
-	RETURN_STR(retval);
+	RETURN_FSTR(retval);
 }
 
 BUILT_IN_FUNCTION(function_isencrypted, input)
@@ -8378,7 +8378,7 @@ BUILT_IN_FUNCTION(function_rgb, input)
 	else
 		snprintf(retval_str, 3, "%X", color);
 
-	RETURN_STR(retval_str);
+	RETURN_FSTR(retval_str);
 }
 
 

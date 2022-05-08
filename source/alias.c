@@ -1799,7 +1799,7 @@ static void	list_var_alias (const char *orig_name)
 
 		if ((s = strchr(item->name + len, '.')))
 		{
-			DotLoc = s - globals.list[cnt]->name;
+			DotLoc = s - item->name;
 			if (!LastStructName || (DotLoc != LastDotLoc) || 
 				strncmp(item->name, LastStructName, DotLoc))
 			{

@@ -934,7 +934,7 @@ BUILT_IN_FUNCTION(function_ctcpctl, input)
                         strlcat(buffer, name, sizeof buffer);
                         strlcat(buffer, " ", sizeof buffer);
                 }
-		RETURN_STR(buffer);
+		RETURN_FSTR(buffer);
 	}
 
 	GET_FUNC_ARG(ctcp_name, input);

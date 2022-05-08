@@ -4093,14 +4093,8 @@ char *	malloc_strcat3_c (char **ptr, const char *str1, const char *str2, const c
 		*ptr = new_malloc(msize + 1);
 		**ptr = 0;
 	}
-	else if (msize >= 0)
+	else 
 		RESIZE(*ptr, char, msize + 1);
-	else
-	{
-		msize = 10;
-		*ptr = new_malloc(msize + 1);
-		**ptr = 0;
-	}
 
 	if (str1)
 		strlcat(csize + *ptr, str1, msize + 1 - csize);
