@@ -1,5 +1,15 @@
 EPIC5-2.2
 
+*** News 05/09/2022 -- EPIC5-2.1.8 (2052 - Decoupage) released here
+
+*** News 05/09/2022 -- EPIC is now a C99 program
+	As of this release, EPIC is now expected to be a well-defined C99
+	program.  This release has eliminated all type punning/aliasing 
+	shenanigans (or at least given the compiler fair warning about it)
+	Type-punning pointer casts are done through unions, as C99 requires.
+	Consequently, EPIC is now compiled with -O2, which I hope I don't come
+	to regret.
+
 *** News 05/02/2022 -- New $info() values, $info(Z:*)
 	$info(Z:configure_args)		returns what you passed to 'configure'
 	$info(Z:compiler_version)	returns "$CC -v" that was used

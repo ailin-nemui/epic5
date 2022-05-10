@@ -7135,6 +7135,31 @@ else
 $as_echo "no" >&6; }
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to support extra warn flags" >&5
+$as_echo_n "checking whether to support extra warn flags... " >&6; }
+old_cflags="$CFLAGS"
+CFLAGS="$CFLAGS -Wwrite-strings -W -Wall -Wextra -Wno-unused -Wno-unused-parameter"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+ return 0;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	CFLAGS="$old_cflags"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
 
 
 

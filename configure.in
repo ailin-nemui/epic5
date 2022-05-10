@@ -1260,6 +1260,14 @@ else
 	AC_MSG_RESULT(no)
 fi
 
+AC_MSG_CHECKING(whether to support extra warn flags)
+old_cflags="$CFLAGS"
+CFLAGS="$CFLAGS -Wwrite-strings -W -Wall -Wextra -Wno-unused -Wno-unused-parameter"
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]],[[ return 0; ]])],
+	[AC_MSG_RESULT(yes)],
+        [AC_MSG_RESULT(no)
+	CFLAGS="$old_cflags"])
+
 
 AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)
