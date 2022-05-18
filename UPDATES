@@ -1,6 +1,8 @@
 EPIC5-2.2
 
+*** News 05/09/2022 -- EPIC5-2.1.9 (2053 - Decoupage) released here
 *** News 05/09/2022 -- EPIC5-2.1.8 (2052 - Decoupage) released here
+	I screwed up the release of 2.1.8 so I redid it as 2.1.9
 
 *** News 05/09/2022 -- EPIC is now a C99 program
 	As of this release, EPIC is now expected to be a well-defined C99

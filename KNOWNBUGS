@@ -1146,3 +1146,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Reduce warnings
 * Eliminate final warnings with -Wwrite-strings  -W -Wall -Wextra 
   (except -Wno-pointer-sign -Wno-unused -Wno-unused-parameter)
+* Eliminate final warnings with scan-build (clang's static analyzer)
+* Eliminate found warnings with clang's undefined behavior checker

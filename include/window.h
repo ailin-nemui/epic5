@@ -230,6 +230,7 @@ extern	unsigned 	current_window_priority;
 	BUILT_IN_KEYBINDING(previous_window);
 	BUILT_IN_KEYBINDING(swap_previous_window);
 	char *	get_window_status_line		(int, int);
+	BUILT_IN_KEYBINDING(update_all_status_kb);
 	void	update_all_status		(void);
 #if 0
 	void	set_window_prompt		(int, const char *);

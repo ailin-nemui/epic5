@@ -649,9 +649,8 @@ int	serverinfo_matches_servref (ServerInfo *si, int servref)
 static	int	serverinfo_to_servref (ServerInfo *si)
 {
 	int	i, j, opened;
-	Server *s;
 
-	if (si->refnum != NOSERV && (s = get_server(si->refnum)))
+	if (si->refnum != NOSERV && get_server(si->refnum) != NULL)
 		return si->refnum;
 
 	if (!si->host)
@@ -993,9 +992,10 @@ static int 	read_server_file (const char *file_path)
 int 	read_default_server_file (void)
 {
 	char	file_path[PATH_MAX + 1];
+	char *	clang_is_hateful;
 
-	if (getenv("IRC_SERVERS_FILE"))
-		strlcpy(file_path, getenv("IRC_SERVERS_FILE"), sizeof file_path);
+	if ((clang_is_hateful = getenv("IRC_SERVERS_FILE")))
+		strlcpy(file_path, clang_is_hateful, sizeof file_path);
 	else
 	{
 #ifdef SERVERS_FILE
@@ -2783,7 +2783,7 @@ void	register_server (int refnum, const char *nick)
 	 */
 	if (family(&s->remote_sockname) == AF_INET)
 		usehost = LocalIPv4HostName;
-	if (family(&s->remote_sockname) == AF_INET6)
+	else if (family(&s->remote_sockname) == AF_INET6)
 		usehost = LocalIPv6HostName;
 	else
 		usehost = hostname;
@@ -2887,7 +2887,7 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 	Server *s;
 	int	window;
 
-	if (!(s = get_server(refnum)))
+	if (!get_server(refnum))
 		return;
 
 	/* Throw away the rest of addresses to stop reconnections */
@@ -3701,13 +3701,29 @@ int	get_server_protocol_state (int refnum)
 {
 	int	retval = 0;
 
-	retval = (get_server_doing_ctcp(refnum) & 0xFF);
+	if (get_server_doing_ctcp(refnum) > 1)
+	{
+		yell("get_server_doing_ctcp(%d) didn't return 1 -- correcting", refnum);
+		set_server_doing_ctcp(refnum, 1);
+	}
+	if (get_server_doing_notice(refnum) > 1)
+	{
+		yell("get_server_doing_notice(%d) didn't return 1 -- correcting", refnum);
+		set_server_doing_notice(refnum, 1);
+	}
+	if (get_server_doing_privmsg(refnum) > 1)
+	{
+		yell("get_server_doing_privmsg(%d) didn't return 1 -- correcting", refnum);
+		set_server_doing_privmsg(refnum, 1);
+	}
+
+	retval = (get_server_doing_ctcp(refnum) & 0x01);
 	retval = retval << 8;
 
-	retval += (get_server_doing_notice(refnum) & 0xFF);
+	retval += (get_server_doing_notice(refnum) & 0x01);
 	retval = retval << 8;
 
-	retval += (get_server_doing_privmsg(refnum) & 0xFF);
+	retval += (get_server_doing_privmsg(refnum) & 0x01);
 
 	return retval;
 }
@@ -3716,15 +3732,27 @@ void	set_server_protocol_state (int refnum, int state)
 {
 	int	val;
 
-	val = state & 0xFF;
+	if ((val = state & 0xFF) > 1)
+	{
+		yell("set_server_doing_privmsg(%d) was %d, not 1 - correcting", refnum, val);
+		val = 1;
+	}
 	set_server_doing_privmsg(refnum, val);
 	state = state >> 8;
 
-	val = state & 0xFF;
+	if ((val = state & 0xFF) > 1)
+	{
+		yell("set_server_doing_notice(%d) was %d, not 1 - correcting", refnum, val);
+		val = 1;
+	}
 	set_server_doing_notice(refnum, val);
 	state = state >> 8;
 
-	val = state & 0xFF;
+	if ((val = state & 0xFF) > 1)
+	{
+		yell("set_server_doing_ctcp(%d) was %d, not 1 - correcting", refnum, val);
+		val = 1;
+	}
 	set_server_doing_ctcp(refnum, val);
 	/* state = state >> 8; */
 }

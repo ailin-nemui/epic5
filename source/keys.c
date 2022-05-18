@@ -323,7 +323,7 @@ void 	init_binds (void)
     ADDBIND("QUOTE_CHARACTER",		    quote_char			    );
     ADDBIND("REFRESH_INPUTLINE",	    refresh_inputline		    );
     ADDBIND("REFRESH_SCREEN",		    refresh_screen   		    );
-    ADDBIND("REFRESH_STATUS",		    (BindFunction) update_all_status);
+    ADDBIND("REFRESH_STATUS",		    update_all_status_kb	    );
     ADDBIND("RESET_LINE",		    input_reset_line		    );
     ADDBIND("REVERSE",			    insert_reverse		    );
     ADDBIND("SCROLL_BACKWARD",		    scrollback_backwards	    );
@@ -433,7 +433,7 @@ static void	key_exec (Key *key)
 			key->bound->func(key->val, key->stuff);
 	}
 }
-	
+
 /* 
  * this function unwinds the current 'stack' of input keys, placing them
  * into a string, and then parses the string looking for the longest
@@ -441,7 +441,7 @@ static void	key_exec (Key *key)
  */
 static void	key_exec_bt (Key *key) 
 {
-	const char *	kstr = (const char *)empty_string;
+	const char *	kstr = empty_string;
 	const char *	nstr;
 	int 		len = 1, 
 			kslen;

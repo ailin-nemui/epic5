@@ -76,7 +76,7 @@ extern int	LEVEL_ALL;
 #define BIT_MAXBIT     64
 #define BIT_IDX(bit)   ((bit) - 1)
 #define BIT_WORD(bit)  (BIT_IDX(bit) >> 5)
-#define BIT_BIT(bit)   (1 << (BIT_IDX(bit) & 31))
+#define BIT_BIT(bit)   (1U << (BIT_IDX(bit) & 31))
 #define BIT_VALID(bit) ((bit) < BIT_MAXBIT && (bit) > 0)
 
 typedef struct Mask {
@@ -149,14 +149,21 @@ __inline static int	mask_isnone (const Mask *set)
 
 __inline static int	mask_isset (const Mask *set, int bit)
 {
+	unsigned ubit;
+
 	if (bit == LEVEL_NONE)
 		return mask_isnone(set);
 	if (bit == LEVEL_ALL)
 		return mask_isall(set);
 
-	if (!BIT_VALID(bit))
+	if (bit < 0)
+		return 0;
+	else
+		ubit = (unsigned) bit;
+
+	if (!BIT_VALID(ubit))
 		return -1;
-	return ((set->__bits[BIT_WORD(bit)] & BIT_BIT(bit)) ? 1 : 0);
+	return ((set->__bits[BIT_WORD(ubit)] & BIT_BIT(ubit)) ? 1 : 0);
 }
 
 /*---------------- end of bsd stuff ------------------*/

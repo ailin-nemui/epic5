@@ -272,10 +272,10 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	 */
 	case 004:	/* #define RPL_MYINFO           004 */
 	{
-		const char 	*server = NULL, 
+		const char /*	*server = NULL, */
 				*version = NULL;
 
-		if (!(server = ArgList[0]))
+		if (!(/* server = */ ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		else if (!(version = ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
@@ -314,7 +314,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 
 	case 10:		/* EFNext "Use another server"	010 */
 	{
-		const char *new_server, *new_port_s, *message;
+		const char *new_server /*, *new_port_s, *message */;
 		int	new_port, old_server;
 		char *	str = NULL;
 		int	new_servref;
@@ -322,9 +322,9 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		PasteArgs(ArgList, 2);
 		if (!(new_server = ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(new_port_s = ArgList[1]))
+		if (!(/* new_port_s = */ ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(message = ArgList[2]))
+		if (!(/* message = */ ArgList[2]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		new_port = (int)atol(ArgList[1]);
 
@@ -357,12 +357,12 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 
 	case 42:		/* IRCNet's "unique id" numeric 042 */
 	{
-		const char *unique_id, *message;
+		const char *unique_id /* , *message */;
 
 		PasteArgs(ArgList, 1);
 		if (!(unique_id = ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(message = ArgList[1]))
+		if (!(/* message = */ ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		set_server_unique_id(from_server, unique_id);
@@ -400,18 +400,18 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	/*	311	WHOISUSER	ArgList[0] (the realname) */
 	case 311:		/* #define RPL_WHOISUSER        311 */
 	{
-		const char *nick, *user, *host, *channel, *name;
+		/* const char *nick, *user, *host, *channel, *name; */
 
 		PasteArgs(ArgList, 4);
-		if (!(nick = ArgList[0]))
+		if (!(/* nick = */ ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(user = ArgList[1]))
+		if (!(/* user = */ ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(host = ArgList[2]))
+		if (!(/* host = */ ArgList[2]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(channel = ArgList[3]))
+		if (!(/* channel = */ ArgList[3]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(name = ArgList[4]))
+		if (!(/* name = */ ArgList[4]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		break;
@@ -420,18 +420,18 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	/*	314	WHOWASUSER	ArgList[5] (the realname) */
 	case 314:		/* #define RPL_WHOWASUSER       314 */
 	{
-		const char *nick, *user, *host, *unused, *name;
+		/* const char *nick, *user, *host, *unused, *name; */
 
 		PasteArgs(ArgList, 4);
-		if (!(nick = ArgList[0]))
+		if (!(/* nick = */ ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(user = ArgList[1]))
+		if (!(/* user = */ ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(host = ArgList[2]))
+		if (!(/* host = */ ArgList[2]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(unused = ArgList[3]))
+		if (!(/* unused = */ ArgList[3]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(name = ArgList[4]))
+		if (!(/* name = */ ArgList[4]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		break;
@@ -587,12 +587,12 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	/*	332	TOPIC		ArgList[1] (the topic)	  */
 	case 332:		/* #define RPL_TOPIC            332 */
 	{
-		const char *channel, *topic;
+		/* const char *channel, *topic */;
 
 		PasteArgs(ArgList, 1);
-		if (!(channel = ArgList[0]))
+		if (!(/* channel = */ ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(topic = ArgList[1]))
+		if (!(/* topic = */ ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		break;
 	}
@@ -772,14 +772,14 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	{
 		const char *	s;
 		const char *	channel;
-		const char *	message;
+		/* const char *	message; */
 
 		PasteArgs(ArgList, 1);
 
 		/* Some servers BBC and send back an empty reply. */
 		if (!(channel = ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(message = ArgList[1]))
+		if (!(/* message = */ ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		/* Do not accept 403's from remote servers. */
@@ -902,9 +902,9 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	case 439:		/* Comstud's "Can't change nickname" */
 	case 453:		/* EFnet/TS4 "nickname lost" numeric 453 */
 	{
-		const char	*nick;
+		/* const char	*nick; */
 
-		if (!(nick = ArgList[0]))
+		if (!(/* nick = */ ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		/* 
@@ -929,15 +929,15 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	case 442:		/* #define ERR_NOTONCHANNEL	442 */
 	{
 		const char *	s;
-		const char *	channel;
-		const char *	message;
+		/* const char *	channel; */
+		/* const char *	message; */
 
 		PasteArgs(ArgList, 1);
 
 		/* Some servers BBC and send back an empty reply. */
-		if (!(channel = ArgList[0]))
+		if (!(/* channel = */ ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(message = ArgList[1]))
+		if (!(/* message = */ ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		/* Do not accept this numeric from remote servers */
@@ -976,9 +976,9 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 	case 475: 		/* #define ERR_BADCHANNELKEY    475 */
 	case 476:		/* #define ERR_BADCHANMASK      476 */
 	{
-		const char	*channel;
+		/* const char	*channel; */
 
-		if (!(channel = ArgList[0]))
+		if (!(/* channel = */ ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		cant_join_channel(ArgList[0], from_server);
@@ -1061,7 +1061,7 @@ DISPLAY:
 
 	case 311:		/* #define RPL_WHOISUSER        311 */
 	{
-		const char *nick, *user, *host, *channel, *name;
+		const char *nick, *user, *host, /* *channel, */ *name;
 
 		PasteArgs(ArgList, 4);
 		if (!(nick = ArgList[0]))
@@ -1070,7 +1070,7 @@ DISPLAY:
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(host = ArgList[2]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(channel = ArgList[3]))
+		if (!(/* channel = */ ArgList[3]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(name = ArgList[4]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
@@ -1081,10 +1081,10 @@ DISPLAY:
 
 	case 312:		/* #define RPL_WHOISSERVER      312 */
 	{
-		const char *nick, *server, *pithy;
+		const char /* *nick, */ *server, *pithy;
 
 		PasteArgs(ArgList, 2);
-		if (!(nick = ArgList[0]))
+		if (!(/* nick = */ ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(server = ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
@@ -1097,12 +1097,12 @@ DISPLAY:
 
 	case 313:		/* #define RPL_WHOISOPERATOR    313 */
 	{
-		const char *nick, *message;
+		/* const char *nick, *message; */
 
 		PasteArgs(ArgList, 1);
-		if (!(nick = ArgList[0]))
+		if (!(/* nick = */ ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(message = ArgList[1]))
+		if (!(/* message = */ ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 
 		put_it("%s %s %s", banner(), ArgList[0], ArgList[1]);
@@ -1111,7 +1111,7 @@ DISPLAY:
 
 	case 314:		/* #define RPL_WHOWASUSER       314 */
 	{
-		const char *nick, *user, *host, *unused, *name;
+		const char *nick, *user, *host, /* *unused, */ *name;
 
 		PasteArgs(ArgList, 4);
 		if (!(nick = ArgList[0]))
@@ -1120,7 +1120,7 @@ DISPLAY:
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(host = ArgList[2]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
-		if (!(unused = ArgList[3]))
+		if (!(/* unused = */ ArgList[3]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(name = ArgList[4]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
@@ -1174,10 +1174,10 @@ DISPLAY:
 
 	case 319:		/* #define RPL_WHOISCHANNELS    319 */
 	{
-		const char *nick, *channels;
+		const char /* *nick, */ *channels;
 
 		PasteArgs(ArgList, 1);
-		if (!(nick = ArgList[0]))
+		if (!(/* nick = */ ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(channels = ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
@@ -1309,10 +1309,10 @@ DISPLAY:
 
 	case 333:		/* #define RPL_TOPICWHOTIME	333 */
 	{
-		const char *channel, *nick, *when_str;
+		const char /* *channel, */ *nick, *when_str;
 		time_t	howlong;
 
-		if (!(channel = ArgList[0]))
+		if (!(/* channel = */ ArgList[0]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
 		if (!(nick = ArgList[1]))
 			{ rfc1459_odd(from, comm, ArgList); goto END; }
@@ -1641,7 +1641,7 @@ END:
 
 static void	add_user_who (int refnum, const char *from, const char *comm, const char **ArgList)
 {
-	const char 	*channel, *user, *host, *server, *nick;
+	const char 	*channel, *user, *host, /* *server, */ *nick;
 	size_t	size;
 	char 	*uh;
 
@@ -1651,7 +1651,7 @@ static void	add_user_who (int refnum, const char *from, const char *comm, const 
 		{ rfc1459_odd(from, "*", ArgList); return; }
 	if (!(host = ArgList[2]))
 		{ rfc1459_odd(from, "*", ArgList); return; }
-	if (!(server = ArgList[3]))
+	if (!(/* server = */ ArgList[3]))
 		{ rfc1459_odd(from, "*", ArgList); return; }
 	if (!(nick = ArgList[4]))
 		{ rfc1459_odd(from, "*", ArgList); return; }

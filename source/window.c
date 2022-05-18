@@ -242,9 +242,6 @@ int	new_window (Screen *screen)
 	new_w->scroll_lines = -1;
 
 	/* Input prompt and status bar stuff */
-#if 0
-	new_w->prompt = NULL;		/* Filled in later */
-#endif
 	for (i = 0; i < 3; i++)
 	{
 		new_w->status.line[i].raw = NULL;
@@ -506,15 +503,6 @@ static void 	delete_window (Window *window)
 	 */
 	if (window == current_window)
 		make_window_current_by_refnum(0);
-#if 0
-	if ((int)window->refnum == last_input_screen->input_window)
-	{
-	    if (window->screen != last_input_screen)
-		panic(1, "delete_window: I am not on that screen");
-	    else
-		make_window_current_by_refnum(last_input_screen->_window_list);
-	}
-#endif
 	if (window == current_window)
 		panic(1, "delete_window: window == current_window -- I was unable to find another window, but I already checked that, so this is a bug.");
 
@@ -1655,6 +1643,14 @@ void 	redraw_all_windows (void)
 }
 
 /*
+ * update_all_status_kb: calls update_all_status as a keybinding
+ */
+BUILT_IN_KEYBINDING(update_all_status_kb)
+{
+	update_all_status();
+}
+
+/*
  * update_all_status: This performs a logical "update_window_status" on
  * every window for the current screen.
  */
@@ -2426,33 +2422,6 @@ Window *get_window_by_uuid (const char *uuid)
 	return NULL;
 }
 
-#if 0
-/*
- * get_window_by_refnum: Given a reference number to a window, this returns a
- * pointer to that window if a window exists with that refnum, null is
- * returned otherwise.  The "safe" way to reference a window is throught the
- * refnum, since a window might be delete behind your back and and Window
- * pointers might become invalid.
- */
-Window *get_window_by_refnum (int refnum)
-{
-	Window	*tmp = NULL;
-
-	if (refnum == 0)
-		return current_window;
-
-	while (traverse_all_windows(&tmp))
-	{
-		if (tmp->user_refnum == refnum)
-			return tmp;
-		if (tmp->refnum == refnum)
-			return tmp;
-	}
-
-	return NULL;
-}
-#endif
-
 Window *get_window_by_refnum_direct (int refnum)
 {
 	if (refnum == 0)
@@ -2522,7 +2491,10 @@ static	int	get_next_window  (int window_)
 	}
 	while (new_w && new_w->skip && new_w != last);
 
-	return new_w->refnum;
+	if (new_w)
+		return new_w->refnum;
+	else
+		return window_;
 }
 
 /*
@@ -2548,7 +2520,10 @@ static	int	get_previous_window (int window_)
 	}
 	while (new_w->skip && new_w != last);
 
-	return new_w->refnum;
+	if (new_w)
+		return new_w->refnum;
+	else
+		return window_;
 }
 
 /* 
@@ -2606,35 +2581,6 @@ int	window_is_valid (int refnum)
 		return 1;
 	return 0;
 }
-
-#if 0
-/* * * * * * * * * * * * * INPUT PROMPT * * * * * * * * * * * * * * */
-/*
- * set_window_prompt: changes the prompt for the given window.  A window
- * prompt will be used as the target in place of the query user or current
- * channel if it is set 
- */
-void 	set_window_prompt (int refnum, const char *prompt)
-{
-	Window	*tmp;
-
-	if (!(tmp = get_window_by_refnum_direct(refnum)))
-		tmp = current_window;
-	malloc_strcpy(&tmp->prompt, prompt);
-	update_input(NULL, UPDATE_ALL);
-}
-
-/* get_window_prompt: returns the prompt for the given window refnum */
-const char 	*get_window_prompt (int refnum)
-{
-	Window	*tmp;
-
-	if (!(tmp = get_window_by_refnum_direct(refnum)))
-		tmp = current_window;
-
-	return tmp->prompt ? tmp->prompt : empty_string;
-}
-#endif
 
 /* * * * * * * * * * * * * * * TARGETS AND QUERIES * * * * * * * * * * * */
 
@@ -3257,11 +3203,6 @@ int	real_message_setall (int refnum, const char *who, int level, const char *fil
 	contexts[context_counter].who_line = line;
 	contexts[context_counter].to_window = refnum;
 
-#if 0
-	who_from = who;
-	who_level = level;
-	to_window = get_window_by_refnum_direct(refnum);
-#endif
 	return context_counter++;
 }
 
@@ -4624,7 +4565,6 @@ WINDOWCMD(check)
 {
 	Window *tmp;
 	int	lastlog_count;
-	Window *	window = get_window_by_refnum_direct(refnum);
 
 	if (!args)
 		return refnum;
@@ -4685,7 +4625,6 @@ WINDOWCMD(clear)
 WINDOWCMD(create)
 {
 	int	new_refnum;
-	Window *	window = get_window_by_refnum_direct(refnum);
 
 	if (!args)
 		return refnum;
@@ -4809,11 +4748,6 @@ WINDOWCMD(describe)
 	    new_free(&c);
 	}
 
-#if 0
-	say("\tPrompt: %s", 
-				window->prompt ? 
-				window->prompt : "<None>");
-#endif
 	say("\tStatus bars: %d", 
 				window->status.number);
 
@@ -5529,7 +5463,6 @@ WINDOWCMD(list)
 	Window	*tmp = NULL;
 	int	len = 6;
 	int	cnw = get_int_var(CHANNEL_NAME_WIDTH_VAR);
-	Window *	window = get_window_by_refnum_direct(refnum);
 
 	if (!args)
 		return refnum;
@@ -6331,7 +6264,10 @@ WINDOWCMD(pop)
 	if (!window->screen->window_stack && !win)
 		say("The window stack is empty!");
 
-	return win->refnum;
+	if (win)
+		return win->refnum;
+	else
+		return 0;
 }
 
 /*
@@ -6397,29 +6333,6 @@ WINDOWCMD(previous)
 	swap_window(window, previous);
 	return previous->refnum;
 }
-
-#if 0
-WINDOWCMD(prompt)
-{
-	char *		arg;
-	Window *	window = get_window_by_refnum_direct(refnum);
-
-	if (!window)
-		return 0;
-	if (!args)
-		return refnum;
-
-	if ((arg = next_arg(*args, args)))
-	{
-		malloc_strcpy(&window->prompt, arg);
-		window_statusbar_needs_update(window->refnum);
-	}
-	else
-		say("You must specify a prompt for the window!");
-
-	return refnum;
-}
-#endif
 
 /*
  * Usage:	/WINDOW PUSH
@@ -6782,8 +6695,6 @@ WINDOWCMD(refnum_or_swap)
 
 WINDOWCMD(refresh)
 {
-	Window *	window = get_window_by_refnum_direct(refnum);
-
 	if (!args)
 		return refnum;
 
@@ -6822,7 +6733,9 @@ WINDOWCMD(remove)
 WINDOWCMD(scratch)
 {
 	short scratch = 0;
+#if 0
 	Window *	window = get_window_by_refnum_direct(refnum);
+#endif
 
 	if (!args)
 		return refnum;
@@ -6837,7 +6750,9 @@ WINDOWCMD(scratch)
 WINDOWCMD(scroll)
 {
 	short 	scroll = 0;
+#if 0
 	Window *	window = get_window_by_refnum_direct(refnum);
+#endif
 
 	if (!args)
 		return refnum;
@@ -7693,9 +7608,6 @@ static const window_ops options [] = {
 	{ "NUMBER",		windowcmd_number 		},
 	{ "POP",		windowcmd_pop 			},
 	{ "PREVIOUS",		windowcmd_previous	 	},
-#if 0
-	{ "PROMPT",		windowcmd_prompt 		},
-#endif
 	{ "PUSH",		windowcmd_push 			},
 	{ "QUERY",		windowcmd_query			},
 	{ "REBUILD_SCROLLBACK",	windowcmd_rebuild_scrollback 	},
@@ -7740,9 +7652,6 @@ BUILT_IN_COMMAND(windowcmd)
 {
 	char *	arg;
 	int 	nargs = 0;
-#if 0
-	Window *window;
-#endif
 	int	refnum;
 	int	old_status_update, 
 		old_from_server;
@@ -7791,7 +7700,7 @@ BUILT_IN_COMMAND(windowcmd)
 					args = NULL;
 				do_hook(WINDOW_COMMAND_LIST, "%d %d %s", 
 					window, 
-					refnum < 1 ? (int)get_window_user_refnum(refnum) : -1,
+					refnum > 0 ? (int)get_window_user_refnum(refnum) : -1,
 					arg);
 				break;
 			}
@@ -7799,9 +7708,6 @@ BUILT_IN_COMMAND(windowcmd)
 
 		if (!options[i].func)
 		{
-#if 0
-			Window *s_window;
-#endif
 			int	s_window;
 			nargs++;
 
@@ -9080,10 +8986,6 @@ char 	*windowctl 	(char *input)
 		RETURN_INT(w->skip);
 	    } else if (!my_strnicmp(listc, "COLUMNS", len)) {
 		RETURN_INT(w->my_columns);
-#if 0
-	    } else if (!my_strnicmp(listc, "PROMPT", len)) {
-		RETURN_STR(w->prompt);
-#endif
 	    } else if (!my_strnicmp(listc, "DOUBLE", len)) {
 		RETURN_INT(w->status.number - 1);
 	    } else if (!my_strnicmp(listc, "STATUS_FORMAT", len)) {

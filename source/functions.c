@@ -8332,10 +8332,12 @@ BUILT_IN_FUNCTION(function_rgb, input)
 	int	color;
 	char	retval_str[4];
 
-	while (input && *input && my_isspace(*input))
+	RETURN_IF_EMPTY(input);
+
+	while (*input && my_isspace(*input))
 		input++;
 
-	if (input && *input == '{')
+	if (*input == '{')
 	{
 		struct kwargs kwargs[] = {
 			{ "r", KWARG_TYPE_INTEGER, &r, 1 },
@@ -8499,10 +8501,12 @@ BUILT_IN_FUNCTION(function_unveil, input)
 	int		test = 0;
 	int		close = 0;
 
-	while (input && *input && my_isspace(*input))
+	RETURN_IF_EMPTY(input);
+
+	while (*input && my_isspace(*input))
 		input++;
 
-	if (input && *input == '{')
+	if (*input == '{')
 	{
 		struct kwargs kwargs[] = {
 			{ "path", KWARG_TYPE_STRING, &path, 0 },

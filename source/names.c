@@ -182,7 +182,6 @@ static Channel *create_channel (const char *name, int server)
 /* Nicklist destructor */
 static void 	clear_channel (Channel *chan)
 {
-	array *list = &chan->nicks;
 	int	i;
 
 	for (i = 0; i < chan->nicks.max; i++)

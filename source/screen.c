@@ -1820,7 +1820,7 @@ unsigned char *	normalized_string_to_plain_text (const unsigned char *str)
 {
 	unsigned char *	output = NULL;
 	size_t		maxpos;
-	Attribute 	olda, a;
+	Attribute 	a;
 	size_t		span;
 	size_t		pos;
 
@@ -1828,7 +1828,6 @@ unsigned char *	normalized_string_to_plain_text (const unsigned char *str)
         a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
         a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
 	a.italic = 0;
-	olda = a;
 
 	/* 
 	 * The output string has a few extra chars on the end just 

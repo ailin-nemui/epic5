@@ -727,10 +727,10 @@ static void	p_channel (const char *from, const char *comm, const char **ArgList)
 
 static void 	p_invite (const char *from, const char *comm, const char **ArgList)
 {
-	const char	*invitee, *invited_to;
+	const char	/* *invitee, */ *invited_to;
 	int	l;
 
-	if (!(invitee = ArgList[0]))
+	if (!(/* invitee = */ ArgList[0]))
 		{ rfc1459_odd(from, comm, ArgList); return; }
 	if (!(invited_to = ArgList[1]))
 		{ rfc1459_odd(from, comm, ArgList); return; }
@@ -1180,10 +1180,10 @@ static void	p_part (const char *from, const char *comm, const char **ArgList)
  */
 static void	p_rpong (const char *from, const char *comm, const char **ArgList)
 {
-	const char *	nick, *target_server, *millisecs, *orig_time;
+	const char /* *nick, */ *target_server, *millisecs, *orig_time;
 	time_t delay;
 
-	if (!(nick = ArgList[0]))
+	if (!(/* nick = */ ArgList[0]))
 		{ rfc1459_odd(from, comm, ArgList); return; }
 	if (!(target_server = ArgList[1]))
 		{ rfc1459_odd(from, comm, ArgList); return; }
