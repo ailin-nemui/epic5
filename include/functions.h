@@ -53,7 +53,7 @@
 #define RETURN_MSTR(x) return ((x) ? (x) : EMPTY_STRING)
 #define RETURN_STR(x) return malloc_strdup((x) ? (x) : EMPTY)
 #define RETURN_FSTR(x) return malloc_strdup( x )	/* Only fixed char arrays! */
-#define RETURN_INT(x) return malloc_strdup(ltoa((x)))
+#define RETURN_INT(x) return malloc_strdup(intmaxtoa((x)))
 #define RETURN_FLOAT(x) return malloc_sprintf(NULL, "%.50g", (double) (x))
 #define RETURN_FLOAT2(x) return malloc_sprintf(NULL, "%.2f", (double) (x))
 

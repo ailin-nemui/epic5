@@ -52,7 +52,7 @@
  *	not contain any magic characters.  [Used in csh style globbing]
  * GLOB_ALTDIRFUNC:
  *	Use alternately specified directory access functions.
- * GLOB_TILDE:
+ * GLOB_TILDE: (not available)
  *	expand ~user/foo to the /home/dir/of/user/foo
  * GLOB_BRACE:
  *	expand {1,2}{a,b} to 1a 1b 2a 2b 
@@ -101,7 +101,9 @@
 #define	RBRACKET	']'
 #define	SEP		'/'
 #define	STAR		'*'
+#if 0
 #define	TILDE		'~'
+#endif
 #define	UNDERSCORE	'_'
 #define	LBRACE		'{'
 #define	RBRACE		'}'
@@ -359,6 +361,9 @@ static const Char *globtilde	(	const Char *pattern,
 	const Char *p;
 	Char *b;
 
+#if 1
+	return pattern;
+#else
 	if (*pattern != TILDE || !(pglob->gl_flags & GLOB_TILDE))
 		return pattern;
 
@@ -401,6 +406,7 @@ static const Char *globtilde	(	const Char *pattern,
 		continue;
 
 	return patbuf;
+#endif
 }
 	
 

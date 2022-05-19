@@ -208,8 +208,8 @@ void	move_array_items (array *a, int start, int end, int dir)
 void *	find_array_item (array *set, const char *name, int *cnt, int *loc)
 {
 	size_t		len = strlen(name);
-	int		c = 0, 
-			pos = 0, 
+	intmax_t	c = 0;
+	int		pos = 0, 
 			tospot, /* :-) */
 			min, 
 			max;
@@ -246,7 +246,7 @@ void *	find_array_item (array *set, const char *name, int *cnt, int *loc)
 	while (max >= min)
 	{
 		pos = (max - min) / 2 + min;
-		c = (hash & mask) - (ARRAY_ITEM(set, pos)->hash & mask);
+		c = (intmax_t)(hash & mask) - (intmax_t)(ARRAY_ITEM(set, pos)->hash & mask);
 		if (c == 0) {
 			c = set->func(name, ARRAY_ITEM(set, pos)->name, len);
 		}
@@ -287,7 +287,7 @@ void *	find_array_item (array *set, const char *name, int *cnt, int *loc)
 	while (max >= min)
 	{
 		pos = (min - max) / 2 + max;  /* Don't ask */
-		c = (hash & mask) - (ARRAY_ITEM(set, pos)->hash & mask);
+		c = (intmax_t)(hash & mask) - (intmax_t)(ARRAY_ITEM(set, pos)->hash & mask);
 		if (c == 0) {
 			c = set->func(name, ARRAY_ITEM(set, pos)->name, len);
 		}

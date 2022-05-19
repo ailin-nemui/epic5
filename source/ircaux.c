@@ -387,8 +387,8 @@ char *	upper (char *str)
 		d = mkupper_l(c);
 		if (c != d)
 		{
-			char c_utf8str[16];
-			char d_utf8str[16];
+			unsigned char c_utf8str[16];
+			unsigned char d_utf8str[16];
 
 			ucs_to_utf8(c, c_utf8str, sizeof(c_utf8str));
 			ucs_to_utf8(d, d_utf8str, sizeof(d_utf8str));
@@ -419,8 +419,8 @@ char *	lower (char *str)
 		d = mklower_l(c);
 		if (c != d)
 		{
-			char c_utf8str[16];
-			char d_utf8str[16];
+			unsigned char c_utf8str[16];
+			unsigned char d_utf8str[16];
 
 			ucs_to_utf8(c, c_utf8str, sizeof(c_utf8str));
 			ucs_to_utf8(d, d_utf8str, sizeof(d_utf8str));
@@ -781,8 +781,12 @@ static int	utf8_strnicmp (const unsigned char *str1, const unsigned char *str2, 
 	s1 = str1;
 	s2 = str2;
 
-	while (n-- > 0)
+	if (n == 0)
+		return 0;
+
+	while (n > 0)
 	{
+		n--;
 		c1 = next_code_point(&s1, 1);
 		c2 = next_code_point(&s2, 1);
 
@@ -4420,9 +4424,12 @@ char *	universal_next_arg_count (char *str, char **new_ptr, int count, int exten
 
 	real_move_to_abs_word(str, (const char **)new_ptr, count, extended, delims);
 	if (**new_ptr && *new_ptr > str)
+	{
 		(*new_ptr)[-1] = 0;
-
-	clue = (*new_ptr) - str - 1;
+		clue = (*new_ptr) - str - 1;
+	}
+	else
+		clue = 0;	/* XXX Not sure about this */
 
 	/* XXX Is this really correct? This seems wrong. */
 	remove_trailing_spaces(str, &clue);
@@ -4626,7 +4633,10 @@ char *	last_arg (char **src, size_t *cluep, int extended)
 	mark = end + strlen(end);
 	/* Always support double-quoted words. */
 	move_word_rel(start, (const char **)&mark, -1, extended, "\"");
-	*cluep = (mark - *src - 1);
+	if (mark > *src)
+		*cluep = (mark - *src - 1);
+	else
+		*cluep = 0;
 
 	if (mark > start)
 		mark[-1] = 0;
@@ -5197,7 +5207,7 @@ char *	fix_string_width (const char *orig_str, int justify, int fillchar, size_t
 	char *	orig_str_copy;
 	char *	input;
 	int	input_cols;
-	char	fillstr[16];
+	unsigned char	fillstr[16];
 	int	adjust_columns;
 	int	left_chop = 0, right_chop = 0;
 	int	left_add = 0, right_add = 0;
@@ -5219,7 +5229,7 @@ char *	fix_string_width (const char *orig_str, int justify, int fillchar, size_t
 	ucs_to_utf8(fillchar, fillstr, sizeof(fillstr));
 
 	/* How many columns do we need to adjust? */
-	adjust_columns = newlen - input_cols;
+	adjust_columns = (int)newlen - (int)input_cols;
 
 	/* Now figure out left/right chop, left/right pad */
 	if (adjust_columns < 0) {		/* string is too long */
@@ -5357,7 +5367,7 @@ static ssize_t	url_decoder (const char *orig, size_t orig_len, const void *meta,
 	    {
 		orig_i += 2;
 		if (dest_i < dest_len) 
-			dest[dest_i++] = (val1 << 4) | val2;
+			dest[dest_i++] = (char) ((val1 << 4) | val2);
 	    }
 	    else
 		if (dest_i < dest_len) 
@@ -5417,8 +5427,8 @@ static ssize_t	enc_decoder (const char *orig, size_t orig_len, const void *meta,
 	for (orig_i = 0; orig_i + 1 < orig_len; orig_i += 2)
 	{
 	    if (dest_i < dest_len)
-		dest[dest_i++] = ((orig[orig_i] - 0x41) << 4) | 
-				  (orig[orig_i+1] - 0x41);
+		dest[dest_i++] = (char) (((orig[orig_i] - 0x41) << 4) | 
+				          (orig[orig_i+1] - 0x41));
 	    count++;
 	}
 
@@ -5816,13 +5826,13 @@ static ssize_t	b64_general_decoder (const char *orig, size_t orig_len, const voi
 		break;
 
 	    if (dest_i < dest_len)
-	        dest[dest_i++] = (val >> 16) & 0xff;
+	        dest[dest_i++] = (char) ((val >> 16) & 0xff);
 	    if (marker < 2)
 		if (dest_i < dest_len)
-		    dest[dest_i++] = (val >> 8) & 0xff;
+		    dest[dest_i++] = (char) ((val >> 8) & 0xff);
 	    if (marker < 1)
 		if (dest_i < dest_len)
-		    dest[dest_i++] = val & 0xff;
+		    dest[dest_i++] = (char) (val & 0xff);
 
 	    count += 3;
 	}
@@ -7321,7 +7331,7 @@ unsigned char *  cp437_to_utf8 (const unsigned char *input, size_t inputlen, siz
 	size_t		s, d;
 	unsigned char *	y;
 	u_32int_t	codepoint;
-	char 		utf8str[16];
+	unsigned char	utf8str[16];
 
 	/*
 	 * We are going to convert 'src' to 'dest'.

@@ -1513,9 +1513,12 @@ BUILT_IN_FUNCTION(function_index, input)
 	size_t	cpoffset;
 
 	GET_DWORD_ARG(schars, input);
-	cpoffset = -1;
+	cpoffset = SIZE_T_MAX;
 	cpindex((const unsigned char *)input, (const unsigned char *)schars, 1, &cpoffset);
-	RETURN_INT(cpoffset);
+	if (cpoffset == SIZE_T_MAX)
+		RETURN_INT(-1);
+	else
+		RETURN_INT(cpoffset);
 }
 
 /*
@@ -1533,14 +1536,17 @@ BUILT_IN_FUNCTION(function_rindex, word)
 
 	/* need to find out why ^x doesnt work */
 	GET_DWORD_ARG(chars, word);
-	cpoffset = -1;
 	if (!*word || !*chars)
 		RETURN_INT(-1);
 
+	cpoffset = SIZE_T_MAX;
 	rcpindex((const unsigned char *)word + strlen(word), 
 		 (const unsigned char *)word, 
 		 (const unsigned char *)chars, 1, &cpoffset);
-	RETURN_INT(cpoffset);
+	if (cpoffset == SIZE_T_MAX)
+		RETURN_INT(-1);
+	else
+		RETURN_INT(cpoffset);
 }
 
 /*

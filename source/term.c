@@ -1122,7 +1122,7 @@ int 	term_init (void)
 	 * they are typed; we take responsibility for that.
 	 */
 	newb = oldb;
-	newb.c_lflag &= ~(ICANON | ECHO); /* set equ. of CBREAK, no ECHO */
+	newb.c_lflag &= ~(unsigned int)(ICANON | ECHO); /* set equ. of CBREAK, no ECHO */
 
 	/*
 	 * Turning off IEXTEN tells the kernel not to honor any posix 
@@ -1132,7 +1132,7 @@ int 	term_init (void)
 	 * characters from us.  You wouldn't be able to /bind those keys
 	 * if this was left on.
 	 */
-	newb.c_lflag &= ~(IEXTEN);  /* Turn off DISCARD/LNEXT */
+	newb.c_lflag &= ~(unsigned int)(IEXTEN);  /* Turn off DISCARD/LNEXT */
 
 	/*
 	 * Since we turned off ICANON, we have to tell the kernel how
@@ -1174,7 +1174,7 @@ int 	term_init (void)
 	 * tries to output something, which could lead to you pinging out 
 	 * all your servers.
 	 */
-	newb.c_iflag &= ~(IXON | IXOFF);	/* No XON/XOFF */
+	newb.c_iflag &= ~(unsigned long)(IXON | IXOFF);	/* No XON/XOFF */
 
 #if use_alt_screen
 	/*
@@ -1210,7 +1210,7 @@ int 	term_init (void)
 	 * from any keypress.
 	 */
 	newb.c_cflag |= CS8;
-	newb.c_iflag &= ~ISTRIP;
+	newb.c_iflag &= ~(unsigned long)ISTRIP;
 
 	/* Commit our changes and we're done! */
 	tcsetattr(tty_des, TCSADRAIN, &newb);

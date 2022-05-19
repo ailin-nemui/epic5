@@ -267,6 +267,16 @@ static void	SHA256_Init (SHA256_CTX *context)
 	context->bitcount = 0;
 }
 
+#if defined(__clang__)
+ __attribute__((no_sanitize("unsigned-integer-overflow")))
+#endif
+ __attribute__((no_sanitize("shift-base")))
+#if defined(__clang__)
+#if (__clang_major__ >= 15)
+ __attribute__((no_sanitize("unsigned-shift-base")))
+#endif
+#endif
+ __attribute__((no_sanitize("shift")))
 static void	SHA256_Transform (SHA256_CTX *context, const sha2_word32 *data) 
 {
 	sha2_word32	a, b, c, d, e, f, g, h, s0, s1;
@@ -355,6 +365,13 @@ static void	SHA256_Transform (SHA256_CTX *context, const sha2_word32 *data)
 	memset(&T2, 0, sizeof(T2));
 }
 
+ __attribute__((no_sanitize("shift-base")))
+#if defined(__clang__)
+#if (__clang_major__ >= 15)
+ __attribute__((no_sanitize("unsigned-shift-base")))
+#endif
+#endif
+ __attribute__((no_sanitize("shift")))
 static void	SHA256_Update (SHA256_CTX *context, const sha2_byte *data, size_t len) 
 {
 	unsigned int	freespace, usedspace;
@@ -409,6 +426,13 @@ static void	SHA256_Update (SHA256_CTX *context, const sha2_byte *data, size_t le
 	memset(&freespace, 0, sizeof(freespace));
 }
 
+ __attribute__((no_sanitize("shift-base")))
+#if defined(__clang__)
+#if (__clang_major__ >= 15)
+ __attribute__((no_sanitize("unsigned-shift-base")))
+#endif
+#endif
+ __attribute__((no_sanitize("shift")))
 static void 	SHA256_Final (sha2_byte *digest, SHA256_CTX *context) 
 {
 	sha2_word32	*d = (sha2_word32*)digest;
@@ -474,6 +498,13 @@ static void 	SHA256_Final (sha2_byte *digest, SHA256_CTX *context)
 	memset(&usedspace, 0, sizeof(usedspace));
 }
 
+ __attribute__((no_sanitize("shift-base")))
+#if defined(__clang__)
+#if (__clang_major__ >= 15)
+ __attribute__((no_sanitize("unsigned-shift-base")))
+#endif
+#endif
+ __attribute__((no_sanitize("shift")))
 static char *	SHA256_End (SHA256_CTX *context, char *buffer) 
 {
 	sha2_byte	digest[SHA256_DIGEST_LENGTH], *d = digest;

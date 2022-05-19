@@ -41,7 +41,7 @@ unsigned long x_debug = 0;
 struct debug_opts
 {
 	const char *	command;
-	int		flag;
+	unsigned long	flag;
 };
 
 static struct debug_opts opts[] = 
@@ -90,7 +90,7 @@ BUILT_IN_COMMAND(xdebugcmd)
 	int 	cnt;
 	int 	rem = 0;
 	char *	this_arg;
-	int	original_xdebug = x_debug;
+	unsigned long	original_xdebug = x_debug;
 
 	if (!args || !*args)
 	{

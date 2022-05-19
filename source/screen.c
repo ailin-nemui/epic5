@@ -185,9 +185,9 @@ const unsigned char *all_off (void)
 	display_attributes(retval, &old_a, &a);
 	return retval;
 #else
-	static	char	retval[6];
+	static	unsigned char	retval[6];
 	retval[0] = '\006';
-	retval[1] = retval[2] = retval[3] = retval[4] = 0x80;
+	retval[1] = retval[2] = retval[3] = retval[4] = 0x80U;
 	retval[5] = 0;
 	return retval;
 #endif
@@ -205,10 +205,10 @@ const unsigned char *all_off (void)
  */
 static size_t	display_attributes (unsigned char *output, Attribute *old_a, Attribute *a)
 {
-	unsigned char	val1 = 0x80;
-	unsigned char	val2 = 0x80;
-	unsigned char	val3 = 0x80;
-	unsigned char	val4 = 0x80;
+	unsigned char	val1 = 0x80U;
+	unsigned char	val2 = 0x80U;
+	unsigned char	val3 = 0x80U;
+	unsigned char	val4 = 0x80U;
 
 	/*
 	 * A "Display attribute" is a \006 followed by four bytes.
@@ -226,12 +226,12 @@ static size_t	display_attributes (unsigned char *output, Attribute *old_a, Attri
 	 *	6	Italics
 	 *	7 	[Reserved for future expansion]
 	 */
-	if (a->reverse)		val1 |= 0x01;
-	if (a->bold)		val1 |= 0x02;
-	if (a->blink)		val1 |= 0x04;
-	if (a->underline)	val1 |= 0x08;
-	if (a->altchar)		val1 |= 0x10;
-	if (a->italic)		val1 |= 0x20;
+	if (a->reverse)		val1 |= 0x01U;
+	if (a->bold)		val1 |= 0x02U;
+	if (a->blink)		val1 |= 0x04U;
+	if (a->underline)	val1 |= 0x08U;
+	if (a->altchar)		val1 |= 0x10U;
+	if (a->italic)		val1 |= 0x20U;
 
 	/*
 	 * Byte 2 holds color information
@@ -250,10 +250,10 @@ static size_t	display_attributes (unsigned char *output, Attribute *old_a, Attri
 	 *	The high bit is stored in Byte 2, bit 3.
 	 */
 
-	if (a->color_fg) {	val2 |= 0x01; val3 |= (a->fg_color & 0x7F); }
-	if (a->color_bg) {	val2 |= 0x02; val4 |= (a->bg_color & 0x7F); }
-	if (a->color_fg && a->fg_color >= 0x80)	{ val2 |= 0x04; }
-	if (a->color_bg && a->bg_color >= 0x80) { val2 |= 0x08; }
+	if (a->color_fg) {	val2 |= 0x01U; val3 |= (a->fg_color & 0x7FU); }
+	if (a->color_bg) {	val2 |= 0x02U; val4 |= (a->bg_color & 0x7FU); }
+	if (a->color_fg && a->fg_color >= 0x80U) { val2 |= 0x04U; }
+	if (a->color_bg && a->bg_color >= 0x80U) { val2 |= 0x08U; }
 
 	output[0] = '\006';
 	output[1] = val1;
@@ -372,25 +372,25 @@ static int	read_attributes (const unsigned char *input, Attribute *a)
 	a->italic = 0;
 	a->color_fg = a->fg_color = a->color_bg = a->bg_color = 0;
 
-	if (*input & 0x01)	a->reverse = 1;
-	if (*input & 0x02)	a->bold = 1;
-	if (*input & 0x04)	a->blink = 1;
-	if (*input & 0x08)	a->underline = 1;
-	if (*input & 0x10)	a->altchar = 1;
-	if (*input & 0x20)	a->italic = 1;
+	if (*input & 0x01U)	a->reverse = 1;
+	if (*input & 0x02U)	a->bold = 1;
+	if (*input & 0x04U)	a->blink = 1;
+	if (*input & 0x08U)	a->underline = 1;
+	if (*input & 0x10U)	a->altchar = 1;
+	if (*input & 0x20U)	a->italic = 1;
 
 	input++;
-	if (*input & 0x01) {	
+	if (*input & 0x01U) {	
 		a->color_fg = 1; 
-		a->fg_color = input[1] & 0x7f;
-		if (*input & 0x04)
-			a->fg_color += 0x80;
+		a->fg_color = input[1] & 0x7fU;
+		if (*input & 0x04U)
+			a->fg_color += 0x80U;
 	}
-	if (*input & 0x02) {	
+	if (*input & 0x02U) {	
 		a->color_bg = 1; 
-		a->bg_color = input[2] & 0x7f;
-		if (*input & 0x08)
-			a->bg_color += 0x80;
+		a->bg_color = input[2] & 0x7fU;
+		if (*input & 0x08U)
+			a->bg_color += 0x80U;
 	}
 
 	return 0;
@@ -1384,7 +1384,7 @@ unsigned char *	new_normalize_string (const unsigned char *str, int logical, int
 			strip_all_off, strip_nd_space, boldback;
 	int		strip_unprintable, strip_other, strip_c1, strip_italic;
 	int		codepoint, state, cols;
-	char 		utf8str[16], *x;
+	unsigned char 	utf8str[16], *x;
 	size_t		(*attrout) (unsigned char *, Attribute *, Attribute *) = NULL;
 
 	mangle_escapes 	= ((mangle & MANGLE_ESCAPES) != 0);
@@ -1463,7 +1463,7 @@ unsigned char *	new_normalize_string (const unsigned char *str, int logical, int
 				break;
 			if (state == 1 && strip_c1)
 			{
-				codepoint = (codepoint | 0x60) & 0x7F;
+				codepoint = (codepoint | 0x60U) & 0x7FU;
 abnormal_char:
 				a.reverse = !a.reverse;
 				pos += attrout(output + pos, &olda, &a);
@@ -1522,7 +1522,7 @@ normal_char:
 
 			if (normalize)
 			{
-				codepoint = (codepoint | 0x40) & 0x7F;
+				codepoint = (codepoint | 0x40U) & 0x7FU;
 				goto abnormal_char;
 			}
 
@@ -1918,8 +1918,8 @@ const	unsigned char	*cont_ptr;
 	Attribute	saved_a;
 	unsigned char	*cont_free = NULL;
 	int		codepoint;
-	char		utf8str[16];
-	char *		x;
+	unsigned char	utf8str[16];
+	unsigned char *	x;
 	int		cols;
 
 	if (recursion)
@@ -2394,7 +2394,7 @@ const 	unsigned char	*ptr;
 	Attribute	a;
 	unsigned char *	real_retval;
 	int		codepoint;
-	char 		utf8str[16];
+	unsigned char 	utf8str[16];
 	char *		x;
 	int		cols;
 
@@ -2554,7 +2554,7 @@ size_t 	output_with_count (const unsigned char *str1, int clreol, int output)
 	Attribute	a;
 	const unsigned char *	str;
 	int		codepoint;
-	char		utf8str[16];
+	unsigned char	utf8str[16];
 	char *		x;
 	int		cols;
 
@@ -3798,25 +3798,25 @@ static	int		never_warn_again = 0;
 	enc = find_recoding("console", &xlat, NULL);
 
 	/* Very crude, ad-hoc check for UTF8 type things */
-	if (strcmp(enc, "UTF-8") &&  (prev_char == -1 || ((prev_char & 0x80) == 0x80)))
+	if (strcmp(enc, "UTF-8") &&  (prev_char == -1 || ((prev_char & 0x80U) == 0x80U)))
 	{
-	    if ((prev_char & 0xE0) == 0xC0)
+	    if ((prev_char & 0xE0U) == 0xC0U)
 	    {
-		if ((byte & 0xC0) == 0x80)
+		if ((byte & 0xC0U) == 0x80U)
 		  suspicious++;
 		else
 		  suspicious = 0;
 	    }
-	    if ((prev_char & 0xF0) == 0xE0)
+	    if ((prev_char & 0xF0U) == 0xE0U)
 	    {
-		if ((byte & 0xC0) == 0x80)
+		if ((byte & 0xC0U) == 0x80U)
 		  suspicious++;
 		else
 		  suspicious = 0;
 	    }
-	    if ((prev_char & 0xF8) == 0xF0)
+	    if ((prev_char & 0xF8U) == 0xF0U)
 	    {
-		if ((byte & 0xC0) == 0x80)
+		if ((byte & 0xC0U) == 0x80U)
 		   suspicious++;
 		else
 		   suspicious = 0;
@@ -4222,7 +4222,7 @@ int	parse_mangle (const char *value, int nvalue, char **rv)
 			else if (!my_strnicmp(str2, "-ALL_OFF", 5))
 				nvalue &= ~(STRIP_ALL_OFF);
 			else if (!my_strnicmp(str2, "ALL", 3))
-				nvalue = (0x7FFFFFFF ^ (MANGLE_ESCAPES) ^ (STRIP_OTHER) ^ (STRIP_UNPRINTABLE));
+				nvalue = (0x7FFFFFFFU ^ (MANGLE_ESCAPES) ^ (STRIP_OTHER) ^ (STRIP_UNPRINTABLE));
 			else if (!my_strnicmp(str2, "-ALL", 4))
 				nvalue = 0;
 			else if (!my_strnicmp(str2, "ALT_CHAR", 3))

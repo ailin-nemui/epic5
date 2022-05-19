@@ -205,7 +205,7 @@ int	new_window (Screen *screen)
 
 	new_w->name = NULL;
 	new_w->uuid = uuid4_generate_no_dashes();	/* THIS NEVER CHANGES */
-	new_w->priority = -1;		/* Filled in later */
+	new_w->priority = 0;		/* Filled in later */
 
 	/* Output rule stuff */
 	if (current_window)
@@ -275,7 +275,7 @@ int	new_window (Screen *screen)
 	/* The scrollback indicator */
 	new_w->scrollback_indicator = (Display *)new_malloc(sizeof(Display));
 	new_w->scrollback_indicator->line = NULL;
-	new_w->scrollback_indicator->count = -1;
+	new_w->scrollback_indicator->count = 0;
 	new_w->scrollback_indicator->prev = NULL;
 	new_w->scrollback_indicator->next = NULL;
 	new_w->scrollback_indicator->when = time(NULL);

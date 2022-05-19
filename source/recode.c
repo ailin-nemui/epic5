@@ -1010,7 +1010,7 @@ const char *	inbound_recode (const char *from, int server, const char *to, const
  */
 int     ucs_to_console (u_32int_t codepoint, unsigned char *deststr, size_t deststrsiz)
 {
-	char	utf8str[16];
+	unsigned char	utf8str[16];
 	size_t	utf8strsiz;
 	iconv_t	xlat = (iconv_t)-1;
 	int	n;

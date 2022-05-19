@@ -470,9 +470,7 @@ BUILT_IN_COMMAND(fe)
 		*placeholder,
 		*vars,
 		*var[255],
-		*word = NULL,
-		*todo = NULL,
-		fec_buffer[16];
+		*todo = NULL;
 	unsigned	ind, x, y;
 	int     old_display;
 	int	doing_fe = !strcmp(command, "FE");
@@ -536,9 +534,6 @@ BUILT_IN_COMMAND(fe)
 	old_display = window_display;
 #endif
 
-	if (!doing_fe)
-		{ word = fec_buffer; }
-
 	placeholder = templist;
 
 	will_catch_break_exceptions++;
@@ -548,24 +543,26 @@ BUILT_IN_COMMAND(fe)
 		for ( y = 0 ; y < ind ; y++ )
 		{
 			if (doing_fe)
-				word = next_func_arg(templist, &templist);
+			{
+				char *word;
+
+				if (!(word = next_func_arg(templist, &templist)))
+					word = endstr(templist);
+				add_local_alias(var[y], word, 0);
+			}
 			else
 			{
-				int	codepoint;
-				codepoint = next_code_point((const unsigned char **)&templist, 0);
-				if (codepoint == -1)
+				int		codepoint;
+				unsigned char 	fec_buffer[16], *word = fec_buffer;
+				
+				if ((codepoint = next_code_point((const unsigned char **)&templist, 0)) < 0)
 				{
 					templist++;
 					continue /* What to do? */;
 				}
 				ucs_to_utf8(codepoint, word, 16);
+				add_local_alias(var[y], word, 0);
 			}
-
-			/* Something is really hosed if this happens */
-			if (!word)
-				word = endstr(templist);
-
-			add_local_alias(var[y], word, 0);
 		}
 		x += ind;
 		runcmds(todo, subargs);

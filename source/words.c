@@ -66,7 +66,7 @@
 char *	search_for (char *start, char **mark, char *chars, int how)
 {
 	const unsigned char *s, *p;
-	size_t	cpoffset = -1;
+	size_t	cpoffset = SIZE_T_MAX;
 
 	if (!mark)
 		return NULL;		/* Take THAT! */

@@ -1143,7 +1143,7 @@ const 	VARIABLE *data;
 			break;
 		case CHAR_VAR:
 		{
-			char utf8str[16];
+			unsigned char utf8str[16];
 
 			ucs_to_utf8(data->integer, utf8str, sizeof(utf8str));
 			ret = malloc_strdup(utf8str);
