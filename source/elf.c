@@ -388,11 +388,11 @@ size_t	slurp_elf_file (struct epic_loadfile *elf, char **file_contents, off_t *f
 		}
 
 		sigh = epic_fgetc(elf);
-		if (sigh >= 0 && sigh <= 255)
-		{
+		if (sigh == EOF)
+			(*file_contents)[next_byte] = 0;
+		else if (sigh >= 0 && sigh <= 255)
 			(*file_contents)[next_byte] = (char)sigh;
-			next_byte++;
-		}
+		next_byte++;
 	}
 
 	/* The previous epic_fgetc() resulted in EOF so we got to back up */

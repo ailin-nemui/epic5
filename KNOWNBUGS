@@ -1149,3 +1149,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Eliminate final warnings with scan-build (clang's static analyzer)
 * Eliminate found warnings with clang's undefined behavior checker
 * Remediate the rest of clang's static analyzer's findings.
+* Fix slurp_elf_file() (rb fro)
