@@ -5210,14 +5210,14 @@ BUILT_IN_FUNCTION(function_randread, input)
 		RETURN_EMPTY;
 
 	offset = random_number(0) % filesize - 1;
-	fseek(fp, offset, SEEK_SET);
+	fseeko(fp, offset, SEEK_SET);
 	if (!fgets(buffer, BIG_BUFFER_SIZE, fp))
 		(void) 0;
 	if (!fgets(buffer, BIG_BUFFER_SIZE, fp))
 		(void) 0;
 	if (feof(fp))
 	{
-		fseek(fp, 0, SEEK_SET);
+		fseeko(fp, (off_t)0, SEEK_SET);
 		if (!fgets(buffer, BIG_BUFFER_SIZE, fp))
 			yell("I'm having some difficulty in $randread().");
 	}

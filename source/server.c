@@ -772,6 +772,7 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	s->default_realname = NULL;
 	s->realname = NULL;
 
+	s->protocol_metadata = 0;
 	s->doing_privmsg = 0;
 	s->doing_notice = 0;
 	s->doing_ctcp = 0;
@@ -3433,7 +3434,7 @@ void	set_server_ ## member (int servref, const char * param )	\
 
 /* A getter for a mundane string field */
 #define GET_SATTRIBUTE(member, default)			\
-const char *	get_server_ ## member (int servref ) \
+const char *	get_server_ ## member (int servref ) 	\
 {							\
 	Server *s;					\
 							\
@@ -3462,9 +3463,6 @@ static SET_SATTRIBUTE(param, member)			\
 GET_SATTRIBUTE(member, default)
 
 /* Various mundane getters and setters */
-IACCESSOR(v, doing_privmsg)
-IACCESSOR(v, doing_notice)
-IACCESSOR(v, doing_ctcp)
 IACCESSOR(v, sent)
 IACCESSOR(v, line_length)
 IACCESSOR(v, max_cached_chan_size)
@@ -3490,7 +3488,7 @@ GET_SATTRIBUTE(realname, NULL)
 
 /* * * * */
 /* Getters and setters that require special handling somehow. */
- 
+
 /*
  * Getter and setter for (IRCNet) "Unique ID"
  */
@@ -3695,66 +3693,131 @@ const char	*get_server_itsname (int refnum)
 }
 
 /*
- * Getter and setter for "protocol_state"
+ * All this is to work around clang...
  */
+void	set_server_doing_privmsg (int servref, int value)
+{
+	Server *s;
+
+	if (!(s = get_server(servref)))
+		return;
+
+	if (value == 1)
+		s->protocol_metadata |= DOING_PRIVMSG;
+	else if (value == 0)
+		s->protocol_metadata &= ~(DOING_PRIVMSG);
+	else
+		yell("set_server_doing_privmsg server %d value %d is invalid", servref, value);
+}
+
+int	get_server_doing_privmsg (int servref)
+{
+	Server *s;
+
+	if (!(s = get_server(servref)))
+		return -1;
+
+	if ((s->protocol_metadata & DOING_PRIVMSG) == DOING_PRIVMSG)
+		return 1;
+	return 0;
+}
+
+void	set_server_doing_notice (int servref, int value)
+{
+	Server *s;
+
+	if (!(s = get_server(servref)))
+		return;
+
+	if (value == 1)
+		s->protocol_metadata |= DOING_NOTICE;
+	else if (value == 0)
+		s->protocol_metadata &= ~(DOING_NOTICE);
+	else
+		yell("set_server_doing_notice server %d value %d is invalid", servref, value);
+}
+
+int	get_server_doing_notice (int servref)
+{
+	Server *s;
+
+	if (!(s = get_server(servref)))
+		return -1;
+
+	if ((s->protocol_metadata & DOING_NOTICE) == DOING_NOTICE)
+		return 1;
+	return 0;
+}
+
+void	set_server_doing_ctcp (int servref, int value)
+{
+	Server *s;
+
+	if (!(s = get_server(servref)))
+		return;
+
+	if (value == 1)
+		s->protocol_metadata |= DOING_CTCP;
+	else if (value == 0)
+		s->protocol_metadata &= ~(DOING_CTCP);
+	else
+		yell("set_server_doing_ctcp server %d value %d is invalid", servref, value);
+}
+
+int	get_server_doing_ctcp (int servref)
+{
+	Server *s;
+
+	if (!(s = get_server(servref)))
+		return -1;
+
+	if ((s->protocol_metadata & DOING_CTCP) == DOING_CTCP)
+		return 1;
+	return 0;
+}
+
 int	get_server_protocol_state (int refnum)
 {
 	int	retval = 0;
+	int	value;
 
-	if (get_server_doing_ctcp(refnum) > 1)
-	{
-		yell("get_server_doing_ctcp(%d) didn't return 1 -- correcting", refnum);
-		set_server_doing_ctcp(refnum, 1);
-	}
-	if (get_server_doing_notice(refnum) > 1)
-	{
-		yell("get_server_doing_notice(%d) didn't return 1 -- correcting", refnum);
-		set_server_doing_notice(refnum, 1);
-	}
-	if (get_server_doing_privmsg(refnum) > 1)
-	{
-		yell("get_server_doing_privmsg(%d) didn't return 1 -- correcting", refnum);
-		set_server_doing_privmsg(refnum, 1);
-	}
+	if ((value = get_server_doing_ctcp(refnum)) < 0)
+		return -1;
+	if (value == 1)
+		retval |= DOING_CTCP;
 
-	retval = (get_server_doing_ctcp(refnum) & 0x01);
-	retval = retval << 8;
+	if ((value = get_server_doing_notice(refnum)) < 0)
+		return -1;
+	if (value == 1)
+		retval |= DOING_NOTICE;
 
-	retval += (get_server_doing_notice(refnum) & 0x01);
-	retval = retval << 8;
-
-	retval += (get_server_doing_privmsg(refnum) & 0x01);
+	if ((value = get_server_doing_privmsg(refnum)) < 0)
+		return -1;
+	if (value == 1)
+		retval |= DOING_PRIVMSG;
 
 	return retval;
 }
 
 void	set_server_protocol_state (int refnum, int state)
 {
-	int	val;
+	if (!get_server(refnum))
+		return;
 
-	if ((val = state & 0xFF) > 1)
-	{
-		yell("set_server_doing_privmsg(%d) was %d, not 1 - correcting", refnum, val);
-		val = 1;
-	}
-	set_server_doing_privmsg(refnum, val);
-	state = state >> 8;
+	if ((state & DOING_CTCP) == DOING_CTCP)
+		set_server_doing_ctcp(refnum, 1);
+	else
+		set_server_doing_ctcp(refnum, 0);
 
-	if ((val = state & 0xFF) > 1)
-	{
-		yell("set_server_doing_notice(%d) was %d, not 1 - correcting", refnum, val);
-		val = 1;
-	}
-	set_server_doing_notice(refnum, val);
-	state = state >> 8;
+	if ((state & DOING_NOTICE) == DOING_NOTICE)
+		set_server_doing_notice(refnum, 1);
+	else
+		set_server_doing_notice(refnum, 0);
 
-	if ((val = state & 0xFF) > 1)
-	{
-		yell("set_server_doing_ctcp(%d) was %d, not 1 - correcting", refnum, val);
-		val = 1;
-	}
-	set_server_doing_ctcp(refnum, val);
-	/* state = state >> 8; */
+	if ((state & DOING_PRIVMSG) == DOING_PRIVMSG)
+		set_server_doing_privmsg(refnum, 1);
+	else
+		set_server_doing_privmsg(refnum, 0);
 }
 
 /***********************************************************************/

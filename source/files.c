@@ -487,11 +487,11 @@ int	file_seek (int fd, off_t offset, const char *whence)
 		return -1;
 
 	if (!my_stricmp(whence, "SET"))
-		return fseek(ptr->elf->fp, offset, SEEK_SET);
+		return fseeko(ptr->elf->fp, offset, SEEK_SET);
 	else if (!my_stricmp(whence, "CUR"))
-		return fseek(ptr->elf->fp, offset, SEEK_CUR);
+		return fseeko(ptr->elf->fp, offset, SEEK_CUR);
 	else if (!my_stricmp(whence, "END"))
-		return fseek(ptr->elf->fp, offset, SEEK_END);
+		return fseeko(ptr->elf->fp, offset, SEEK_END);
 	else
 		return -1;
 }

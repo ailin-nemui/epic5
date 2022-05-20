@@ -1152,3 +1152,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix slurp_elf_file() (rb fro)
 * Change SIZE_T_MAX to SIZE_MAX (rb ce)
 * Handle dequoting a single quote (detected by ubsan)
+* More changes to avoid undefined behavior and zlonix's "impossible bug"
+

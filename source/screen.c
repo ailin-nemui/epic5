@@ -3729,7 +3729,7 @@ static void 	do_screens (int fd)
 		else if ((n = dgets(screen->fdin, buffer, BIG_BUFFER_SIZE, -1)) > 0)
 		{
 			for (i = 0; i < n; i++)
-				translate_user_input(buffer[i]);
+				translate_user_input((unsigned char)buffer[i]);
 		}
 
 		/* An EOF/error error on a wserv screen kills that screen */

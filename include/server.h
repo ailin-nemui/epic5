@@ -146,6 +146,10 @@ const	AI *		next_addr;		/* The next one to try upon failure */
         WaitCmd *       end_wait_list;
 
 		/* metadata about message processing */
+#define DOING_PRIVMSG	1U
+#define DOING_NOTICE	2U
+#define DOING_CTCP	4U
+	unsigned	protocol_metadata;
         int             doing_privmsg;
         int             doing_notice;
         int             doing_ctcp;
