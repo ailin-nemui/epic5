@@ -4518,7 +4518,13 @@ void	dequoter (char **str, size_t *clue, int full, int extended, const char *del
 		if (x_debug & DEBUG_EXTRACTW_DEBUG)
 			yell("#### dequoter: simple string starts with delim...");
 
-		if (*clue > 0 && ((simple == 1 && (*str)[*clue] == what) ||
+		/* 
+		 * ... And if it ends with a delim,
+		 * EXCEPT IF IT IS A STRING CONTAINING ONLY A SINGLE DELIM...
+		 * XXX I'm choosing to pass through a single delim instead of
+		 *	chomping it.  I'm not sure if this is the right choice.
+		 */
+		if (*clue > 1 && ((simple == 1 && (*str)[*clue] == what) ||
 				  (simple == 0 && strchr(delims, (*str)[*clue]))))
 		{
 			if (x_debug & DEBUG_EXTRACTW_DEBUG)

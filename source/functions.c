@@ -1513,9 +1513,9 @@ BUILT_IN_FUNCTION(function_index, input)
 	size_t	cpoffset;
 
 	GET_DWORD_ARG(schars, input);
-	cpoffset = SIZE_T_MAX;
+	cpoffset = SIZE_MAX;
 	cpindex((const unsigned char *)input, (const unsigned char *)schars, 1, &cpoffset);
-	if (cpoffset == SIZE_T_MAX)
+	if (cpoffset == SIZE_MAX)
 		RETURN_INT(-1);
 	else
 		RETURN_INT(cpoffset);
@@ -1539,11 +1539,11 @@ BUILT_IN_FUNCTION(function_rindex, word)
 	if (!*word || !*chars)
 		RETURN_INT(-1);
 
-	cpoffset = SIZE_T_MAX;
+	cpoffset = SIZE_MAX;
 	rcpindex((const unsigned char *)word + strlen(word), 
 		 (const unsigned char *)word, 
 		 (const unsigned char *)chars, 1, &cpoffset);
-	if (cpoffset == SIZE_T_MAX)
+	if (cpoffset == SIZE_MAX)
 		RETURN_INT(-1);
 	else
 		RETURN_INT(cpoffset);

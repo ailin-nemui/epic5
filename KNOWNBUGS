@@ -1150,3 +1150,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Eliminate found warnings with clang's undefined behavior checker
 * Remediate the rest of clang's static analyzer's findings.
 * Fix slurp_elf_file() (rb fro)
+* Change SIZE_T_MAX to SIZE_MAX (rb ce)
+* Handle dequoting a single quote (detected by ubsan)
