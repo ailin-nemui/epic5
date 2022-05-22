@@ -1,5 +1,9 @@
 EPIC5-2.2
 
+*** News 05/22/2022 -- EPIC5-2.1.10 (2059 - Casuistry) released here
+	This release is entirely quality improvements now that we've 
+	to C99 -- addressing undefined behavior, etc.
+
 *** News 05/09/2022 -- EPIC5-2.1.9 (2053 - Decoupage) released here
 *** News 05/09/2022 -- EPIC5-2.1.8 (2052 - Decoupage) released here
 	I screwed up the release of 2.1.8 so I redid it as 2.1.9
