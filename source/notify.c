@@ -170,7 +170,7 @@ BUILT_IN_COMMAND(notify)
 			    if (!(s = get_server(refnum)))
 				continue;
 
-			    if ((new_n = (NotifyItem *)remove_from_array(NOTIFY_LIST(s), nick)))
+			    if ((new_n = (NotifyItem *)remove_from_alist(NOTIFY_LIST(s), nick)))
 			    {
 				new_free(&(new_n->nick));
 				new_free((char **)&new_n);
@@ -198,7 +198,7 @@ BUILT_IN_COMMAND(notify)
 			    if (!(s = get_server(refnum)))
 				continue;
 
-			    while ((new_n = (NotifyItem *)array_pop(NOTIFY_LIST(s), 0)))
+			    while ((new_n = (NotifyItem *)alist_pop(NOTIFY_LIST(s), 0)))
 			    {
 				new_free(&new_n->nick);
 				new_free((char **)&new_n);
@@ -230,7 +230,7 @@ BUILT_IN_COMMAND(notify)
 			if (!(s = get_server(refnum)))
 			    continue;
 
-			if ((new_n = (NotifyItem *)array_lookup(NOTIFY_LIST(s), nick, 0, 0)))
+			if ((new_n = (NotifyItem *)alist_lookup(NOTIFY_LIST(s), nick, 0, 0)))
 			{
 			    continue;	/* Already there! */
 			}
@@ -238,7 +238,7 @@ BUILT_IN_COMMAND(notify)
 			new_n = (NotifyItem *)new_malloc(sizeof(NotifyItem));
 			new_n->nick = malloc_strdup(nick);
 			new_n->flag = 0;
-			add_to_array(NOTIFY_LIST(s), nick, new_n);
+			add_to_alist(NOTIFY_LIST(s), nick, new_n);
 			added = 1;
 		     }
 
@@ -391,7 +391,7 @@ void 	notify_mark (int refnum, const char *nick, int flag, int doit)
 	if (!(s = get_server(refnum)))
 		return;
 
-	if ((tmp = (NotifyItem *)find_array_item(NOTIFY_LIST(s), nick, &count, &loc)) 
+	if ((tmp = (NotifyItem *)find_alist_item(NOTIFY_LIST(s), nick, &count, &loc)) 
 			&& count < 0)
 	{
 		if (flag)
@@ -466,7 +466,7 @@ void 	notify_userhost_reply (int refnum, const char *nick, const char *uh)
 	if (!(s = get_server(refnum)))
 		return;
 
-	if ((tmp = (NotifyItem *)array_lookup(NOTIFY_LIST(s), nick, 0, 0)))
+	if ((tmp = (NotifyItem *)alist_lookup(NOTIFY_LIST(s), nick, 0, 0)))
 	{
 		if (do_hook(NOTIFY_SIGNON_LIST, "%s %s", nick, uh))
 		{
@@ -478,7 +478,7 @@ void 	notify_userhost_reply (int refnum, const char *nick, const char *uh)
 
 		/*
 		 * copy the correct case of the nick
-		 * into our array  ;)
+		 * into our alist  ;)
 		 */
 		malloc_strcpy(&tmp->nick, nick);
 		malloc_strcpy(&last_notify_nick, nick);
@@ -517,7 +517,7 @@ void 	make_notify_list (int refnum)
 		tmp->nick = malloc_strdup(NOTIFY_ITEM(sp, i)->nick);
 		tmp->flag = 0;
 
-		add_to_array (NOTIFY_LIST(s), tmp->nick, tmp);
+		add_to_alist (NOTIFY_LIST(s), tmp->nick, tmp);
 		malloc_strcat_wordlist_c(&list, space, tmp->nick, &clue);
 	}
 
@@ -538,7 +538,7 @@ void	destroy_notify_list (int refnum)
 
 	while (NOTIFY_MAX(s))
 	{
-		item = (NotifyItem *) array_pop(NOTIFY_LIST(s), 0);
+		item = (NotifyItem *) alist_pop(NOTIFY_LIST(s), 0);
 		if (item) 
 			new_free(&item->nick);
 		new_free(&item);

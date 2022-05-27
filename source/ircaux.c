@@ -53,6 +53,7 @@
 #include "words.h"
 #include "ctcp.h"
 #include "server.h"
+#include "list.h"
 #include "sedcrypt.h"
 #include "elf.h"
 
@@ -1586,7 +1587,10 @@ static	int recursion = 0;		/* Recursion is bad */
 		irc_exit(1, "Panic: epic5-%lu:%s", commit_id, buffer);
 #endif
 	recursion--;
-	longjmp(panic_jumpseat, 1);
+	if (dead)
+		irc_exit(1, "Panic: epic5-%lu:%s", commit_id, buffer);
+	else
+		longjmp(panic_jumpseat, 1);
 }
 
 /* beep_em: Not hard to figure this one out */
@@ -2726,7 +2730,6 @@ int	new_split_string (unsigned char *str, unsigned char ***to, int delimiter)
 }
 
 
-double strtod();	/* sunos must die. */
 int 	check_val (const char *sub)
 {
 	double sval;

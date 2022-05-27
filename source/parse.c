@@ -44,6 +44,7 @@
 #include "ignore.h"
 #include "lastlog.h"
 #include "ircaux.h"
+#include "list.h"
 #include "sedcrypt.h"
 #include "termx.h"
 #include "flood.h"

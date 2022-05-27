@@ -149,10 +149,10 @@
 
 
 #include "irc.h"
+#include "list.h"
 #include "sedcrypt.h"
 #include "ctcp.h"
 #include "ircaux.h"
-#include "list.h"
 #include "output.h"
 #include "vars.h"
 #include "words.h"
@@ -164,18 +164,20 @@
 #ifdef HAVE_SSL
 static char *	decipher_evp (const unsigned char *passwd, int passwdlen, const unsigned char *ciphertext, int cipherlen, const EVP_CIPHER *type, int *outlen, int ivsize);
 #endif
-static char *	decrypt_by_prog (const unsigned char *str, size_t *len, Crypt *crypt);
+static char *	decrypt_by_prog (const unsigned char *str, size_t *len, List *crypt);
 
 #ifdef HAVE_SSL
 static char *	cipher_evp (const unsigned char *passwd, int passwdlen, const unsigned char *plaintext, int plaintextlen, const EVP_CIPHER *type, int *retsize, int ivsize);
 #endif
-static char *	encrypt_by_prog (const unsigned char *str, size_t *len, Crypt *crypt);
+static char *	encrypt_by_prog (const unsigned char *str, size_t *len, List *crypt);
 
 /* This function is used by CTCP handling, but not by xform! */
-unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, Crypt *crypti, int *retlen)
+unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, List *cryptl, int *retlen)
 {
     do
     {
+	Crypt *crypti = (Crypt *)(cryptl->d);
+
 	if (crypti->sed_type == CAST5CRYPT || crypti->sed_type == BLOWFISHCRYPT ||
 	    crypti->sed_type == AES256CRYPT || crypti->sed_type == AESSHA256CRYPT ||
 	    crypti->sed_type == FISHCRYPT)
@@ -263,7 +265,7 @@ unsigned char *	decipher_message (const unsigned char *ciphertext, size_t len, C
 	{
 		unsigned char *retval;
 
-		retval = decrypt_by_prog(ciphertext, &len, crypti);
+		retval = decrypt_by_prog(ciphertext, &len, cryptl);
 		*retlen = len;
 		return retval;
 	}
@@ -348,11 +350,12 @@ void     decrypt_sed (unsigned char *str, int len, const unsigned char *passwd, 
         str[i] = (char) 0;
 }
 
-static char *	decrypt_by_prog (const unsigned char *str, size_t *len, Crypt *crypti)
+static char *	decrypt_by_prog (const unsigned char *str, size_t *len, List *cryptl)
 {
         char    *ret = NULL, *input;
         char *  args[3];
         int     iplen;
+	Crypt *	crypti = (Crypt *)(cryptl->d);
 
         args[0] = malloc_strdup(crypti->prog);
         args[1] = malloc_strdup("decrypt");
@@ -376,8 +379,10 @@ static char *	decrypt_by_prog (const unsigned char *str, size_t *len, Crypt *cry
 }
 
 /*************************************************************************/
-unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, Crypt *crypti, int *retlen)
+unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, List *cryptl, int *retlen)
 {
+	Crypt *	crypti = (Crypt *)(cryptl->d);
+
 	if (retlen)
 		*retlen = 0;
 	if (!orig_message || !crypti || !retlen)
@@ -439,7 +444,7 @@ unsigned char *	cipher_message (const unsigned char *orig_message, size_t len, C
 	{
 		unsigned char *ciphertext;
 
-		ciphertext = encrypt_by_prog(orig_message, &len, crypti);
+		ciphertext = encrypt_by_prog(orig_message, &len, cryptl);
 		*retlen = len;
 		return ciphertext;
 	}
@@ -537,11 +542,12 @@ void     encrypt_sed (unsigned char *str, int len, const unsigned char *passwd, 
         str[i] = (char) 0;
 }
 
-static char *	encrypt_by_prog (const unsigned char *str, size_t *len, Crypt *crypti)
+static char *	encrypt_by_prog (const unsigned char *str, size_t *len, List *cryptl)
 {
         char    *ret = NULL, *input;
         char *  args[3];
         int     iplen;
+	Crypt *	crypti = (Crypt *)(cryptl->d);
 
         args[0] = malloc_strdup(crypti->prog);
         args[1] = malloc_strdup("encrypt");

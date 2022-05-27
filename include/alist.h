@@ -1,5 +1,5 @@
 /*
- * alist.h -- resizeable arrays
+ * alist.h -- resizeable arrays (dicts)
  * Copyright 1997 EPIC Software Labs
  */
 
@@ -73,7 +73,7 @@ typedef struct
 	char *		name;
 	u_32int_t	hash;
 	void *		data;
-} array_item_;
+} alist_item_;
 
 typedef int       (*alist_func) (const unsigned char *, const unsigned char *, size_t);
 typedef enum {
@@ -84,40 +84,40 @@ typedef enum {
 /*
  * This is the actual list, that contains structs that are of the
  * form described above.  It contains the current size and the maximum
- * size of the array.
+ * size of the alist.
  */
 typedef struct
 {
-	array_item_ **	list;
+	alist_item_ **	list;
 	int 		max;
 	int 		total_max;
 	alist_func 	func;
 	hash_type 	hash;
-} MAY_ALIAS array;
+} MAY_ALIAS alist;
 
-void *	add_to_array 		(array *, const char *, void *);
-void *	remove_from_array 	(array *, const char *);
-void *	array_lookup 		(array *, const char *, int, int);
-void *	find_array_item 	(array *, const char *, int *, int *);
-void *	array_pop		(array *, int);
+void *	add_to_alist 		(alist *, const char *, void *);
+void *	remove_from_alist 	(alist *, const char *);
+void *	alist_lookup 		(alist *, const char *, int, int);
+void *	find_alist_item 	(alist *, const char *, int *, int *);
+void *	alist_pop		(alist *, int);
 
-#define ARRAY_ITEM(array, loc) ((array_item_ *) ((array) -> list [ (loc) ]))
-#define LARRAY_ITEM(array, loc) (((array) -> list [ (loc) ]))
+#define ALIST_ITEM(alist, loc) ((alist_item_ *) ((alist) -> list [ (loc) ]))
+#define LALIST_ITEM(alist, loc) (((alist) -> list [ (loc) ]))
 
 /* Written by panasync */
 /* Re-written by CE */
-#define GET_SOME_ARRAY_NAMES_FUNCTION(fn, array, test)                        \
+#define GET_SOME_ALIST_NAMES_FUNCTION(fn, alist, test)                        \
 char *(fn)(const char *str)                                                   \
 {                                                                             \
 	int i;                                                                \
 	char *ret = NULL;                                                     \
 	size_t rclue = 0;                                                     \
 	for (i = 0; (test); ++i)                                              \
-		if (!str || !*str || wild_match(str, (array)))                \
-			malloc_strcat_wordlist_c(&ret, space, (array), &rclue);\
+		if (!str || !*str || wild_match(str, (alist)))                \
+			malloc_strcat_wordlist_c(&ret, space, (alist), &rclue);\
 	return ret ? ret : malloc_strdup(empty_string);                       \
 }
-#define GET_ARRAY_NAMES_FUNCTION(fn, array) GET_SOME_ARRAY_NAMES_FUNCTION((fn), ((array.list)[i]->name), (i < (array).max))
+#define GET_ALIST_NAMES_FUNCTION(fn, alist) GET_SOME_ARRAY_NAMES_FUNCTION((fn), ((alist.list)[i]->name), (i < (alist).max))
 #define GET_BUCKET_NAMES_FUNCTION(fn, bucket) GET_SOME_ARRAY_NAMES_FUNCTION((fn), ((bucket)->list[i].name), (i < (bucket)->numitems))
 
 #endif

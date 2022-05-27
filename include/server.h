@@ -87,7 +87,7 @@ const	AI *		next_addr;		/* The next one to try upon failure */
 		/* metadata about the server */
 	char *		itsname;		/* the server's idea of its name */
 	char *		version_string;		/* what is says */
-	array		a005;			/* 005 settings kept kere. */
+	alist		a005;			/* 005 settings kept kere. */
 	int		stricmp_table;		/* Which case insensitive map to use */
 	int		line_length;		/* How long a protocol command may be */
 	int		max_cached_chan_size;	/* Bigger channels won't cache U@H */
@@ -130,7 +130,7 @@ const	AI *		next_addr;		/* The next one to try upon failure */
 	UserhostEntry *	userhost_wait;		/* Userhost wait queue */
 
 		/* /NOTIFY */
-	array		notify_list;		/* Notify list for this server */
+	alist		notify_list;		/* Notify list for this server */
 	char *		ison;
 
 		/* /LIST, /NAMES */

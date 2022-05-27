@@ -1,5 +1,5 @@
 /*
- * alist.c -- resizeable arrays.
+ * alist.c -- resizeable arrays (dicts)
  *
  * Copyright 1997, 2015 EPIC Software Labs
  * All rights reserved.
@@ -35,26 +35,26 @@
 #include "output.h"
 
 /* Function decls */
-static	void	check_array_size (array *list);
-	void 	move_array_items (array *list, int start, int end, int dir);
+static	void	check_alist_size (alist *list);
+	void 	move_alist_items (alist *list, int start, int end, int dir);
 
-array **all_arrays = NULL;
-int	all_arrays_size = 0;
+alist **all_alists = NULL;
+int	all_alists_size = 0;
 
 /*
  * Returns an entry that has been displaced, if any.
  * XXX 'item' shall be replaced with 'char *name' and 'void *data'
  */
-void *	add_to_array (array *a, const char *name, void *item)
+void *	add_to_alist (alist *a, const char *name, void *item)
 {
 	int 		count;
 	int 		location = 0;
 	void *		ret = NULL;
 	u_32int_t	mask; 	/* Dummy var */
-	array_item_ *	item_;
+	alist_item_ *	item_;
 
 	/* Initialize our internal item */
-	item_ = (array_item_ *)new_malloc(sizeof(array_item_));
+	item_ = (alist_item_ *)new_malloc(sizeof(alist_item_));
 	item_->name = NULL;
 	malloc_strcpy(&item_->name, name);	
 	if (a->hash == HASH_INSENSITIVE)
@@ -63,17 +63,17 @@ void *	add_to_array (array *a, const char *name, void *item)
 		item_->hash = cs_alist_hash(item_->name, &mask);
 	item_->data = item;
 
-	check_array_size(a);
+	check_alist_size(a);
 	if (a->max)
 	{
-		find_array_item(a, name, &count, &location);
+		find_alist_item(a, name, &count, &location);
 		if (count < 0)
 		{
-			ret = ARRAY_ITEM(a, location)->data;
+			ret = ALIST_ITEM(a, location)->data;
 			a->max--;
 		}
 		else
-			move_array_items(a, location, a->max, 1);
+			move_alist_items(a, location, a->max, 1);
 	}
 
 	a->list[location] = item_;
@@ -84,58 +84,58 @@ void *	add_to_array (array *a, const char *name, void *item)
 /*
  * Returns the entry that has been removed, if any.
  */
-void *	remove_from_array (array *a, const char *name)
+void *	remove_from_alist (alist *a, const char *name)
 {
 	int 	count, 
 		location = 0;
 
 	if (a->max)
 	{
-		find_array_item(a, name, &count, &location);
+		find_alist_item(a, name, &count, &location);
 		if (count >= 0)
 			return NULL;
 
-		return array_pop(a, location);
+		return alist_pop(a, location);
 	}
 	return NULL;	/* Cant delete whats not there */
 }
 
-/* Remove the 'which'th item from the given array */
-void *	array_pop (array *a, int which)
+/* Remove the 'which'th item from the given alist */
+void *	alist_pop (alist *a, int which)
 {
-	array_item_ *item_ = NULL;
+	alist_item_ *item_ = NULL;
 	void *ret = NULL;
 
 	if (which < 0 || which >= a->max)
 		return NULL;
 
-	item_ = ARRAY_ITEM(a, which);
+	item_ = ALIST_ITEM(a, which);
 	ret = item_->data;
 
-	move_array_items(a, which + 1, a->max, -1);
+	move_alist_items(a, which + 1, a->max, -1);
 	a->max--;
-	check_array_size(a);
+	check_alist_size(a);
 
 	new_free(&item_->name);
 	new_free((char **)&item_);
 	return ret;
 }
 
-void *	array_lookup (array *a, const char *name, int wild, int rem)
+void *	alist_lookup (alist *a, const char *name, int wild, int rem)
 {
 	int 	count, 
 		location;
 
 	if (rem)
-		return remove_from_array(a, name);
+		return remove_from_alist(a, name);
 	else
-		return find_array_item(a, name, &count, &location);
+		return find_alist_item(a, name, &count, &location);
 }
 
-static void	check_array_size (array *a)
+static void	check_alist_size (alist *a)
 {
 	if (a->total_max && (a->total_max < a->max))
-		panic(1, "array->max < array->total_max");
+		panic(1, "alist->max < alist->total_max");
 
 	if (a->total_max == 0)
 	{
@@ -149,31 +149,31 @@ static void	check_array_size (array *a)
 	else
 		return;
 
-	RESIZE(a->list, array_item_ *, a->total_max);
+	RESIZE(a->list, alist_item_ *, a->total_max);
 }
 
 /*
- * Move ``start'' through ``end'' array elements ``dir'' places up
- * in the array.  If ``dir'' is negative, move them down in the array.
+ * Move ``start'' through ``end'' alist elements ``dir'' places up
+ * in the alist.  If ``dir'' is negative, move them down in the alist.
  * Fill in the vacated spots with NULLs.
  */
-void	move_array_items (array *a, int start, int end, int dir)
+void	move_alist_items (alist *a, int start, int end, int dir)
 {
 	int 	i;
 
 	if (dir > 0)
 	{
 		for (i = end; i >= start; i--)
-			LARRAY_ITEM(a, i + dir) = ARRAY_ITEM(a, i);
+			LALIST_ITEM(a, i + dir) = ALIST_ITEM(a, i);
 		for (i = dir; i > 0; i--)
-			LARRAY_ITEM(a, start + i - 1) = NULL;
+			LALIST_ITEM(a, start + i - 1) = NULL;
 	}
 	else if (dir < 0)
 	{
 		for (i = start; i <= end; i++)
-			LARRAY_ITEM(a, i + dir) = ARRAY_ITEM(a, i);
+			LALIST_ITEM(a, i + dir) = ALIST_ITEM(a, i);
 		for (i = end - dir + 1; i <= end; i++)
-			LARRAY_ITEM(a, i) = NULL;
+			LALIST_ITEM(a, i) = NULL;
 	}
 }
 
@@ -194,7 +194,7 @@ void	move_array_items (array *a, int start, int end, int dir)
  *	put into ``loc'' and its entry is returned.
  *
  * If ``cnt'' is zero, then there were no matches for ``name'', but ``loc''
- * 	is set to the location in the array in which you could place the
+ * 	is set to the location in the alist in which you could place the
  * 	specified name in the sorted list.
  *
  * If ``cnt'' is one, then there was one command that non-ambiguously 
@@ -205,7 +205,7 @@ void	move_array_items (array *a, int start, int end, int dir)
  *	The entry that is lowest alphabetically is returned, and its
  *	location is put into ``loc''.
  */
-void *	find_array_item (array *set, const char *name, int *cnt, int *loc)
+void *	find_alist_item (alist *set, const char *name, int *cnt, int *loc)
 {
 	size_t		len = strlen(name);
 	intmax_t	c = 0;
@@ -215,7 +215,7 @@ void *	find_array_item (array *set, const char *name, int *cnt, int *loc)
 			max;
 	u_32int_t	mask;
 	u_32int_t	hash;
-	array_item_ *	item_;
+	alist_item_ *	item_;
 
 	if (set->hash == HASH_INSENSITIVE)
 		hash = ci_alist_hash(name, &mask);
@@ -246,9 +246,9 @@ void *	find_array_item (array *set, const char *name, int *cnt, int *loc)
 	while (max >= min)
 	{
 		pos = (max - min) / 2 + min;
-		c = (intmax_t)(hash & mask) - (intmax_t)(ARRAY_ITEM(set, pos)->hash & mask);
+		c = (intmax_t)(hash & mask) - (intmax_t)(ALIST_ITEM(set, pos)->hash & mask);
 		if (c == 0) {
-			c = set->func(name, ARRAY_ITEM(set, pos)->name, len);
+			c = set->func(name, ALIST_ITEM(set, pos)->name, len);
 		}
 		if (c == 0) {
 			if (max == pos)
@@ -287,9 +287,9 @@ void *	find_array_item (array *set, const char *name, int *cnt, int *loc)
 	while (max >= min)
 	{
 		pos = (min - max) / 2 + max;  /* Don't ask */
-		c = (intmax_t)(hash & mask) - (intmax_t)(ARRAY_ITEM(set, pos)->hash & mask);
+		c = (intmax_t)(hash & mask) - (intmax_t)(ALIST_ITEM(set, pos)->hash & mask);
 		if (c == 0) {
-			c = set->func(name, ARRAY_ITEM(set, pos)->name, len);
+			c = set->func(name, ALIST_ITEM(set, pos)->name, len);
 		}
 		if (c == 0) {
 			if (min == pos)
@@ -317,7 +317,7 @@ void *	find_array_item (array *set, const char *name, int *cnt, int *loc)
 	 * exact match, its sitting under item 'min'.  So we check
 	 * for that and whack the count appropriately.
 	 */
-	if (0 == (ARRAY_ITEM(set, min)->name)[len])
+	if (0 == (ALIST_ITEM(set, min)->name)[len])
 		*cnt *= -1;
 
 	/*
@@ -330,6 +330,6 @@ void *	find_array_item (array *set, const char *name, int *cnt, int *loc)
 	/*
 	 * Then we return the first item that matches.
 	 */
-	return ARRAY_ITEM(set, min)->data;
+	return ALIST_ITEM(set, min)->data;
 }
 

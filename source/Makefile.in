@@ -13,7 +13,7 @@ LDFLAGS	= @LDFLAGS@
 DEFS	= @DEFS@
 RM	= rm -f
 
-OBJECTS = alias.o alist.o array.o cJSON.o clock.o commands.o compat.o \
+OBJECTS = alias.o alist.o ara.o array.o cJSON.o clock.o commands.o compat.o \
 	crypt.o crypto.o ctcp.o dcc.o debug.o elf.o exec.o files.o flood.o \
 	functions.o glob.o hook.o if.o ignore.o input.o irc.o \
 	ircaux.o ircsig.o keys.o lastlog.o levels.o list.o log.o logfiles.o \

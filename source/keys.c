@@ -79,16 +79,22 @@ typedef void (*BindFunction) (unsigned int, unsigned char *);
  */
 struct Binding 
 {
+#if 0
+    List	l;
+#endif
+#if 0
     struct Binding *next;	/* linked-list stuff. :) */
-
     char *	name;		/* the name of this binding */
+#endif
     BindFunction func;		/* function to use ... */
     char *	alias;		/* OR alias to call.  one or the other. */
     char *	filename;	/* the package which added this binding */
 };
 typedef struct Binding Binding;
 
-	static	Binding *binding_list; 
+#define BINDING(item) ((Binding *)(item->d))
+
+	static	List *	binding_list; 
 
 
 #define KEYMAP_SIZE 128
@@ -96,7 +102,7 @@ struct Key
 {
     char   	val;  		/* the key value */
     char   	changed; 	/* 1 if this binding was changed post-startup */
-    Binding *	bound; 		/* the function we're bound to. */
+    List *	bound; 		/* the function we're bound to. */
     struct Key *map;    	/* a map of subkeys (may be NULL) */
     struct Key *owner;  	/* the key which contains the map we're in. */
     char *	stuff;     	/* passed as 2nd argument to binding */
@@ -112,10 +118,10 @@ typedef struct Key Key;
 
 
 /* ************************ */
-static Binding *add_binding 		(const char *, BindFunction, char *);
+static List *	add_binding 		(const char *, BindFunction, char *);
 static void	remove_binding 		(char *);
-static void	remove_bound_keys 	(Key *, Binding *);
-static Binding *find_binding 		(const char *name) ;
+static void	remove_bound_keys 	(Key *, List *);
+static List *	find_binding 		(const char *name) ;
 
 static void	key_exec 		(Key *key);
 static void	key_exec_bt 		(Key *);
@@ -135,7 +141,7 @@ static void	unload_bindings_recurse (const char *, Key *);
 
 static void	show_all_bindings 	(Key *, const char *, size_t);
 static void	show_key 		(Key *, const char *, int, int);
-static void	show_all_rbindings 	(Key *, const char *, int, Binding *);
+static void	show_all_rbindings 	(Key *, const char *, int, List *);
 static void	bindctl_getmap 		(Key *, const char *, int, char **);
 
 
@@ -175,9 +181,9 @@ static void	bindctl_getmap 		(Key *, const char *, int, char **);
  * Notes: 
  *	1. The 'alias' must be an alias name, not a block of ircII code!
  */
-static Binding *add_binding (const char *name, BindFunction func, char *alias) 
+static List *add_binding (const char *name, BindFunction func, char *alias) 
 {
-	Binding *	bp;
+	List *	bp;
 
 	if (func && alias) 
 		return NULL;	/* Both func and alias specified */
@@ -191,21 +197,22 @@ static Binding *add_binding (const char *name, BindFunction func, char *alias)
 		return NULL;
 	}
 
-	bp = new_malloc(sizeof(Binding));
+	bp = new_malloc(sizeof(List));
 	bp->name = malloc_strdup(name);
+	bp->d = (Binding *)new_malloc(sizeof(Binding));
 	ADD_TO_LIST_(&binding_list, bp);
 
-	bp->alias = NULL;
-	bp->func = NULL;
+	BINDING(bp)->alias = NULL;
+	BINDING(bp)->func = NULL;
 
 	if (alias) 
-		bp->alias = malloc_strdup(alias);
+		BINDING(bp)->alias = malloc_strdup(alias);
 	else
-		bp->func = func;
+		BINDING(bp)->func = func;
 
-	bp->filename = NULL;
+	BINDING(bp)->filename = NULL;
 	if (current_package())
-		bp->filename = malloc_strdup(current_package());
+		BINDING(bp)->filename = malloc_strdup(current_package());
 
 	return bp;
 }
@@ -220,7 +227,7 @@ static Binding *add_binding (const char *name, BindFunction func, char *alias)
  */
 static void	remove_binding (char *name) 
 {
-	Binding *bp;
+	List *bp;
 
 	if (!name)
 		return;
@@ -231,10 +238,11 @@ static void	remove_binding (char *name)
 		remove_bound_keys(head_keymap, bp);
 
 		new_free(&bp->name);
-		if (bp->alias)
-			new_free(&bp->alias);
-		if (bp->filename)
-			new_free(&bp->filename);
+		if (BINDING(bp)->alias)
+			new_free(&BINDING(bp)->alias);
+		if (BINDING(bp)->filename)
+			new_free(&BINDING(bp)->filename);
+		new_free((char **)&bp->d);
 		new_free(&bp);
 	}
 
@@ -250,7 +258,7 @@ static void	remove_binding (char *name)
  * Notes:
  *	Upon return, no sequence in 'map' will be pointing to 'binding'.
  */
-static void	remove_bound_keys (Key *map, Binding *binding) 
+static void	remove_bound_keys (Key *map, List *binding) 
 {
 	int c;
 
@@ -269,13 +277,13 @@ static void	remove_bound_keys (Key *map, Binding *binding)
  * Arguments: 
  *	name	- The BINDing we're interested in
  * Return value:
- *	A (Binding *) for 'name', or NULL if it doesn't exist.
+ *	A (List *) for 'name', or NULL if it doesn't exist.
  * Errors:
  *	NULL is returned if 'name' is NULL
  */
-static Binding *	find_binding (const char *name) 
+static List *	find_binding (const char *name) 
 {
-	Binding *retval;
+	List *retval;
 
 	if (!name)
 		return NULL;
@@ -408,7 +416,7 @@ static void	key_exec (Key *key)
 				key->bound->name, (int)key->val))
 	{
 		/* check alias first, then function */
-		if (key->bound->alias)
+		if (BINDING(key->bound)->alias)
 		{
 			/*
 			 * Your callback is invoked as
@@ -423,14 +431,14 @@ static void	key_exec (Key *key)
 			 * I suppose it's possible we could auto-detect that,
 			 * but i'm not sure if I care that much.
 			 */
-			char *exec = malloc_strdup(key->bound->alias);
+			char *exec = malloc_strdup(BINDING(key->bound)->alias);
 			if (key->stuff)
 			    malloc_strcat_wordlist(&exec, space, key->stuff);
 			call_lambda_command("KEY", exec, empty_string);
 			new_free(&exec);
 		} 
-		else if (key->bound->func)
-			key->bound->func(key->val, key->stuff);
+		else if (BINDING(key->bound)->func)
+			BINDING(key->bound)->func(key->val, key->stuff);
 	}
 }
 
@@ -1113,7 +1121,7 @@ static int	bind_compressed_string (char *keyseq, int slen, const char *bindstr, 
 	char *s;
 	Key *node;
 	Key *map;
-	Binding *bp = NULL;
+	List *bp = NULL;
 
 	if (!keyseq || !slen || !bindstr) 
 	{
@@ -1406,7 +1414,7 @@ static void	remove_bindings_recurse (Key **mapptr)
  */
 void	unload_bindings (const char *pkg) 
 {
-	Binding *bp, *bp2;
+	List *bp, *bp2;
 
 	/*
 	 * First, delete all bind actions created by the package.
@@ -1414,7 +1422,7 @@ void	unload_bindings (const char *pkg)
 	for (bp = binding_list; bp; bp = bp2)
 	{
 		bp2 = bp->next;
-		if (bp->filename && !my_stricmp(bp->filename, pkg))
+		if (BINDING(bp)->filename && !my_stricmp(BINDING(bp)->filename, pkg))
 			remove_binding(bp->name);
 	}
 
@@ -1611,7 +1619,7 @@ void	do_stack_bind (int type, char *arg)
 	else if (type == STACK_LIST) 
 	{
 		say("BIND STACK LISTING");
-		for (bsp = bind_stack;bsp;bsp = bsp->next)
+		for (bsp = bind_stack; bsp; bsp = bsp->next)
 			show_key(&bsp->key, bsp->sequence, bsp->slen, 0);
 		say("END OF BIND STACK LISTING");
 		return;
@@ -1725,7 +1733,7 @@ static void	show_all_bindings (Key *map, const char *str, size_t len)
 {
 	int c;
 	char *newstr;
-	Binding *self_insert;
+	List *self_insert;
 	size_t size;
 
 	self_insert = find_binding("SELF_INSERT");
@@ -1745,13 +1753,12 @@ static void	show_all_bindings (Key *map, const char *str, size_t len)
 
 static void	show_key (Key *key, const char *str, int slen, int recurse) 
 {
-	Binding *bp;
+	List *bp;
 	char *clean = alloca(((strlen(str) + 1) * 2) + 1);
 
 	if (key == NULL) 
 	{
-		key = find_sequence(head_keymap, str, slen);
-		if (key == NULL)
+		if (!(key = find_sequence(head_keymap, str, slen)))
 		{
 			yell("Can't find key sequence in show_key");	
 			key = head_keymap;
@@ -1767,10 +1774,10 @@ static void	show_key (Key *key, const char *str, int slen, int recurse)
 		if (bp) 
 		{
 			say("[%s] \"%s\" is bound to %s%s%s",
-			(empty(key->filename) ? "*" : key->filename),
-			(slen ? bind_string_decompress(clean, str, slen) : str), 
-			bp->name,
-			(key->stuff ? " " : ""), (key->stuff ? key->stuff : ""));
+				(empty(key->filename) ? "*" : key->filename),
+				(slen ? bind_string_decompress(clean, str, slen) : str), 
+				bp->name,
+				(key->stuff ? " " : ""), (key->stuff ? key->stuff : ""));
 		}
 		if (recurse && key->map)
 			show_all_bindings(key->map, str, slen);
@@ -1784,7 +1791,7 @@ static void	show_key (Key *key, const char *str, int slen, int recurse)
 BUILT_IN_COMMAND(rbindcmd) 
 {
 	char *function;
-	Binding *bp;
+	List *bp;
 
 	if ((function = new_next_arg(args, &args)) == NULL)
 		return;
@@ -1801,7 +1808,7 @@ BUILT_IN_COMMAND(rbindcmd)
 	show_all_rbindings(head_keymap, "", 0, bp);
 }
 
-static void	show_all_rbindings (Key *map, const char *str, int len, Binding *binding) 
+static void	show_all_rbindings (Key *map, const char *str, int len, List *binding) 
 {
 	int c;
 	char *newstr;
@@ -1834,13 +1841,12 @@ static void	show_all_rbindings (Key *map, const char *str, int len, Binding *bin
 BUILT_IN_COMMAND(parsekeycmd) 
 {
 	Key fake;
-	Binding *bp;
+	List *bp;
 	char *func;
 
 	if ((func = new_next_arg(args, &args)) != NULL) 
 	{
-		bp = find_binding(func);
-		if (bp == NULL) 
+		if (!(bp = find_binding(func)))
 		{
 			say("No such function %s", func);
 			return;
@@ -1892,7 +1898,7 @@ char *	bindctl (char *input)
 
     GET_FUNC_ARG(listc, input);
     if (!my_strnicmp(listc, "FUNCTION", 1)) {
-	Binding *bp;
+	List *bp;
 	char *func;
 
 	GET_FUNC_ARG(func, input);
@@ -1909,7 +1915,7 @@ char *	bindctl (char *input)
 		alias = input;
 
 	    if (bp) {
-		if (bp->func)
+		if (BINDING(bp)->func)
 		    RETURN_INT(0);
 		remove_binding(bp->name);
 	    }
@@ -1918,7 +1924,7 @@ char *	bindctl (char *input)
 	    bp = find_binding(func);
 	    if (bp == NULL)
 		RETURN_INT(0);
-	    if (bp->func != NULL)
+	    if (BINDING(bp)->func != NULL)
 		RETURN_INT(0);
 
 	    remove_binding(func);
@@ -1932,10 +1938,10 @@ char *	bindctl (char *input)
 
 	    if (bp == NULL)
 		RETURN_EMPTY;
-	    else if (bp->func)
-		malloc_sprintf(&retval, "internal %p", bp->func);
+	    else if (BINDING(bp)->func)
+		malloc_sprintf(&retval, "internal "UINTMAX_HEX_FORMAT, (uintptr_t)(BINDING(bp)->func));
 	    else
-		malloc_sprintf(&retval, "alias %s", bp->alias);
+		malloc_sprintf(&retval, "alias %s", BINDING(bp)->alias);
 
 	    RETURN_STR(retval);
 	} else if (!my_strnicmp(listc, "MATCH", 1)) {
@@ -1956,13 +1962,13 @@ char *	bindctl (char *input)
 	    RETURN_STR(retval);
 	} else if (!my_strnicmp(listc, "GETPACKAGE", 1)) {
 	    if (bp != NULL)
-		RETURN_STR(bp->filename);
+		RETURN_STR(BINDING(bp)->filename);
 	} else if (!my_strnicmp(listc, "SETPACKAGE", 1)) {
 
 	    if (bp == NULL)
 		RETURN_INT(0);
 
-	    malloc_strcpy(&bp->filename, input);
+	    malloc_strcpy(&BINDING(bp)->filename, input);
 	    RETURN_INT(1);
 	}
     } else if (!my_strnicmp(listc, "SEQUENCE", 1)) {
@@ -2063,11 +2069,11 @@ static void	bindctl_getmap (Key *map, const char *str, int len, char **ret)
 #if 0
 void    help_topics_bind (FILE *f)                                         
 {
-	Binding *b;
+	List *b;
 
 	for (b = binding_list; b; b = b->next)
 	{
-		if (b->func)
+		if (BINDING(b)->func)
 			fprintf(f, "bind %s\n", b->name);
 	}
 }                                                                               

@@ -31,10 +31,10 @@
  * SUCH DAMAGE.
  */
 #include "irc.h"
+#include "list.h"
 #include "sedcrypt.h"
 #include "ctcp.h"
 #include "ircaux.h"
-#include "list.h"
 #include "output.h"
 #include "vars.h"
 #include "words.h"
@@ -69,7 +69,7 @@
 							 * buffer */
 
 /* crypt_list: the list of nicknames and encryption sessions */
-static	Crypt	*crypt_list = (Crypt *) 0;
+static	List	*crypt_list = (List *) 0;
 
 struct ciphertypes {
 	int	sed_type;
@@ -93,9 +93,9 @@ struct ciphertypes ciphers[] = {
 /* XXX sigh XXX */
 const char *allciphers = "SED, SEDSHA, CAST, BLOWFISH, AES or AESSHA";
 
-static	Crypt *	internal_is_crypted (Char *nick, Char *serv);
+static	List *	internal_is_crypted (Char *nick, Char *serv);
 static int	internal_remove_crypt (Char *nick, Char *serv);
-static void	cleanse_crypto_item (Crypt *item);
+static void	cleanse_crypto_item (List *item);
 const char *	happypasswd (const char *key, int sed_type);
 
 /*
@@ -114,73 +114,82 @@ const char *	happypasswd (const char *key, int sed_type);
  */
 static void	add_to_crypt (Char *nick, Char *serv, Char *passwd, Char *prog, int sed_type)
 {
-	Crypt	*new_crypt;
+	List *	new_crypt;
+	Crypt *	d;
 
 	/* Always purge an old item if there is one */
 	if ((new_crypt = internal_is_crypted(nick, serv)))
+	{
 		cleanse_crypto_item(new_crypt);
+		d = new_crypt->d;
+	}
 	else
-		new_crypt = (Crypt *)new_malloc(sizeof(Crypt));
+	{
+		new_crypt = (List *)new_malloc(sizeof(List));
+		d = new_crypt->d = (Crypt *)new_malloc(sizeof(Crypt));
+	}
 
-	new_crypt->nick = NULL;
-	new_crypt->serv = NULL;
-	new_crypt->passwd = NULL;
-	new_crypt->passwdlen = 0;
-	new_crypt->prog = NULL;
-	new_crypt->sed_type = sed_type;
+	new_crypt->name = NULL;
+
+	d->serv = NULL;
+	d->passwd = NULL;
+	d->passwdlen = 0;
+	d->prog = NULL;
+	d->sed_type = sed_type;
 
 	/* Fill in the 'nick' field. */
-	malloc_strcpy(&new_crypt->nick, nick);
+	malloc_strcpy(&new_crypt->name, nick);
 
 	/* Fill in the 'serv' field (only for certain servs, not global) */
 	if (serv)
-		malloc_strcpy(&new_crypt->serv, serv);
+		malloc_strcpy(&d->serv, serv);
 
 	/* Fill in the 'passwd' field. */
 	if (sed_type == AES256CRYPT || sed_type == AESSHA256CRYPT || 
 		sed_type == SEDSHACRYPT)
 	{
-		if (new_crypt->passwd == NULL)
-			new_crypt->passwd = new_malloc(32);
-		memset(new_crypt->passwd, 0, 32);
-		new_crypt->passwdlen = 32;
+		if (d->passwd == NULL)
+			d->passwd = new_malloc(32);
+		memset(d->passwd, 0, 32);
+		d->passwdlen = 32;
 
 		if (sed_type == AES256CRYPT)
-			memcpy(new_crypt->passwd, passwd, strlen(passwd));
+			memcpy(d->passwd, passwd, strlen(passwd));
 		else
-			sha256(passwd, strlen(passwd), new_crypt->passwd);
+			sha256(passwd, strlen(passwd), d->passwd);
 	}
 	else
 	{
-		malloc_strcpy(&new_crypt->passwd, passwd);
-		new_crypt->passwdlen = strlen(new_crypt->passwd);
+		malloc_strcpy(&d->passwd, passwd);
+		d->passwdlen = strlen(d->passwd);
 	}
 
 	/* Fill in the 'prog' field. */
 	if (prog && *prog)
 	{
-		malloc_strcpy(&new_crypt->prog, prog);
-		new_crypt->sed_type = PROGCRYPT;
+		malloc_strcpy(&d->prog, prog);
+		d->sed_type = PROGCRYPT;
 	}
 	else
-		new_free(&new_crypt->prog);
+		new_free(&d->prog);
 
 	/* XXX new_crypt has bifurcated primary passwd! */
 	ADD_TO_LIST_(&crypt_list, new_crypt);
 }
 
-static	Crypt *	internal_is_crypted (Char *nick, Char *serv)
+static	List *	internal_is_crypted (Char *nick, Char *serv)
 {
-        Crypt   *tmp;
+        List   *tmp;
 
         for (tmp = crypt_list; tmp; tmp = tmp->next)
         {
-                if (my_stricmp(tmp->nick, nick))
+                if (my_stricmp(tmp->name, nick))
                         continue;
 
-                if (serv && tmp->serv && !my_stricmp(tmp->serv, serv))
+		Crypt *d = (Crypt *)tmp->d;
+                if (serv && d->serv && !my_stricmp(d->serv, serv))
 			return tmp;
-		if (serv == NULL && tmp->serv == NULL)
+		if (serv == NULL && d->serv == NULL)
 			return tmp;
         }
 	return NULL;
@@ -192,11 +201,12 @@ static	Crypt *	internal_is_crypted (Char *nick, Char *serv)
  */
 static int	internal_remove_crypt (Char *nick, Char *serv)
 {
-	Crypt	*item = NULL;
+	List	*item = NULL;
 
 	if ((item = internal_is_crypted(nick, serv)) && REMOVE_ITEM_FROM_LIST_(&crypt_list, item))
 	{
 		cleanse_crypto_item(item);
+		new_free((char **)&item->d);
 		new_free((char **)&item);
 		return 0;	/* Success */
 	}
@@ -206,40 +216,44 @@ static int	internal_remove_crypt (Char *nick, Char *serv)
 
 static	void	clear_crypto_list (void)
 {
-	Crypt *item;
+	List *item;
 
 	while (crypt_list)
 	{
 		item = crypt_list;
 		crypt_list = crypt_list->next;
 		cleanse_crypto_item(item);
+		new_free((char **)&item->d);
 		new_free((char **)&item);
 	}
 }
 
-static void	cleanse_crypto_item (Crypt *item)
+static void	cleanse_crypto_item (List *item)
 {
-	if (item->nick)
+	if (item->name)
 	{
-		memset(item->nick, 0, strlen(item->nick));
-		new_free((char **)&(item->nick));
+		memset(item->name, 0, strlen(item->name));
+		new_free((char **)&(item->name));
 	}
-	if (item->serv)
+
+	Crypt *d = item->d;
+	if (d->serv)
 	{
-		memset(item->serv, 0, strlen(item->serv));
-		new_free((char **)&(item->serv));
+		memset(d->serv, 0, strlen(d->serv));
+		new_free((char **)&(d->serv));
 	}
-	if (item->passwd)
+	if (d->passwd)
 	{
-		memset(item->passwd, 0, item->passwdlen);
-		new_free((char **)&(item->passwd));
+		memset(d->passwd, 0, d->passwdlen);
+		new_free((char **)&(d->passwd));
 	}
-	if (item->prog)
+	if (d->prog)
 	{
-		memset(item->prog, 0, strlen(item->prog));
-		new_free((char **)&(item->prog));
+		memset(d->prog, 0, strlen(d->prog));
+		new_free((char **)&(d->prog));
 	}
-	memset(item, 0, sizeof(Crypt));
+	memset(d, 0, sizeof(Crypt));
+
 	return;
 }
 
@@ -267,11 +281,11 @@ static void	cleanse_crypto_item (Crypt *item)
  * because (nick, serv) is the primary key of the crypt list.
  */
 #define CHECK_NICK_AND_TYPE \
-	    if (tmp->nick && my_stricmp(tmp->nick, nick))		\
+	    if (tmp->name && my_stricmp(tmp->name, nick))		\
 		continue;						\
-	    if (sed_type != ANYCRYPT && tmp->sed_type != sed_type)	\
+	    if (sed_type != ANYCRYPT && ((Crypt *)(tmp->d))->sed_type != sed_type)	\
 	    {								\
-		if (sed_type == SEDCRYPT && tmp->sed_type != PROGCRYPT) \
+		if (sed_type == SEDCRYPT && ((Crypt *)(tmp->d))->sed_type != PROGCRYPT) \
 			/* ok */;					\
 		else							\
 			continue;					\
@@ -281,13 +295,13 @@ static void	cleanse_crypto_item (Crypt *item)
 	for (tmp = crypt_list; tmp; tmp = tmp->next)		\
 	{							\
 	    CHECK_NICK_AND_TYPE					\
-	    if (tmp->serv && !my_stricmp(tmp->serv, x )) 	\
+	    if (((Crypt *)(tmp->d))->serv && !my_stricmp(((Crypt *)(tmp->d))->serv, x )) 	\
 		return tmp;					\
 	}
 
-Crypt *	is_crypted (Char *nick, int serv, const char *ctcp_cmd)
+List *	is_crypted (Char *nick, int serv, const char *ctcp_cmd)
 {
-	Crypt *	tmp;
+	List *	tmp;
 	int	sed_type = NOCRYPT;
 	int	i;
 
@@ -317,7 +331,7 @@ Crypt *	is_crypted (Char *nick, int serv, const char *ctcp_cmd)
 	{
 	    CHECK_NICK_AND_TYPE
 
-	    if (tmp->serv && is_number(tmp->serv) && atol(tmp->serv) == serv)
+	    if (((Crypt *)(tmp->d))->serv && is_number(((Crypt *)(tmp->d))->serv) && atol(((Crypt *)(tmp->d))->serv) == serv)
 		return tmp;
 	}
 
@@ -442,17 +456,17 @@ usage_error:
 
 	else if (crypt_list)
 	{
-		Crypt	*tmp;
+		List	*tmp;
 
 		say("Your %ss:", command);
 		for (tmp = crypt_list; tmp; tmp = tmp->next)
 		    say("You are ciphering messages with '%s' on '%s' using '%s' "
 			   "with the passwd '%s'.",
-				tmp->nick, 
-				tmp->serv ? tmp->serv : "<any>",
-				tmp->prog ? tmp->prog : 
-					ciphers[tmp->sed_type].username, 
-				happypasswd(tmp->passwd, tmp->sed_type));
+				tmp->name, 
+				((Crypt *)(tmp->d))->serv ? ((Crypt *)(tmp->d))->serv : "<any>",
+				((Crypt *)(tmp->d))->prog ? ((Crypt *)(tmp->d))->prog : 
+					ciphers[((Crypt *)(tmp->d))->sed_type].username, 
+				happypasswd(((Crypt *)(tmp->d))->passwd, ((Crypt *)(tmp->d))->sed_type));
 	}
 	else
 	    say("You are not ciphering messages with anyone.");
@@ -476,7 +490,7 @@ usage_error:
  * data.  You need to call cipher_message() directly for that.  You cannot
  * use this function to send binary data over irc.
  */
-char *	crypt_msg (const unsigned char *str, Crypt *crypti)
+char *	crypt_msg (const unsigned char *str, List *crypti)
 {
 	char	buffer[CRYPT_BUFFER_SIZE + 1];
 	int	srclen;
@@ -495,12 +509,12 @@ char *	crypt_msg (const unsigned char *str, Crypt *crypti)
 		return ciphertext;	/* Here goes nothing! */
 	}
 
-	if (ciphers[crypti->sed_type].ctcpname)
+	if (ciphers[((Crypt *)(crypti->d))->sed_type].ctcpname)
 	     snprintf(buffer, sizeof(buffer), "%c%s %s%c",
-			CTCP_DELIM_CHAR, ciphers[crypti->sed_type].ctcpname, 
+			CTCP_DELIM_CHAR, ciphers[((Crypt *)(crypti->d))->sed_type].ctcpname, 
 			dest, CTCP_DELIM_CHAR);
 	else
-		panic(1, "crypt_msg: crypti->sed_type == %d not supported.", crypti->sed_type);
+		panic(1, "crypt_msg: ((Crypt *)(crypti->d))->sed_type == %d not supported.", ((Crypt *)(crypti->d))->sed_type);
 
 	new_free(&ciphertext);
 	new_free(&dest);
@@ -528,7 +542,7 @@ char *	crypt_msg (const unsigned char *str, Crypt *crypti)
  * which requires a big buffer to scratch around.  (The decrypted text could
  * contain a CTCP UTC which would expand to a larger string of text)
  */ 
-char *	decrypt_msg (const unsigned char *str, Crypt *crypti)
+char *	decrypt_msg (const unsigned char *str, List *crypti)
 {
 	char *	plaintext;
 	char *	dest;

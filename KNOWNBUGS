@@ -6,6 +6,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /on dcc_raw handling should set message_from() (rb Harz)
 * The way we handle "screen is not tall enough" underflow needs work
 * Unify window query and channels in the target list.
+* [ 2:46PM] <CrazyEddy> hop:  /fe ("" .) foo {echo $foo}  # This is supposed to have an empty string for the first iteration. When xdebug DWORD is on anyway. 
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1156,3 +1157,25 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Handle dequoting a single quote (detected by ubsan)
 * More changes to avoid undefined behavior and zlonix's "impossible bug"
 * EPIC5-2.1.10 (2059 - Casuistry) released here
+* Always call alists 'alist's instead of 'array's
+* Add a #define UINTMAX_HEX_FORMAT for pointers
+* Change (List)s to have a data pointer rather than inheritance
+* This removes a major remaining type punning issue
+* Remove '_window_list_end' from screens.  Determine it on the fly.
+* Add get_screen_bottom_window() to replace '_window_list_end'
+* Change (Crypt) from a (List) type to a data object for List
+* Change various crypt.c functions to take a straight (List).
+* Change various crypt.c functions to create and store a (Crypt) in (List)
+* Make (WNickList) private to window.c, use ordinary (List)s ordinarily
+* Change window's 'waiting_chans' and 'nicks' ordinary (List)s
+* Add ARAs - "automatically resizable arrays"; directly addressable arrays
+* Comment out bucket_(var|cmd)_alias and bucket_builtin_* to avoid warnings
+* Except bucket_builtin_variables() which is the only one actually used!
+* Convert (Ignore) from a (List) type to a data object for List
+* If a panic() happens during shutdown, then just go ahead and exit.
+* Convert (Binding) from a (List) type to a data object for List
+* Convert (Logfile) to use a plain old (List) to hold target names.
+* Rename 'invislble_list' to '_invisible_list' for future deprecation
+* Make everything using invisible list go through a function.
+* Split 'delete_window' into 'unlink_window' and 'delete_window_contents'
+* And make those two take refnums instead of a window ptr.

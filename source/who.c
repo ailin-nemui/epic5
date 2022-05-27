@@ -143,8 +143,8 @@ static char *who_item_full_desc (WhoEntry *item)
 		"dalnet [%d], dalnet_args [%s], who_mask [%d], "
 		"who_target [%s], who_name [%s], who_host [%s], "
 		"who_server [%s], who_nick [%s], who_real [%s], "
-		"who_stuff [%s], who_end [%s], next [%p], line [%p], "
-		"end [%p], requested ["INTMAX_FORMAT"], dirty ["INTMAX_FORMAT"]",
+		"who_stuff [%s], who_end [%s], next [%p], line ["UINTMAX_HEX_FORMAT"], "
+		"end ["UINTMAX_HEX_FORMAT"], requested ["INTMAX_FORMAT"], dirty ["INTMAX_FORMAT"]",
 			item->refnum,
 			item->dirty, item->piggyback, item->undernet_extended, 
 				S(item->undernet_extended_args),
@@ -155,8 +155,8 @@ static char *who_item_full_desc (WhoEntry *item)
 			S(item->who_server), S(item->who_nick), 
 				S(item->who_real),
 			S(item->who_stuff), S(item->who_end), 
-				item->next, item->line,
-			item->end, 
+				(void *)item->next, (uintmax_t)item->line,
+			(uintmax_t) item->end, 
 			(intmax_t) item->request_time.tv_sec,
 			(intmax_t) item->dirty_time.tv_sec);
 	else
@@ -173,7 +173,7 @@ static char *who_item_desc (WhoEntry *item)
 	    snprintf(retval, sizeof retval, 
 		"refnum [%d] dirty [%d], piggyback [%d], next [%p]",
 			item->refnum,
-			item->dirty, item->piggyback, item->next);
+			item->dirty, item->piggyback, (void *)item->next);
 	else
 	    snprintf(retval, sizeof retval, "<none>");
 
@@ -1210,14 +1210,14 @@ static void ison_queue_list (int refnum)
 
 	for (item = s->ison_queue; item; item = item->next, count++)
 	{
-		yell("[%d] [%s] [%p]", count, item->ison_asked, 
-				item->line);
+		yell("[%d] [%s] ["UINTMAX_HEX_FORMAT"]", count, item->ison_asked, 
+				(uintmax_t)item->line);
 	}
 
 	for (item = s->ison_wait; item; item = item->next, count++)
 	{
-		yell("[%d] [%s] [%p] (pending)", count, item->ison_asked, 
-				item->line);
+		yell("[%d] [%s] ["UINTMAX_HEX_FORMAT"] (pending)", count, item->ison_asked, 
+				(uintmax_t)item->line);
 	}
 }
 

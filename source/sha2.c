@@ -34,6 +34,7 @@
 #define NO_SSL
 #include "irc.h"
 #include "ircaux.h"
+#include "list.h"
 #include "sedcrypt.h"
 
 /*** SHA-256/384/512 Various Length Definitions ***********************/

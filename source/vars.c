@@ -43,6 +43,7 @@
 #include "lastlog.h"
 #include "log.h"
 #include "hook.h"
+#include "list.h"
 #include "sedcrypt.h"
 #include "notify.h"
 #include "vars.h"

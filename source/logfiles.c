@@ -50,16 +50,18 @@
 static const char *onoff[] = { "OFF", "ON" };
 static const char *logtype[] = { "TARGETS", "WINDOWS", "SERVERS" };
 
+/* This is NOT a "list.h" list; but "targets" is! */
 struct Logfile {
 	struct Logfile *next;
 	int	refnum;
+
 	char *	name;
 	char *	filename;
 	FILE *	log;
 	int	servref;
 
 	int	type;
-	WNickList *targets;
+	List	*targets;
 	int	refnums[MAX_TARGETS];
 	Mask	mask;
 
@@ -78,7 +80,7 @@ int	last_logref = -1;
 
 static Logfile *	new_logfile (void)
 {
-	Logfile *log, *ptr;
+	Logfile	*log, *ptr;
 	int	i;
 
 	log = (Logfile *)new_malloc(sizeof(Logfile));
@@ -115,7 +117,7 @@ static Logfile *	new_logfile (void)
 static void	delete_logfile (Logfile *log)
 {
 	Logfile *prev;
-	WNickList *next;
+	List *	next;
 
 	if (log == logfiles)
 		logfiles = log->next;
@@ -136,7 +138,8 @@ static void	delete_logfile (Logfile *log)
 	while (log->targets)
 	{
 		next = log->targets->next;
-		new_free(&log->targets->nick);
+		new_free((void **)&log->targets->name);
+		new_free((void **)&log->targets->d);
 		new_free((char **)&log->targets);
 		log->targets = next;
 	}
@@ -180,7 +183,7 @@ static int	is_logfile_name_unique (const char *desc)
 static void	clean_log_targets (Logfile *log)
 {
 	int	i;
-	WNickList *next;
+	List *	next;
 
 	for (i = 0; i < MAX_TARGETS; i++)
 		log->refnums[i] = -1;
@@ -188,7 +191,7 @@ static void	clean_log_targets (Logfile *log)
 	while (log->targets)
 	{
 		next = log->targets->next;
-		new_free(&log->targets->nick);
+		new_free(&log->targets->name);
 		new_free((char **)&log->targets);
 		log->targets = next;
 	}
@@ -196,14 +199,14 @@ static void	clean_log_targets (Logfile *log)
 
 static char *logfile_get_targets (Logfile *log)
 {
-	WNickList *tmp;
+	List *	tmp;
 	char *nicks = NULL;
 	int	i;
 
 	if (log->type == LOG_TARGETS || log->type == LOG_WINDOWS)
 	{
 		for (tmp = log->targets; tmp; tmp = tmp->next)
-			malloc_strcat_wordlist(&nicks, ",", tmp->nick);
+			malloc_strcat_wordlist(&nicks, ",", tmp->name);
 	}
 	else if (log->type == LOG_SERVERS)
 	{
@@ -249,7 +252,7 @@ static Logfile *	logfile_activity (Logfile *log, char **args)
 static Logfile *	logfile_add (Logfile *log, char **args)
 {
         char            *ptr;
-        WNickList       *new_w;
+        List *		new_w;
         char            *arg = next_arg(*args, args);
 	int		i;
 
@@ -272,8 +275,9 @@ static Logfile *	logfile_add (Logfile *log, char **args)
 		    if (FIND_IN_LIST_(new_w, log->targets, arg, !USE_WILDCARDS) == NULL)
                     {
                         say("Added %s to log name list", arg);
-                        new_w = (WNickList *)new_malloc(sizeof(WNickList));
-                        new_w->nick = malloc_strdup(arg);
+                        new_w = (List *)new_malloc(sizeof(List));
+                        new_w->name = malloc_strdup(arg);
+			new_w->d = NULL;
 			ADD_TO_LIST_(&log->targets, new_w);
                     }
                     else
@@ -313,8 +317,9 @@ static Logfile *	logfile_add (Logfile *log, char **args)
 		    if (FIND_IN_LIST_(new_w, log->targets, arg, !USE_WILDCARDS) == NULL)
                     {
                         say("Added %s to log window list", arg);
-                        new_w = (WNickList *)new_malloc(sizeof(WNickList));
-                        new_w->nick = malloc_strdup(arg);
+                        new_w = (List *)new_malloc(sizeof(List));
+                        new_w->name = malloc_strdup(arg);
+			new_w->d = NULL;
 			ADD_TO_LIST_(&log->targets, new_w);
                     }
 		}
@@ -540,7 +545,7 @@ static Logfile *	logfile_remove (Logfile *log, char **args)
 {
 	char 		*arg = next_arg(*args, args);
 	char            *ptr;
-	WNickList       *new_nl;
+	List *		new_nl;
 	int		i;
 
 	if (!log)
@@ -561,8 +566,8 @@ static Logfile *	logfile_remove (Logfile *log, char **args)
 		{
 		    if (REMOVE_FROM_LIST_(new_nl, &log->targets, arg))
 		    {
-			say("Removed %s from log target list", new_nl->nick);
-			new_free(&new_nl->nick);
+			say("Removed %s from log target list", new_nl->name);
+			new_free(&new_nl->name);
 			new_free((char **)&new_nl);
 		    }
 		    else
@@ -725,7 +730,7 @@ void	add_to_logs (long window, int servref, const char *target, int level, const
 	{
 	    if (log->type == LOG_WINDOWS)
 	    {
-		WNickList *	item;
+		List *		item;
 		int		matched = 0;
 
 		/* Look to see if any targets apply */
@@ -736,9 +741,9 @@ void	add_to_logs (long window, int servref, const char *target, int level, const
 			 * either the internal refnum or user refnum of 
 			 * the output window.
 			 */
-			if (is_number(item->nick))
+			if (is_number(item->name))
 			{
-				int	refnum = my_atol(item->nick);
+				int	refnum = my_atol(item->name);
 
 				if (refnum == get_window_refnum(window) ||
 				    refnum == get_window_user_refnum(window))
@@ -753,10 +758,10 @@ void	add_to_logs (long window, int servref, const char *target, int level, const
 			else
 			{
 				if (get_window_name(window) &&
-				    !my_stricmp(item->nick, get_window_name(window)))
+				    !my_stricmp(item->name, get_window_name(window)))
 					matched = 1;
 				if (get_window_uuid(window) &&
-				    !my_stricmp(item->nick, get_window_uuid(window)))
+				    !my_stricmp(item->name, get_window_uuid(window)))
 					matched = 1;
 			}
 		}

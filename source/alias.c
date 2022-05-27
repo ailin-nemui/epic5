@@ -38,7 +38,6 @@
 #define __need_ArgList_t__
 #include "alias.h"
 #include "alist.h"
-#include "array.h"
 #include "commands.h"
 #include "files.h"
 #include "hook.h"
@@ -92,7 +91,7 @@ void	destroy_arglist (ArgList **);
 
 /*
  * This is the description of an alias entry
- * This is an ``array_item'' structure
+ * This is an ``alist_item'' structure
  */
 typedef	struct	SymbolStru
 {
@@ -132,12 +131,12 @@ const char *symbol_types[] = {
 
 /*
  * This is the description for a list of aliases
- * This is an ``array_set'' structure
+ * This is an ``alist'' structure
  */
-static array globals = 	{ NULL, 0, 0, my_strncmp, HASH_INSENSITIVE };
+static alist globals = 	{ NULL, 0, 0, my_strncmp, HASH_INSENSITIVE };
 
 static	Symbol *lookup_symbol 	   (const char *name);
-static	Symbol *find_local_alias   (const char *name, array **list);
+static	Symbol *find_local_alias   (const char *name, alist **list);
 
 /*
  * This is the ``stack frame''.  Each frame has a ``name'' which is
@@ -150,7 +149,7 @@ typedef struct RuntimeStackStru
 {
 	const char *name;	/* Name of the stack */
 	char 	*current;	/* Current cmd being executed */
-	array	alias;		/* Local variables */
+	alist	alias;		/* Local variables */
 	int	locked;		/* Are we locked in a wait? */
 	int	parent;		/* Our parent stack frame */
 }	RuntimeStack;
@@ -210,12 +209,12 @@ static	void	unload_var_alias   (Char *fn);
 static	void	list_cmd_alias     (Char *name);
 static	void	list_var_alias     (Char *name);
 static	void	list_local_alias   (Char *name);
-static	void 	destroy_cmd_aliases    (array *);
-static	void 	destroy_var_aliases    (array *);
-static	void 	destroy_builtin_commands    (array *);
-static	void 	destroy_builtin_functions    (array *);
-static	void 	destroy_builtin_variables    (array *);
-static	void 	destroy_builtin_expandos    (array *);
+static	void 	destroy_cmd_aliases    (alist *);
+static	void 	destroy_var_aliases    (alist *);
+static	void 	destroy_builtin_commands    (alist *);
+static	void 	destroy_builtin_functions   (alist *);
+static	void 	destroy_builtin_variables   (alist *);
+static	void 	destroy_builtin_expandos    (alist *);
 
 extern	char *  get_variable       (Char *name);
 extern	char ** glob_cmd_alias          (Char *name, int *howmany, int maxret, int start, int rev);
@@ -234,7 +233,7 @@ void	flush_all_symbols (void)
 
 	while (globals.max > 0)
 	{
-		s = array_pop(&globals, 0);
+		s = alist_pop(&globals, 0);
 		new_free(&s->name);
 		new_free(&s->user_variable);
 		new_free(&s->user_variable_package);
@@ -1017,7 +1016,7 @@ static Symbol *make_new_Symbol (const char *name)
  * item and you *must* do something with that pointer if this function 
  * returns 1!  (If you don't, you'll leak your stacked data!)
  */
-static int	GC_symbol (Symbol *item, array *list, int loc)
+static int	GC_symbol (Symbol *item, alist *list, int loc)
 {
 	if (item->user_variable)
 		return 0;
@@ -1035,7 +1034,7 @@ static int	GC_symbol (Symbol *item, array *list, int loc)
 		return 0;
 
 	if (list && loc >= 0)
-		array_pop(list, loc);
+		alist_pop(list, loc);
 
 	new_free(&item->user_variable_package);
 	new_free(&item->user_command_package);
@@ -1101,11 +1100,11 @@ void	add_var_alias	(const char *orig_name, const char *stuff, int noisy)
 		 * If it does, and the ``stuff'' to assign to it is
 		 * empty, then we should remove the variable outright
 		 */
-		tmp = (Symbol *) find_array_item(&globals, name, &cnt, &loc);
+		tmp = (Symbol *) find_alist_item(&globals, name, &cnt, &loc);
 		if (!tmp || cnt >= 0)
 		{
 			tmp = make_new_Symbol(name);
-			add_to_array(&globals, name, tmp);
+			add_to_alist(&globals, name, tmp);
 		}
 
 		if (current_package())
@@ -1161,7 +1160,7 @@ void	add_var_stub_alias  (const char *orig_name, const char *stuff)
 		tmp = make_new_Symbol(name);
 		if (current_package())
 		    tmp->user_variable_package = malloc_strdup(current_package());
-		add_to_array(&globals, name, tmp);
+		add_to_alist(&globals, name, tmp);
 	}
 	else if (current_package())
 	{
@@ -1182,7 +1181,7 @@ void	add_local_alias	(const char *orig_name, const char *stuff, int noisy)
 {
 	const char 	*ptr;
 	Symbol 	*tmp = NULL;
-	array *list = NULL;
+	alist *list = NULL;
 	char *	name;
 
 	name = remove_brackets(orig_name, NULL);
@@ -1208,7 +1207,7 @@ void	add_local_alias	(const char *orig_name, const char *stuff, int noisy)
 	if (!(tmp = find_local_alias (name, &list)))
 	{
 		tmp = make_new_Symbol(name);
-		add_to_array (list, name, tmp);
+		add_to_alist (list, name, tmp);
 	}
 
 	/* Fill in the interesting stuff */
@@ -1238,7 +1237,7 @@ void	add_cmd_alias	(const char *orig_name, ArgList *arglist, const char *stuff)
 		tmp = make_new_Symbol(name);
 		if (current_package())
 		   tmp->user_command_package = malloc_strdup(current_package());
-		add_to_array(&globals, name, tmp);
+		add_to_alist(&globals, name, tmp);
 	}
 	else if (current_package()) 
 	{
@@ -1277,7 +1276,7 @@ void	add_cmd_stub_alias  (const char *orig_name, const char *stuff)
 		tmp = make_new_Symbol(name);
 		if (current_package())
 		   tmp->user_command_package = malloc_strdup(current_package());
-		add_to_array(&globals, name, tmp);
+		add_to_alist(&globals, name, tmp);
 	}
 	else if (current_package())
 	{
@@ -1300,11 +1299,11 @@ void	add_builtin_cmd_alias	(const char *name, void (*func) (const char *, char *
 	Symbol *tmp = NULL;
 	int cnt, loc;
 
-	tmp = (Symbol *) find_array_item(&globals, name, &cnt, &loc);
+	tmp = (Symbol *) find_alist_item(&globals, name, &cnt, &loc);
 	if (!tmp || cnt >= 0)
 	{
 		tmp = make_new_Symbol(name);
-		add_to_array(&globals, name, tmp);
+		add_to_alist(&globals, name, tmp);
 	}
 
 	tmp->builtin_command = func;
@@ -1316,11 +1315,11 @@ void	add_builtin_func_alias	(const char *name, char * (*func) (char *))
 	Symbol *tmp = NULL;
 	int cnt, loc;
 
-	tmp = (Symbol *) find_array_item(&globals, name, &cnt, &loc);
+	tmp = (Symbol *) find_alist_item(&globals, name, &cnt, &loc);
 	if (!tmp || cnt >= 0)
 	{
 		tmp = make_new_Symbol(name);
-		add_to_array(&globals, name, tmp);
+		add_to_alist(&globals, name, tmp);
 	}
 
 	tmp->builtin_function = func;
@@ -1332,11 +1331,11 @@ void	add_builtin_expando	(const char *name, char *(*func) (void))
 	Symbol *tmp = NULL;
 	int cnt, loc;
 
-	tmp = (Symbol *) find_array_item(&globals, name, &cnt, &loc);
+	tmp = (Symbol *) find_alist_item(&globals, name, &cnt, &loc);
 	if (!tmp || cnt >= 0)
 	{
 		tmp = make_new_Symbol(name);
-		add_to_array(&globals, name, tmp);
+		add_to_alist(&globals, name, tmp);
 	}
 
 	tmp->builtin_expando = func;
@@ -1348,11 +1347,11 @@ void	add_builtin_variable_alias (const char *name, IrcVariable *var)
 	Symbol *tmp = NULL;
 	int cnt, loc;
 
-	tmp = (Symbol *) find_array_item(&globals, name, &cnt, &loc);
+	tmp = (Symbol *) find_alist_item(&globals, name, &cnt, &loc);
 	if (!tmp || cnt >= 0)
 	{
 		tmp = make_new_Symbol(name);
-		add_to_array(&globals, name, tmp);
+		add_to_alist(&globals, name, tmp);
 	}
 
 	tmp->builtin_variable = var;
@@ -1429,7 +1428,7 @@ static Symbol *	lookup_symbol (const char *name)
 	int 	loc;
 	int 	cnt = 0;
 
-	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
+	item = (Symbol *)find_alist_item(&globals, name, &cnt, &loc);
 	if (cnt >= 0)
 		item = NULL;
 	if (item && item->user_variable_stub)
@@ -1447,7 +1446,7 @@ static Symbol *	lookup_symbol (const char *name)
  * is an exact leading subset of ``name'' and that variable ends in a
  * period (a dot).
  */
-static Symbol *	find_local_alias (const char *orig_name, array **list)
+static Symbol *	find_local_alias (const char *orig_name, alist **list)
 {
 	Symbol 	*alias = NULL;
 	int 	c;
@@ -1496,7 +1495,7 @@ static Symbol *	find_local_alias (const char *orig_name, array **list)
 			int x, cnt, loc;
 
 			/* We can always hope that the variable exists */
-			find_array_item(&call_stack[c].alias, name, &cnt, &loc);
+			find_alist_item(&call_stack[c].alias, name, &cnt, &loc);
 			if (cnt < 0)
 				alias = call_stack[c].alias.list[loc]->data;
 
@@ -1531,7 +1530,7 @@ static Symbol *	find_local_alias (const char *orig_name, array **list)
 			if (!alias && implicit >= 0)
 			{
 				alias = make_new_Symbol(name);
-				add_to_array (&call_stack[implicit].alias, name, alias);
+				add_to_alist (&call_stack[implicit].alias, name, alias);
 			}
 		}
 
@@ -1575,13 +1574,13 @@ static void	delete_var_alias (const char *orig_name, int noisy)
 
 	name = remove_brackets(orig_name, NULL);
 	upper(name);
-	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
+	item = (Symbol *)find_alist_item(&globals, name, &cnt, &loc);
 	if (item && cnt < 0)
 	{
 		new_free(&item->user_variable);
 		item->user_variable_stub = 0;
 		new_free(&(item->user_variable_package));
-		GC_symbol(item, (array *)&globals, loc);
+		GC_symbol(item, (alist *)&globals, loc);
 		if (noisy)
 			say("Assign %s removed", name);
 	}
@@ -1598,14 +1597,14 @@ static void	delete_cmd_alias (const char *orig_name, int noisy)
 
 	name = remove_brackets(orig_name, NULL);
 	upper(name);
-	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
+	item = (Symbol *)find_alist_item(&globals, name, &cnt, &loc);
 	if (item && cnt < 0)
 	{
 		new_free(&item->user_command);
 		item->user_command_stub = 0;
 		new_free(&(item->user_command_package));
 		destroy_arglist(&item->arglist);
-		GC_symbol(item, (array *)&globals, loc);
+		GC_symbol(item, (alist *)&globals, loc);
 		if (noisy)
 			say("Alias %s removed", name);
 	}
@@ -1622,11 +1621,11 @@ void	delete_builtin_command (const char *orig_name)
 
 	name = remove_brackets(orig_name, NULL);
 	upper(name);
-	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
+	item = (Symbol *)find_alist_item(&globals, name, &cnt, &loc);
 	if (item && cnt < 0)
 	{
 		item->builtin_command = NULL;
-		GC_symbol(item, (array *)&globals, loc);
+		GC_symbol(item, (alist *)&globals, loc);
 	}
 	new_free(&name);
 }
@@ -1639,11 +1638,11 @@ void	delete_builtin_function (const char *orig_name)
 
 	name = remove_brackets(orig_name, NULL);
 	upper(name);
-	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
+	item = (Symbol *)find_alist_item(&globals, name, &cnt, &loc);
 	if (item && cnt < 0)
 	{
 		item->builtin_function = NULL;
-		GC_symbol(item, (array *)&globals, loc);
+		GC_symbol(item, (alist *)&globals, loc);
 	}
 	new_free(&name);
 }
@@ -1656,11 +1655,11 @@ void	delete_builtin_expando (const char *orig_name)
 
 	name = remove_brackets(orig_name, NULL);
 	upper(name);
-	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
+	item = (Symbol *)find_alist_item(&globals, name, &cnt, &loc);
 	if (item && cnt < 0)
 	{
 		item->builtin_expando = NULL;
-		GC_symbol(item, (array *)&globals, loc);
+		GC_symbol(item, (alist *)&globals, loc);
 	}
 	new_free(&name);
 }
@@ -1673,19 +1672,21 @@ void	delete_builtin_variable (const char *orig_name)
 
 	name = remove_brackets(orig_name, NULL);
 	upper(name);
-	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
+	item = (Symbol *)find_alist_item(&globals, name, &cnt, &loc);
 	if (item && cnt < 0)
 	{
 		item->builtin_variable = NULL;
-		GC_symbol(item, (array *)&globals, loc);
+		GC_symbol(item, (alist *)&globals, loc);
 	}
 	new_free(&name);
 }
 
 /* * * */
+#if 0
 static void	bucket_local_alias (Bucket *b, const char *name)
 {
 }
+#endif
 
 #define BUCKET_FUNCTION(x, y) \
 void	bucket_ ## x (Bucket *b, const char *name)	\
@@ -1706,11 +1707,13 @@ void	bucket_ ## x (Bucket *b, const char *name)	\
 	}							\
 }
 
+#if 0
 BUCKET_FUNCTION(var_alias, user_variable)
 BUCKET_FUNCTION(cmd_alias, user_command)
 BUCKET_FUNCTION(builtin_commands, builtin_command)
 BUCKET_FUNCTION(builtin_functions, builtin_function)
 BUCKET_FUNCTION(builtin_expandos, builtin_expando)
+#endif
 BUCKET_FUNCTION(builtin_variables, builtin_variable)
 
 /* * * */
@@ -1986,7 +1989,7 @@ char **	glob_cmd_alias (const char *name, int *howmany, int maxret, int start, i
 	len = strlen(name);
 	*howmany = 0;
 	if (len) {
-		find_array_item(&globals, name, &max, &pos);
+		find_alist_item(&globals, name, &max, &pos);
 	} else {
 		pos = 0;
 		max = globals.max;
@@ -2034,7 +2037,7 @@ char **	glob_assign_alias (const char *name, int *howmany, int maxret, int start
 	len = strlen(name);
 	*howmany = 0;
 	if (len) {
-		find_array_item(&globals, name, &max, &pos);
+		find_alist_item(&globals, name, &max, &pos);
 	} else {
 		pos = 0;
 		max = globals.max;
@@ -2155,7 +2158,7 @@ static PMATCH_SYMBOL(any_symbol, name)
  */
 char **	get_subarray_elements (const char *orig_root, int *howmany, int type)
 {
-	array *as;		/* XXXX */
+	alist *as;		/* XXXX */
 	Symbol *s;
 	int pos, cnt, max;
 	int cmp = 0;
@@ -2167,7 +2170,7 @@ char **	get_subarray_elements (const char *orig_root, int *howmany, int type)
 
 	as = &globals;
 	root = malloc_strdup2(orig_root, ".");
-	find_array_item(as, root, &max, &pos);
+	find_alist_item(as, root, &max, &pos);
 
 	if (0 > max) 
 		max = -max;
@@ -2177,7 +2180,7 @@ char **	get_subarray_elements (const char *orig_root, int *howmany, int type)
 
 	for (cnt = 0; cnt < max; cnt++, pos++)
 	{
-		s = (Symbol *)ARRAY_ITEM(as, pos);
+		s = (Symbol *)ALIST_ITEM(as, pos);
 
 		end = strcspn(s->name + cmp, ".");
 		if (last && !my_strnicmp(s->name, last, cmp + end))
@@ -2209,16 +2212,16 @@ char **	get_subarray_elements (const char *orig_root, int *howmany, int type)
 
 
 /***************************************************************************/
-static	void	destroy_cmd_aliases (array *my_array)
+static	void	destroy_cmd_aliases (alist *my_alist)
 {
 	int cnt = 0;
 	Symbol *item;
 
 	for (;;)
 	{
-	    for (cnt = 0; cnt < my_array->max; cnt++)
+	    for (cnt = 0; cnt < my_alist->max; cnt++)
 	    {
-		item = my_array->list[cnt]->data;
+		item = my_alist->list[cnt]->data;
 		if (!item->user_command && !item->user_command_stub && 
 				!item->arglist && !item->user_command_package)
 			continue;
@@ -2227,118 +2230,118 @@ static	void	destroy_cmd_aliases (array *my_array)
 		new_free((void **)&item->user_command_package);
 		item->user_command_stub = 0;
 		destroy_arglist(&item->arglist);
-		GC_symbol(item, my_array, cnt);
+		GC_symbol(item, my_alist, cnt);
 		break;
 	    }
-	    if (cnt >= my_array->max)
+	    if (cnt >= my_alist->max)
 		    return;
 	}
 }
 
-static	void	destroy_var_aliases (array *my_array)
+static	void	destroy_var_aliases (alist *my_alist)
 {
 	int cnt = 0;
 	Symbol *item;
 
 	for (;;)
 	{
-	    for (cnt = 0; cnt < my_array->max; cnt++)
+	    for (cnt = 0; cnt < my_alist->max; cnt++)
 	    {
-		item = my_array->list[cnt]->data;
+		item = my_alist->list[cnt]->data;
 		if (!item->user_variable && !item->user_variable_stub)
 			continue;
 
 		new_free((void **)&item->user_variable);
 		new_free((void **)&item->user_variable_package);
 		item->user_variable_stub = 0;
-		GC_symbol(item, my_array, cnt);
+		GC_symbol(item, my_alist, cnt);
 		break;
 	    }
-	    if (cnt >= my_array->max)
+	    if (cnt >= my_alist->max)
 		    return;
 	}
 }
 
-static	void	destroy_builtin_commands (array *my_array)
+static	void	destroy_builtin_commands (alist *my_alist)
 {
 	int cnt = 0;
 	Symbol *item;
 
 	for (;;)
 	{
-	    for (cnt = 0; cnt < my_array->max; cnt++)
+	    for (cnt = 0; cnt < my_alist->max; cnt++)
 	    {
-		item = my_array->list[cnt]->data;
+		item = my_alist->list[cnt]->data;
 		if (!item->builtin_command)
 			continue;
 		item->builtin_command = NULL;
-		GC_symbol(item, (array *)my_array, cnt);
+		GC_symbol(item, my_alist, cnt);
 		break;
 	    }
-	    if (cnt >= my_array->max)
+	    if (cnt >= my_alist->max)
 		    return;
 	}
 }
 
-static	void	destroy_builtin_functions (array *my_array)
+static	void	destroy_builtin_functions (alist *my_alist)
 {
 	int cnt = 0;
 	Symbol *item;
 
 	for (;;)
 	{
-	    for (cnt = 0; cnt < my_array->max; cnt++)
+	    for (cnt = 0; cnt < my_alist->max; cnt++)
 	    {
-		item = my_array->list[cnt]->data;
+		item = my_alist->list[cnt]->data;
 		if (!item->builtin_function)
 			continue;
 		item->builtin_function = NULL;
-		GC_symbol(item, (array *)my_array, cnt);
+		GC_symbol(item, my_alist, cnt);
 		break;
 	    }
-	    if (cnt >= my_array->max)
+	    if (cnt >= my_alist->max)
 		    return;
 	}
 }
 
-static	void	destroy_builtin_expandos (array *my_array)
+static	void	destroy_builtin_expandos (alist *my_alist)
 {
 	int cnt = 0;
 	Symbol *item;
 
 	for (;;)
 	{
-	    for (cnt = 0; cnt < my_array->max; cnt++)
+	    for (cnt = 0; cnt < my_alist->max; cnt++)
 	    {
-		item = my_array->list[cnt]->data;
+		item = my_alist->list[cnt]->data;
 		if (!item->builtin_expando)
 			continue;
 		item->builtin_expando = NULL;
-		GC_symbol(item, (array *)my_array, cnt);
+		GC_symbol(item, my_alist, cnt);
 		break;
 	    }
-	    if (cnt >= my_array->max)
+	    if (cnt >= my_alist->max)
 		    return;
 	}
 }
 
-static	void	destroy_builtin_variables (array *my_array)
+static	void	destroy_builtin_variables (alist *my_alist)
 {
 	int cnt = 0;
 	Symbol *item;
 
 	for (;;)
 	{
-	    for (cnt = 0; cnt < my_array->max; cnt++)
+	    for (cnt = 0; cnt < my_alist->max; cnt++)
 	    {
-		item = my_array->list[cnt]->data;
+		item = my_alist->list[cnt]->data;
 		if (!item->builtin_variable)
 			continue;
 		item->builtin_variable = NULL;		/* XXX memory leak */
-		GC_symbol(item, (array *)my_array, cnt);
+		GC_symbol(item, my_alist, cnt);
 		break;
 	    }
-	    if (cnt >= my_array->max)
+	    if (cnt >= my_alist->max)
 		    return;
 	}
 }
@@ -2678,7 +2681,7 @@ static	int maxret = 0;
 		case (SETPACKAGE) :
 		{
 			Symbol *alias = NULL;
-			array *a_list;
+			alist *a_list;
 
 			upper(listc);
 			if (list == VAR_ALIAS_LOCAL)
@@ -2800,11 +2803,11 @@ int	stack_push_var_alias (const char *name)
 	Symbol *item, *sym;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
+	item = (Symbol *)find_alist_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 	{
 	    item = make_new_Symbol(name);
-	    add_to_array(&globals, name, item);
+	    add_to_alist(&globals, name, item);
 	}
 
 	sym = make_new_Symbol(name);
@@ -2822,7 +2825,7 @@ int	stack_pop_var_alias (const char *name)
 	Symbol *item, *sym, *s, *ss;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
+	item = (Symbol *)find_alist_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 		return -1;
 
@@ -2842,7 +2845,7 @@ int	stack_pop_var_alias (const char *name)
 
 	if (GC_symbol(s, NULL, -1))
 		sym->saved = ss;
-	GC_symbol(item, (array *)&globals, loc);
+	GC_symbol(item, &globals, loc);
 	return 0;
 }
 
@@ -2879,11 +2882,11 @@ int	stack_push_cmd_alias (char *name)
 	Symbol *item, *sym;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
+	item = (Symbol *)find_alist_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 	{
 	    item = make_new_Symbol(name);
-	    add_to_array(&globals, name, item);
+	    add_to_alist(&globals, name, item);
 	}
 
 	sym = make_new_Symbol(name);
@@ -2902,7 +2905,7 @@ int	stack_pop_cmd_alias (const char *name)
 	Symbol *item, *sym, *s, *ss;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
+	item = (Symbol *)find_alist_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 		return -1;
 
@@ -2924,7 +2927,7 @@ int	stack_pop_cmd_alias (const char *name)
 
 	if (GC_symbol(s, NULL, -1))
 		sym->saved = ss;
-	GC_symbol(item, (array *)&globals, loc);
+	GC_symbol(item, &globals, loc);
 	return 0;
 }
 
@@ -2964,11 +2967,11 @@ int	stack_push_builtin_cmd_alias (const char *name)
 	Symbol *item, *sym;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
+	item = (Symbol *)find_alist_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 	{
 	    item = make_new_Symbol(name);
-	    add_to_array(&globals, name, item);
+	    add_to_alist(&globals, name, item);
 	}
 
 	sym = make_new_Symbol(name);
@@ -2984,7 +2987,7 @@ int	stack_pop_builtin_cmd_alias (const char *name)
 	Symbol *item, *sym, *s, *n;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
+	item = (Symbol *)find_alist_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 		return -1;
 
@@ -3003,7 +3006,7 @@ int	stack_pop_builtin_cmd_alias (const char *name)
 
 	if (GC_symbol(s, NULL, -1))
 		sym->saved = n;
-	GC_symbol(item, (array *)&globals, loc);
+	GC_symbol(item, &globals, loc);
 	return 0;
 }
 
@@ -3039,11 +3042,11 @@ int	stack_push_builtin_func_alias (const char *name)
 	Symbol *item, *sym;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
+	item = (Symbol *)find_alist_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 	{
 	    item = make_new_Symbol(name);
-	    add_to_array(&globals, name, item);
+	    add_to_alist(&globals, name, item);
 	}
 
 	sym = make_new_Symbol(name);
@@ -3059,7 +3062,7 @@ int	stack_pop_builtin_function_alias (const char *name)
 	Symbol *item, *sym, *s, *n;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
+	item = (Symbol *)find_alist_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 		return -1;
 
@@ -3078,7 +3081,7 @@ int	stack_pop_builtin_function_alias (const char *name)
 
 	if (GC_symbol(s, NULL, -1))
 		sym->saved = n;
-	GC_symbol(item, (array *)&globals, loc);
+	GC_symbol(item, (alist *)&globals, loc);
 	return 0;
 }
 
@@ -3097,7 +3100,7 @@ int	stack_list_builtin_function_alias (const char *name)
 		if (sym->builtin_function == NULL)
 		    say("\t%s\t<Placeholder>", sym->name);
 		else 
-		    say("\t%s\t%p", sym->name, sym->builtin_function);
+		    say("\t%s\t"UINTMAX_HEX_FORMAT, sym->name, (uintmax_t)sym->builtin_function);
 		counter++;
 	    }
 	}
@@ -3113,11 +3116,11 @@ int	stack_push_builtin_expando_alias (const char *name)
 	Symbol *item, *sym;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
+	item = (Symbol *)find_alist_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 	{
 	    item = make_new_Symbol(name);
-	    add_to_array(&globals, name, item);
+	    add_to_alist(&globals, name, item);
 	}
 
 	sym = make_new_Symbol(name);
@@ -3133,7 +3136,7 @@ int	stack_pop_builtin_expando_alias (const char *name)
 	Symbol *item, *sym, *s, *n;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
+	item = (Symbol *)find_alist_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 		return -1;
 
@@ -3152,7 +3155,7 @@ int	stack_pop_builtin_expando_alias (const char *name)
 
 	if (GC_symbol(s, NULL, -1))
 		sym->saved = n;
-	GC_symbol(item, (array *)&globals, loc);
+	GC_symbol(item, (alist *)&globals, loc);
 	return 0;
 }
 
@@ -3171,7 +3174,7 @@ int	stack_list_builtin_expando_alias (const char *name)
 		if (sym->builtin_expando == NULL)
 		    say("\t%s\t<Placeholder>", sym->name);
 		else 
-		    say("\t%s\t%p", sym->name, sym->builtin_expando);
+		    say("\t%s\t"UINTMAX_HEX_FORMAT, sym->name, (uintmax_t)sym->builtin_expando);
 		counter++;
 	    }
 	}
@@ -3188,11 +3191,11 @@ int	stack_push_builtin_var_alias (const char *name)
 	Symbol *item, *sym;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
+	item = (Symbol *)find_alist_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 	{
 	    item = make_new_Symbol(name);
-	    add_to_array(&globals, name, item);
+	    add_to_alist(&globals, name, item);
 	}
 
 	sym = make_new_Symbol(name);
@@ -3208,7 +3211,7 @@ int	stack_pop_builtin_var_alias (const char *name)
 	Symbol *item, *sym, *s, *n;
 	int	cnt = 0, loc = 0;
 
-	item = (Symbol *)find_array_item(&globals, name, &cnt, &loc);
+	item = (Symbol *)find_alist_item(&globals, name, &cnt, &loc);
 	if (!item || cnt >= 0)
 		return -1;
 
@@ -3227,7 +3230,7 @@ int	stack_pop_builtin_var_alias (const char *name)
 
 	if (GC_symbol(s, NULL, -1))
 		sym->saved = n;
-	GC_symbol(item, (array *)&globals, loc);
+	GC_symbol(item, &globals, loc);
 	return 0;
 }
 
@@ -3435,11 +3438,11 @@ char    *symbolctl      (char *input)
         } else if (!my_strnicmp(listc, "CREATE", len)) {
             GET_FUNC_ARG(symbol, input);
 	    upper(symbol);
-	    s = (Symbol *)find_array_item(&globals, symbol, &cnt, &l);
+	    s = (Symbol *)find_alist_item(&globals, symbol, &cnt, &l);
 	    if (!s || cnt >= 0)
 	    {
 		s = make_new_Symbol(symbol);
-		add_to_array(&globals, symbol, s);
+		add_to_alist(&globals, symbol, s);
 		RETURN_INT(1);
 	    }
 	    RETURN_INT(0);
@@ -3447,7 +3450,7 @@ char    *symbolctl      (char *input)
         } else if (!my_strnicmp(listc, "DELETE", len)) {
             GET_FUNC_ARG(symbol, input);
 	    upper(symbol);
-	    s = (Symbol *)find_array_item(&globals, symbol, &cnt, &l);
+	    s = (Symbol *)find_alist_item(&globals, symbol, &cnt, &l);
 	    if (s && cnt < 0) {
 		int	all = 0;
 
@@ -3481,7 +3484,7 @@ char    *symbolctl      (char *input)
 			new_free(&s->builtin_variable);
 		    }
 		}
-		GC_symbol(s, (array *)&globals, l);
+		GC_symbol(s, &globals, l);
 		RETURN_INT(1);
 	    }
 	    RETURN_INT(0);
@@ -3489,9 +3492,9 @@ char    *symbolctl      (char *input)
         } else if (!my_strnicmp(listc, "CHECK", len)) {
             GET_FUNC_ARG(symbol, input);
 	    upper(symbol);
-	    s = (Symbol *)find_array_item(&globals, symbol, &cnt, &l);
+	    s = (Symbol *)find_alist_item(&globals, symbol, &cnt, &l);
 	    if (s && cnt < 0) {
-		GC_symbol(s, (array *)&globals, l);
+		GC_symbol(s, &globals, l);
 		RETURN_INT(1);
 	    }
 	    RETURN_INT(0);
@@ -3501,7 +3504,7 @@ char    *symbolctl      (char *input)
 
             GET_FUNC_ARG(symbol, input);
 	    upper(symbol);
-	    s = (Symbol *)find_array_item(&globals, symbol, &cnt, &l);
+	    s = (Symbol *)find_alist_item(&globals, symbol, &cnt, &l);
 	    if (!s || cnt >= 0)
                 RETURN_EMPTY;
 
@@ -3598,7 +3601,7 @@ char    *symbolctl      (char *input)
 
             GET_FUNC_ARG(symbol, input);
 	    upper(symbol);
-	    s = (Symbol *)find_array_item(&globals, symbol, &cnt, &l);
+	    s = (Symbol *)find_alist_item(&globals, symbol, &cnt, &l);
 	    if (!s || cnt >= 0)
                 RETURN_EMPTY;
 

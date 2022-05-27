@@ -33,6 +33,7 @@
  */
 
 #include "irc.h"
+#include "list.h"
 #include "sedcrypt.h"
 #include "ctcp.h"
 #include "dcc.h"
@@ -260,7 +261,7 @@ static DCC_list *	get_dcc_by_refnum (int refnum)
 static void	dcc_remove_from_list (DCC_list *erased)
 {
 	if (x_debug & DEBUG_DCC_XMIT)
-		yell("Removing %p from dcc list", erased);
+		yell("Removing %p from dcc list", (void *)erased);
 
 	if (erased == ClientList)
 		ClientList = erased->next;
@@ -308,7 +309,7 @@ static void 	dcc_garbage_collect (void)
 				need_update = 1;
 
 			if (x_debug & DEBUG_DCC_XMIT)
-				yell("DCC %p being GC'd", dcc);
+				yell("DCC %p being GC'd", (void *)dcc);
 			dcc_erase(dcc);
 			dcc = ClientList;	/* Start over */
 		}
@@ -329,7 +330,7 @@ static void 	dcc_garbage_collect (void)
 static 	void		dcc_erase (DCC_list *erased)
 {
 	if (x_debug & DEBUG_DCC_XMIT)
-		yell("DCC %p being erased", erased);
+		yell("DCC %p being erased", (void *)erased);
 
 	dcc_remove_from_list(erased);
 
@@ -464,7 +465,7 @@ static int	dcc_unhold (DCC_list *dcc)
 static int	lock_dcc (DCC_list *dcc)
 {
 	if (x_debug & DEBUG_DCC_XMIT)
-		yell("DCC %p being locked", dcc);
+		yell("DCC %p being locked", (void *)dcc);
 
 	if (dcc)
 		dcc->locked++;
@@ -475,7 +476,7 @@ static int	lock_dcc (DCC_list *dcc)
 static int	unlock_dcc (DCC_list *dcc)
 {
 	if (x_debug & DEBUG_DCC_XMIT)
-		yell("DCC %p being unlocked", dcc);
+		yell("DCC %p being unlocked", (void *)dcc);
 
 	if (dcc)
 		dcc->locked--;
@@ -545,7 +546,7 @@ static	DCC_list *dcc_create (
 	get_time(&new_client->lasttime);
 
 	if (x_debug & DEBUG_DCC_XMIT)
-		yell("DCC %p created", new_client);
+		yell("DCC %p created", (void *)new_client);
 	ClientList = new_client;
 	return new_client;
 }

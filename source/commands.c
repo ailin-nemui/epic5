@@ -40,6 +40,7 @@
 #define __need_ArgList_t__
 #include "alias.h"
 #include "alist.h"
+#include "list.h"
 #include "sedcrypt.h"
 #include "ctcp.h"
 #include "dcc.h"
@@ -3145,7 +3146,7 @@ void 	send_text (int server, const char *nick_list, const char *text, const char
 	char 	*current_nick,
 		*next_nick,
 		*line;
-	Crypt	*key;
+	List	*key;
 	int	old_window_display;
 	int	old_from_server;
 static	int	recursion = 0;

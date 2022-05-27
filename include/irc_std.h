@@ -308,9 +308,11 @@ typedef int intptr_t;
 #ifdef PRIdMAX
 # define INTMAX_FORMAT "%" PRIdMAX
 # define UINTMAX_FORMAT "%" PRIuMAX
+# define UINTMAX_HEX_FORMAT "%" PRIxMAX
 #else
 # define INTMAX_FORMAT "%jd"
 # define UINTMAX_FORMAT "%ju"
+# define UINTMAX_HEX_FORMAT "%jx"
 #endif
 
 /*

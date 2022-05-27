@@ -73,7 +73,7 @@ struct	channel_stru *	prev;		/* pointer to previous channel */
 	int		claimable;	/* Currently up for claiming */
 	int		claiming_window; /* What window claims us */
 	int		waiting;	/* Syncing, waiting for names/who */
-	array		nicks;		/* alist of nicks on channel */
+	alist		nicks;		/* alist of nicks on channel */
 	char 		base_modes[54];	/* Just the modes w/o args */
 	int		limit;		/* max users for the channel */
 	char *		key;		/* key for this channel */
@@ -342,7 +342,7 @@ void 	remove_channel (const char *channel, int server)
 static Nick *	find_nick_on_channel (Channel *ch, const char *nick)
 {
 	int cnt, loc;
-	Nick *new_n = (Nick *)find_array_item(&ch->nicks, nick, &cnt, &loc);
+	Nick *new_n = (Nick *)find_alist_item(&ch->nicks, nick, &cnt, &loc);
 
 	if (cnt >= 0 || !new_n)
 		return NULL;
@@ -487,7 +487,7 @@ const	char	*prefix;
 	new_n->voice = isvoice;
 	new_n->half_assed = half_assed;
 
-	if ((old = (Nick *)add_to_array(&chan->nicks, nick, new_n)))
+	if ((old = (Nick *)add_to_alist(&chan->nicks, nick, new_n)))
 	{
 		new_free(&old->nick);
 		new_free(&old->userhost);
@@ -526,9 +526,9 @@ void 	add_userhost_to_channel (const char *channel, const char *nick, int server
 		 */
 		else
 		{
-		    remove_from_array(&chan->nicks, new_n->nick);
+		    remove_from_alist(&chan->nicks, new_n->nick);
 		    malloc_strcpy(&new_n->nick, nick);
-		    add_to_array(&chan->nicks, nick, new_n);
+		    add_to_alist(&chan->nicks, nick, new_n);
 		    if (x_debug & DEBUG_CHANNELS)
 		    {
 			yell("Detected and corrected a nickname mangled by "
@@ -567,7 +567,7 @@ void 	remove_from_channel (const char *channel, const char *nick, int server)
 		if (channel && server_stricmp(channel, chan->channel, server))
 			continue;
 
-		if ((tmp = (Nick *)remove_from_array(&chan->nicks, nick)))
+		if ((tmp = (Nick *)remove_from_alist(&chan->nicks, nick)))
 		{
 			new_free(&tmp->nick);
 			new_free(&tmp->userhost); /* Da5id reported mf here */
@@ -590,11 +590,11 @@ void 	rename_nick (const char *old_nick, const char *new_nick, int server)
 
 	while (traverse_all_channels(&chan, server, 1))
 	{
-		if ((tmp = (Nick *)remove_from_array(&chan->nicks, old_nick)))
+		if ((tmp = (Nick *)remove_from_alist(&chan->nicks, old_nick)))
 		{
 			malloc_strcpy(&tmp->nick, new_nick);
 			malloc_strcpy(&tmp->userhost, FromUserHost);
-			add_to_array(&chan->nicks, new_nick, tmp);
+			add_to_alist(&chan->nicks, new_nick, tmp);
 		}
 	}
 }
@@ -1094,8 +1094,8 @@ static void 	show_channel (Channel *chan)
 
 char	*scan_channel (char *cname)
 {
-	Channel 	*wc = find_channel(cname, from_server);
-	array 	*nicks;
+	Channel *	wc = find_channel(cname, from_server);
+	alist *		nicks;
 	char		buffer[NICKNAME_LEN + 5];
 	char		*retval = NULL;
 	int		i;

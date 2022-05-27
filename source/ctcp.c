@@ -35,6 +35,7 @@
 /* Major revamps in 1996 and 2018 */
 
 #include "irc.h"
+#include "list.h"
 #include "sedcrypt.h"
 #include "ctcp.h"
 #include "dcc.h"
@@ -209,7 +210,7 @@ int     sed = 0;
  */
 CTCP_HANDLER(do_crypto)
 {
-	Crypt	*key = NULL;
+	List	*key = NULL;
 	const char	*crypt_who;
 	char 	*tofrom;
 	char	*ret = NULL;

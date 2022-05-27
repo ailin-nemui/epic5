@@ -3193,7 +3193,6 @@ void	create_new_screen (void)
 
 	new_s->last_window_refnum = 1;
 	new_s->_window_list = NULL;
-	new_s->_window_list_end = NULL;
 	new_s->input_window = -1;
 	new_s->visible_windows = 0;
 	new_s->window_stack = NULL;
@@ -3569,7 +3568,6 @@ void 	kill_screen (Screen *screen)
 	/* Take out some of the garbage left around */
 	screen->input_window = -1;
 	screen->_window_list = NULL;
-	screen->_window_list_end = NULL;
 	screen->last_window_refnum = -1;
 	screen->visible_windows = 0;
 	screen->window_stack = NULL;
@@ -3593,6 +3591,18 @@ void 	kill_screen (Screen *screen)
 int     number_of_windows_on_screen (Screen *screen)
 {
         return screen->visible_windows;
+}
+
+Window *	get_screen_bottom_window (Screen *screen)
+{
+	Window *w;
+
+	if (!screen->_window_list)
+		panic(1, "get_screen_bottom_window: screen %d has no windows?", screen->screennum);
+
+	for (w = screen->_window_list; w->_next; w = w->_next)
+		;
+	return w;
 }
 
 

@@ -110,8 +110,13 @@
  */
 typedef struct	IgnoreStru
 {
+#if 0
+	List	l;
+#endif
+#if 0
 	struct	IgnoreStru *next;
 	char	*nick;			/* What is being ignored */
+#endif
 	int	refnum;			/* The refnum for internal use */
 	Mask	type;			/* Suppressive ignores */
 	Mask	dont;			/* Exceptional ignores */
@@ -124,39 +129,46 @@ typedef struct	IgnoreStru
 }	Ignore;
 
 /* ignored_nicks: pointer to the head of the ignore list */
-static	Ignore *ignored_nicks = NULL;
+static	List *	ignored_nicks = NULL;
 static	int	global_ignore_refnum = 0;
 static	int	ignores_are_suspended = 0;
 
 static void	expire_ignores			(void);
-static const char *	get_ignore_types 		(Ignore *item, int);
+static const char *	get_ignore_types 		(List *item, int);
 static int	change_ignore_mask_by_desc (const char *type, Mask *do_mask, Mask *dont_mask, char **reason, Timeval *expire);
-static int	ignore_change			(Ignore *, int, void *);
-static int	ignore_list			(Ignore *, int, void *);
+static int	ignore_change			(List *, int, void *);
+static int	ignore_list			(List *, int, void *);
 static int	foreach_ignore			(const char *, int, 
-						 int (*)(Ignore *, int, void *),
+						 int (*)(List *, int, void *),
 						 int, void *);
 static int	remove_ignore			(const char *);
 
 /*****************************************************************************/
-static Ignore *new_ignore (const char *new_nick)
-{
-	Ignore *item;
+#define IGNORE(l) ((Ignore *)(l->d))
 
-	item = (Ignore *) new_malloc(sizeof(Ignore));
-	item->nick = malloc_strdup(new_nick);
-	upper(item->nick);
-	item->reason = NULL;
-	item->refnum = ++global_ignore_refnum;
-	mask_unsetall(&item->type);
-	mask_unsetall(&item->dont);
-	item->counter = 0;
-	get_time(&item->creation);
-	item->last_used.tv_sec = 0;
-	item->last_used.tv_usec = 0;
-	item->expiration.tv_sec = 0;
-	item->expiration.tv_usec = 0;
-	item->enabled = 1;
+static List *new_ignore (const char *new_nick)
+{
+	List *item;
+	Ignore *d;
+
+	item = (List *)new_malloc(sizeof(List));
+	item->name = malloc_strdup(new_nick);
+	upper(item->name);
+
+	d = (Ignore *)new_malloc(sizeof(Ignore));
+	d->reason = NULL;
+	d->refnum = ++global_ignore_refnum;
+	mask_unsetall(&d->type);
+	mask_unsetall(&d->dont);
+	d->counter = 0;
+	get_time(&d->creation);
+	d->last_used.tv_sec = 0;
+	d->last_used.tv_usec = 0;
+	d->expiration.tv_sec = 0;
+	d->expiration.tv_usec = 0;
+	d->enabled = 1;
+	item->d = d;
+
 	ADD_TO_LIST_(&ignored_nicks, item);
 	return item;
 }
@@ -172,12 +184,12 @@ static Ignore *new_ignore (const char *new_nick)
  *  If 'refnum' is actually in use, that Ignore item is returned, 
  *  otherwise NULL is returned.
  */
-static Ignore *get_ignore_by_refnum (int refnum)
+static List *	get_ignore_by_refnum (int refnum)
 {
-	Ignore *item;
+	List *item;
 
 	for (item = ignored_nicks; item; item = item->next)
-		if (item->refnum == refnum)
+		if (IGNORE(item)->refnum == refnum)
 			return item;
 
 	return NULL;
@@ -211,7 +223,7 @@ int	do_expire_ignores (void *ignored)
  */
 static void	expire_ignores (void)
 {
-	Ignore *item, *next;
+	List *item, *next;
 	Timeval	right_now;
 
 	if (!ignored_nicks)
@@ -221,9 +233,9 @@ static void	expire_ignores (void)
 	for (item = ignored_nicks; item; item = next)
 	{
 		next = item->next;
-		if (item->expiration.tv_sec != 0 &&
-				time_diff(right_now, item->expiration) < 0)
-			remove_ignore(item->nick);
+		if (IGNORE(item)->expiration.tv_sec != 0 &&
+				time_diff(right_now, IGNORE(item)->expiration) < 0)
+			remove_ignore(item->name);
 	}
 }
 
@@ -249,19 +261,19 @@ static void	expire_ignores (void)
  */
 static int 	remove_ignore (const char *nick)
 {
-	Ignore	*item;
+	List	*item;
 	char	new_nick[IRCD_BUFFER_SIZE + 1];
 	int	count = 0;
 	char 	*mnick, *user, *host;
 
 	if (is_number(nick))
 	{
-	    Ignore *last;
+	    List *last;
 	    int	refnum = my_atol(nick);
 
 	    for (last = NULL, item = ignored_nicks; item; item = item->next)
 	    {
-		if (item->refnum == refnum)
+		if (IGNORE(item)->refnum == refnum)
 		{
 		    if (last)
 			last->next = item->next;
@@ -269,9 +281,10 @@ static int 	remove_ignore (const char *nick)
 			ignored_nicks = item->next;
 
 		    say("%s removed from ignorance list (ignore refnum %d)", 
-				item->nick, item->refnum);
-		    new_free(&(item->nick));
-		    new_free(&(item->reason));
+				item->name, IGNORE(item)->refnum);
+		    new_free(&(item->name));
+		    new_free(&(IGNORE(item)->reason));
+		    new_free((char **)&(item->d));
 		    new_free((char **)&item);
 		    return 1;
 		}
@@ -296,9 +309,10 @@ static int 	remove_ignore (const char *nick)
 	if (LIST_LOOKUP_(item, &ignored_nicks, new_nick, !USE_WILDCARDS, REMOVE_FROM_LIST))
 	{
 		say("%s removed from ignorance list (ignore refnum %d)", 
-				item->nick, item->refnum);
-		new_free(&(item->nick));
-		new_free(&(item->reason));
+				item->name, IGNORE(item)->refnum);
+		new_free(&(item->name));
+		new_free(&(IGNORE(item)->reason));
+		new_free((char **)&item->d);
 		new_free((char **)&item);
 		count++;
 	}
@@ -309,9 +323,10 @@ static int 	remove_ignore (const char *nick)
 	else while (LIST_LOOKUP_(item, &ignored_nicks, nick, USE_WILDCARDS, REMOVE_FROM_LIST))
 	{
 		say("%s removed from ignorance list (ignore refnum %d)", 
-				item->nick, item->refnum);
-		new_free(&(item->nick));
-		new_free(&(item->reason));
+				item->name, IGNORE(item)->refnum);
+		new_free(&(item->name));
+		new_free(&(IGNORE(item)->reason));
+		new_free((char **)&item->d);
 		new_free((char **)&item);
 		count++;
 	} 
@@ -336,14 +351,14 @@ static int 	remove_ignore (const char *nick)
  *  must make a copy of it.  You must not try to write to the string.
  */
 #define HANDLE_TYPE(x,y)						\
-	if (mask_isset(&item->dont, LEVEL_ ## x))			\
+	if (mask_isset(&IGNORE(item)->dont, LEVEL_ ## x))			\
 	{								\
 	    if ((y) == 1)						\
 		strlcat_c(buffer, " DONT-" #x, sizeof buffer, &clue);	\
 	    else if ((y) == 2)						\
 		strlcat_c(buffer, " ^" #x, sizeof buffer, &clue);	\
 	}								\
-	else if (mask_isset(&item->type, LEVEL_ ## x))			\
+	else if (mask_isset(&IGNORE(item)->type, LEVEL_ ## x))			\
 	{								\
 	    if ((y) == 1)						\
 		strlcat_c(buffer, " " #x, sizeof buffer, &clue);	\
@@ -351,7 +366,7 @@ static int 	remove_ignore (const char *nick)
 		strlcat_c(buffer, " /" #x, sizeof buffer, &clue);	\
 	}								\
 
-static const char *	get_ignore_types (Ignore *item, int output_type)
+static const char *	get_ignore_types (List *item, int output_type)
 {
 static	char 	buffer[BIG_BUFFER_SIZE + 1];
 	size_t	clue;
@@ -579,33 +594,34 @@ static int	change_ignore_mask_by_desc (const char *type, Mask *do_mask, Mask *do
  *  This function tells the user what the changes are.  If you do not want
  *  the output to occur, set window_display to 0 before calling.
  */
-static int	ignore_change (Ignore *item, int type, void *data)
+static int	ignore_change (List *item, int type, void *data)
 {
 	char *changes;
 
 	changes = (char *)data;
-	change_ignore_mask_by_desc(changes, &item->type, &item->dont, 
-					&item->reason, 
-					&item->expiration);
+	change_ignore_mask_by_desc(changes, &((Ignore *)(item->d))->type, 
+					    &((Ignore *)(item->d))->dont, 
+					    &((Ignore *)(item->d))->reason, 
+					    &((Ignore *)(item->d))->expiration);
 
 	/*
 	 * Tell the user the new state of the ignore.
 	 * Garbage collect this ignore if it is clear.
 	 * remove_ignore() does the output for us here.
 	 */
-	if (mask_isnone(&item->type) && mask_isnone(&item->dont))
+	if (mask_isnone(&((Ignore *)(item->d))->type) && mask_isnone(&((Ignore *)(item->d))->dont))
 	{
-		remove_ignore(item->nick);
+		remove_ignore(item->name);
 		return 0;
 	}
 
-	if (item->reason)
+	if (IGNORE(item)->reason)
 		say("Now ignoring %s from %s (refnum %d) because %s", 
-			get_ignore_types(item, 1), item->nick, item->refnum, 
-			item->reason);
+			get_ignore_types(item, 1), item->name, IGNORE(item)->refnum,
+			IGNORE(item)->reason);
 	else
 		say("Now ignoring %s from %s (refnum %d)",
-			get_ignore_types(item, 1), item->nick, item->refnum);
+			get_ignore_types(item, 1), item->name, IGNORE(item)->refnum);
 
 	return 0;
 }
@@ -621,31 +637,31 @@ static int	ignore_change (Ignore *item, int type, void *data)
  * Return value:
  *  This function returns 0.
  */
-static int	ignore_list (Ignore *item, int type, void *data)
+static int	ignore_list (List *item, int type, void *data)
 {
 	int	expiring = 0;
 	double	time_to_expire = 0;
 	Timeval	right_now;
 
-	if (item->expiration.tv_sec != 0)
+	if (IGNORE(item)->expiration.tv_sec != 0)
 	{
 		get_time(&right_now);
-		time_to_expire = time_diff(right_now, item->expiration);
+		time_to_expire = time_diff(right_now, IGNORE(item)->expiration);
 		expiring = 1;
 	}
 
-	if (item->reason)
+	if (IGNORE(item)->reason)
 	{
 	    if (!expiring)
 	    {
-		say("[%d] %s:\t%s (%s)", item->refnum, item->nick, 
-				get_ignore_types(item, 1), item->reason);
+		say("[%d] %s:\t%s (%s)", IGNORE(item)->refnum, item->name, 
+				get_ignore_types(item, 1), IGNORE(item)->reason);
 	    }
 	    else
 	    {
 		say("[%d] %s:\t%s (%s) (%f seconds left)", 
-				item->refnum, item->nick, 
-				get_ignore_types(item, 1), item->reason,
+				IGNORE(item)->refnum, item->name, 
+				get_ignore_types(item, 1), IGNORE(item)->reason,
 				time_to_expire);
 	    }
 	}
@@ -653,13 +669,13 @@ static int	ignore_list (Ignore *item, int type, void *data)
 	{
 	    if (!expiring)
 	    {
-		say("[%d] %s:\t%s", item->refnum, item->nick, 
+		say("[%d] %s:\t%s", IGNORE(item)->refnum, item->name, 
 				get_ignore_types(item, 1));
 	    }
 	    else
 	    {
-		say("[%d] %s:\t%s (%f seconds left)", item->refnum, 
-				item->nick, get_ignore_types(item, 1),
+		say("[%d] %s:\t%s (%f seconds left)", IGNORE(item)->refnum, 
+				item->name, get_ignore_types(item, 1),
 				time_to_expire);
 	    }
 	}
@@ -696,10 +712,10 @@ static int	ignore_list (Ignore *item, int type, void *data)
  *    be passed to the callback.  This is a preferred way to create new ignore
  *    items.
  */
-static int	foreach_ignore (const char *nicklist, int create, int (*callback) (Ignore *, int, void *), int data1, void *data2)
+static int	foreach_ignore (const char *nicklist, int create, int (*callback) (List *, int, void *), int data1, void *data2)
 {
 	char *copy, *arg, *nick;
-	Ignore *item;
+	List *item;
 	char *	mnick;
 	char *	user;
 	char *	host;
@@ -728,7 +744,7 @@ static int	foreach_ignore (const char *nicklist, int create, int (*callback) (Ig
 		    int	refnum = my_atol(nick);
 
 		    for (item = ignored_nicks; item; item = item->next)
-			if (item->refnum == refnum)
+			if (IGNORE(item)->refnum == refnum)
 				break;
 
 		    if (!item)
@@ -867,7 +883,7 @@ BUILT_IN_COMMAND(ignore)
  */
 char 	*get_ignores_by_pattern (char *patterns, int covered)
 {
-	Ignore	*tmp;
+	List	*tmp;
 	char 	*pattern;
 	char 	*retval = NULL;
 	size_t	clue = 0;
@@ -876,9 +892,9 @@ char 	*get_ignores_by_pattern (char *patterns, int covered)
 	{
 		for (tmp = ignored_nicks; tmp; tmp = tmp->next)
 		{
-			if (covered ? wild_match(tmp->nick, pattern)
-				    : wild_match(pattern, tmp->nick))
-				malloc_strcat_word_c(&retval, space, tmp->nick, DWORD_NO, &clue);
+			if (covered ? wild_match(tmp->name, pattern)
+				    : wild_match(pattern, tmp->name))
+				malloc_strcat_word_c(&retval, space, tmp->name, DWORD_NO, &clue);
 		}
 	}
 
@@ -898,7 +914,7 @@ char 	*get_ignores_by_pattern (char *patterns, int covered)
  */
 const char	*get_ignore_types_by_pattern (char *pattern)
 {
-	Ignore	*tmp;
+	List	*tmp;
 	int	number = -1;
 
 	if (is_number(pattern))
@@ -907,9 +923,9 @@ const char	*get_ignore_types_by_pattern (char *pattern)
 
 	for (tmp = ignored_nicks; tmp; tmp = tmp->next)
 	{
-		if (!my_stricmp(tmp->nick, pattern))
+		if (!my_stricmp(tmp->name, pattern))
 			return get_ignore_types(tmp, 1);
-		if (number > -1 && tmp->refnum == number)
+		if (number > -1 && IGNORE(tmp)->refnum == number)
 			return get_ignore_types(tmp, 1);
 	}
 
@@ -929,7 +945,7 @@ const char	*get_ignore_types_by_pattern (char *pattern)
  */
 char	*get_ignore_patterns_by_type (char *ctype)
 {
-	Ignore	*tmp;
+	List	*tmp;
 	Mask	do_mask, dont_mask;
 	char	*result = NULL;
 	size_t	clue = 0;
@@ -962,14 +978,14 @@ char	*get_ignore_patterns_by_type (char *ctype)
 	     */
 	    for (i = 1; BIT_VALID(i); i++)
 	    {
-		if (mask_isset(&dont_mask, i) && !mask_isset(&tmp->dont, i))
+		if (mask_isset(&dont_mask, i) && !mask_isset(&IGNORE(tmp)->dont, i))
 			goto bail;
-		if (mask_isset(&do_mask, i) && !mask_isset(&tmp->type, i))
+		if (mask_isset(&do_mask, i) && !mask_isset(&IGNORE(tmp)->type, i))
 			goto bail;
 	    }
 
 	    /* Add it to the fray */
-	    malloc_strcat_word_c(&result, space, tmp->nick, DWORD_NO, &clue);
+	    malloc_strcat_word_c(&result, space, tmp->name, DWORD_NO, &clue);
 bail:
 	    continue;
 	}
@@ -1003,7 +1019,7 @@ char *	ignorectl (char *input)
 {
 	char *	refstr;
 	char *	listc;
-	Ignore *i;
+	List *	i;
 	int	len;
 	int	owd;
 
@@ -1013,14 +1029,14 @@ char *	ignorectl (char *input)
 	        if (FIND_IN_LIST_(i, ignored_nicks, input, 0) == NULL)
 			RETURN_EMPTY;
 
-		RETURN_INT(i->refnum);
+		RETURN_INT(IGNORE(i)->refnum);
 	} else if (!my_strnicmp(listc, "REFNUMS", len)) {
 		char *	retval = NULL;
 		size_t	clue = 0;
 
 		for (i = ignored_nicks; i; i = i->next)
 			malloc_strcat_word_c(&retval, space, 
-						ltoa(i->refnum), DWORD_NO, &clue);
+						ltoa(IGNORE(i)->refnum), DWORD_NO, &clue);
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "SUSPEND", len)) {
 		ignores_are_suspended++;
@@ -1037,7 +1053,7 @@ char *	ignorectl (char *input)
 		i = new_ignore(pattern);
 		ignore_change(i, 1, input);
 		swap_window_display(owd);
-		RETURN_INT(i->refnum);
+		RETURN_INT(IGNORE(i)->refnum);
 	} else if (!my_strnicmp(listc, "CHANGE", len)) {
 		int	refnum;
 
@@ -1051,7 +1067,7 @@ char *	ignorectl (char *input)
 		owd = swap_window_display(0);
 		ignore_change(i, 1, input);
 		swap_window_display(owd);
-		RETURN_INT(i->refnum);
+		RETURN_INT(IGNORE(i)->refnum);
 	} else if (!my_strnicmp(listc, "DELETE", len)) {
 		int	retval;
 
@@ -1078,34 +1094,34 @@ char *	ignorectl (char *input)
 		GET_FUNC_ARG(listc, input);
 		len = strlen(listc);
 		if (!my_strnicmp(listc, "NICK", len)) {
-			RETURN_STR(i->nick);
+			RETURN_STR(i->name);
 		} else if (!my_strnicmp(listc, "LEVELS", len)) {
 			RETURN_STR(get_ignore_types(i, 2));
 		} else if (!my_strnicmp(listc, "SUPPRESS", len)) {
-			RETURN_INT(i->type.__bits[0]);
+			RETURN_INT(IGNORE(i)->type.__bits[0]);
 		} else if (!my_strnicmp(listc, "EXCEPT", len)) {
-			RETURN_INT(i->dont.__bits[0]);
+			RETURN_INT(IGNORE(i)->dont.__bits[0]);
 		} else if (!my_strnicmp(listc, "EXPIRATION", len)) {
 			char *ptr = NULL;
 			return malloc_sprintf(&ptr, "%ld %ld", 
-				(long) i->expiration.tv_sec,
-				(long) i->expiration.tv_usec);
+				(long) (IGNORE(i)->expiration.tv_sec),
+				(long) (IGNORE(i)->expiration.tv_usec));
 		} else if (!my_strnicmp(listc, "REASON", len)) {
-			RETURN_STR(i->reason);
+			RETURN_STR(IGNORE(i)->reason);
 		} else if (!my_strnicmp(listc, "COUNTER", len)) {
-			RETURN_INT(i->counter);
+			RETURN_INT(IGNORE(i)->counter);
 		} else if (!my_strnicmp(listc, "CREATION", len)) {
 			char *ptr = NULL;
 			return malloc_sprintf(&ptr, "%ld %ld", 
-				(long) i->creation.tv_sec,
-				(long) i->creation.tv_usec);
+				(long) (IGNORE(i)->creation.tv_sec),
+				(long) (IGNORE(i)->creation.tv_usec));
 		} else if (!my_strnicmp(listc, "LAST_USED", len)) {
 			char *ptr = NULL;
 			return malloc_sprintf(&ptr, "%ld %ld", 
-				(long) i->last_used.tv_sec,
-				(long) i->last_used.tv_usec);
+				(long) (IGNORE(i)->last_used.tv_sec),
+				(long) (IGNORE(i)->last_used.tv_usec));
 		} else if (!my_strnicmp(listc, "ENABLED", len)) {
-			RETURN_INT(i->enabled);
+			RETURN_INT(IGNORE(i)->enabled);
 		}
 	} else if (!my_strnicmp(listc, "SET", len)) {
 		int	refnum;
@@ -1120,19 +1136,19 @@ char *	ignorectl (char *input)
 		GET_FUNC_ARG(listc, input);
 		len = strlen(listc);
 		if (!my_strnicmp(listc, "NICK", len)) {
-			malloc_strcpy(&i->nick, input);
-			RETURN_INT(i->refnum);
+			malloc_strcpy(&i->name, input);
+			RETURN_INT(IGNORE(i)->refnum);
 		} else if (!my_strnicmp(listc, "LEVELS", len)) {
-			mask_unsetall(&i->type);
-			mask_unsetall(&i->dont);
+			mask_unsetall(&IGNORE(i)->type);
+			mask_unsetall(&IGNORE(i)->dont);
 			ignore_change(i, 1, input);
-			RETURN_INT(i->refnum);
+			RETURN_INT(IGNORE(i)->refnum);
 		} else if (!my_strnicmp(listc, "SUPPRESS", len)) {
-			GET_INT_ARG(i->type.__bits[0], input);
-			RETURN_INT(i->refnum);
+			GET_INT_ARG(IGNORE(i)->type.__bits[0], input);
+			RETURN_INT(IGNORE(i)->refnum);
 		} else if (!my_strnicmp(listc, "EXCEPT", len)) {
-			GET_INT_ARG(i->dont.__bits[0], input);
-			RETURN_INT(i->refnum);
+			GET_INT_ARG(IGNORE(i)->dont.__bits[0], input);
+			RETURN_INT(IGNORE(i)->refnum);
 		} else if (!my_strnicmp(listc, "EXPIRATION", len)) {
 			Timeval to;
 			Timeval right_now;
@@ -1140,7 +1156,7 @@ char *	ignorectl (char *input)
 
 			GET_INT_ARG(to.tv_sec, input);
 			GET_INT_ARG(to.tv_usec, input);
-			i->expiration = to;
+			IGNORE(i)->expiration = to;
 
 			get_time(&right_now);
 			seconds = time_diff(right_now, to);
@@ -1148,33 +1164,33 @@ char *	ignorectl (char *input)
 				do_expire_ignores, NULL, NULL, 
 				GENERAL_TIMER, -1, 0, 0);
 
-			RETURN_INT(i->refnum);
+			RETURN_INT(IGNORE(i)->refnum);
 		} else if (!my_strnicmp(listc, "REASON", len)) {
 			if (is_string_empty(input))
-				new_free(&i->reason);
+				new_free(&IGNORE(i)->reason);
 			else
-				malloc_strcpy(&i->reason, input);
-			RETURN_INT(i->refnum);
+				malloc_strcpy(&IGNORE(i)->reason, input);
+			RETURN_INT(IGNORE(i)->refnum);
 		} else if (!my_strnicmp(listc, "CREATION", len)) {
 			Timeval to;
 
 			GET_INT_ARG(to.tv_sec, input);
 			GET_INT_ARG(to.tv_usec, input);
-			i->creation = to;
-			RETURN_INT(i->refnum);
+			IGNORE(i)->creation = to;
+			RETURN_INT(IGNORE(i)->refnum);
 		} else if (!my_strnicmp(listc, "LAST_USED", len)) {
 			Timeval to;
 
 			GET_INT_ARG(to.tv_sec, input);
 			GET_INT_ARG(to.tv_usec, input);
-			i->last_used = to;
-			RETURN_INT(i->refnum);
+			IGNORE(i)->last_used = to;
+			RETURN_INT(IGNORE(i)->refnum);
 		} else if (!my_strnicmp(listc, "COUNTER", len)) {
-			GET_INT_ARG(i->counter, input);
-			RETURN_INT(i->refnum);
+			GET_INT_ARG(IGNORE(i)->counter, input);
+			RETURN_INT(IGNORE(i)->refnum);
 		} else if (!my_strnicmp(listc, "ENABLED", len)) {
-			GET_INT_ARG(i->enabled, input);
-			RETURN_INT(i->refnum);
+			GET_INT_ARG(IGNORE(i)->enabled, input);
+			RETURN_INT(IGNORE(i)->refnum);
 		}
 	}
 
@@ -1207,12 +1223,12 @@ int	check_ignore (const char *nick, const char *uh, int mask)
 int	check_ignore_channel (const char *nick, const char *uh, const char *channel, int level)
 {
 	char 	nuh[IRCD_BUFFER_SIZE];
-	Ignore	*tmp;
+	List	*tmp;
 	int	count = 0;
 	int	bestimatch = 0;
-	Ignore	*i_match = NULL;
+	List	*i_match = NULL;
 	int	bestcmatch = 0;
-	Ignore	*c_match = NULL;
+	List	*c_match = NULL;
 
 	if (!ignored_nicks)
 		return NOT_IGNORED;
@@ -1235,13 +1251,13 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 
 	for (tmp = ignored_nicks; tmp; tmp = tmp->next)
 	{
-		if (!tmp->enabled)
+		if (!IGNORE(tmp)->enabled)
 			continue;
 
 		/*
 		 * Always check for exact matches first...
 		 */
-		if (!strcmp(tmp->nick, nuh))
+		if (!strcmp(tmp->name, nuh))
 		{
 			i_match = tmp;
 			break;
@@ -1250,7 +1266,7 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 		/*
 		 * Then check for wildcard matches...
 		 */
-		count = wild_match(tmp->nick, nuh);
+		count = wild_match(tmp->name, nuh);
 		if (count > bestimatch)
 		{
 			bestimatch = count;
@@ -1262,7 +1278,7 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 		 */
 		if (channel)
 		{
-			count = wild_match(tmp->nick, channel);
+			count = wild_match(tmp->name, channel);
 			if (count > bestcmatch)
 			{
 				bestcmatch = count;
@@ -1279,16 +1295,16 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 	if (i_match)
 	{
 		tmp = i_match;
-		if (mask_isset(&tmp->dont, level))
+		if (mask_isset(&IGNORE(tmp)->dont, level))
 		{
-			tmp->counter++;
-			get_time(&tmp->last_used);
+			IGNORE(tmp)->counter++;
+			get_time(&IGNORE(tmp)->last_used);
 			return NOT_IGNORED;
 		}
-		if (mask_isset(&tmp->type, level))
+		if (mask_isset(&IGNORE(tmp)->type, level))
 		{
-			tmp->counter++;
-			get_time(&tmp->last_used);
+			IGNORE(tmp)->counter++;
+			get_time(&IGNORE(tmp)->last_used);
 			return IGNORED;
 		}
 	}
@@ -1320,16 +1336,16 @@ int	check_ignore_channel (const char *nick, const char *uh, const char *channel,
 	/* else */ if (c_match)
 	{
 		tmp = c_match;
-		if (mask_isset(&tmp->dont, level))
+		if (mask_isset(&IGNORE(tmp)->dont, level))
 		{
-			tmp->counter++;
-			get_time(&tmp->last_used);
+			IGNORE(tmp)->counter++;
+			get_time(&IGNORE(tmp)->last_used);
 			return NOT_IGNORED;
 		}
-		if (mask_isset(&tmp->type, level))
+		if (mask_isset(&IGNORE(tmp)->type, level))
 		{
-			tmp->counter++;
-			get_time(&tmp->last_used);
+			IGNORE(tmp)->counter++;
+			get_time(&IGNORE(tmp)->last_used);
 			return IGNORED;
 		}
 	}

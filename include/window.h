@@ -43,14 +43,6 @@ struct	DisplayStru *	next;
 	time_t		when;
 }	Display;
 
-typedef struct	WNickListStru
-{
-struct WNickListStru *	next;
-	char *		nick;
-	int		counter;
-} 	MAY_ALIAS WNickList;
-
-
 #define NEED_WINDOWSTRU
 #ifdef NEED_WINDOWSTRU
 typedef	struct	WindowStru
@@ -70,12 +62,12 @@ struct	ScreenStru *	screen;			/* The screen we belong to */
 	/* Output rule stuff */
 	int		server;			/* Server that win is connected to */
 	Mask		window_mask;		/* Window level for the window */
-	WNickList *	waiting_chans;		/*
+	List *		waiting_chans;		/*
 					 	 * When you JOIN or reconnect, if this
 					 	 * is set, a JOIN to that channel will
 					 	 * put that channel into this win.
 					 	 */
-	WNickList *	nicks;			/* List of nick-queries for this win */
+	List *		nicks;			/* List of nick-queries for this win */
 	int		query_counter;		/* Is there a query anyways? */
 	char *		claimed_channel;	/* A /WINDOW CLAIM claim */
 

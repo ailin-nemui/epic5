@@ -70,6 +70,7 @@
 #include "termx.h"
 #include "notify.h"
 #include "numbers.h"
+#include "list.h"
 #include "sedcrypt.h"
 #include "timer.h"
 #define need_static_functions
@@ -7014,14 +7015,14 @@ BUILT_IN_FUNCTION(function_encryptparm, input)
 {
 	char	*ret = NULL, *entry = NULL;
 	size_t	clue = 0;
-	Crypt	*key;
+	List	*key;
 
 	GET_FUNC_ARG(entry, input);
 	if ((key = is_crypted(entry, from_server, NULL))) 
 	{
-		malloc_strcat_word_c(&ret, space, key->nick, DWORD_DWORDS, &clue);
-		malloc_strcat_word_c(&ret, space, key->passwd, DWORD_DWORDS, &clue);
-		malloc_strcat_word_c(&ret, space, key->prog, DWORD_DWORDS, &clue);
+		malloc_strcat_word_c(&ret, space, key->name, DWORD_DWORDS, &clue);
+		malloc_strcat_word_c(&ret, space, ((Crypt *)(key->d))->passwd, DWORD_DWORDS, &clue);
+		malloc_strcat_word_c(&ret, space, ((Crypt *)(key->d))->prog, DWORD_DWORDS, &clue);
 	}
 
 	RETURN_MSTR(ret);

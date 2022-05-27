@@ -72,7 +72,6 @@ struct	ScreenStru *	next;			/* Previous screen in list */
 	int		input_window;		/* Window that has the input focus */
 	unsigned 	last_window_refnum;	/* The previous input window (for /window back) */
 	Window *	_window_list;		/* The top window on me */
-	Window *	_window_list_end;	/* The bottom window on me */
 	int		visible_windows;	/* Number of windows on me */
 	WindowStack *	window_stack;		/* Number of windows on my stack */
 
@@ -125,6 +124,7 @@ const	unsigned char *	all_off				(void);
 	void		chop_final_columns 		(unsigned char **, size_t);
 
 	int		number_of_windows_on_screen	(struct ScreenStru *);
+	Window *	get_screen_bottom_window	(struct ScreenStru *);
 
 /* Dont do any word-wrapping, just truncate each line at its place. */
 #define PREPARE_NOWRAP	0x01
