@@ -1180,4 +1180,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Split 'delete_window' into 'unlink_window' and 'delete_window_contents'
 * And make those two take refnums instead of a window ptr.
 * /fe ("" .) foo {echo $foo} with /xdebug dword (rb ce)
-
+* Fix /window swap_others (skered)

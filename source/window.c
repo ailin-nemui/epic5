@@ -2255,8 +2255,10 @@ static void 	my_goto_window (Screen *s, int which)
 /*
  * hide_window: sets the given window to invisible and recalculates remaing
  * windows to fill the entire screen 
+ *
+ * Returns 0 on failure, and 1 on success
  */
-static void 	hide_window (Window *window)
+static int 	hide_window (Window *window)
 {
 	if (!window->screen)
 	{
@@ -2264,7 +2266,7 @@ static void 	hide_window (Window *window)
 			say("Window %s is already hidden", window->name);
 		else
 			say("Window %d is already hidden", window->user_refnum);
-		return;
+		return 0;
 	}
 
 	if (!window->swappable)
@@ -2273,17 +2275,18 @@ static void 	hide_window (Window *window)
 			say("Window %s can't be hidden", window->name);
 		else
 			say("Window %d can't be hidden", window->user_refnum);
-		return;
+		return 0;
 	}
 
 	if (window->screen->visible_windows - 
 			count_fixed_windows(window->screen) <= 1)
 	{
 		say("You can't hide the last window.");
-		return;
+		return 0;
 	}
 
 	remove_window_from_screen(window, 1, 1);
+	return 1;
 }
 
 /*
@@ -5059,10 +5062,10 @@ WINDOWCMD(hide_others)
 	tmp = NULL;
 	while (traverse_all_windows_on_screen(&tmp, s))
 	{
-		if (tmp != window)
+		if (tmp != window && tmp->swappable)
 		{
-			hide_window(tmp);
-			tmp = NULL;
+			if (hide_window(tmp))
+				tmp = NULL;
 		}
 	}
 
