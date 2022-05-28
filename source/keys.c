@@ -1939,7 +1939,7 @@ char *	bindctl (char *input)
 	    if (bp == NULL)
 		RETURN_EMPTY;
 	    else if (BINDING(bp)->func)
-		malloc_sprintf(&retval, "internal "UINTMAX_HEX_FORMAT, (uintptr_t)(BINDING(bp)->func));
+		malloc_sprintf(&retval, "internal "UINTMAX_HEX_FORMAT, (uintmax_t)(BINDING(bp)->func));
 	    else
 		malloc_sprintf(&retval, "alias %s", BINDING(bp)->alias);
 

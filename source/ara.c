@@ -144,7 +144,7 @@ void	init_ara (ara *a, int type, size_t maximum_location)
  */
 void	ara_set_item (ara *a, int location, AraItem data, int *errorcode)
 {
-	size_t	i;
+	size_t	idx;
 
 	if (!a || location < 0)
 	{
@@ -152,30 +152,31 @@ void	ara_set_item (ara *a, int location, AraItem data, int *errorcode)
 		return;
 	}
 
-	if ((size_t)location >= a->size)
+	idx = (size_t)location;
+	if (idx >= a->size)
 		ara_enlarge_list(a, location + 10);
 
 	if (a->type == ARA_TYPE_DATA)
 	{
-		if (a->list[location].d != NULL)
+		if (a->list[idx].d != NULL)
 		{
 			*errorcode = 0;
 		}
 		else
 		{
-			a->list[location].d = data.d;
+			a->list[idx].d = data.d;
 			*errorcode = 1;
 		}
 	}
 	else
 	{
-		if (a->list[location].d != NULL)
+		if (a->list[idx].f != NULL)
 		{
 			*errorcode = 0;
 		}
 		else
 		{
-			a->list[location].f = data.f;
+			a->list[idx].f = data.f;
 			*errorcode = 1;
 		}
 	}
@@ -190,7 +191,7 @@ void	ara_set_item (ara *a, int location, AraItem data, int *errorcode)
  */
 AraItem	ara_get_item (ara *a, int location, int *errorcode)
 {
-	size_t	i;
+	size_t	idx;
 	AraItem nothing;
 
 	if (!a || location < 0 || (size_t)location >= a->size)
@@ -203,21 +204,22 @@ AraItem	ara_get_item (ara *a, int location, int *errorcode)
 		return nothing;
 	}
 
+	idx = (size_t)location;
 	if (a->type == ARA_TYPE_DATA)
 	{
-		if (a->list[location].d == NULL)
+		if (a->list[idx].d == NULL)
 			*errorcode = 0;
 		else
 			*errorcode = 1;
 	}
 	else
 	{
-		if (a->list[location].f == NULL)
+		if (a->list[idx].f == NULL)
 			*errorcode = 0;
 		else
 			*errorcode = 1;
 	}
-	return a->list[location];
+	return a->list[idx];
 }
 
 /*
@@ -229,7 +231,7 @@ AraItem	ara_get_item (ara *a, int location, int *errorcode)
  */
 AraItem	ara_update_item (ara *a, int location, AraItem data, int *errcode)
 {
-	size_t	i;
+	size_t	idx;
 	AraItem retval;
 
 	if (!a || location < 0 || (size_t)location >= a->size)
@@ -242,15 +244,16 @@ AraItem	ara_update_item (ara *a, int location, AraItem data, int *errcode)
 		return retval;
 	}
 
+	idx = (size_t)location;
 	if (a->type == ARA_TYPE_DATA)
 	{
-		retval.d = a->list[location].d;
-		a->list[location].d = data.d;
+		retval.d = a->list[idx].d;
+		a->list[idx].d = data.d;
 	}
 	else
 	{
-		retval.f = a->list[location].f;
-		a->list[location].f = data.f;
+		retval.f = a->list[idx].f;
+		a->list[idx].f = data.f;
 	}
 	*errcode = 1;
 	return retval;

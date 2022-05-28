@@ -4527,7 +4527,7 @@ void	dequoter (char **str, size_t *clue, int full, int extended, const char *del
 		 * XXX I'm choosing to pass through a single delim instead of
 		 *	chomping it.  I'm not sure if this is the right choice.
 		 */
-		if (*clue > 1 && ((simple == 1 && (*str)[*clue] == what) ||
+		if (*clue > 0 && ((simple == 1 && (*str)[*clue] == what) ||
 				  (simple == 0 && strchr(delims, (*str)[*clue]))))
 		{
 			if (x_debug & DEBUG_EXTRACTW_DEBUG)

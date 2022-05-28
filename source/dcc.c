@@ -3289,7 +3289,7 @@ static	void		process_dcc_raw_data (DCC_list *Client)
 		if (Client->flags & DCC_QUOTED)
 			goto CLOSE;
 		/* FALLTHROUGH */
-		FALLTHROUGH;
+		FALLTHROUGH
 	    }
 	    default:
 	    {

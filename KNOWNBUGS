@@ -6,7 +6,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /on dcc_raw handling should set message_from() (rb Harz)
 * The way we handle "screen is not tall enough" underflow needs work
 * Unify window query and channels in the target list.
-* [ 2:46PM] <CrazyEddy> hop:  /fe ("" .) foo {echo $foo}  # This is supposed to have an empty string for the first iteration. When xdebug DWORD is on anyway. 
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -40,6 +39,7 @@ MEDIUM-TERM PROJECTS
 * Harz would like a way to do /bind -default for just a single binding.
 * /PAUSE does not save/restore context, and it should.
 * /window maximize + new status expando when a zero-height window gets output
+* Unlimited input buffer with auto-splitting (rb zlonix)
 
 [I moved the old list to the file "WISHLIST" to keep this file short]
 
@@ -1179,3 +1179,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make everything using invisible list go through a function.
 * Split 'delete_window' into 'unlink_window' and 'delete_window_contents'
 * And make those two take refnums instead of a window ptr.
+* /fe ("" .) foo {echo $foo} with /xdebug dword (rb ce)
+
