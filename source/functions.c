@@ -8508,7 +8508,8 @@ BUILT_IN_FUNCTION(function_unveil, input)
 	int		test = 0;
 	int		close = 0;
 
-	RETURN_IF_EMPTY(input);
+	if (!input)
+		RETURN_EMPTY;
 
 	while (*input && my_isspace(*input))
 		input++;

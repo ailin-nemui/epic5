@@ -1181,3 +1181,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * And make those two take refnums instead of a window ptr.
 * /fe ("" .) foo {echo $foo} with /xdebug dword (rb ce)
 * Fix /window swap_others (skered)
+* Un-break $unveil() with no arguments (rb zlonix)
