@@ -485,7 +485,7 @@ static void	key_exec_bt (Key *key)
 		while (nstr != (kstr + kslen)) 
 		{
 			/* This used to be a panic, but that seems excessive */
-			if (*nstr < 0)
+			if ((unsigned char)*nstr >= 128)
 				return;		/* Very bad -- bail */
 
 			if (nstr == kstr) /* beginning of string */
@@ -1143,7 +1143,7 @@ static int	bind_compressed_string (char *keyseq, int slen, const char *bindstr, 
 
 	for (s = keyseq, map = head_keymap; slen > 0; slen--, s++)
 	{
-		if (*s < 0)
+		if ((unsigned char)*s >= 128)
 		{
 			yell("Cannot bind sequences containing high bit chars");
 			return 0;
@@ -1223,7 +1223,7 @@ static Key *	find_sequence (Key *top, const char *seq, int slen)
 	 */
 	for (s = seq, map = top; slen > 0; slen--, s++)
 	{
-		if (*s < 0)
+		if ((unsigned char)*s >= 128)
 			return NULL;
 
 		node = &map[(unsigned char)*s];
@@ -1583,7 +1583,7 @@ void	do_stack_bind (int type, char *arg)
 		map = head_keymap;
 		while (slen) 
 		{
-			if (*s < 0)
+			if ((unsigned char)*s >= 128)
 				return;
 
 			key = &map[(unsigned char)*s++];

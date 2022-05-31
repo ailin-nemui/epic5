@@ -1182,3 +1182,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * /fe ("" .) foo {echo $foo} with /xdebug dword (rb ce)
 * Fix /window swap_others (skered)
 * Un-break $unveil() with no arguments (rb zlonix)
+* Remove configure checks for sysctlbyname(), <sys/sysctl.h>
+* Fix warnings from raspbian (rb zlonix)

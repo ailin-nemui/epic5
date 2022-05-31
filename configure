@@ -1325,18 +1325,18 @@ if test -n "$ac_init_help"; then
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-localdir=/usr/local        An extra directory to look for stuff.
+  --with-localdir=/usr/local      An extra directory to look for stuff.
   --with-multiplex=TYPE           Multiplexer type (select,poll,freebsd-kqueue,pthread,solaris-ports)
-  --without-libarchive              Disable libarchive support.
+  --without-libarchive            Disable libarchive support.
   --with-ssl=PATH                 Help me find your SSL installation (DIR is OpenSSL's install dir).
-  --with-termcap                    Force use of termcap even if terminfo/ncurses is available
-  --without-ipv6                    Refuse to support IPv6
+  --with-termcap                  Force use of termcap even if terminfo/ncurses is available
+  --without-ipv6                  Refuse to support IPv6
   --with-socks=PATH               Compile with SOCKS (libsocks without socks.h) firewall traversal support.
   --with-socks5=PATH              Compile with SOCKS5 (libsocks with socks.h) firewall traversal support.
   --with-iconv=PATH               Include iconv support (PATH is (eg) /usr/local).
-  --without-wserv                   Refuse to support wserv (for multiple screens)
-  --with-valgrind                   Include support for Valgrind Memcheck
-  --with-clang-sanitizing           Include support for clang sanitizing
+  --without-wserv                 Refuse to support wserv (for multiple screens)
+  --with-valgrind                 Include support for Valgrind Memcheck
+  --with-clang-sanitizing         Include support for clang sanitizing
   --with-perl=PATH_TO_PERL_EXE    Compile with perl support.
   --with-ruby=PATH_TO_RUBY_EXE    Compile with ruby support.
   --with-python=PATH_TO_PYTHON_CONFIG_EXE   Compile with Python support.
@@ -4656,7 +4656,7 @@ fi
 done
 
 
-for ac_header in fcntl.h ieeefp.h inttypes.h locale.h math.h ndbm.h netdb.h regex.h stdargs.h stddef.h stdint.h sys/cdefs.h sys/fcntl.h sys/file.h sys/filio.h sys/select.h sys/sysctl.h sys/syslimits.h sys/time.h sys/un.h sys/param.h termios.h sys/termios.h xlocale.h
+for ac_header in fcntl.h ieeefp.h inttypes.h locale.h math.h ndbm.h netdb.h regex.h stdargs.h stddef.h stdint.h sys/cdefs.h sys/fcntl.h sys/file.h sys/filio.h sys/select.h sys/syslimits.h sys/time.h sys/un.h sys/param.h termios.h sys/termios.h xlocale.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
@@ -4885,13 +4885,6 @@ ac_fn_c_check_func "$LINENO" "sysconf" "ac_cv_func_sysconf"
 if test "x$ac_cv_func_sysconf" = xyes; then :
 
 $as_echo "#define HAVE_SYSCONF 1" >>confdefs.h
-
-fi
-
-ac_fn_c_check_func "$LINENO" "sysctlbyname" "ac_cv_func_sysctlbyname"
-if test "x$ac_cv_func_sysctlbyname" = xyes; then :
-
-$as_echo "#define HAVE_SYSCTLBYNAME 1" >>confdefs.h
 
 fi
 

@@ -25,7 +25,7 @@ AC_PROG_CPP
 dnl ----------------------------------------------------------
 AC_MSG_CHECKING([for an extra library directory])
 AC_ARG_WITH([localdir],
-[  --with-localdir=/usr/local        An extra directory to look for stuff.],[
+[  --with-localdir=/usr/local      An extra directory to look for stuff.],[
    if test "x$withval" = "x" ; then
       if test -d /usr/local/lib ; then
 	withval="/usr/local"
@@ -158,7 +158,7 @@ fi
 
 dnl Check to see if libarchive actually works
 dnl XXX I don't understand why this is even necessary.
-AC_ARG_WITH([libarchive], [  --without-libarchive              Disable libarchive support.],
+AC_ARG_WITH([libarchive], [  --without-libarchive            Disable libarchive support.],
 	[], [with_libarchive=maybe])
 if test "x$with_libarchive" != "xno" ; then
 	have_libarchive=""
@@ -304,7 +304,7 @@ termcap=0;
 warn_again=0;
 AC_MSG_CHECKING(whether you want to use termcap instead of terminfo/ncurses)
 AC_ARG_WITH(termcap,
-[  --with-termcap                    Force use of termcap even if terminfo/ncurses is available ],
+[  --with-termcap                  Force use of termcap even if terminfo/ncurses is available ],
 [   AC_MSG_RESULT(yes)
     AC_CHECK_LIB(termcap, tgetent, termcap=1;LIBS="-ltermcap $LIBS",
       AC_CHECK_LIB(termlib, tgetent, termcap=1;LIBS="-ltermlib $LIBS",
@@ -325,7 +325,7 @@ dnl
 dnl Checking for headers, functions, and a type declarations
 dnl
 
-AC_CHECK_HEADERS(fcntl.h ieeefp.h inttypes.h locale.h math.h ndbm.h netdb.h regex.h stdargs.h stddef.h stdint.h sys/cdefs.h sys/fcntl.h sys/file.h sys/filio.h sys/select.h sys/sysctl.h sys/syslimits.h sys/time.h sys/un.h sys/param.h termios.h sys/termios.h xlocale.h,)
+AC_CHECK_HEADERS(fcntl.h ieeefp.h inttypes.h locale.h math.h ndbm.h netdb.h regex.h stdargs.h stddef.h stdint.h sys/cdefs.h sys/fcntl.h sys/file.h sys/filio.h sys/select.h sys/syslimits.h sys/time.h sys/un.h sys/param.h termios.h sys/termios.h xlocale.h,)
 if test $termcap -eq 0 ; then
 	AC_CHECK_HEADERS(term.h,)
 else
@@ -361,7 +361,6 @@ AC_CHECK_FUNC(strlcpy, AC_DEFINE([HAVE_STRLCPY], 1, [Define if you have strlcpy(
 AC_CHECK_FUNC(strptime, AC_DEFINE([HAVE_STRPTIME], 1, [Define if you have strptime()]),)
 AC_CHECK_FUNC(strtoul, AC_DEFINE([HAVE_STRTOUL], 1, [Define if you have strtoul()]),)
 AC_CHECK_FUNC(sysconf, AC_DEFINE([HAVE_SYSCONF], 1, [Define if you have sysconf()]),)
-AC_CHECK_FUNC(sysctlbyname, AC_DEFINE([HAVE_SYSCTLBYNAME], 1, [Define if you have sysctlbyname()]),)
 AC_CHECK_FUNC(unsetenv, AC_DEFINE([HAVE_UNSETENV], 1, [Define if you have unsetenv()]),)
 AC_CHECK_FUNC(vsnprintf, AC_DEFINE([HAVE_VSNPRINTF], 1, [Define if you have vsnprintf()]),)
 AC_MSG_CHECKING(for isfinite)
@@ -589,7 +588,7 @@ dnl
 
 AC_MSG_CHECKING([whether to support ipv6])
 AC_ARG_WITH(ipv6,
-[  --without-ipv6                    Refuse to support IPv6],[
+[  --without-ipv6                  Refuse to support IPv6],[
 	if test "x$withval" = "xno" ; then
 		AC_MSG_RESULT([no])
 		AC_DEFINE([DO_NOT_USE_IPV6], 1, [Define this if ipv6 was forbidden by user])
@@ -809,7 +808,7 @@ fi
 AC_MSG_CHECKING(whether to include wserv support)
 include_wserv="yes"
 AC_ARG_WITH(wserv,
-[  --without-wserv                   Refuse to support wserv (for multiple screens)],[
+[  --without-wserv                 Refuse to support wserv (for multiple screens)],[
 	if test -z "$withval"; then
 		include_wserv="yes"
 	else
@@ -831,7 +830,7 @@ dnl Valgrind assistance support?
 dnl
 AC_MSG_CHECKING(whether to include Valgrind Memcheck support)
 AC_ARG_WITH(valgrind,
-[  --with-valgrind                   Include support for Valgrind Memcheck ],
+[  --with-valgrind                 Include support for Valgrind Memcheck ],
 [],
 [with_valgrind=no])
 if test "x$with_valgrind" != "xno"; then
@@ -847,7 +846,7 @@ dnl clang 15 sanitizing support?
 dnl
 AC_MSG_CHECKING(whether to include clang15 sanitizing support)
 AC_ARG_WITH(clang-sanitizing,
-[  --with-clang-sanitizing           Include support for clang sanitizing ],
+[  --with-clang-sanitizing         Include support for clang sanitizing ],
 [],
 [with_clang_sanitizing=no])
 if test "x$with_clang_sanitizing" != "xno"; then
