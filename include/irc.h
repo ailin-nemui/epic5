@@ -103,7 +103,7 @@ extern		int	use_iexten;
 extern		int	use_input;
 extern		int	waiting_out;
 extern		int	waiting_in;
-extern		unsigned char *	cut_buffer;
+extern		char *	cut_buffer;
 extern		char *	default_channel;
 extern	const	char 	empty_string[];
 extern	const	char	space[];

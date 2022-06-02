@@ -138,7 +138,7 @@ static void	window_scrollback_forwards_lines	(Window *window, int);
 static 	void 	window_scrollback_to_string 	(Window *window, regex_t *str);
 static 	void 	window_scrollforward_to_string 	(Window *window, regex_t *str);
 static	int	change_line 			(Window *, const unsigned char *);
-static	int	add_to_display 			(Window *, const unsigned char *, intmax_t);
+static	int	add_to_display 			(Window *, const char *, intmax_t);
 static	Display *new_display_line 		(Display *prev, Window *w);
 static	int	add_waiting_channel 		(Window *, const char *);
 static 	void   	destroy_window_waiting_channels	(int);
@@ -7937,7 +7937,7 @@ int 	add_to_scrollback (int window_, const unsigned char *str, intmax_t refnum)
 	if (window->change_line != -1)
 		return change_line(window, str);
 
-	return add_to_display(window, str, refnum);
+	return add_to_display(window, (const char *)str, refnum);
 }
 
 /*
@@ -7957,7 +7957,7 @@ int 	add_to_scrollback (int window_, const unsigned char *str, intmax_t refnum)
  *
  * This function may be called many times between calls to trim_scrollback().
  */
-static int	add_to_display (Window *window, const unsigned char *str, intmax_t refnum)
+static int	add_to_display (Window *window, const char *str, intmax_t refnum)
 {
 	int	scroll;
 	int	i;
@@ -8859,7 +8859,7 @@ static int	change_line (Window *window, const unsigned char *str)
 	 * Now change the line, move the logical cursor, and then let
 	 * the caller (window_disp) output the new line.
 	 */
-	malloc_strcpy(&my_line->line, str);
+	malloc_strcpy(&my_line->line, (const char *)str);
 	window->cursor = chg_line;
 	return 1;		/* Express a success */
 }

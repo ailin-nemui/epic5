@@ -198,7 +198,7 @@ int	init_screen (void)
  * so it doesnt have that overhead, and it also doesnt have any size 
  * limitations.  The sky's the limit!
  */
-void	put_echo (const unsigned char *str)
+void	put_echo (const char *str)
 {
 	add_to_log(0, irclog_fp, -1, str, 0, NULL);
 	add_to_screen(str);

@@ -554,14 +554,16 @@ BUILT_IN_COMMAND(fe)
 			{
 				int		codepoint;
 				unsigned char 	fec_buffer[16], *word = fec_buffer;
-				
-				if ((codepoint = next_code_point((const unsigned char **)&templist, 0)) < 0)
+				ptrdiff_t	offset;
+
+				if ((codepoint = next_code_point2(templist, &offset, 0)) < 0)
 				{
 					templist++;
 					continue /* What to do? */;
 				}
+				templist += offset;
 				ucs_to_utf8(codepoint, word, 16);
-				add_local_alias(var[y], word, 0);
+				add_local_alias(var[y], (char *)word, 0);
 			}
 		}
 		x += ind;

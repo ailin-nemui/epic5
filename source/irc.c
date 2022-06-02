@@ -52,7 +52,7 @@ const char internal_version[] = "20220522";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 2066;
+const unsigned long	commit_id = 2067;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -205,7 +205,7 @@ const char	empty_string[] = "",		/* just an empty string */
 		star[] = "*",
 		dot[] = ".",
 		comma[] = ",";
-unsigned char	*cut_buffer = (unsigned char *) 0;	/* global cut_buffer */
+char	*cut_buffer = (char *) 0;	/* global cut_buffer */
 
 static		char	switch_help[] =
 "Usage: epic [switches] [nickname] [server list]                      \n\

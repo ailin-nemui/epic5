@@ -381,10 +381,12 @@ char *	upper (char *str)
 	char 	*s, *p;
 	int	c, d;
 	char	*x, *y;
+	ptrdiff_t	offset;
 
 	s = str;
-	while (x = s, (c = next_code_point((const unsigned char **)&s, 1)))
+	while (x = s, (c = next_code_point2(s, &offset, 1)))
 	{
+		s += offset;
 		d = mkupper_l(c);
 		if (c != d)
 		{
@@ -413,10 +415,12 @@ char *	lower (char *str)
 	char 	*s, *p;
 	int	c, d;
 	char	*x, *y;
+	ptrdiff_t	offset;
 
 	s = str;
-	while (x = s, (c = next_code_point((const unsigned char **)&s, 1)))
+	while (x = s, (c = next_code_point2(s, &offset, 1)))
 	{
+		s += offset;
 		d = mklower_l(c);
 		if (c != d)
 		{
@@ -470,6 +474,8 @@ ssize_t	stristr (const char *start, const char *srch)
 	p = start;
 	for (;;)
 	{
+		ptrdiff_t	offset;
+
 		if (!my_strnicmp(p, srch, srchlen))
 			return quick_code_point_index(start, p);
 
@@ -492,8 +498,9 @@ ssize_t	stristr (const char *start, const char *srch)
 		 * 'p' to the next code point, instead of just returning -1
 		 * to indicate "lack of sync".
 		 */
-		while ((d = next_code_point((const unsigned char **)&p, 0)) == -1)
+		while ((d = next_code_point2(p, &offset, 0)) == -1)
 			p++;
+		p += offset;
 
 		/* Not found */
 		if (d == 0)
@@ -510,6 +517,7 @@ ssize_t	rstristr (const char *start, const char *srch)
 	const char *p;
 	int	srchlen;
 	int	d, i;
+	ptrdiff_t	offset;
 
 	/* There must be both a source string and a search string */
 	if (!start || !*start || !srch || !*srch)
@@ -524,14 +532,17 @@ ssize_t	rstristr (const char *start, const char *srch)
 	/* Start looking at <srclen> code points from the end of <start>. */
 	p = start + strlen(start);
 	for (i = 1; i < srchlen; i++)
-		previous_code_point(start, (const unsigned char **)&p);
+	{
+		previous_code_point2(start, p, &offset);
+		p += offset;
+	}
 
 	for (;;)
 	{
 		if (!my_strnicmp(p, srch, srchlen))
 			return quick_code_point_index(start, p);
 
-		if (previous_code_point(start, (const unsigned char **)&p) == 0)
+		if (previous_code_point2(start, p, &offset) == 0)
 			return -1;		/* Not found */
 
 	}
@@ -617,9 +628,10 @@ char *	next_in_div_list (char *str, char **after, int delim)
 {
 	unsigned char *s, *p;
 	int	c;
+	ptrdiff_t	offset;
 
 	s = str;
-	while (p = s, (c = next_code_point((const unsigned char **)&s, 0)))
+	while (p = s, (c = next_code_point2(s, &offset, 0)))
 	{
 		if (c == -1)
 		{
@@ -627,6 +639,7 @@ char *	next_in_div_list (char *str, char **after, int delim)
 			continue;
 		}
 
+		s += offset;
 		if (c == delim)
 		{
 			*p++ = 0;	/* Terminate the old string */
@@ -761,35 +774,40 @@ unsigned char *stricmp_tables[3] = {
 
 /* XXX These functions should mean "must be equal, at least to 'n' chars */
 /* my_strnicmp: case insensitive version of strncmp */
-int     my_table_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n, int table)
+int     my_table_strnicmp (const char *str1, const char *str2, size_t n, int table)
 {
         while (n && *str1 && *str2 && 
-		(stricmp_tables[table][(unsigned short)*str1] == 
-		 stricmp_tables[table][(unsigned short)*str2]))
+		(stricmp_tables[table][(unsigned short)(unsigned char)*str1] == 
+		 stricmp_tables[table][(unsigned short)(unsigned char)*str2]))
                 str1++, str2++, n--;
                         
         return (n ?
-                (stricmp_tables[table][(unsigned short)*str1] -
-                 stricmp_tables[table][(unsigned short)*str2]) : 0);
+                (stricmp_tables[table][(unsigned short)(unsigned char)*str1] -
+                 stricmp_tables[table][(unsigned short)(unsigned char)*str2]) : 0);
 } 
 
-static int	utf8_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n)
+static int	utf8_strnicmp (const char *str1, const char *str2, size_t n)
 {
 	const unsigned char 	*s1, *s2;
 	int	c1, c2;
 	int	u1, u2;
 
-	s1 = str1;
-	s2 = str2;
+	s1 = (const unsigned char *)str1;
+	s2 = (const unsigned char *)str2;
 
 	if (n == 0)
 		return 0;
 
 	while (n > 0)
 	{
+		ptrdiff_t	offset1, offset2;
+
 		n--;
-		c1 = next_code_point(&s1, 1);
-		c2 = next_code_point(&s2, 1);
+		c1 = next_code_point2(s1, &offset1, 1);
+		c2 = next_code_point2(s2, &offset2, 1);
+
+		s1 += offset1;
+		s2 += offset2;
 
 		if (c1 == -1 || c2 == -1)
 			return *s1 - *s2;	/* What to do here? */
@@ -808,46 +826,46 @@ static int	utf8_strnicmp (const unsigned char *str1, const unsigned char *str2, 
 
 
 /* XXX Never turn these functions into macros, we create fn ptrs to them! */
-int	my_strncmp (const unsigned char *str1, const unsigned char *str2, size_t n)
+int	my_strncmp (const char *str1, const char *str2, size_t n)
 {
 	return my_table_strnicmp(str1, str2, n, STRICMP_CS);
 }
 
-int	my_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n)
+int	my_strnicmp (const char *str1, const char *str2, size_t n)
 {
 	return utf8_strnicmp(str1, str2, n);
 	/* return my_table_strnicmp(str1, str2, n, STRICMP_ASCII); */
 }
 
-int	my_stricmp (const unsigned char *str1, const unsigned char *str2)
+int	my_stricmp (const char *str1, const char *str2)
 {
 	return utf8_strnicmp(str1, str2, UINT_MAX);
 	/* return my_table_strnicmp(str1, str2, UINT_MAX, STRICMP_ASCII); */
 }
 
-int	ascii_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n)
+int	ascii_strnicmp (const char *str1, const char *str2, size_t n)
 {
 	return utf8_strnicmp(str1, str2, n);
 	/* return my_table_strnicmp(str1, str2, n, STRICMP_ASCII); */
 }
 
-int	ascii_stricmp (const unsigned char *str1, const unsigned char *str2)
+int	ascii_stricmp (const char *str1, const char *str2)
 {
 	return utf8_strnicmp(str1, str2, UINT_MAX);
 	/* return my_table_strnicmp(str1, str2, UINT_MAX, STRICMP_ASCII); */
 }
 
-int	rfc1459_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n)
+int	rfc1459_strnicmp (const char *str1, const char *str2, size_t n)
 {
 	return my_table_strnicmp(str1, str2, n, STRICMP_RFC1459);
 }
 
-int	rfc1459_stricmp (const unsigned char *str1, const unsigned char *str2)
+int	rfc1459_stricmp (const char *str1, const char *str2)
 {
 	return my_table_strnicmp(str1, str2, UINT_MAX, STRICMP_RFC1459);
 }
 
-int	server_strnicmp (const unsigned char *str1, const unsigned char *str2, size_t n, int servref)
+int	server_strnicmp (const char *str1, const char *str2, size_t n, int servref)
 {
 	int	table;
 
@@ -858,7 +876,7 @@ int	server_strnicmp (const unsigned char *str1, const unsigned char *str2, size_
 		return utf8_strnicmp(str1, str2, n);
 }
 
-int	alist_stricmp (const unsigned char *str1, const unsigned char *str2, size_t ignored)
+int	alist_stricmp (const char *str1, const char *str2, size_t ignored)
 {
 	return my_stricmp(str1, str2);
 }
@@ -868,6 +886,7 @@ int	alist_stricmp (const unsigned char *str1, const unsigned char *str2, size_t 
 char *	chop	(char *stuff, size_t nchar)
 {
 	size_t	sl;
+	ptrdiff_t	offset;
 
 	sl = quick_code_point_count(stuff);	
 
@@ -878,7 +897,10 @@ char *	chop	(char *stuff, size_t nchar)
 
 		s = stuff + strlen(stuff);
 		for (i = 0; i < nchar; i++)
-			previous_code_point(stuff, (const unsigned char **)&s);
+		{
+			previous_code_point2(stuff, s, &offset);
+			s += offset;
+		}
 		*s++ = 0;
 	}
 	else if (nchar > sl)
@@ -1236,6 +1258,19 @@ char *	check_nickname (char *nick, int unused)
 }
 
 
+const char *	cpindex (const char *string_, const char *search_, int howmany, size_t *cpoffset)
+{
+	const char *	retval;
+	ptrdiff_t	offset;
+	int		found = 0;
+
+	offset = cpindex2(string_, search_, howmany, cpoffset, &found);
+	if (found)
+		return (string_ + offset);
+	else
+		return NULL;
+}
+
 /*
  * cpindex - Find the 'howmany'th instance of any of the codepoints in 'search'
  *	     and return a pointer to that place; and calculate the character
@@ -1253,12 +1288,15 @@ char *	check_nickname (char *nick, int unused)
  *	NULL if the character(s) are not found.
  *	'cpoffset' is unchanged if not found.
  */
-const unsigned char *	cpindex (const unsigned char *string, const unsigned char *search, int howmany, size_t *cpoffset)
+ptrdiff_t	cpindex2 (const char *string_, const char *search_, int howmany, size_t *cpoffset, int *found_)
 {
+	const unsigned char *string = (const unsigned char *)string_;
+	const unsigned char *search = (const unsigned char *)search_;
 	const unsigned char *s, *p;
 	int	c, d;
 	int	found = 0;
 	int	inverted = 0;
+	ptrdiff_t	offset;
 
 	if (*search == '^')
 	{
@@ -1267,8 +1305,10 @@ const unsigned char *	cpindex (const unsigned char *string, const unsigned char 
 	}
 
 	p = string;
-	while ((c = next_code_point(&p, 1)))
+	while ((c = next_code_point2(p, &offset, 1)))
 	{
+		p += offset;
+
 		/* 
 		 * This code point 'c' is "found" IF AND ONLY IF:
 		 *	inverted == 1:	for every d in search, x != c
@@ -1277,8 +1317,10 @@ const unsigned char *	cpindex (const unsigned char *string, const unsigned char 
 		if (inverted)
 		{
 			s = search;
-			while ((d = next_code_point(&s, 1)))
+			while ((d = next_code_point2(s, &offset, 1)))
 			{
+				s += offset;
+
 				/* If any d == c, this 'c' is NOT FOUND */
 				if (c == d)
 					goto cpindex_not_found;
@@ -1289,8 +1331,10 @@ const unsigned char *	cpindex (const unsigned char *string, const unsigned char 
 		else
 		{
 			s = search;
-			while ((d = next_code_point(&s, 1)))
+			while ((d = next_code_point2(s, &offset, 1)))
 			{
+				s += offset;
+
 				/* If any d == c, this 'c' is FOUND */
 				if (c == d)
 					goto cpindex_found;
@@ -1303,9 +1347,11 @@ cpindex_found:
 		/* If we reach this point, 'c' was FOUND */
 		if (++found >= howmany)
 		{
-			previous_code_point(string, &p);
+			previous_code_point2(string, p, &offset);
+			p += offset;
 			*cpoffset = quick_code_point_index(string, p);
-			return p;
+			*found_ = 1;
+			return (p - string);
 		}
 		else
 			continue;
@@ -1314,15 +1360,33 @@ cpindex_not_found:
 		/* If we reach this point 'c' was NOT FOUND */;
 	}
 
-	return NULL;
+	*found_ = 0;
+	return 0;
 }
 
-const unsigned char *	rcpindex (const unsigned char *where, const unsigned char *string, const unsigned char *search, int howmany, size_t *cpoffset)
+const char *	rcpindex (const char *where_, const char *string_, const char *search_, int howmany, size_t *cpoffset)
 {
+	const char *	retval;
+	ptrdiff_t	offset;
+	int		found = 0;
+
+	offset = rcpindex2(where_, string_, search_, howmany, cpoffset, &found);
+	if (found)
+		return (where_ + offset);
+	else
+		return NULL;
+}
+
+ptrdiff_t	rcpindex2 (const char *where_, const char *string_, const char *search_, int howmany, size_t *cpoffset, int *found_)
+{
+	const unsigned char *where = (const unsigned char *)where_;
+	const unsigned char *string = (const unsigned char *)string_;
+	const unsigned char *search = (const unsigned char *)search_;
 	const unsigned char *s, *p;
 	int	c, d;
 	int	found = 0;
 	int	inverted = 0;
+	ptrdiff_t	offset;
 
 	if (*search == '^')
 	{
@@ -1331,8 +1395,10 @@ const unsigned char *	rcpindex (const unsigned char *where, const unsigned char 
 	}
 
 	p = where;
-	while ((c = previous_code_point(string, &p)))
+	while ((c = previous_code_point2(string, p, &offset)))
 	{
+		p += offset;
+
 		/* 
 		 * This code point 'c' is "found" IF AND ONLY IF:
 		 *	inverted == 1:	for every d in search, x != c
@@ -1341,8 +1407,10 @@ const unsigned char *	rcpindex (const unsigned char *where, const unsigned char 
 		if (inverted)
 		{
 			s = search;
-			while ((d = next_code_point(&s, 1)))
+			while ((d = next_code_point2(s, &offset, 1)))
 			{
+				s += offset;
+
 				/* If any d == c, this 'c' is NOT FOUND */
 				if (c == d)
 					goto rcpindex_not_found;
@@ -1353,8 +1421,10 @@ const unsigned char *	rcpindex (const unsigned char *where, const unsigned char 
 		else
 		{
 			s = search;
-			while ((d = next_code_point(&s, 1)))
+			while ((d = next_code_point2(s, &offset, 1)))
 			{
+				s += offset;
+
 				/* If any d == c, this 'c' is FOUND */
 				if (c == d)
 					goto rcpindex_found;
@@ -1368,7 +1438,8 @@ rcpindex_found:
 		if (++found >= howmany)
 		{
 			*cpoffset = quick_code_point_index(string, p);
-			return p;
+			*found_ = 1;
+			return p - where;
 		}
 		else
 			continue;
@@ -1377,7 +1448,8 @@ rcpindex_not_found:
 		/* If we reach this point 'c' was NOT FOUND */;
 	}
 
-	return NULL;
+	*found_ = 0;
+	return 0;
 }
 
 
@@ -2661,12 +2733,16 @@ int	new_split_string (unsigned char *str, unsigned char ***to, int delimiter)
 	unsigned char *s;
 	int	code_point;
 	int	i;
+	ptrdiff_t	offset;
 
 	/* First, count the number of segments in 'str' */
 	s = str;
-	while ((code_point = next_code_point((const unsigned char **)&s, 0)))
+	while ((code_point = next_code_point2(s, &offset, 0)))
+	{
+		s += offset;
 		if (code_point == delimiter)
 			segments++;
+	}
 	segments++;
 
 	/* Create an array for (*to) */
@@ -2677,8 +2753,10 @@ int	new_split_string (unsigned char *str, unsigned char ***to, int delimiter)
 	/* Split up 'str' nulling out each instance of 'delimiter' */
 	i = 0;
 	s = str;
-	while ((code_point = next_code_point((const unsigned char **)&s, 0)))
+	while ((code_point = next_code_point2(s, &offset, 0)))
 	{
+		s += offset;
+
 		/* If we've found a delimiter.... */
 		if (code_point == delimiter)
 		{
@@ -2687,7 +2765,9 @@ int	new_split_string (unsigned char *str, unsigned char ***to, int delimiter)
 			 * at the delimiter again.
 			 */
 			unsigned char *p = s;
-			previous_code_point(str, (const unsigned char **)&p);
+			ptrdiff_t	offset;
+			previous_code_point2(str, p, &offset);
+			p += offset;
 
 			/* 
 			 * Terminate the string there and put the result
@@ -6846,7 +6926,7 @@ int	ucs_to_utf8 (u_32int_t key, unsigned char *utf8str, size_t utf8strsiz)
  *	Buffer:		zero three four
  *	(*cut):		one two 
  */
-int	strext2 (unsigned char **cut, unsigned char *buffer, size_t part2, size_t part3)
+int	strext2 (char **cut, char *buffer, size_t part2, size_t part3)
 {
 	unsigned char *part2str, *part3str, *p, *s;
 	size_t	buflen;
@@ -6870,7 +6950,7 @@ int	strext2 (unsigned char **cut, unsigned char *buffer, size_t part2, size_t pa
 	RESIZE(*cut, char, newlen);
 	p = *cut;
 	s = buffer + part2;
-	while (s < buffer + part3)
+	while ((char *)s < buffer + part3)
 		*p++ = *s++;
 	*p++ = 0;
 
@@ -6901,15 +6981,16 @@ int	strext2 (unsigned char **cut, unsigned char *buffer, size_t part2, size_t pa
  *	>0	(Failure) The number of bytes that were not part of a 
  *			  valid utf8 string.
  */
-int	invalid_utf8str (unsigned char *utf8str)
+int	invalid_utf8str (char *utf8str)
 {
 	unsigned char *s;
 	int	code_point;
 	int	errors = 0;
 	int	count = 0;
+	ptrdiff_t	offset;
 
-	s = utf8str;
-	while ((code_point = next_code_point((const unsigned char **)&s, 0)))
+	s = (unsigned char *)utf8str;
+	while ((code_point = next_code_point2(s, &offset, 0)))
 	{
 		/* The next byte did not start a utf8 code point */
 		if (code_point < 0)
@@ -6930,20 +7011,23 @@ int	invalid_utf8str (unsigned char *utf8str)
 				*s = 0;
 				break;
 			}
-
 			else
 			{
 				errors++;
 				s++;
 			}
 		}
+		else
+		{
+			s += offset;
 
-		/* 
-		 * We count the number of non-ascii utf8 code points
-		 * we've seen
-		 */
-		else if (code_point > 127)
-			count++;
+			/* 
+			 * We count the number of non-ascii utf8 code points
+			 * we've seen
+			 */
+			if (code_point > 127)
+				count++;
+		}
 	}
 
 	return errors;

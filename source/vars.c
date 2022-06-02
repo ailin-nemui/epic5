@@ -698,7 +698,7 @@ int 	set_variable (const char *name, IrcVariable *var, const char *new_value, in
 {
 	char	*rest;
 	int	changed = 0;
-	unsigned char	*value;
+	char	*value;
 	int	retval = 0;
 
 	if (new_value)
@@ -725,6 +725,7 @@ int 	set_variable (const char *name, IrcVariable *var, const char *new_value, in
 	    case CHAR_VAR:
 	    {
 		int	codepoint;
+		ptrdiff_t	offset;
 
 		if (!value || !*value)
 		{
@@ -733,7 +734,7 @@ int 	set_variable (const char *name, IrcVariable *var, const char *new_value, in
 			break;
 		}
 
-		if ((codepoint = next_code_point((const unsigned char **)&value, 0)) == -1)
+		if ((codepoint = next_code_point2((const unsigned char *)value, &offset, 1)) == -1)
 		{
 			say("New value of %s could not be determined", name);
 			retval = -1;
@@ -1147,7 +1148,7 @@ const 	VARIABLE *data;
 			unsigned char utf8str[16];
 
 			ucs_to_utf8(data->integer, utf8str, sizeof(utf8str));
-			ret = malloc_strdup(utf8str);
+			ret = malloc_strdup((const char *)utf8str);
 			break;
 		}
 		default:

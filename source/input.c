@@ -316,10 +316,13 @@ static int 	safe_puts (const unsigned char *str, int numcols)
 	int	code_point;
 	int	cols;
 	int	allow_c1_chars = -1;
+	ptrdiff_t	offset;
 
 	s = str;
-	while ((code_point = next_code_point(&s, 1)))
+	while ((code_point = next_code_point2(s, &offset, 1)))
 	{
+		s += offset;
+
 		/* C1 chars have to be checked */
 		if (code_point >= 0x80 && code_point <= 0x9F)
 		{
@@ -391,6 +394,7 @@ static int	retokenize_input (int start)
 	int	cols;
 	int	codepoint;
 	int	current_column;
+	ptrdiff_t	offset;
 
 	start = 0;
 	current_column = 0;
@@ -398,7 +402,8 @@ static int	retokenize_input (int start)
 
 	while (s && *s)
 	{
-		codepoint = next_code_point(&s, 1);
+		codepoint = next_code_point2(s, &offset, 1);
+		s += offset;
 		cols = codepoint_numcolumns(codepoint);
 		/* Invalid chars are probably highlights */
 		if (cols == -1)

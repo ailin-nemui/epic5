@@ -533,6 +533,7 @@ int	make_status (int window_, Status *status)
 	const unsigned char *	s;
 		int	code_point;
 		int	cols;
+		ptrdiff_t	offset;
 
 		fillchar = 0;
 
@@ -646,8 +647,13 @@ int	make_status (int window_, Status *status)
 		cp = lhp;
 		lhs_buffer[0] = rhs_buffer[0] = 0;
 
-		while ((code_point = next_code_point(&s, 1)))
+		while ((code_point = next_code_point2(s, &offset, 1)))
 		{
+			if (code_point < 0)
+				s++;
+			else
+				s += offset;
+
 			/*
 			 * The FIRST such %> tag is used.
 			 * Using multiple %>s is bogus.

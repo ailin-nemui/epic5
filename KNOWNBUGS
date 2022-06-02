@@ -1184,3 +1184,18 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Un-break $unveil() with no arguments (rb zlonix)
 * Remove configure checks for sysctlbyname(), <sys/sysctl.h>
 * Fix warnings from raspbian (rb zlonix)
+* Don't include <sys/syctl.h> (not used) (rb zlonix)
+* Do #define _GNU_SOURCE 1 for slackware (BAH!)
+* Begin untangling the "signed pointer mess"
+* Generally this means:
+* - (char *), not (unsigned char *) is the "generic type" in C params
+* - Pointer parameters have to have *equivalent* types, not just *compatible* types.
+* - The type of "a bunch of bytes" is always (char *), not (unsigned char *)
+*   - Even though (char *) is not 8 bit clean.
+* - Type type of literals is always (char *), not (unsigned char *)
+* - So don't use (unsigned char *) for params unless the thing is NOT a BoBs.
+* - So DO use (char *) and cast it on both sides of the call.
+* - Don't have (const unsigned char **) params to modify a pointer
+*   - Prefer (const unsigned char *) and return a (ptrdiff_t)
+* Change (Crypt) 'passwd' to unsigned because OpenSSL wants it that way.
+

@@ -215,21 +215,21 @@ int	codepoint_numcolumns (int ucs)
 }
 
 /* *** ADDED STUFF - NOT IN ORIGINAL *** */
-
-int     next_code_point (const unsigned char **i, int resync)
+int     next_code_point2 (const unsigned char *i_, ptrdiff_t *bytes_used, int resync)
 {
-        int     offset;
-        unsigned char    a, b, c, d;
+        int     	offset;
+        unsigned char   a, b, c, d;
+	const unsigned char *i = (const unsigned char *)i_;
         const unsigned char *str;
-        int     result;
+        int     	result;
 
-	if (!i || !*i)
+	if (!i_)
 		return 0;	/* What is this? */
 
     /* Keep skipping bytes until we find one that works */
-    for (; (**i); (*i)++)
+    for (; *i; i++)
     {
-        str = *i;
+        str = i;
         a = b = c = d = 0;
 	result = -1;
 
@@ -255,7 +255,7 @@ int     next_code_point (const unsigned char **i, int resync)
         if ((a & 0x80) == 0x00)
         {
                 result = a;
-                (*i)++;
+                i++;
         }
 
         /* The 2 high bits are set only?  -- 2 bytes */
@@ -264,7 +264,7 @@ int     next_code_point (const unsigned char **i, int resync)
                 if ((b & 0xC0) == 0x80)
                 {
                         result = ((a & 0x1F) << 6) + (b & 0x3f);
-                        (*i) += 2;;
+                        i += 2;;
                 }
         }
 
@@ -278,7 +278,7 @@ int     next_code_point (const unsigned char **i, int resync)
                     result = ((a & 0x0F) << 12) + 
 				((b & 0x3f) << 6) + 
 				(c & 0x3f);
-                    (*i) += 3;
+                    i += 3;
                   }
 		}
         }
@@ -296,7 +296,7 @@ int     next_code_point (const unsigned char **i, int resync)
 				((b & 0x3f) << 12) + 
 				((c & 0x3f) << 6) + 
 				(d & 0x3F);
-                      (*i) += 4;
+                      i += 4;
                     }
 		  }
 		}
@@ -309,11 +309,13 @@ int     next_code_point (const unsigned char **i, int resync)
 			continue;
 	}
 
+	*bytes_used = i - i_;
         return result;
 
     }
 
     /* If we hit the end of the string, return nul */
+    *bytes_used = i - i_;
     return 0;
 }
 
@@ -441,8 +443,9 @@ int     partial_code_point (const unsigned char *i)
 
 int	grab_codepoint (const unsigned char *x)
 {
-	const unsigned char *str = x;
-	return next_code_point(&str, 1);
+	ptrdiff_t	offset;
+
+	return next_code_point2(x, &offset, 1);
 }
 
 /*
@@ -470,10 +473,12 @@ int	quick_display_column_count (const unsigned char *str)
 	int	code_point;
 	int	length = 0;
 	int	x;
+	ptrdiff_t	offset;
 
 	s = str;
-	while ((code_point = next_code_point(&s, 1)))
+	while ((code_point = next_code_point2(s, &offset, 1)))
 	{
+		s += offset;
 		if ((x = codepoint_numcolumns(code_point)) == -1)
 			x = 0;
 		length += x;
@@ -502,13 +507,15 @@ int	count_initial_codepoints (const unsigned char *str, const unsigned char *p)
 	const unsigned char *s;
 	int	length = 0;
 	int	x;
+	ptrdiff_t	offset;
 
 	if (str >= p)
 		return 0;
 
 	s = str;
-	while (next_code_point(&s, 1))
+	while (next_code_point2(s, &offset, 1))
 	{
+		s += offset;
 		length++;
 		if (s >= p)
 			return length;
@@ -530,10 +537,12 @@ int	input_column_count (const unsigned char *str)
 	int	code_point;
 	int	length = 0;
 	int	x;
+	ptrdiff_t	offset;
 
 	s = str;
-	while ((code_point = next_code_point(&s, 1)))
+	while ((code_point = next_code_point2(s, &offset, 1)))
 	{
+		s += offset;
 		if ((x = codepoint_numcolumns(code_point)) == -1)
 			x = 1;
 		length += x;
@@ -549,18 +558,31 @@ int	input_column_count (const unsigned char *str)
  *	0xC0-0xFF
  * This function doesn't attempt to validate broken utf8.
  */
-int	quick_code_point_count (const unsigned char *str)
+int	quick_code_point_count (const char *str)
 {
 	const unsigned char *s;
 	int	count;
 
-	for (count = 0, s = str; *s; s++)
+	for (count = 0, s = (const unsigned char *)str; *s; s++)
 	{
 		if (*s < 0x80 || *s >= 0xC0)
 			count++;
 	}
 	return count;
 }
+
+#if 0
+int     previous_code_point (const unsigned char *st, const unsigned char **i)
+{
+	int	retval;
+	ptrdiff_t	offset;
+
+	retval = previous_code_point2(st, *i, &offset);
+	*i += offset;
+	return retval;
+}
+#endif
+
 
 /*
  * previous_code_point	- Move *i back one code point.
@@ -581,13 +603,18 @@ int	quick_code_point_count (const unsigned char *str)
  *	In both cases, *i is moved to the first byte of the code
  *	point whose value is returned.
  */
-int     previous_code_point (const unsigned char *st, const unsigned char **i)
+int     previous_code_point2 (const unsigned char *st, const unsigned char *i, ptrdiff_t *offset)
 {
 	const unsigned char *	c;
+	int	retval;
+	ptrdiff_t	offset2;
 
-	c = *i;
+	c = i;
 	if (c == st)
+	{
+		*offset = 0;
 		return 0;		/* Time to stop */
+	}
 
 	if (c > st && (*c < 0x80 || *c >= 0xC0))
 		c--;
@@ -595,8 +622,9 @@ int     previous_code_point (const unsigned char *st, const unsigned char **i)
 	while (c > st && (*c >= 0x80 && *c < 0xC0))
 		c--;
 
-	*i = c;
-	return next_code_point(&c, 1);
+	retval = next_code_point2(c, &offset2, 1);
+	*offset = c - i;
+	return retval;
 }
 
 

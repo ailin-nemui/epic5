@@ -156,12 +156,12 @@ static void	add_to_crypt (Char *nick, Char *serv, Char *passwd, Char *prog, int 
 		if (sed_type == AES256CRYPT)
 			memcpy(d->passwd, passwd, strlen(passwd));
 		else
-			sha256(passwd, strlen(passwd), d->passwd);
+			sha256(passwd, strlen(passwd), (char *)d->passwd);
 	}
 	else
 	{
-		malloc_strcpy(&d->passwd, passwd);
-		d->passwdlen = strlen(d->passwd);
+		malloc_strcpy((char **)&d->passwd, passwd);
+		d->passwdlen = strlen((const char *)d->passwd);
 	}
 
 	/* Fill in the 'prog' field. */
@@ -466,7 +466,8 @@ usage_error:
 				((Crypt *)(tmp->d))->serv ? ((Crypt *)(tmp->d))->serv : "<any>",
 				((Crypt *)(tmp->d))->prog ? ((Crypt *)(tmp->d))->prog : 
 					ciphers[((Crypt *)(tmp->d))->sed_type].username, 
-				happypasswd(((Crypt *)(tmp->d))->passwd, ((Crypt *)(tmp->d))->sed_type));
+				happypasswd((char *)(((Crypt *)(tmp->d))->passwd), 
+						((Crypt *)(tmp->d))->sed_type));
 	}
 	else
 	    say("You are not ciphering messages with anyone.");
@@ -490,11 +491,11 @@ usage_error:
  * data.  You need to call cipher_message() directly for that.  You cannot
  * use this function to send binary data over irc.
  */
-char *	crypt_msg (const unsigned char *str, List *crypti)
+char *	crypt_msg (const char *str, List *crypti)
 {
 	char	buffer[CRYPT_BUFFER_SIZE + 1];
 	int	srclen;
-	unsigned char *ciphertext;
+	char *	ciphertext;
 	int	ciphertextlen;
 	char *	dest;
 
@@ -542,7 +543,7 @@ char *	crypt_msg (const unsigned char *str, List *crypti)
  * which requires a big buffer to scratch around.  (The decrypted text could
  * contain a CTCP UTC which would expand to a larger string of text)
  */ 
-char *	decrypt_msg (const unsigned char *str, List *crypti)
+char *	decrypt_msg (const char *str, List *crypti)
 {
 	char *	plaintext;
 	char *	dest;

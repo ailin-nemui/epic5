@@ -1386,6 +1386,7 @@ unsigned char *	new_normalize_string (const unsigned char *str, int logical, int
 	int		codepoint, state, cols;
 	unsigned char 	utf8str[16], *x;
 	size_t		(*attrout) (unsigned char *, Attribute *, Attribute *) = NULL;
+	ptrdiff_t	offset;
 
 	mangle_escapes 	= ((mangle & MANGLE_ESCAPES) != 0);
 	normalize	= ((mangle & NORMALIZE) != 0);
@@ -1430,8 +1431,10 @@ unsigned char *	new_normalize_string (const unsigned char *str, int logical, int
 	output = (unsigned char *)new_malloc(maxpos + 192);
 	pos = 0;
 
-	while ((codepoint = next_code_point(&str, 1)) > 0)
+	while ((codepoint = next_code_point2(str, &offset, 1)) > 0)
 	{
+	    str += offset;
+
 	    if (pos > maxpos - 8)
 	    {
 		maxpos += 192; /* Extend 192 chars at a time */
@@ -1748,8 +1751,9 @@ normal_char:
  * Return Value:
  *	A Type 1 normalized string (with ^B, ^V, ^C, ^_s, etc)
  */
-unsigned char *	denormalize_string (const unsigned char *str)
+char *	denormalize_string (const char *str_)
 {
+	const unsigned char *str = (const unsigned char *)str_;
 	unsigned char *	output = NULL;
 	size_t		maxpos;
 	Attribute 	olda, a;
@@ -1800,7 +1804,7 @@ unsigned char *	denormalize_string (const unsigned char *str)
 		}
 	}
 	output[pos] = 0;
-	return output;
+	return (char *)output;
 }
 
 /* 
@@ -1816,9 +1820,10 @@ unsigned char *	denormalize_string (const unsigned char *str)
  * Return Value:
  *	Just the plain text from the string.
  */
-unsigned char *	normalized_string_to_plain_text (const unsigned char *str)
+char *	normalized_string_to_plain_text (const char *str_)
 {
-	unsigned char *	output = NULL;
+	const unsigned char *str = (const unsigned char *)str_;
+	char *		output = NULL;
 	size_t		maxpos;
 	Attribute 	a;
 	size_t		span;
@@ -1965,7 +1970,10 @@ const	unsigned char	*cont_ptr;
 	 */
 	for (ptr = str; *ptr && (pos < BIG_BUFFER_SIZE - 8); )
 	{
-		codepoint = next_code_point(&ptr, 1);
+		ptrdiff_t	offset;
+
+		codepoint = next_code_point2(ptr, &offset, 1);
+		ptr += offset;
 
 		switch (codepoint)
 		{
@@ -2021,8 +2029,9 @@ const	unsigned char	*cont_ptr;
 			int	spacechar = 0;
 
 			xptr = words;
-			while ((cp = next_code_point(&xptr, 1)))
+			while ((cp = next_code_point2(xptr, &offset, 1)))
 			{
+				xptr += offset;
 				if (codepoint == cp)
 				{
 					spacechar = 1;
@@ -2068,7 +2077,7 @@ const	unsigned char	*cont_ptr;
 			 * "next code point" after the space.
 			 */
 			x2 = ptr;
-			ncp = next_code_point(&x2, 1);
+			ncp = next_code_point2(x2, &offset, 1);
 
 			if (indent == 0)
 			{
@@ -2397,6 +2406,7 @@ const 	unsigned char	*ptr;
 	unsigned char 	utf8str[16];
 	char *		x;
 	int		cols;
+	ptrdiff_t	offset;
 
         /* Reset all attributes to zero */
         a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
@@ -2411,7 +2421,8 @@ const 	unsigned char	*ptr;
 	 */
 	for (ptr = str; *ptr && (pos < BIG_BUFFER_SIZE - 8); )
 	{
-	    codepoint = next_code_point(&ptr, 1);
+	    codepoint = next_code_point2(ptr, &offset, 1);
+	    ptr += offset;
 
 	    switch (codepoint)
 	    {
@@ -2557,6 +2568,7 @@ size_t 	output_with_count (const unsigned char *str1, int clreol, int output)
 	unsigned char	utf8str[16];
 	char *		x;
 	int		cols;
+	ptrdiff_t	offset;
 
         /* Reset all attributes to zero */
         a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
@@ -2570,9 +2582,10 @@ size_t 	output_with_count (const unsigned char *str1, int clreol, int output)
 	for (str = str1; str && *str; )
 	{
 	    /* On any error, just stop. */
-	    if ((codepoint = next_code_point(&str, 1)) == -1)
+	    if ((codepoint = next_code_point2(str, &offset, 1)) == -1)
 		break;
 
+	    str += offset;
 	    switch (codepoint)
 	    {
 		/* Attribute marker */
@@ -3781,6 +3794,7 @@ const 	char *		enc;
 static	int		prev_char = -1;
 static	int		suspicious = 0;
 static	int		never_warn_again = 0;
+	ptrdiff_t	offset;
 
 	/*
 	 * This is "impossible", but I'm just being safe.
@@ -3859,7 +3873,7 @@ static	int		never_warn_again = 0;
 
 	/* Now inject the converted (utf8) bytes into the input stream. */
 	s = (const unsigned char *)dest_ptr;
-	codepoint = next_code_point(&s, 1);
+	codepoint = next_code_point2(s, &offset, 1);
 	if (codepoint > -1)
 	{
 		/* Clear the buffer BEFORE dispatching the results */
@@ -4075,6 +4089,7 @@ void	chop_columns (unsigned char **str, size_t num)
 	char 	*s, *x;
 	int	i, d, c;
 	int	codepoint, cols;
+	ptrdiff_t	offset;
 
 	if (!str || !*str)
 		return;
@@ -4086,8 +4101,9 @@ void	chop_columns (unsigned char **str, size_t num)
 		 * In the worst case, eventually codepoint == 0 at EOS.
 		 */
 		x = s;
-		while ((codepoint = next_code_point((const unsigned char **)&x, 0)) == -1)
+		while ((codepoint = next_code_point2(x, &offset, 0)) == -1)
 			x++;
+		x += offset;
 
 		/* 
 		 * \006 is the "attribute marker" which is followed by
@@ -4151,6 +4167,7 @@ void	chop_final_columns (unsigned char **str, size_t num)
 	int	i, d, c;
 	int	cols, codepoint;
 	size_t	numcols;
+	ptrdiff_t	offset;
 
 	if (!str || !*str)
 		return;
@@ -4170,8 +4187,9 @@ void	chop_final_columns (unsigned char **str, size_t num)
 		 * In the worst case, eventually codepoint == 0 at EOS.
 		 */
 		x = s;
-		while ((codepoint = next_code_point((const unsigned char **)&x, 0)) == -1)
+		while ((codepoint = next_code_point2(x, &offset, 0)) == -1)
 			x++;
+		x += offset;
 
 		/* 
 		 * \006 is the "attribute marker" which is followed by

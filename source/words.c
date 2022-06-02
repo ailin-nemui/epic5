@@ -63,30 +63,30 @@
 /*
  * search() looks for a character forward or backward from mark 
  */
-char *	search_for (char *start, char **mark, char *chars, int how)
+ptrdiff_t	search_for (char *start, char *mark, const char *chars, int how, int *found)
 {
-	const unsigned char *s, *p;
-	size_t	cpoffset = SIZE_MAX;
+	size_t		cpoffset = SIZE_MAX;
+	ptrdiff_t	offset;
 
-	if (!mark)
-		return NULL;		/* Take THAT! */
-        if (!*mark)
-                *mark = start;
-
-	s = *mark;
-	p = chars;
+	if (mark == NULL)
+	{
+		*found = 0;
+		return 0;
+	}
 
         if (how > 0)   /* forward search */
-		s = cpindex(s, p, how, &cpoffset);
+		offset = cpindex2(mark, chars, how, &cpoffset, found);
 
 	else if (how == 0)
-		return NULL;
+		*found = 0;
 
 	else  /* how < 0 */
-		s = rcpindex(s + strlen(s), start, p, -how, &cpoffset);
+		offset = rcpindex2(mark, start, chars, -how, &cpoffset, found);
 
-	*mark = (char *)(intptr_t)s;
-	return *mark;
+	if (*found)
+		return offset;
+	else
+		return 0;
 }
 
 /*

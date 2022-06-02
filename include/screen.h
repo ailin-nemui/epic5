@@ -112,8 +112,8 @@ struct	ScreenStru *	next;			/* Previous screen in list */
 
 const	unsigned char *	all_off				(void);
 	unsigned char *	new_normalize_string		(const unsigned char *, int, int);
-	unsigned char *	denormalize_string		(const unsigned char *);
-	unsigned char *	normalized_string_to_plain_text (const unsigned char *str);
+		 char *	denormalize_string		(const char *);
+		 char *	normalized_string_to_plain_text (const char *str);
 	unsigned char **prepare_display			(int, const unsigned char *, int, int *, int);
 	size_t		output_with_count		(const unsigned char *, int, int);
 	void    	add_to_window_scrollback 	(int, const unsigned char *, intmax_t);

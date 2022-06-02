@@ -9,6 +9,8 @@
 #ifndef __irc_std_h
 #define __irc_std_h
 
+#define _GNU_SOURCE 1
+
 #include "defs.h"
 
 /*
@@ -350,10 +352,6 @@ typedef		uint32_t		u_32int_t;
 #define howmany(x, y)   (((x) + ((y) - 1)) / (y))
 #endif
 
-#if defined(HAVE_SYS_SYSCTL_H)
-#include <sys/sysctl.h>
-#endif
-
 /*
  * Define an RFC2553 compatable "struct sockaddr_storage" if we do not
  * already have one.
@@ -420,8 +418,10 @@ typedef struct stat		Stat;
 /*
  * Ah, the joys of newer gcc's....
  */
+#if 0
 #define CUC_PP (const unsigned char **)
 #define CC_PP (const char **)
+#endif
 
 #ifdef NEWLOCALE_DOESNT_WORK
 #undef HAVE_NEWLOCALE

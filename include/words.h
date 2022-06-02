@@ -44,7 +44,7 @@
 #define DWORD_EXTRACTW 	2		/* Support only if /xdebug extractw */
 #define DWORD_DWORDS	3		/* Support only if /xdebug dword */
 
-char *		search_for		(char *, char **, char *, int);
+ptrdiff_t       search_for 		(char *start, char *mark, const char *chars, int how, int *found);
 ssize_t		move_word_rel		(Char *, Char **, int, int, Char *);
 const char *	real_move_to_abs_word 	(Char *, Char **, int, int, Char *);
 #define move_to_abs_word(a, b, c)	real_move_to_abs_word(a, b, c, DWORD_YES, "\"");

@@ -1652,14 +1652,15 @@ const char *	term_getsgr (int opt, int fore, int back)
 	return (ret);
 }
 
-static char *	control_mangle (unsigned char *text)
+static char *	control_mangle (char *text_)
 {
 static 	unsigned char	retval[256];
+	unsigned char *text = (unsigned char *)text_;
 	int 	pos = 0;
 	
 	*retval = 0;
 	if (!text)
-		return retval;
+		return (char *)retval;
 		
 	for (; *text && (pos < 254); text++, pos++)
 	{
@@ -1678,7 +1679,7 @@ static 	unsigned char	retval[256];
 	}
 
 	retval[pos] = 0;
-	return retval;
+	return (char *)retval;
 }
 
 const char *	get_term_capability (const char *name, int querytype, int mangle)

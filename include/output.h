@@ -16,7 +16,7 @@
 extern	FILE	*irclog_fp;
 
 	BUILT_IN_COMMAND(extern_write);
-	void	put_echo		(const unsigned char *);
+	void	put_echo		(const char *);
 	void	put_it 			(const char *, ...) __A(1);
 	void	say 			(const char *, ...) __A(1);
 	void	yell 			(const char *, ...) __A(1);

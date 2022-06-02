@@ -3018,6 +3018,7 @@ BUILT_IN_COMMAND(xtypecmd)
 {
 	char	*arg;
 	int	code_point;
+	ptrdiff_t	offset;
 
 	if (*args == '-' || *args == '/')
 	{
@@ -3028,8 +3029,9 @@ BUILT_IN_COMMAND(xtypecmd)
 		{
 			if (!my_strnicmp(arg, "LITERAL", 1))
 			{
-				while ((code_point = next_code_point((const unsigned char **)&args, 1)))
+				while ((code_point = next_code_point2(args, &offset, 1)))
 				{
+					args += offset;
 					input_add_character(code_point, NULL);
 				}
 			}

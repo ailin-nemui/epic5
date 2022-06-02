@@ -34,7 +34,7 @@ typedef struct	CryptStru
 	char *	nick;
 */
 	char *	serv;
-	char *	passwd;
+	unsigned char *	passwd;
 	int	passwdlen;
 	int	sed_type;
 	char *	prog;
@@ -42,13 +42,13 @@ typedef struct	CryptStru
 }	MAY_ALIAS Crypt;
 
 	BUILT_IN_COMMAND(encrypt_cmd);
-	char *	crypt_msg 	(const unsigned char *, List *);
-	char *	decrypt_msg 	(const unsigned char *, List *);
+	char *	crypt_msg 	(const char *, List *);
+	char *	decrypt_msg 	(const char *, List *);
 	List *	is_crypted 	(const char *, int serv, const char *ctcp_type);
 
 	/* These are for internal use only -- do not call outside crypt.c */
-	unsigned char *	decipher_message (const unsigned char *, size_t, List *, int *);
-	unsigned char *	cipher_message	(const unsigned char *, size_t, List *, int *);
+	char *	decipher_message (const char *, size_t, List *, int *);
+	char *	cipher_message	(const char *, size_t, List *, int *);
 	char *  sha256str (const char *, size_t, char *);
 	char *  sha256 (const char *, size_t, char *);
 
