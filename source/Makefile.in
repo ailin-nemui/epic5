@@ -79,7 +79,7 @@ vars.o: Makefile ../Makefile
 	-DWSERV_PATH=\"$(INSTALL_WSERV)\"
 
 perl.o: perl.c Makefile ../Makefile
-	$(CC) $(CFLAGS) $(ansiflags) $(INCLUDES) -c @srcdir@/perl.c @PERLCFLAGS@
+	$(CC) $(CFLAGS) $(ansiflags) $(INCLUDES) -c @srcdir@/perl.c @PERLCFLAGS@ @PERL_EXTRA_CFLAGS@
 
 ruby.o: ruby.c Makefile ../Makefile
 	$(CC) $(CFLAGS) $(ansiflags) $(INCLUDES) -c @srcdir@/ruby.c @RUBYCFLAGS@

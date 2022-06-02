@@ -14,7 +14,7 @@ extern	int	current_log_refnum;
 	FILE	*do_log 	(int, const char *, FILE **);
 	void	logger 		(void *);
 	void	set_logfile 	(void *);
-	void	add_to_log 	(int, FILE *, long, const unsigned char *, int, const char *);
+	void	add_to_log 	(int, FILE *, long, const char *, int, const char *);
 	BUILT_IN_COMMAND(logcmd);
 	void	add_to_logs	(long, int, const char *, int, const char *);
 	char *	logctl		(char *);

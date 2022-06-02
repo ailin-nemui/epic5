@@ -207,7 +207,7 @@ extern	unsigned 	current_window_priority;
 	int	unhold_a_window			(int);
 	int	window_is_scrolled_back		(int);
 	int	trim_scrollback			(int);
-	int	add_to_scrollback		(int, const unsigned char *, intmax_t);
+	int	add_to_scrollback		(int, const char *, intmax_t);
 
 	void	add_to_invisible_list		(int);
 	void	delete_all_windows		(void);

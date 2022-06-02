@@ -123,7 +123,7 @@ const 	char *	ftoa			(double);
 	int	split_args		(char *, char **to, size_t);
 	int	splitw 			(char *, char ***, int);
 	char *	unsplitw 		(char ***, int, int);
-	int	new_split_string 	(unsigned char *, unsigned char ***, int);
+	int	new_split_string 	(char *, char ***, int);
 	int	split_string 		(char *, char ***, char);
 	int	check_val 		(const char *);
 	char *	strext	 		(const char *, const char *);
@@ -160,7 +160,7 @@ const 	char *	strfill			(char, int);
 	int 	opento			(const char *, int, off_t);
 	int	figure_out_address	(const char *, char **, char **, char **);
 	int	figure_out_domain	(char *, char **, char **, int *);
-	int	count_char		(const unsigned char *, const unsigned char);
+	int	count_char		(const char *, const char);
 	char *	strnrchr		(char *, char, int);
 	void	mask_digits		(char **);
 	char *	strpcat			(char *, const char *, ...) __A(2);
@@ -168,11 +168,11 @@ const 	char *	strfill			(char, int);
 	unsigned long	random_number	(unsigned long);
 
 	char *	endstr			(char *);
-	ssize_t searchbuf		(const unsigned char *, size_t, size_t, int);
+	ssize_t searchbuf		(const char *, size_t, size_t, int);
 	int	remove_from_comma_list	(char *str, const char *what);
 	char *	dequote_buffer		(char *str, size_t *len);
 	char *	fix_string_width	(const char *, int, int, size_t, int);
-	int     check_xdigit 		(unsigned char digit);
+	int     check_xdigit 		(char digit);
 
 	void	add_mode_to_str		(char *, size_t, int);
 	void	remove_mode_from_str	(char *, size_t, int);
@@ -300,30 +300,30 @@ extern ssize_t 	iconv_list_size;
 
 /***********************/
 	int	codepoint_numcolumns 	(int);
-	int	next_code_point2 	(const unsigned char *, ptrdiff_t *, int);
-	int	partial_code_point	(const unsigned char *);
-	int	quick_display_column_count 	(const unsigned char *);
-	int	input_column_count 	(const unsigned char *);
-	int	ucs_to_utf8 		(u_32int_t, unsigned char *, size_t);
-	int	grab_codepoint 		(const unsigned char *x);
+	int	next_code_point2 	(const char *, ptrdiff_t *, int);
+	int	partial_code_point	(const char *);
+	int	quick_display_column_count 	(const char *);
+	int	input_column_count 	(const char *);
+	int	ucs_to_utf8 		(u_32int_t, char *, size_t);
+	int	grab_codepoint 		(const char *x);
 	int     quick_code_point_count	(const char *str);
-	int     previous_code_point2	(const unsigned char *, const unsigned char *, ptrdiff_t *);
-	int	quick_code_point_index	(const unsigned char *, const unsigned char *);
-	int     count_initial_codepoints (const unsigned char *, const unsigned char *);
+	int     previous_code_point2	(const char *, const char *, ptrdiff_t *);
+	int	quick_code_point_index	(const char *, const char *);
+	int     count_initial_codepoints (const char *, const char *);
 
 	int	strext2			(char **, char *, size_t , size_t);
 	int     invalid_utf8str 	(char *);
-	int     is_iso2022_jp 		(const unsigned char *);
+	int     is_iso2022_jp 		(const char *);
 	void    create_utf8_locale 	(void);
 	int	mkupper_l		(int);
 	int	mklower_l		(int);
-	unsigned char *  cp437_to_utf8 	(const unsigned char *, size_t, size_t *);
+	char *  cp437_to_utf8 	(const char *, size_t, size_t *);
 
 /******* recode.c ******/
 	void	init_recodings		(void);
 const 	char *	find_recoding		(const char *, iconv_t *, iconv_t *);
 	char *	recode_message		(const char *, const char *, const char *, const char **, int);
-	int    	ucs_to_console 		(u_32int_t, unsigned char *, size_t);
+	int    	ucs_to_console 		(u_32int_t, char *, size_t);
 	BUILT_IN_COMMAND(encoding);
 const 	char *	outbound_recode 	(const char *, int, const char *, char **);
 const 	char *	inbound_recode 		(const char *, int, const char *, const char *, char **);

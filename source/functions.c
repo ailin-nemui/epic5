@@ -1220,7 +1220,7 @@ BUILT_IN_FUNCTION(function_left, word)
 	int		keepers,	/* The number of CPs to retain */
 			count,		/* How many we've copied so far */
 			code_point;	/* The current CP we're working on */
-	unsigned char 	*s;		/* Pointer at next CP */
+	char *		s;		/* Pointer at next CP */
 	ptrdiff_t	offset;
 
 	GET_INT_ARG(keepers, word);
@@ -1234,7 +1234,7 @@ BUILT_IN_FUNCTION(function_left, word)
 		RETURN_STR(word);
 
 	count = 0;
-	s = (unsigned char *)word;
+	s = word;
 	while ((code_point = next_code_point2(s, &offset, 0)))
 	{
 		/* Invalid CPs count as 1, + we skip them. */
@@ -1265,7 +1265,7 @@ BUILT_IN_FUNCTION(function_right, word)
 		code_point,	/* The current CP we're working on */
 		total,		/* How many CPs are in word */
 		ignores;	/* Leading CPs to ignore */
-	unsigned char 	*s;		/* Pointer at next CP */
+	char 	*s;		/* Pointer at next CP */
 	ptrdiff_t	offset;
 
 	GET_INT_ARG(keepers, word);
@@ -1280,7 +1280,7 @@ BUILT_IN_FUNCTION(function_right, word)
 
 	/* Skip the first 'ignores' CPs */
 	ignores = total - keepers;
-	s = (unsigned char *)word;
+	s = word;
 	while ((code_point = next_code_point2(s, &offset, 0)))
 	{
 		/* Invalid CPs count as 1, + we skip them. */
@@ -1311,7 +1311,7 @@ BUILT_IN_FUNCTION(function_mid, word)
 		code_point,	/* The current CP we're working on */
 		total;		/* How many CPs are in word */
 	int	start;
-	unsigned char 	*s;		/* Pointer at next CP */
+	char 	*s;		/* Pointer at next CP */
 	char	*retval;
 	ptrdiff_t	offset;
 
@@ -1328,7 +1328,7 @@ BUILT_IN_FUNCTION(function_mid, word)
 		RETURN_EMPTY;
 
 	/* Skip the initial CPs */
-	for (s = (unsigned char *)word, count = 0; count < start; count++)
+	for (s = word, count = 0; count < start; count++)
 	{
 		/* Invalid CPs count as 1, and we skip them. */
 		code_point = next_code_point2(s, &offset, 0);
@@ -1347,7 +1347,7 @@ BUILT_IN_FUNCTION(function_mid, word)
 
 	/* Otherwise count off 'keepers' CPs */
 	count = 0;
-	s = (unsigned char *)retval;
+	s = retval;
 	while ((code_point = next_code_point2(s, &offset, 0)))
 	{
 		/* Invalid CPs count as 1, + we skip them. */
@@ -1526,7 +1526,7 @@ BUILT_IN_FUNCTION(function_index, input)
 
 	GET_DWORD_ARG(schars, input);
 	cpoffset = SIZE_MAX;
-	cpindex((const unsigned char *)input, (const unsigned char *)schars, 1, &cpoffset);
+	cpindex(input, schars, 1, &cpoffset);
 	if (cpoffset == SIZE_MAX)
 		RETURN_INT(-1);
 	else
@@ -1665,7 +1665,7 @@ BUILT_IN_FUNCTION(function_userhost, input)
 BUILT_IN_FUNCTION(function_strip, input)
 {
 	char *	search;
-	const unsigned char 	*s, *p;
+	char 	*s, *p;
 	int	c, d;
 	int	found;
 	char *	result, *r;
@@ -1676,13 +1676,13 @@ BUILT_IN_FUNCTION(function_strip, input)
 
 	r = result = (char *)new_malloc(strlen(input) + 1);
 
-	p = (const unsigned char *)input;
+	p = input;
 	while ((c = next_code_point2(p, &offset, 1)))
 	{
 		ptrdiff_t	offset2;
 
 		found = 0;
-		s = (const unsigned char *)search;
+		s = search;
 		while ((d = next_code_point2(s, &offset2, 1)))
 		{
 			if (c == d)
@@ -1694,12 +1694,12 @@ BUILT_IN_FUNCTION(function_strip, input)
 		}
 		if (!found)
 		{
-			unsigned char utf8str[16];
-			unsigned char *x;
+			char utf8str[16];
+			char *x;
 
 			ucs_to_utf8(c, utf8str, sizeof(utf8str));
 			for (x = utf8str; *x; x++)
-				*r++ = (char)*x;
+				*r++ = *x;
 		}
 		p += offset;
 	}
@@ -2759,18 +2759,18 @@ BUILT_IN_FUNCTION(function_reverse, words)
 {
 	char *	retval;
 	int	retval_size;
-	unsigned char	*x, *y, *p, *r;
+	char	*x, *y, *p, *r;
 	ptrdiff_t	offset;
 
 	retval_size = strlen(words);
 	retval = new_malloc(retval_size + 1);
-	r = (unsigned char *)retval;
+	r = retval;
 
 	/* Start at the end of the string */
-	x = (unsigned char *)words + strlen(words);
+	x = words + strlen(words);
 
 	/* Walk back each code point from the end... */
-	while (p = x, (previous_code_point2((const unsigned char *)words, x, &offset)))
+	while (p = x, (previous_code_point2(words, x, &offset)))
 	{
 		x += offset;
 
@@ -3033,7 +3033,7 @@ BUILT_IN_FUNCTION(function_sar, input)
 		{
 			ptrdiff_t	offset;
 
-			while ((delimiter = next_code_point2((const unsigned char *)input, &offset, 0)) == -1)
+			while ((delimiter = next_code_point2(input, &offset, 0)) == -1)
 				input++;
 			input += offset;
 			break;
@@ -3080,7 +3080,7 @@ BUILT_IN_FUNCTION(function_center, word)
 		cols,		/* Apparently "columns" is taken */
 		pad;
 	char    *padc;
-	unsigned char	*copy;
+	char	*copy;
 
 	/* The width they want */
 	GET_INT_ARG(fieldsize, word)
@@ -3089,7 +3089,7 @@ BUILT_IN_FUNCTION(function_center, word)
 	 * XXX This is copied from function_printlen(). 
 	 * This should probably be a generic operation.
 	 */
-        copy = new_normalize_string((const unsigned char *)word, 2, NORMALIZE); 
+        copy = new_normalize_string(word, 2, NORMALIZE); 
         cols = output_with_count(copy, 0, 0);
 	stringlen = strlen((char *)copy);
         new_free(&copy);
@@ -3154,7 +3154,7 @@ BUILT_IN_FUNCTION(function_fix_width, word)
 		RETURN_EMPTY;
 
 	GET_DWORD_ARG(fillchar_str, word);
-	fillchar = next_code_point2((const unsigned char *)fillchar_str, &offset, 1);
+	fillchar = next_code_point2(fillchar_str, &offset, 1);
 
 	retval = fix_string_width(word, justifynum, fillchar, width, 1);
 	RETURN_MSTR(retval);
@@ -3172,8 +3172,8 @@ BUILT_IN_FUNCTION(function_split, word)
 	char 	*	search;
 	int		inverted = 0;
 	char *		retval;
-	unsigned char *	r;
-const	unsigned char	*p, *s;
+	char *	r;
+const	char	*p, *s;
 	int		c, d;
 	int		found;
 	ptrdiff_t	offset, offset2;
@@ -3191,15 +3191,15 @@ const	unsigned char	*p, *s;
 
 	/* The return value will not be shorter than the input */
 	retval = new_malloc(strlen(word) + 1);
-	r = (unsigned char *)retval;
+	r = (char *)retval;
 
 	/* For each code point in the source string... */
-	p = (const unsigned char *)word;
+	p = word;
 	while ((c = next_code_point2(p, &offset, 1)))
 	{
 		/* Look for that same code point in the search string */
 		found = 0;
-		s = (const unsigned char *)search;
+		s = search;
 		while ((d = next_code_point2(s, &offset2, 1)))
 		{
 			if (c == d)
@@ -3216,10 +3216,10 @@ const	unsigned char	*p, *s;
 		/* Otherwise, copy the code point over */
 		else
 		{
-			unsigned char utf8str[16];
-			unsigned char *x;
+			char utf8str[16];
+			char *x;
 
-			ucs_to_utf8(c, utf8str, sizeof(utf8str));
+			ucs_to_utf8(c, (char *)utf8str, sizeof(utf8str));
 			for (x = utf8str; *x; x++)
 				*r++ = *x;
 		}
@@ -3254,11 +3254,11 @@ BUILT_IN_FUNCTION(function_chr, word)
 	size_t	bytes = 0;
 	size_t	cnt;
 	char 	*s, *x;
-	unsigned char 	utf8str[8];
+	char 	utf8str[8];
 	int	code_point;
 
 	cnt = count_words(word, DWORD_DWORDS, "\"");
-	ack = aboo = new_malloc(cnt * 6 + 7);
+	aboo = ack = (char *)new_malloc(cnt * 6 + 7);
 
 	while ((blah = next_func_arg(word, &word)))
 	{
@@ -3273,7 +3273,7 @@ BUILT_IN_FUNCTION(function_chr, word)
 
 			/* Otherwise, convert to utf8 */
 			ucs_to_utf8(code_point, utf8str, sizeof(utf8str));
-			for (x = (char *)utf8str; *x; x++)
+			for (x = utf8str; *x; x++)
 			{
 				*ack++ = *x;
 				bytes++;
@@ -3281,8 +3281,12 @@ BUILT_IN_FUNCTION(function_chr, word)
 		}
 		else
 		{
-			*ack++ = (char)(unsigned char)my_atol(blah);
-			bytes++;
+			long	v = my_atol(blah);
+			if (v >= 0 && v <= 255)
+			{
+				*ack++ = (char)(unsigned char)v;
+				bytes++;
+			}
 		}
 
 		if (bytes >= (cnt * 6))
@@ -3319,7 +3323,7 @@ BUILT_IN_FUNCTION(function_chrq, word)
 	size_t	bytes = 0;
 	size_t	cnt;
 	char 	*s, *x;
-	unsigned char 	utf8str[8];
+	char 	utf8str[8];
 	int	code_point;
 	char	*ret;
 
@@ -3410,7 +3414,7 @@ BUILT_IN_FUNCTION(function_unicode, word)
 {
 	char *	aboo = NULL;
 	size_t  rvclue=0;
-	const unsigned char *s, *x;
+	const char *s;
 	int	code_point;
 	char	result[8];
 	ptrdiff_t	offset;
@@ -3418,7 +3422,7 @@ BUILT_IN_FUNCTION(function_unicode, word)
 	if (!word || !*word)
 		RETURN_EMPTY;
 
-	s = (const unsigned char *)word;
+	s = word;
 	while ((code_point = next_code_point2(s, &offset, 0)))
 	{
 		/* Skip invalid bytes/sequences */
@@ -3693,13 +3697,13 @@ BUILT_IN_FUNCTION(function_convert, words)
 BUILT_IN_FUNCTION(function_translate, input)
 {
 	int		delim, codepoint;
-	unsigned char *	s;
-	unsigned char *	p;
-	unsigned char 	*chars_in, *chars_out;
-	unsigned char *text;
+	char *	s;
+	char *	p;
+	char 	*chars_in, *chars_out;
+	char *text;
 	char		*retval, *r;
 	int		char_out, char_in, final_char_in;
-	unsigned char 	utf8str[16];
+	char 	utf8str[16];
 	ptrdiff_t	offset;
 
 	RETURN_IF_EMPTY(input);
@@ -3708,7 +3712,7 @@ BUILT_IN_FUNCTION(function_translate, input)
 	 * The first CP we see is the delimiter. 
 	 * By convention, this is a slash ('/'), but it doesn't have to be.
 	 */
-	s = (unsigned char *)input;
+	s = input;
 	while ((delim = next_code_point2(s, &offset, 0)) == -1)
 		s++;
 	s += offset;
@@ -3857,8 +3861,8 @@ BUILT_IN_FUNCTION(function_translate, input)
 		/*
 		 * Convert the code point back to a string and copy it in.
 		 */
-		ucs_to_utf8(codepoint, utf8str, sizeof(utf8str));
-		s = utf8str;
+		ucs_to_utf8(codepoint, (char *)utf8str, sizeof(utf8str));
+		s = (char *)utf8str;
 		while (*s)
 			*r++ = *s++;
 	}
@@ -4235,7 +4239,7 @@ BUILT_IN_FUNCTION(function_geom, words)
 BUILT_IN_FUNCTION(function_pass, input)
 {
 	char *	search;
-	const unsigned char 	*s, *p;
+	const char 	*s, *p;
 	int	c, d;
 	int	found;
 	char *	result, *r;
@@ -4246,12 +4250,12 @@ BUILT_IN_FUNCTION(function_pass, input)
 
 	r = result = (char *)new_malloc(strlen(input) + 1);
 
-	p = (const unsigned char *)input;
+	p = input;
 	while ((c = next_code_point2(p, &offset, 1)))
 	{
 		p += offset;
 		found = 0;
-		s = (const unsigned char *)search;
+		s = search;
 		while ((d = next_code_point2(s, &offset, 1)))
 		{
 			s += offset;
@@ -4263,10 +4267,10 @@ BUILT_IN_FUNCTION(function_pass, input)
 		}
 		if (found)
 		{
-			unsigned char utf8str[16];
-			unsigned char *x;
+			char utf8str[16];
+			char *x;
 
-			ucs_to_utf8(c, utf8str, sizeof(utf8str));
+			ucs_to_utf8(c, (char *)utf8str, sizeof(utf8str));
 			for (x = utf8str; *x; x++)
 				*r++ = *x;
 		}
@@ -5126,8 +5130,7 @@ BUILT_IN_FUNCTION(function_regmatches, input)
 	if (!(last_regex_error = regexec(&preg, input, nmatch, pmatch, 0)))
 	{
 	    size_t	n, clue = 0;
-	    const unsigned char *rm_so_str, *rm_eo_str;
-	    const unsigned char *input_ = (const unsigned char *)input;
+	    const char *rm_so_str, *rm_eo_str;
 	    int		rm_so_str_cnt, rm_eo_str_cnt;
 
 	    for (n = 0; n < nmatch; n++) 
@@ -5138,10 +5141,10 @@ BUILT_IN_FUNCTION(function_regmatches, input)
 			 * on the regex implementation */
 			break;
 		}
-		rm_so_str = input_ + pmatch[n].rm_so;
-		rm_eo_str = input_ + pmatch[n].rm_eo;
-		rm_so_str_cnt = count_initial_codepoints(input_, rm_so_str);
-		rm_eo_str_cnt = count_initial_codepoints(input_, rm_eo_str);
+		rm_so_str = input + pmatch[n].rm_so;
+		rm_eo_str = input + pmatch[n].rm_eo;
+		rm_so_str_cnt = count_initial_codepoints(input, rm_so_str);
+		rm_eo_str_cnt = count_initial_codepoints(input, rm_eo_str);
 
 		malloc_strcat_word_c(&ret, space, 
 					ltoa(rm_so_str_cnt),
@@ -5310,7 +5313,7 @@ BUILT_IN_FUNCTION(function_msar, input)
 	char *	replace;
 	size_t	cpoffset;
 	char	*s, *p;
-	unsigned char	delimstr[16];
+	char	delimstr[16];
 	ptrdiff_t	offset;
 
 	/*
@@ -5332,14 +5335,14 @@ BUILT_IN_FUNCTION(function_msar, input)
 			RETURN_EMPTY;
 		else
 		{
-			while ((delimiter = next_code_point2((const unsigned char *)input, &offset, 0)) == -1)
+			while ((delimiter = next_code_point2(input, &offset, 0)) == -1)
 				input++;
 			input += offset;
 			break;
 		}
 	}
 
-	ucs_to_utf8(delimiter, delimstr, sizeof(delimstr));
+	ucs_to_utf8(delimiter, (char *)delimstr, sizeof(delimstr));
 
 	/* Now that we have the delimiter, find out what we're substituting */
 	if (!(last_segment = (char *)(intptr_t)rcpindex(input + strlen(input), input, (char *)delimstr, 1, &cpoffset)))
@@ -5354,7 +5357,7 @@ BUILT_IN_FUNCTION(function_msar, input)
 	 * last segment to the first byte of the following CP.
 	 */
 	p = s = last_segment;
-	next_code_point2((const unsigned char *)s, &offset, 1);
+	next_code_point2(s, &offset, 1);
 	s += offset;
 	*p = 0;
 	last_segment = s;
@@ -5402,19 +5405,16 @@ BUILT_IN_FUNCTION(function_msar, input)
  * Return the *longest* initial part of TEXT that includes COUNT + 1 printable
  * characters. (Don't ask)
  */
-BUILT_IN_FUNCTION(function_leftpc, word_)
+BUILT_IN_FUNCTION(function_leftpc, word)
 {
-	unsigned char ** 	prepared = NULL;
-	unsigned char *word;
+	char ** 	prepared = NULL;
 	char *		retval;
 	int		my_lines = 1;
 	int		count;
 
-	GET_INT_ARG(count, word_);
-	if (count < 0 || !*word_)
+	GET_INT_ARG(count, word);
+	if (count < 0 || !*word)
 		RETURN_EMPTY;
-
-	word = (unsigned char *)word_;
 
 	/* Convert the string to "attribute format" */
 	word = new_normalize_string(word, 0, NORMALIZE);
@@ -5961,7 +5961,7 @@ BUILT_IN_FUNCTION(function_pad, input)
 	GET_INT_ARG(width, input);
 	GET_DWORD_ARG(pads, input);
 
-	if ((codepoint = next_code_point2((const unsigned char *)pads, &offset, 0)) == -1)
+	if ((codepoint = next_code_point2(pads, &offset, 0)) == -1)
 		codepoint = ' ';	/* Sigh */
 
         if (width < 0)
@@ -6021,10 +6021,10 @@ BUILT_IN_FUNCTION(function_remws, word)
 
 BUILT_IN_FUNCTION(function_printlen, input)
 {
-	unsigned char *copy;
+	char *copy;
 	int	retval;
 
-	copy = new_normalize_string((const unsigned char *)input, 2, NORMALIZE);
+	copy = new_normalize_string(input, 2, NORMALIZE);
 	retval = output_with_count(copy, 0, 0);
 	new_free(&copy);
 	RETURN_INT(retval);
@@ -6032,10 +6032,10 @@ BUILT_IN_FUNCTION(function_printlen, input)
 
 BUILT_IN_FUNCTION(function_stripansicodes, input)
 {
-	unsigned char *retval;
+	char *retval;
 
-        retval = new_normalize_string((const unsigned char *)input, 1, NORMALIZE);
-	return (char *)retval;
+        retval = new_normalize_string(input, 1, NORMALIZE);
+	return retval;
 }
 
 /*
@@ -6158,7 +6158,7 @@ BUILT_IN_FUNCTION(function_rest, input)
 		x = input;
 		while (start-- > 0)
 		{
-			next_code_point2((const unsigned char *)x, &offset, 1);
+			next_code_point2(x, &offset, 1);
 			x += offset;
 		}
 		RETURN_STR(x);
@@ -6171,7 +6171,7 @@ BUILT_IN_FUNCTION(function_rest, input)
 		x = input + strlen(input);
 		while (start++ < 0)
 		{
-			previous_code_point2((const unsigned char *)input, x, &offset);
+			previous_code_point2(input, x, &offset);
 			x += offset;
 		}
 		RETURN_STR(x);
@@ -6218,23 +6218,23 @@ GET_UNIFIED_ARRAY_FUNCTION(function_getfunctions, pmatch_builtin_functions)
  */
 BUILT_IN_FUNCTION(function_stripc, input)
 {
-	unsigned char	*output;
+	char	*output;
 
-	output = new_normalize_string((const unsigned char *)input, 1, STRIP_COLOR);
-	RETURN_MSTR((char *)output);
+	output = new_normalize_string(input, 1, STRIP_COLOR);
+	RETURN_MSTR(output);
 }
 
 BUILT_IN_FUNCTION(function_stripcrap, input)
 {
 	char	*how;
 	int	mangle;
-	unsigned char	*output;
+	char	*output;
 
 	GET_FUNC_ARG(how, input);
 	mangle = parse_mangle(how, 0, NULL);
 
-	output = new_normalize_string((const unsigned char *)input, 1, mangle);
-	RETURN_MSTR((char *)output);
+	output = new_normalize_string(input, 1, mangle);
+	RETURN_MSTR(output);
 }
 
 /*
@@ -6679,7 +6679,7 @@ BUILT_IN_FUNCTION(function_hash_32bit, input)
  */
 BUILT_IN_FUNCTION(function_indextoword, input)
 {
-	unsigned char *s;
+	char *s;
 	int	pos, count;
 	int	i;
 	ptrdiff_t	offset;
@@ -6689,7 +6689,7 @@ BUILT_IN_FUNCTION(function_indextoword, input)
 	if (pos < 0 || pos > count)
 		RETURN_EMPTY;
 
-	s = (unsigned char *)input;
+	s = input;
 	for (i = 0; i < pos; i++)
 	{
 		next_code_point2(s, &offset, 1);
@@ -6740,7 +6740,7 @@ BUILT_IN_FUNCTION(function_ttyname, input)
  */
 BUILT_IN_FUNCTION(function_insert, input)
 {
-	unsigned char *s, *p;
+	char *s, *p;
 	char 	*first_part, *second_part, *extra;
 	int	where;
 	char	*retval;
@@ -6750,7 +6750,7 @@ BUILT_IN_FUNCTION(function_insert, input)
 	GET_DWORD_ARG(extra, input);
 
 	first_part = input;
-	s = (unsigned char *)input;
+	s = input;
 	for (;;)
 	{
 		if (where <= 0)
@@ -6897,7 +6897,7 @@ BUILT_IN_FUNCTION(function_wordtoindex, input)
 
 	GET_INT_ARG(wordnum, input);
 	real_move_to_abs_word(input, &ptr, wordnum, DWORD_DWORDS, "\"");
-	cpidx = quick_code_point_index((const unsigned char *)input, (const unsigned char *)ptr);
+	cpidx = quick_code_point_index(input, ptr);
 	RETURN_INT(cpidx);
 }
 
@@ -7367,7 +7367,7 @@ BUILT_IN_FUNCTION(function_numlines, input)
 {
 	int cols;
 	int numl = 0;
-	unsigned char *strval;
+	char *strval;
 
 	GET_INT_ARG(cols, input);
 	if (cols < 1)
@@ -7375,7 +7375,7 @@ BUILT_IN_FUNCTION(function_numlines, input)
 	cols--;
 
 	/* Normalize the line of output */
-	strval = new_normalize_string((const unsigned char *)input, 0, NORMALIZE);
+	strval = new_normalize_string(input, 0, NORMALIZE);
 	prepare_display(-1, strval, cols, &numl, 0);
 	new_free(&strval);
 	RETURN_INT(numl+1);
@@ -7726,16 +7726,16 @@ BUILT_IN_FUNCTION(function_splitw, input)
 	char *	delim_str;
 	int	delim;
 	char *	str;
-	unsigned char **wordl;
+	char **wordl;
 	int 	wordc;
 	char *	retval;
 	ptrdiff_t	offset;
 
 	/* The delimiter is the first code point in the first argument. */
 	GET_DWORD_ARG(delim_str, input);
-	delim = next_code_point2((const unsigned char *)delim_str, &offset, 0);
+	delim = next_code_point2(delim_str, &offset, 0);
 
-	if (!(wordc = new_split_string((unsigned char *)input, &wordl, delim)))
+	if (!(wordc = new_split_string(input, &wordl, delim)))
 		RETURN_EMPTY;
 
 	/* unsplitw() disposes of "wordl" for us. */
@@ -8371,18 +8371,18 @@ BUILT_IN_FUNCTION(function_execctl, input)
 
 BUILT_IN_FUNCTION(function_cp437test, input)
 {
-	unsigned char 	my_string[257];
+	char 	my_string[257];
 	size_t		my_string_len;
 	char *		result;
 	size_t		resultlen = 0;
 	unsigned int	i;
 
 	for (i = 0; i < 256; i++)
-		my_string[i] = (unsigned char) i + 1;
+		my_string[i] = (unsigned char)(i + 1);
 	my_string[256] = 0;
 
 	my_string_len = 257;
-	result = (char *)cp437_to_utf8(my_string, my_string_len, &resultlen);
+	result = cp437_to_utf8(my_string, my_string_len, &resultlen);
 	say("%s", result);
 	RETURN_MSTR(result);
 }

@@ -390,8 +390,8 @@ char *	upper (char *str)
 		d = mkupper_l(c);
 		if (c != d)
 		{
-			unsigned char c_utf8str[16];
-			unsigned char d_utf8str[16];
+			char c_utf8str[16];
+			char d_utf8str[16];
 
 			ucs_to_utf8(c, c_utf8str, sizeof(c_utf8str));
 			ucs_to_utf8(d, d_utf8str, sizeof(d_utf8str));
@@ -424,8 +424,8 @@ char *	lower (char *str)
 		d = mklower_l(c);
 		if (c != d)
 		{
-			unsigned char c_utf8str[16];
-			unsigned char d_utf8str[16];
+			char c_utf8str[16];
+			char d_utf8str[16];
 
 			ucs_to_utf8(c, c_utf8str, sizeof(c_utf8str));
 			ucs_to_utf8(d, d_utf8str, sizeof(d_utf8str));
@@ -626,7 +626,7 @@ int	remove_from_comma_list (char *str, const char *what)
 
 char *	next_in_div_list (char *str, char **after, int delim)
 {
-	unsigned char *s, *p;
+	char *s, *p;
 	int	c;
 	ptrdiff_t	offset;
 
@@ -788,12 +788,12 @@ int     my_table_strnicmp (const char *str1, const char *str2, size_t n, int tab
 
 static int	utf8_strnicmp (const char *str1, const char *str2, size_t n)
 {
-	const unsigned char 	*s1, *s2;
+	const char 	*s1, *s2;
 	int	c1, c2;
 	int	u1, u2;
 
-	s1 = (const unsigned char *)str1;
-	s2 = (const unsigned char *)str2;
+	s1 = str1;
+	s2 = str2;
 
 	if (n == 0)
 		return 0;
@@ -1288,11 +1288,9 @@ const char *	cpindex (const char *string_, const char *search_, int howmany, siz
  *	NULL if the character(s) are not found.
  *	'cpoffset' is unchanged if not found.
  */
-ptrdiff_t	cpindex2 (const char *string_, const char *search_, int howmany, size_t *cpoffset, int *found_)
+ptrdiff_t	cpindex2 (const char *string, const char *search, int howmany, size_t *cpoffset, int *found_)
 {
-	const unsigned char *string = (const unsigned char *)string_;
-	const unsigned char *search = (const unsigned char *)search_;
-	const unsigned char *s, *p;
+	const char *s, *p;
 	int	c, d;
 	int	found = 0;
 	int	inverted = 0;
@@ -1377,12 +1375,9 @@ const char *	rcpindex (const char *where_, const char *string_, const char *sear
 		return NULL;
 }
 
-ptrdiff_t	rcpindex2 (const char *where_, const char *string_, const char *search_, int howmany, size_t *cpoffset, int *found_)
+ptrdiff_t	rcpindex2 (const char *where, const char *string, const char *search, int howmany, size_t *cpoffset, int *found_)
 {
-	const unsigned char *where = (const unsigned char *)where_;
-	const unsigned char *string = (const unsigned char *)string_;
-	const unsigned char *search = (const unsigned char *)search_;
-	const unsigned char *s, *p;
+	const char *s, *p;
 	int	c, d;
 	int	found = 0;
 	int	inverted = 0;
@@ -2716,7 +2711,7 @@ int 	split_string (char *str, char ***to, char delimiter)
  * new_split_string - Splitting delimited UTF-8 string into parts.
  * Arguments:
  *	str	- A string containing delimiters (like PATH -- "/bin:/usr/bin")
- *	to	- A pointer to a (unsigned char **) we can put the results.
+ *	to	- A pointer to a (char **) we can put the results.
  *		  YOU MUST FREE THE RESULT OF (*to).  YOU MUST _NOT_ FREE
  *		  THE STRINGS WITHIN (*to), BECAUSE THOSE POINT TO 'str'.
  *	delimiter - A Unicode Code Point that may be present in 'str' and
@@ -2727,16 +2722,16 @@ int 	split_string (char *str, char ***to, char delimiter)
  *	The number of array elements in (*to).
  *	You must new_free() the "to" pointer.
  */
-int	new_split_string (unsigned char *str, unsigned char ***to, int delimiter)
+int	new_split_string (char *str, char ***to, int delimiter)
 {
 	int	segments = 0;
-	unsigned char *s;
+	char *s;
 	int	code_point;
 	int	i;
 	ptrdiff_t	offset;
 
 	/* First, count the number of segments in 'str' */
-	s = str;
+	s = (char *)str;
 	while ((code_point = next_code_point2(s, &offset, 0)))
 	{
 		s += offset;
@@ -2746,13 +2741,13 @@ int	new_split_string (unsigned char *str, unsigned char ***to, int delimiter)
 	segments++;
 
 	/* Create an array for (*to) */
-	*to = (unsigned char **)new_malloc(sizeof(unsigned char *) * segments);
+	*to = (char **)new_malloc(sizeof(char *) * segments);
 	for (i = 0; i < segments; i++)
 		(*to)[i] = NULL;		/* Just in case */
 
 	/* Split up 'str' nulling out each instance of 'delimiter' */
 	i = 0;
-	s = str;
+	s = (char *)str;
 	while ((code_point = next_code_point2(s, &offset, 0)))
 	{
 		s += offset;
@@ -2764,7 +2759,7 @@ int	new_split_string (unsigned char *str, unsigned char ***to, int delimiter)
 			 * Back up one code point so that 'p' points
 			 * at the delimiter again.
 			 */
-			unsigned char *p = s;
+			char *p = s;
 			ptrdiff_t	offset;
 			previous_code_point2(str, p, &offset);
 			p += offset;
@@ -3489,9 +3484,9 @@ int	figure_out_domain (char *fqdn, char **host, char **domain, int *ip)
  *
  * XXX This should be utf8-aware
  */
-int 	count_char (const unsigned char *src, const unsigned char look)
+int 	count_char (const char *src, const char look)
 {
-	const unsigned char *t;
+	const char *t;
 	int	cnt = 0;
 
 	/* 'look' must not be 0 -- there is only 1 nul in a string */
@@ -4845,7 +4840,7 @@ void	update_mode_str (char *modes, size_t len, const char *changes)
  * This function is 8 bit clean (it ignores nuls) so please do not just
  * whimsically throw it away!
  */
-ssize_t	searchbuf (const unsigned char *str, size_t start, size_t end, int find)
+ssize_t	searchbuf (const char *str, size_t start, size_t end, int find)
 {
 	size_t	counter;
 
@@ -4853,7 +4848,7 @@ ssize_t	searchbuf (const unsigned char *str, size_t start, size_t end, int find)
 	{
 		if (start + counter >= end)
 			return -1;
-		if (str[start + counter] == (char)find)
+		if ((unsigned char)str[start + counter] == (unsigned char)(char)find)
 			return counter;
 		counter++;
 	}
@@ -5296,7 +5291,7 @@ char *	fix_string_width (const char *orig_str, int justify, int fillchar, size_t
 	char *	orig_str_copy;
 	char *	input;
 	int	input_cols;
-	unsigned char	fillstr[16];
+	char	fillstr[16];
 	int	adjust_columns;
 	int	left_chop = 0, right_chop = 0;
 	int	left_add = 0, right_add = 0;
@@ -5346,8 +5341,8 @@ char *	fix_string_width (const char *orig_str, int justify, int fillchar, size_t
 	new_str = input;
 	if (chop)
 	{
-		chop_columns((unsigned char **)&new_str, left_chop);
-		chop_final_columns((unsigned char **)&new_str, right_chop);
+		chop_columns((char **)&new_str, left_chop);
+		chop_final_columns((char **)&new_str, right_chop);
 	}
 
 	/* Assemble the final string */
@@ -5547,7 +5542,7 @@ static char fish64_chars[] =
  *
  * This function is (semantically) the same as l64a()
  */
-static int	four_bytes_to_fish64 (const char *input, size_t inputlen, unsigned char *output, size_t outputlen)
+static int	four_bytes_to_fish64 (const char *input, size_t inputlen, char *output, size_t outputlen)
 {
 	uint32_t	packet = 0;
 
@@ -5596,7 +5591,7 @@ yell("Byte 5: %#x", (packet & 0xc0000000UL) >> 30  );
  * is the low 6 bits of the 4th byte, and the twelfth character is the high
  * 2 bits of the 1st byte.  Got it?
  */
-static int	eight_bytes_to_fish64 (const unsigned char *input, size_t inputlen, unsigned char *output, size_t outputlen)
+static int	eight_bytes_to_fish64 (const char *input, size_t inputlen, char *output, size_t outputlen)
 {
 	if (outputlen < 12)
 		return -1;	/* Sorry Dave, I can't let you do that. */
@@ -6863,8 +6858,10 @@ int	recode_with_iconv_t (iconv_t iref, char **data, size_t *numbytes)
  *	The number of bytes in the resulting utf8 sequence, that is, the 
  *	number of bytes written to utf8str, not counting trailing nul.
  */
-int	ucs_to_utf8 (u_32int_t key, unsigned char *utf8str, size_t utf8strsiz)
+int	ucs_to_utf8 (u_32int_t key, char *utf8str_, size_t utf8strsiz)
 {
+	unsigned char *utf8str = (unsigned char *)utf8str_;
+
 	if (key <= 0x007F)
 	{
 		utf8str[0] = key;
@@ -6928,7 +6925,7 @@ int	ucs_to_utf8 (u_32int_t key, unsigned char *utf8str, size_t utf8strsiz)
  */
 int	strext2 (char **cut, char *buffer, size_t part2, size_t part3)
 {
-	unsigned char *part2str, *part3str, *p, *s;
+	char *part2str, *part3str, *p, *s;
 	size_t	buflen;
 	size_t	cutlen;
 	ssize_t	newlen;
@@ -6983,13 +6980,13 @@ int	strext2 (char **cut, char *buffer, size_t part2, size_t part3)
  */
 int	invalid_utf8str (char *utf8str)
 {
-	unsigned char *s;
+	char *s;
 	int	code_point;
 	int	errors = 0;
 	int	count = 0;
 	ptrdiff_t	offset;
 
-	s = (unsigned char *)utf8str;
+	s = utf8str;
 	while ((code_point = next_code_point2(s, &offset, 0)))
 	{
 		/* The next byte did not start a utf8 code point */
@@ -7050,15 +7047,15 @@ int	invalid_utf8str (char *utf8str)
  * 	I would like to support other non-ISO2022's, but again, I don't
  *		have anyone to test them.
  */
-int	is_iso2022_jp (const unsigned char *buffer)
+int	is_iso2022_jp (const char *buffer)
 {
 	static	iconv_t	iso2022_jp = (iconv_t) -2;
-	const unsigned char *x;
+	const char *x;
 	int	found_one = 0;
 
 	/* ISO-2022-JP has no 8 bit chars. */
 	for (x = buffer; *x; x++)
-		if (*x & 0x80)
+		if ((unsigned char)*x & 0x80)
 			return 0;
 
 	/* ISO-2022-JP has to have a 2022 <escape> sequence somewhere */
@@ -7110,7 +7107,7 @@ int	is_iso2022_jp (const unsigned char *buffer)
  *	-1 	(failure) - "digit" is not a hexadecimal digit
  *	>= 0	(success) - "digit" represents the return value
  */
-int	check_xdigit (unsigned char digit)
+int	check_xdigit (char digit)
 {
 	if (digit >= '0' && digit <= '9')
 		return digit - '0';
@@ -7417,14 +7414,14 @@ static u_32int_t       cp437_to_ucs (unsigned char cp437_byte)
  *	But we really need to support CP437 for ascii art scripts.  
  *	So this hack is the result
  */
-unsigned char *  cp437_to_utf8 (const unsigned char *input, size_t inputlen, size_t *destlen)
+char *  cp437_to_utf8 (const char *input, size_t inputlen, size_t *destlen)
 {
-	unsigned char *	dest;
+	char *	dest;
 	size_t		dest_len;
 	size_t		s, d;
-	unsigned char *	y;
+	char *		y;
 	u_32int_t	codepoint;
-	unsigned char	utf8str[16];
+	char		utf8str[16];
 
 	/*
 	 * We are going to convert 'src' to 'dest'.
@@ -7442,7 +7439,7 @@ unsigned char *  cp437_to_utf8 (const unsigned char *input, size_t inputlen, siz
 	 */
 	for (s = d = 0; s < inputlen; s++)
 	{
-		codepoint = cp437_to_ucs(input[s]);
+		codepoint = cp437_to_ucs((unsigned char)input[s]);
 		ucs_to_utf8(codepoint, utf8str, sizeof(utf8str));
 		y = utf8str;
 		while (*y)

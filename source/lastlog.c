@@ -1018,7 +1018,7 @@ restart:
 			/* Honor /LOG REWRITE. */
 			if (rewrite)
 			{
-				unsigned char *n, vitals[10240];
+				char *n, vitals[10240];
 
 				snprintf(vitals, sizeof(vitals),
 					"%ld %ld %ld %ld . . . %s %s",
@@ -1216,7 +1216,7 @@ restart2:
 			/* Honor /LOG REWRITE. */
 			if (rewrite)
 			{
-				unsigned char *n, vitals[10240];
+				char *n, vitals[10240];
 
 				snprintf(vitals, sizeof(vitals),
 					"%ld %ld %ld %ld . . . %s %s",

@@ -232,7 +232,7 @@ void	set_logfile (void *stuff)
  * (Note:  "logref" should be -1 unless we are logging from a /log log, ie,
  * any place that is not inside logfiles.c)
  */
-void 	add_to_log (int logref, FILE *fp, long window, const unsigned char *line, int mangler, const char *rewriter)
+void 	add_to_log (int logref, FILE *fp, long window, const char *line, int mangler, const char *rewriter)
 {
 	char	*local_line = NULL;
 	int	old_logref;

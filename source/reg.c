@@ -111,7 +111,7 @@ static int	old_match(const char *pattern, const char *string)
 	return 0;
 }
 
-static int new_match (const unsigned char *pattern, const unsigned char *string)
+static int new_match (const char *pattern, const char *string)
 {
 	int		count = 1;
 	int 		asterisk = 0;

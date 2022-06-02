@@ -796,7 +796,7 @@ int	ssl_connected (int vfd)
 	ssl_info *	x;		/* EPIC info about the conn */
 	unsigned char 	h[256];		/* A place for X509_digest() to write */
 	unsigned	hlen;		/* How big digest in 'h' is */
-	unsigned char	htext[1024];	/* A human readable version of 'h' */
+	char		htext[1024];	/* A human readable version of 'h' */
 	unsigned	i;		/* How many bytes in 'h' we converted */
 
 	/*
@@ -1115,7 +1115,6 @@ static char *	internal_get_x509_sans (X509 *const cert)
 {
 	int		success = 0;
 	GENERAL_NAMES *	names = NULL;
-	unsigned char *	utf8 = NULL;
 	int		i, count;
 	char *		retval = NULL;
 	size_t		rvclue = 0;
@@ -1192,7 +1191,7 @@ static char *	internal_get_x509_sans (X509 *const cert)
 			     * that's an invalid value, and we declare shenanigans.
 			     */
 			    if ((size_t)len1 == strlen((const char *)utf8))
-				malloc_strcat_word_c(&retval, space, utf8, DWORD_NO, &rvclue);
+				malloc_strcat_word_c(&retval, space, (const char *)utf8, DWORD_NO, &rvclue);
 			}
 
 			if (utf8)

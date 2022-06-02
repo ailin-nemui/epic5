@@ -215,12 +215,12 @@ int	codepoint_numcolumns (int ucs)
 }
 
 /* *** ADDED STUFF - NOT IN ORIGINAL *** */
-int     next_code_point2 (const unsigned char *i_, ptrdiff_t *bytes_used, int resync)
+int     next_code_point2 (const char *i_, ptrdiff_t *bytes_used, int resync)
 {
         int     	offset;
         unsigned char   a, b, c, d;
-	const unsigned char *i = (const unsigned char *)i_;
-        const unsigned char *str;
+	const char *i = (const char *)i_;
+        const char *str;
         int     	result;
 
 	if (!i_)
@@ -234,20 +234,20 @@ int     next_code_point2 (const unsigned char *i_, ptrdiff_t *bytes_used, int re
 	result = -1;
 
 	/* Forcibly refuse to walk past the nul */
-	if (!str[0])
+	if (str[0] == 0)
 		return 0;
 
         if (str[0])
         {
-                a = str[0];
+                a = (unsigned char)str[0];
                 if (str[1])
                 {
-                        b = str[1];
+                        b = (unsigned char)str[1];
                         if (str[2])
                         {
-                                c = str[2];
+                                c = (unsigned char)str[2];
                                 if (str[3])
-                                        d = str[3];
+                                        d = (unsigned char)str[3];
                         }
                 }
         }
@@ -264,7 +264,7 @@ int     next_code_point2 (const unsigned char *i_, ptrdiff_t *bytes_used, int re
                 if ((b & 0xC0) == 0x80)
                 {
                         result = ((a & 0x1F) << 6) + (b & 0x3f);
-                        i += 2;;
+                        i += 2;
                 }
         }
 
@@ -331,11 +331,12 @@ int     next_code_point2 (const unsigned char *i_, ptrdiff_t *bytes_used, int re
  *	0	- I don't see anything wrong with 'i'
  *	-1	- 'i' does not point at a valid utf8 sequence at all.
  */
-int     partial_code_point (const unsigned char *i)
+int     partial_code_point (const char *i_)
 {
+	const char *i = i_;
         int     offset;
         unsigned char    a, b, c, d;
-        const unsigned char *str;
+        const char *str;
         int     result = -1;
 
         str = i;
@@ -343,15 +344,15 @@ int     partial_code_point (const unsigned char *i)
 
         if (str[0])
         {
-                a = str[0];
+                a = (unsigned char)str[0];
                 if (str[1])
                 {
-                        b = str[1];
+                        b = (unsigned char)str[1];
                         if (str[2])
                         {
-                                c = str[2];
+                                c = (unsigned char)str[2];
                                 if (str[3])
-                                        d = str[3];
+                                        d = (unsigned char)str[3];
                         }
                 }
         }
@@ -441,7 +442,7 @@ int     partial_code_point (const unsigned char *i)
 }
 
 
-int	grab_codepoint (const unsigned char *x)
+int	grab_codepoint (const char *x)
 {
 	ptrdiff_t	offset;
 
@@ -467,9 +468,9 @@ int	grab_codepoint (const unsigned char *x)
  *	new_normalize_string() and output_with_count().
  */
 /* XXX DO NOT USE THIS FUNCTION IF 'str' MIGHT CONTAIN HIGHLIGHT CHARS! XXX */
-int	quick_display_column_count (const unsigned char *str)
+int	quick_display_column_count (const char *str)
 {
-	const unsigned char *s;
+	const char *s;
 	int	code_point;
 	int	length = 0;
 	int	x;
@@ -502,9 +503,9 @@ int	quick_display_column_count (const unsigned char *str)
  *      This is used by $regmatches() to convert a pointer to something
  *      that you can pass to $mid().
  */
-int	count_initial_codepoints (const unsigned char *str, const unsigned char *p)
+int	count_initial_codepoints (const char *str, const char *p)
 {
-	const unsigned char *s;
+	const char *s;
 	int	length = 0;
 	int	x;
 	ptrdiff_t	offset;
@@ -531,9 +532,9 @@ int	count_initial_codepoints (const unsigned char *str, const unsigned char *p)
 }
 
 
-int	input_column_count (const unsigned char *str)
+int	input_column_count (const char *str)
 {
-	const unsigned char *s;
+	const char *s;
 	int	code_point;
 	int	length = 0;
 	int	x;
@@ -560,28 +561,16 @@ int	input_column_count (const unsigned char *str)
  */
 int	quick_code_point_count (const char *str)
 {
-	const unsigned char *s;
+	const char *s;
 	int	count;
 
-	for (count = 0, s = (const unsigned char *)str; *s; s++)
+	for (count = 0, s = str; *s; s++)
 	{
-		if (*s < 0x80 || *s >= 0xC0)
+		if ((unsigned char)*s < 0x80 || (unsigned char)*s >= 0xC0)
 			count++;
 	}
 	return count;
 }
-
-#if 0
-int     previous_code_point (const unsigned char *st, const unsigned char **i)
-{
-	int	retval;
-	ptrdiff_t	offset;
-
-	retval = previous_code_point2(st, *i, &offset);
-	*i += offset;
-	return retval;
-}
-#endif
 
 
 /*
@@ -603,9 +592,9 @@ int     previous_code_point (const unsigned char *st, const unsigned char **i)
  *	In both cases, *i is moved to the first byte of the code
  *	point whose value is returned.
  */
-int     previous_code_point2 (const unsigned char *st, const unsigned char *i, ptrdiff_t *offset)
+int     previous_code_point2 (const char *st, const char *i, ptrdiff_t *offset)
 {
-	const unsigned char *	c;
+	const char *	c;
 	int	retval;
 	ptrdiff_t	offset2;
 
@@ -616,10 +605,10 @@ int     previous_code_point2 (const unsigned char *st, const unsigned char *i, p
 		return 0;		/* Time to stop */
 	}
 
-	if (c > st && (*c < 0x80 || *c >= 0xC0))
+	if (c > st && ((unsigned char)*c < 0x80 || (unsigned char)*c >= 0xC0))
 		c--;
 
-	while (c > st && (*c >= 0x80 && *c < 0xC0))
+	while (c > st && ((unsigned char)*c >= 0x80 && (unsigned char)*c < 0xC0))
 		c--;
 
 	retval = next_code_point2(c, &offset2, 1);
@@ -631,14 +620,14 @@ int     previous_code_point2 (const unsigned char *st, const unsigned char *i, p
 /*
  * This does a QUICK count of the CP "index" of 'loc' in 'str'.
  */
-int	quick_code_point_index (const unsigned char *str, const unsigned char *loc)
+int	quick_code_point_index (const char *str, const char *loc)
 {
-	const unsigned char *s;
+	const char *s;
 	int	count;
 
 	for (count = 0, s = str; *s && s < loc; s++)
 	{
-		if (*s < 0x80 || *s >= 0xC0)
+		if ((unsigned char)*s < 0x80 || (unsigned char)*s >= 0xC0)
 			count++;
 	}
 	return count;

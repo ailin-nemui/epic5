@@ -345,6 +345,9 @@
 /* Add this to LDFLAGS for perl support */
 #undef PERLLIBS
 
+/* Add this to CLFAGS for perl support */
+#undef PERL_EXTRA_CFLAGS
+
 /* Stuff to add to CFLAGS to support python */
 #undef PYTHON_CFLAGS
 

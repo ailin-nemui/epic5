@@ -3567,7 +3567,7 @@ yell("###    dcc->bytes_acked ["INTMAX_FORMAT"]", 	dcc->bytes_acked);
 static void	process_dcc_send_data (DCC_list *dcc)
 {
 	intmax_t	fill_window;
-	ssize_t	bytesread;
+	ssize_t		bytesread;
 	char	tmp[DCC_BLOCK_SIZE+1];
 	int	old_from_server = from_server;
 	char bytes_sent[10];
@@ -3602,8 +3602,8 @@ static void	process_dcc_send_data (DCC_list *dcc)
 		 * Bug the user
 		 */
 		if (x_debug & DEBUG_DCC_XMIT)
-		    yell("Sending packet [%s [%s] (packet XXX) (%ld bytes)]",
-			dcc->user, dcc->othername, bytesread);
+		    yell("Sending packet [%s [%s] (packet XXX) ("UINTMAX_FORMAT" bytes)]",
+			dcc->user, dcc->othername, (uintmax_t)bytesread);
 
 		/*
 		 * Attempt to write the file.  If it chokes, whine.

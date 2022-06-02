@@ -485,9 +485,9 @@ void	compile_status (int window_, Status *s)
 int	make_status (int window_, Status *status)
 {
 	int		status_line;
-	unsigned char	buffer	    [BIG_BUFFER_SIZE + 1];
-	unsigned char	lhs_buffer  [BIG_BUFFER_SIZE + 1];
-	unsigned char	rhs_buffer  [BIG_BUFFER_SIZE + 1];
+	char	buffer	    [BIG_BUFFER_SIZE + 1];
+	char	lhs_buffer  [BIG_BUFFER_SIZE + 1];
+	char	rhs_buffer  [BIG_BUFFER_SIZE + 1];
 	const char	*func_value [MAX_FUNCTIONS];
 	size_t		save_size;
 	Screen	*	screen;
@@ -520,17 +520,17 @@ int	make_status (int window_, Status *status)
 	for (status_line = 0; status_line < status->number; status_line++)
 	{
 	int		fillchar;
-	unsigned char	*lhp = lhs_buffer,
+	char	*lhp = lhs_buffer,
 			*rhp = rhs_buffer;
-	unsigned char 	*cp,
+	char 	*cp,
 			*str = NULL;
-	const unsigned char *	start_rhs = 0;
+	const char *	start_rhs = 0;
 		int	pr_lhs = 0,
 			pr_rhs = 0,
 			line = 0,	/* XXX gcc4 lameness */
 			*prc = &pr_lhs, 
 			i;
-	const unsigned char *	s;
+	const char *	s;
 		int	code_point;
 		int	cols;
 		ptrdiff_t	offset;
@@ -635,7 +635,7 @@ int	make_status (int window_, Status *status)
 		 * with nothing but logical characters, which are then easy
 		 * to count. :-)
 		 */
-		str = new_normalize_string(buffer, 3, display_line_mangler);
+		str = new_normalize_string((const char *)buffer, 3, display_line_mangler);
 
 		/*
 		 * Count out the characters.
@@ -643,7 +643,7 @@ int	make_status (int window_, Status *status)
 		 * characters.  We count all the printable characters
 		 * on both sides of the %> tag.
 		 */
-		s = str;
+		s = (char *)str;
 		cp = lhp;
 		lhs_buffer[0] = rhs_buffer[0] = 0;
 
@@ -698,8 +698,8 @@ int	make_status (int window_, Status *status)
 			 */
 			else
 			{
-				unsigned char	utf8str[16];
-				const unsigned char *x;
+				char	utf8str[16];
+				const char *x;
 	
 				if (!start_rhs)
 					fillchar = code_point;
@@ -734,7 +734,7 @@ int	make_status (int window_, Status *status)
 		 */
 		/* Not attached, so don't "fix" it */
 		{
-			unsigned char	utf8str[16];
+			char	utf8str[16];
 			int 		numf = 0;
 
 			if ((cols = codepoint_numcolumns(fillchar)) < 1)

@@ -3100,7 +3100,7 @@ int	stack_list_builtin_function_alias (const char *name)
 		if (sym->builtin_function == NULL)
 		    say("\t%s\t<Placeholder>", sym->name);
 		else 
-		    say("\t%s\t"UINTMAX_HEX_FORMAT, sym->name, (uintmax_t)sym->builtin_function);
+		    say("\t%s\t<internal>", sym->name);
 		counter++;
 	    }
 	}
@@ -3174,7 +3174,7 @@ int	stack_list_builtin_expando_alias (const char *name)
 		if (sym->builtin_expando == NULL)
 		    say("\t%s\t<Placeholder>", sym->name);
 		else 
-		    say("\t%s\t"UINTMAX_HEX_FORMAT, sym->name, (uintmax_t)sym->builtin_expando);
+		    say("\t%s\t<internal>", sym->name);
 		counter++;
 	    }
 	}

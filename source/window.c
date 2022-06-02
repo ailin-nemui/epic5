@@ -137,7 +137,7 @@ static void	window_scrollback_backwards_lines 	(Window *window, int);
 static void	window_scrollback_forwards_lines	(Window *window, int);
 static 	void 	window_scrollback_to_string 	(Window *window, regex_t *str);
 static 	void 	window_scrollforward_to_string 	(Window *window, regex_t *str);
-static	int	change_line 			(Window *, const unsigned char *);
+static	int	change_line 			(Window *, const char *);
 static	int	add_to_display 			(Window *, const char *, intmax_t);
 static	Display *new_display_line 		(Display *prev, Window *w);
 static	int	add_waiting_channel 		(Window *, const char *);
@@ -7927,7 +7927,7 @@ static Display *new_display_line (Display *prev, Window *w)
  * not to be displayed, then 0 is returned.  This function handles all
  * the hold_mode stuff.
  */
-int 	add_to_scrollback (int window_, const unsigned char *str, intmax_t refnum)
+int 	add_to_scrollback (int window_, const char *str, intmax_t refnum)
 {
 	Window *window = get_window_by_refnum_direct(window_);
 
@@ -8817,7 +8817,7 @@ int	make_window_current_informally (int refnum)
  * This puts the given string into a scratch window.  It ALWAYS suppresses
  * any further action (by returning a FAIL, so rite() is not called).
  */
-static int	change_line (Window *window, const unsigned char *str)
+static int	change_line (Window *window, const char *str)
 {
 	Display *my_line;
 	int 	cnt;

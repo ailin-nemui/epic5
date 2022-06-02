@@ -269,7 +269,7 @@ extern	volatile int    signals_caught[NSIG];
 #define BUILT_IN_COMMAND(x) \
 	void x (const char *command, char *args, const char *subargs)
 
-#define BUILT_IN_KEYBINDING(x) void x (unsigned int key, unsigned char *string)
+#define BUILT_IN_KEYBINDING(x) void x (unsigned int key, char *string)
 
 typedef char Filename[PATH_MAX + 1];
 
@@ -413,14 +413,6 @@ typedef struct stat		Stat;
 #define VALGRIND_MEMPOOL_TRIM(x,y,z)
 #define VALGRIND_MEMPOOL_FREE(x,y)
 #define VALGRIND_DESTROY_MEMPOOL(x)
-#endif
-
-/*
- * Ah, the joys of newer gcc's....
- */
-#if 0
-#define CUC_PP (const unsigned char **)
-#define CC_PP (const char **)
 #endif
 
 #ifdef NEWLOCALE_DOESNT_WORK

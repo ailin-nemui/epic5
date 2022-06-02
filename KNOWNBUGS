@@ -1198,4 +1198,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * - Don't have (const unsigned char **) params to modify a pointer
 *   - Prefer (const unsigned char *) and return a (ptrdiff_t)
 * Change (Crypt) 'passwd' to unsigned because OpenSSL wants it that way.
-
+* Eliminate all warnings from -Wpointer-sign 
+* - Mostly by eliminating nearly all uses of (unsigned char *)

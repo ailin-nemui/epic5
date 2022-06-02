@@ -1227,13 +1227,24 @@ if test "$program_prefix" = "NONE" ; then
 	program_prefix=
 fi
 
-AC_MSG_CHECKING(whether your compiler supports -Wno-pointer-sign)
+dnl AC_MSG_CHECKING(whether your compiler supports -Wno-pointer-sign)
+dnl old_cflags="$CFLAGS"
+dnl CFLAGS="$CFLAGS -Wno-pointer-sign"
+dnl AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]],[[ return 0; ]])],
+dnl	[AC_MSG_RESULT(yes)],
+dnl     [AC_MSG_RESULT(no)
+dnl	CFLAGS="$old_cflags"])
+
+AC_MSG_CHECKING(whether your compiler supports -Wno-compound-token-split-by-macro)
 old_cflags="$CFLAGS"
-CFLAGS="$CFLAGS -Wno-pointer-sign"
+CFLAGS="$CFLAGS -Wno-compound-token-split-by-macro"
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]],[[ return 0; ]])],
-	[AC_MSG_RESULT(yes)],
+	[AC_MSG_RESULT(yes)
+	 PERL_EXTRA_CFLAGS="-Wno-compound-token-split-by-macro"
+	 AC_DEFINE([PERL_EXTRA_CFLAGS], 1, [Add this to CLFAGS for perl support])
+	 CFLAGS="$old_cflags"],
         [AC_MSG_RESULT(no)
-	CFLAGS="$old_cflags"])
+	 CFLAGS="$old_cflags"])
 
 AC_MSG_CHECKING(whether your compiler supports -fno-strict-aliasing)
 old_cflags="$CFLAGS"
@@ -1304,6 +1315,7 @@ AC_SUBST(RUBYCFLAGS)
 AC_SUBST(RUBYLIBS)
 AC_SUBST(PERLDOTOH)
 AC_SUBST(PERLCFLAGS)
+AC_SUBST(PERL_EXTRA_CFLAGS)
 AC_SUBST(PERLLIBS)
 AC_SUBST(PYTHON_O)
 AC_SUBST(PYTHON_CFLAGS)

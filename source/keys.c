@@ -56,7 +56,7 @@
  * This is a pointer to a function that may be used as a /BINDing.  
  * The functions themselves live in input.c (and a few other places).
  */
-typedef void (*BindFunction) (unsigned int, unsigned char *);
+typedef void (*BindFunction) (unsigned int, char *);
 
 
 /*
@@ -1939,7 +1939,7 @@ char *	bindctl (char *input)
 	    if (bp == NULL)
 		RETURN_EMPTY;
 	    else if (BINDING(bp)->func)
-		malloc_sprintf(&retval, "internal "UINTMAX_HEX_FORMAT, (uintmax_t)(BINDING(bp)->func));
+		malloc_sprintf(&retval, "internal");	/* C99 forbids converting of function addresses to data */
 	    else
 		malloc_sprintf(&retval, "alias %s", BINDING(bp)->alias);
 

@@ -124,14 +124,14 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 static void 	do_screens	(int fd);
-static int 	rite 		(Window *, const unsigned char *);
+static int 	rite 		(Window *, const char *);
 static void 	scroll_window   (Window *);
-static void 	add_to_window	(int, const unsigned char *);
+static void 	add_to_window	(int, const char *);
 static	int	ok_to_output	(Window *);
 static	void	edit_codepoint (u_32int_t key);
-static ssize_t read_esc_seq     (const unsigned char *, void *, int *);
-static ssize_t read_color_seq   (const unsigned char *, void *d, int);
-static ssize_t read_color256_seq  (const unsigned char *, void *d);
+static ssize_t read_esc_seq     (const char *, void *, int *);
+static ssize_t read_color_seq   (const char *, void *d, int);
+static ssize_t read_color256_seq  (const char *, void *d);
 static void	destroy_prompt (Screen *s, WaitPrompt **oldprompt);
 
 
@@ -172,7 +172,7 @@ struct 	attributes {
 };
 typedef struct attributes Attribute;
 
-const unsigned char *all_off (void)
+const char *all_off (void)
 {
 #ifdef NO_CHEATING
 	Attribute 	old_a, a;
@@ -183,13 +183,13 @@ const unsigned char *all_off (void)
 	a->italic = 0;
 	*old_a = *a;
 	display_attributes(retval, &old_a, &a);
-	return retval;
+	return (char *)retval;
 #else
 	static	unsigned char	retval[6];
 	retval[0] = '\006';
 	retval[1] = retval[2] = retval[3] = retval[4] = 0x80U;
 	retval[5] = 0;
-	return retval;
+	return (char *)retval;
 #endif
 }
 
@@ -203,8 +203,9 @@ const unsigned char *all_off (void)
  * before returning.  The special case is when "old_a" is NULL, which 
  * should be treated as an explicit "all off" before handling "a".
  */
-static size_t	display_attributes (unsigned char *output, Attribute *old_a, Attribute *a)
+static size_t	display_attributes (char *output_, Attribute *old_a, Attribute *a)
 {
+	unsigned char *output = (unsigned char *)output_;
 	unsigned char	val1 = 0x80U;
 	unsigned char	val2 = 0x80U;
 	unsigned char	val3 = 0x80U;
@@ -267,7 +268,7 @@ static size_t	display_attributes (unsigned char *output, Attribute *old_a, Attri
 }
  
 /* Put into 'output', logical characters so end result is 'a' */
-static size_t	logic_attributes (unsigned char *output, Attribute *old_a, Attribute *a)
+static size_t	logic_attributes (char *output, Attribute *old_a, Attribute *a)
 {
 	char	*str = output;
 	size_t	count = 0;
@@ -346,15 +347,17 @@ static size_t	logic_attributes (unsigned char *output, Attribute *old_a, Attribu
 }
 
 /* Suppress any attribute changes in the output */
-static size_t	ignore_attributes (unsigned char *output, Attribute *old_a, Attribute *a)
+static size_t	ignore_attributes (char *output, Attribute *old_a, Attribute *a)
 {
 	return 0;
 }
 
 
 /* Read an attribute marker from 'input', put results in 'a'. */
-static int	read_attributes (const unsigned char *input, Attribute *a)
+static int	read_attributes (const char *input_, Attribute *a)
 {
+	const unsigned char *input = (const unsigned char *)input_;
+
 	if (!input)
 		return -1;
 
@@ -372,12 +375,12 @@ static int	read_attributes (const unsigned char *input, Attribute *a)
 	a->italic = 0;
 	a->color_fg = a->fg_color = a->color_bg = a->bg_color = 0;
 
-	if (*input & 0x01U)	a->reverse = 1;
-	if (*input & 0x02U)	a->bold = 1;
-	if (*input & 0x04U)	a->blink = 1;
-	if (*input & 0x08U)	a->underline = 1;
-	if (*input & 0x10U)	a->altchar = 1;
-	if (*input & 0x20U)	a->italic = 1;
+	if ((unsigned char)*input & 0x01U)	a->reverse = 1;
+	if ((unsigned char)*input & 0x02U)	a->bold = 1;
+	if ((unsigned char)*input & 0x04U)	a->blink = 1;
+	if ((unsigned char)*input & 0x08U)	a->underline = 1;
+	if ((unsigned char)*input & 0x10U)	a->altchar = 1;
+	if ((unsigned char)*input & 0x20U)	a->italic = 1;
 
 	input++;
 	if (*input & 0x01U) {	
@@ -448,7 +451,7 @@ static void	term_attribute (Attribute *a)
  *
  * DO NOT USE ANY OTHER FUNCTION TO PARSE ^C CODES.  YOU HAVE BEEN WARNED!
  */
-static ssize_t	read_color_seq (const unsigned char *start, void *d, int blinkbold)
+static ssize_t	read_color_seq (const char *start, void *d, int blinkbold)
 {
 	/* 
 	 * The proper "attribute" color mapping is for each ^C lvalue.
@@ -533,7 +536,7 @@ static ssize_t	read_color_seq (const unsigned char *start, void *d, int blinkbol
 						  back_blink_conv;
 
 	/* Local variables, of course */
-	const 	unsigned char *	ptr = start;
+	const 	char *		ptr = start;
 		int		c1, c2;
 		Attribute *	a;
 		Attribute	ad;
@@ -746,10 +749,10 @@ static ssize_t	read_color_seq (const unsigned char *start, void *d, int blinkbol
  *
  * DO NOT USE ANY OTHER FUNCTION TO PARSE ^X CODES.  YOU HAVE BEEN WARNED!
  */
-static ssize_t	read_color256_seq (const unsigned char *start, void *d)
+static ssize_t	read_color256_seq (const char *start, void *d)
 {
 	/* Local variables, of course */
-	const 	unsigned char *	ptr = start;
+	const 	char *		ptr = start;
 		int		c1, c2;
 		Attribute *	a;
 		Attribute	ad;
@@ -918,14 +921,14 @@ static ssize_t	read_color256_seq (const unsigned char *start, void *d)
  *
  * DO NOT USE ANY OTHER FUNCTION TO PARSE ESCAPES.  YOU HAVE BEEN WARNED!
  */
-static ssize_t	read_esc_seq (const unsigned char *start, void *ptr_a, int *nd_spaces)
+static ssize_t	read_esc_seq (const char *start, void *ptr_a, int *nd_spaces)
 {
 	Attribute *	a = NULL;
 	Attribute 	safe_a;
 	int 		args[10];
 	int		nargs;
 	unsigned char 	chr;
-	const unsigned char *	str;
+	const char *	str;
 	ssize_t		len;
 
 	if (ptr_a == NULL)
@@ -1369,9 +1372,9 @@ STRIP_OTHER		X    -    -    -    -    -    -    -    X    X   -
  *	in "mangler", with attribute changes represented in the "logical"
  *	format.
  */
-unsigned char *	new_normalize_string (const unsigned char *str, int logical, int mangle)
+char *	new_normalize_string (const char *str, int logical, int mangle)
 {
-	unsigned char *	output;
+	char *	output;
 	unsigned char	chr;
 	Attribute	a, olda;
 	int 		pos;
@@ -1384,8 +1387,8 @@ unsigned char *	new_normalize_string (const unsigned char *str, int logical, int
 			strip_all_off, strip_nd_space, boldback;
 	int		strip_unprintable, strip_other, strip_c1, strip_italic;
 	int		codepoint, state, cols;
-	unsigned char 	utf8str[16], *x;
-	size_t		(*attrout) (unsigned char *, Attribute *, Attribute *) = NULL;
+	char 		utf8str[16], *x;
+	size_t		(*attrout) (char *, Attribute *, Attribute *) = NULL;
 	ptrdiff_t	offset;
 
 	mangle_escapes 	= ((mangle & MANGLE_ESCAPES) != 0);
@@ -1428,7 +1431,7 @@ unsigned char *	new_normalize_string (const unsigned char *str, int logical, int
 	 * in case you need to tack something else onto it.
 	 */
 	maxpos = strlen(str);
-	output = (unsigned char *)new_malloc(maxpos + 192);
+	output = new_malloc(maxpos + 192);
 	pos = 0;
 
 	while ((codepoint = next_code_point2(str, &offset, 1)) > 0)
@@ -1438,7 +1441,7 @@ unsigned char *	new_normalize_string (const unsigned char *str, int logical, int
 	    if (pos > maxpos - 8)
 	    {
 		maxpos += 192; /* Extend 192 chars at a time */
-		RESIZE(output, unsigned char, maxpos + 192);
+		RESIZE(output, char, maxpos + 192);
 	    }
 
 	    /* Normal unicode code points are always permitted */
@@ -1556,7 +1559,7 @@ normal_char:
 			    if (pos + nd_spaces > maxpos)
 			    {
 				maxpos += nd_spaces; 
-				RESIZE(output, unsigned char, maxpos + 192);
+				RESIZE(output, char, maxpos + 192);
 			    }
 			    while (nd_spaces-- > 0)
 			    {
@@ -1753,8 +1756,8 @@ normal_char:
  */
 char *	denormalize_string (const char *str_)
 {
-	const unsigned char *str = (const unsigned char *)str_;
-	unsigned char *	output = NULL;
+	const char *str = (const char *)str_;
+	char *	output = NULL;
 	size_t		maxpos;
 	Attribute 	olda, a;
 	size_t		span;
@@ -1774,7 +1777,7 @@ char *	denormalize_string (const char *str_)
 		str = "<denormalize_string was called with NULL>";
 
 	maxpos = strlen(str);
-	output = (unsigned char *)new_malloc(maxpos + 192);
+	output = (char *)new_malloc(maxpos + 192);
 	pos = 0;
 
 	while (*str)
@@ -1782,7 +1785,7 @@ char *	denormalize_string (const char *str_)
 		if (pos > maxpos)
 		{
 			maxpos += 192; /* Extend 192 chars at a time */
-			RESIZE(output, unsigned char, maxpos + 192);
+			RESIZE(output, char, maxpos + 192);
 		}
 		switch (*str)
 		{
@@ -1822,7 +1825,7 @@ char *	denormalize_string (const char *str_)
  */
 char *	normalized_string_to_plain_text (const char *str_)
 {
-	const unsigned char *str = (const unsigned char *)str_;
+	const char *str = (const char *)str_;
 	char *		output = NULL;
 	size_t		maxpos;
 	Attribute 	a;
@@ -1842,7 +1845,7 @@ char *	normalized_string_to_plain_text (const char *str_)
 		str = "<normalized_string_to_plain_text was called with NULL>";
 
 	maxpos = strlen(str);
-	output = (unsigned char *)new_malloc(maxpos + 192);
+	output = (char *)new_malloc(maxpos + 192);
 	pos = 0;
 
 	while (*str)
@@ -1850,7 +1853,7 @@ char *	normalized_string_to_plain_text (const char *str_)
 		if (pos > maxpos)
 		{
 			maxpos += 192; /* Extend 192 chars at a time */
-			RESIZE(output, unsigned char, maxpos + 192);
+			RESIZE(output, char, maxpos + 192);
 		}
 		switch (*str)
 		{
@@ -1892,11 +1895,11 @@ char *	normalized_string_to_plain_text (const char *str_)
  * word to the next line. ($leftpc() depends on this)
  */
 #define SPLIT_EXTENT 40
-unsigned char **prepare_display (int window,
-				 const unsigned char *str,
-                                 int max_cols,
-                                 int *lused,
-                                 int flags)
+char **prepare_display (int window,
+			 const char *str,
+			 int max_cols,
+			 int *lused,
+			 int flags)
 {
 static 	int 	recursion = 0, 
 		output_size = 0;
@@ -1908,23 +1911,23 @@ static 	int 	recursion = 0,
 		line = 0,           /* Current pos in "output"      */
 		do_indent,          /* Use indent or continued line? */
 		my_newline = 0;        /* Number of newlines           */
-static	unsigned char 	**output = (unsigned char **)0;
-const 	unsigned char	*ptr;
-	unsigned char 	buffer[BIG_BUFFER_SIZE + 1],
-			c,
-			*pos_copy;
-	unsigned char 	*str_free = NULL;
-const	unsigned char	*first_ptr;
-	unsigned char	*first = NULL;
-const	unsigned char	*cont_ptr;
-	unsigned char	*cont = NULL;
+static	char 	**output = (char **) 0;
+const 	char	*ptr;
+	char 	buffer[BIG_BUFFER_SIZE + 1],
+		c,
+		*pos_copy;
+	char 	*str_free = NULL;
+const	char	*first_ptr;
+	char	*first = NULL;
+const	char	*cont_ptr;
+	char	*cont = NULL;
 	const char 	*words;
 	Attribute	a, olda;
 	Attribute	saved_a;
-	unsigned char	*cont_free = NULL;
+	char	*cont_free = NULL;
 	int		codepoint;
-	unsigned char	utf8str[16];
-	unsigned char *	x;
+	char	utf8str[16];
+	char *	x;
 	int		cols;
 
 	if (recursion)
@@ -2024,7 +2027,7 @@ const	unsigned char	*cont_ptr;
 
 		    default:
 		    {
-			const unsigned char *	xptr;
+			const char *	xptr;
 			int	cp;
 			int	spacechar = 0;
 
@@ -2066,7 +2069,7 @@ const	unsigned char	*cont_ptr;
 		    case ' ':
 		    case ND_SPACE:
 		    {
-			const unsigned char *x2;
+			const char *x2;
 			int	ncp;
 			int	old_pos = pos;
 
@@ -2238,10 +2241,9 @@ const	unsigned char	*cont_ptr;
 
 				if (do_indent)
 				{
-				    unsigned char *fixedstr;
+				    char *fixedstr;
 
-				    fixedstr = prepare_display2(cont_ptr, 
-							indent, 0, ' ', 1);
+				    fixedstr = prepare_display2(cont_ptr, indent, 0, ' ', 1);
 				    cont = LOCAL_COPY(fixedstr);
 				    new_free(&fixedstr);
 				}
@@ -2253,8 +2255,7 @@ const	unsigned char	*cont_ptr;
 				else /* if ((!cont || !*cont) && *cont_ptr) */
 					cont = LOCAL_COPY(cont_ptr);
 
-				cont_free = cont = new_normalize_string(cont, 
-						0, display_line_mangler);
+				cont_free = cont = new_normalize_string(cont, 0, display_line_mangler);
 
 				/*
 				 * XXXX "line wrap bug" fix.  If we are here,
@@ -2389,21 +2390,21 @@ const	unsigned char	*cont_ptr;
  *	1. Toplines
  *	2. Continuation line markers
  */
-unsigned char *prepare_display2 (const unsigned char *orig_str, int max_cols, int allow_truncate, char fillchar, int denormalize)
+char *prepare_display2 (const char *orig_str, int max_cols, int allow_truncate, char fillchar, int denormalize)
 {
 	int 	pos = 0,            /* Current position in "buffer" */
 		col = 0,            /* Current column in display    */
 		line = 0,           /* Current pos in "output"      */
 		my_newline = 0;        /* Number of newlines           */
-	unsigned char 	*str = NULL;
-	unsigned char	*retval = NULL;
+	char 	*str = NULL;
+	char	*retval = NULL;
 	size_t		clue = 0;
-const 	unsigned char	*ptr;
-	unsigned char 	buffer[BIG_BUFFER_SIZE + 1];
+const 	char	*ptr;
+	char 	buffer[BIG_BUFFER_SIZE + 1];
 	Attribute	a;
-	unsigned char *	real_retval;
+	char *	real_retval;
 	int		codepoint;
-	unsigned char 	utf8str[16];
+	char 	utf8str[16];
 	char *		x;
 	int		cols;
 	ptrdiff_t	offset;
@@ -2413,13 +2414,13 @@ const 	unsigned char	*ptr;
         a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
 	a.italic = 0;
 
-        str = new_normalize_string(orig_str, 3, NORMALIZE);
+        str = new_normalize_string((const char *)orig_str, 3, NORMALIZE);
 	buffer[0] = 0;
 
 	/*
 	 * Start walking through the entire string.
 	 */
-	for (ptr = str; *ptr && (pos < BIG_BUFFER_SIZE - 8); )
+	for (ptr = (const char *)str; *ptr && (pos < BIG_BUFFER_SIZE - 8); )
 	{
 	    codepoint = next_code_point2(ptr, &offset, 1);
 	    ptr += offset;
@@ -2531,7 +2532,7 @@ const 	unsigned char	*ptr;
  *	window		- The target window for the output
  *	str		- What is to be outputted
  */
-static int 	rite (Window *window, const unsigned char *str)
+static int 	rite (Window *window, const char *str)
 {
 	output_screen = window->screen;
 	scroll_window(window);
@@ -2558,14 +2559,14 @@ static int 	rite (Window *window, const unsigned char *str)
  * If 'output' is 1 and 'all_off' is 1, do a term_all_off() when the output
  * is done.  If 'all_off' is 0, then don't do an all_off, because
  */
-size_t 	output_with_count (const unsigned char *str1, int clreol, int output)
+size_t 	output_with_count (const char *str1, int clreol, int output)
 {
 	int 		beep = 0;
 	size_t		out = 0;
 	Attribute	a;
-	const unsigned char *	str;
+	const char *	str;
 	int		codepoint;
-	unsigned char	utf8str[16];
+	char	utf8str[16];
 	char *		x;
 	int		cols;
 	ptrdiff_t	offset;
@@ -2579,7 +2580,7 @@ size_t 	output_with_count (const unsigned char *str1, int clreol, int output)
 		if (clreol)
 			term_clear_to_eol();
 
-	for (str = str1; str && *str; )
+	for (str = (const char *)str1; str && *str; )
 	{
 	    /* On any error, just stop. */
 	    if ((codepoint = next_code_point2(str, &offset, 1)) == -1)
@@ -2666,7 +2667,7 @@ size_t 	output_with_count (const unsigned char *str1, int clreol, int output)
  * That is, it routes the line to the appropriate window.  It also handles
  * /redirect handling.
  */
-void 	add_to_screen (const unsigned char *buffer)
+void 	add_to_screen (const char *buffer)
 {
 	Window *tmp = NULL;
 	int	window;
@@ -2842,12 +2843,12 @@ void 	add_to_screen (const unsigned char *buffer)
  * rite() handles the *appearance* of the display, writing to the screen as
  * neccesary.
  */
-static void 	add_to_window (int window_, const unsigned char *str)
+static void 	add_to_window (int window_, const char *str)
 {
 	const char *	pend;
-	unsigned char *	strval;
-	unsigned char *	free_me = NULL;
-        unsigned char **       my_lines;
+	char *	strval;
+	char *	free_me = NULL;
+        char **       my_lines;
         int             cols;
 	int		numl = 0;
 	intmax_t	refnum;
@@ -2878,7 +2879,7 @@ static void 	add_to_window (int window_, const unsigned char *str)
 	    recursion++;
 	    if (recursion < 5 && (pend = get_string_var(OUTPUT_REWRITE_VAR)))
 	    {
-		unsigned char	argstuff[10240];
+		char	argstuff[10240];
 
 		/* Create $* and then expand with it */
 		snprintf(argstuff, 10240, "%u %s", window->user_refnum, str);
@@ -2898,7 +2899,7 @@ static void 	add_to_window (int window_, const unsigned char *str)
 
 	/* Add to scrollback + display... */
 	cols = window->my_columns;	/* Don't -1 this! already -1'd */
-	strval = new_normalize_string(str, 0, display_line_mangler);
+	strval = new_normalize_string((const char *)str, 0, display_line_mangler);
         for (my_lines = prepare_display(window->refnum, strval, cols, &numl, 0); *my_lines; my_lines++)
 	{
 		if (add_to_scrollback(window->refnum, *my_lines, refnum))
@@ -2958,16 +2959,16 @@ static void 	add_to_window (int window_, const unsigned char *str)
  * for the purpose of reconstituting the scrollback of a window after
  * a resize event.
  */
-void 	add_to_window_scrollback (int window, const unsigned char *str, intmax_t refnum)
+void 	add_to_window_scrollback (int window, const char *str, intmax_t refnum)
 {
-	unsigned char *	strval;
-        unsigned char **       my_lines;
+	char *	strval;
+        char **       my_lines;
         int             cols;
 	int		numl = 0;
 
 	/* Normalize the line of output */
 	cols = get_window_my_columns(window);			/* Don't -1 this! Already -1'd! */
-	strval = new_normalize_string(str, 0, display_line_mangler);
+	strval = new_normalize_string((const char *)str, 0, display_line_mangler);
         for (my_lines = prepare_display(window, strval, cols, &numl, 0); *my_lines; my_lines++)
 		add_to_scrollback(window, *my_lines, refnum);
 	new_free(&strval);
@@ -3119,9 +3120,9 @@ void 	repaint_window_body (Window *window)
 	    for (count = 0; count < window->toplines_showing; count++)
 	    {
 		int	numls = 1;
-		unsigned char **my_lines;
-		unsigned char *n, *widthstr;
-		const unsigned char *str;
+		char **my_lines;
+		char *n, *widthstr;
+		const char *str;
 
 		if (!(str = window->topline[count]))
 			str = empty_string;
@@ -3780,7 +3781,7 @@ void	translate_user_input (unsigned char byte)
 {
 static	unsigned char	workbuf[32];
 static	size_t		workbuf_idx = 0;
-const	unsigned char *	s;
+const	char *	s;
 	char		dest_ptr[32] = { 0 };
 	size_t		dest_left;
 	int		codepoint;
@@ -3812,7 +3813,7 @@ static	int		never_warn_again = 0;
 	workbuf[workbuf_idx++] = byte;
 	workbuf[workbuf_idx] = 0;
 
-	in = workbuf;
+	in = (char *)workbuf;
 	inlen = workbuf_idx;
 	/* Must leave at least one \0 at the end of the buffer, as
 	 * next_code_point() expects a nul-terminated string. */
@@ -3872,7 +3873,7 @@ static	int		never_warn_again = 0;
 	}
 
 	/* Now inject the converted (utf8) bytes into the input stream. */
-	s = (const unsigned char *)dest_ptr;
+	s = (const char *)dest_ptr;
 	codepoint = next_code_point2(s, &offset, 1);
 	if (codepoint > -1)
 	{
@@ -3938,7 +3939,7 @@ static	void	edit_codepoint (u_32int_t key)
 void	fire_wait_prompt (u_32int_t key)
 {
 	WaitPrompt *	oldprompt;
-        unsigned char   utf8str[8];
+        char   utf8str[8];
 
 	oldprompt = last_input_screen->promptlist;
 	last_input_screen->promptlist = oldprompt->next;
@@ -4084,7 +4085,7 @@ static void	destroy_prompt (Screen *s, WaitPrompt **oldprompt)
  * This is modeled after output_with_count, and denormalize_string().
  * All these functions should be refactored somehow.  Too much copypasta!
  */
-void	chop_columns (unsigned char **str, size_t num)
+void	chop_columns (char **str, size_t num)
 {
 	char 	*s, *x;
 	int	i, d, c;
@@ -4094,7 +4095,7 @@ void	chop_columns (unsigned char **str, size_t num)
 	if (!str || !*str)
 		return;
 
-	for (s = *str; s && *s; s = x)
+	for (s = (char *)*str; s && *s; s = x)
 	{
 		/* 
 		 * This resyncs to UTF-8; 
@@ -4161,7 +4162,7 @@ void	chop_columns (unsigned char **str, size_t num)
  * I suppose this is cheating -- but since it is only used by 
  * $fix_width(), do i really care?
  */
-void	chop_final_columns (unsigned char **str, size_t num)
+void	chop_final_columns (char **str, size_t num)
 {
 	char 	*s, *x;
 	int	i, d, c;
@@ -4180,7 +4181,7 @@ void	chop_final_columns (unsigned char **str, size_t num)
 	 * so it just makes more sense to go start->end
 	 * even though that's not optimally efficient.
 	 */
-	for (s = *str; s && *s; s = x)
+	for (s = (char *)*str; s && *s; s = x)
 	{
 		/* 
 		 * This resyncs to UTF-8; 

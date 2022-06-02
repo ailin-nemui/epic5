@@ -162,20 +162,18 @@
 #endif
 
 #ifdef HAVE_SSL
-static unsigned char *	decipher_evp (const unsigned char *passwd, int passwdlen, const unsigned char *ciphertext, int cipherlen, const EVP_CIPHER *type, int *outlen, int ivsize);
+static char *	decipher_evp (const char *passwd, int passwdlen, const char *ciphertext, int cipherlen, const EVP_CIPHER *type, int *outlen, int ivsize);
 #endif
-static unsigned char *	decrypt_by_prog (const unsigned char *str, size_t *len, List *crypt);
+static char *	decrypt_by_prog (const char *str, size_t *len, List *crypt);
 
 #ifdef HAVE_SSL
-static unsigned char *	cipher_evp (const unsigned char *passwd, int passwdlen, const unsigned char *plaintext, int plaintextlen, const EVP_CIPHER *type, int *retsize, int ivsize);
+static char *	cipher_evp (const char *passwd, int passwdlen, const char *plaintext, int plaintextlen, const EVP_CIPHER *type, int *retsize, int ivsize);
 #endif
-static unsigned char *	encrypt_by_prog (const unsigned char *str, size_t *len, List *crypt);
+static char *	encrypt_by_prog (const char *str, size_t *len, List *crypt);
 
 /* This function is used by CTCP handling, but not by xform! */
-char *	decipher_message (const char *ciphertext_, size_t len, List *cryptl, int *retlen)
+char *	decipher_message (const char *ciphertext, size_t len, List *cryptl, int *retlen)
 {
-	const unsigned char *ciphertext = (const unsigned char *)ciphertext_;
-
     do
     {
 	Crypt *crypti = (Crypt *)(cryptl->d);
@@ -184,7 +182,7 @@ char *	decipher_message (const char *ciphertext_, size_t len, List *cryptl, int 
 	    crypti->sed_type == AES256CRYPT || crypti->sed_type == AESSHA256CRYPT ||
 	    crypti->sed_type == FISHCRYPT)
 	{
-	    unsigned char *	outbuf = NULL;
+	    char *	outbuf = NULL;
 #ifdef HAVE_SSL
 	    const EVP_CIPHER *type;
 	    int	bytes_to_trim;
@@ -255,7 +253,7 @@ char *	decipher_message (const char *ciphertext_, size_t len, List *cryptl, int 
 	}
 	else if (crypti->sed_type == SEDCRYPT || crypti->sed_type == SEDSHACRYPT)
 	{
-		unsigned char *	text;
+		char *	text;
 
 		text = new_malloc(len + 1);
 		memmove(text, ciphertext, len);
@@ -265,7 +263,7 @@ char *	decipher_message (const char *ciphertext_, size_t len, List *cryptl, int 
 	}
 	else if (crypti->sed_type == PROGCRYPT)
 	{
-		unsigned char *retval;
+		char *retval;
 
 		retval = decrypt_by_prog(ciphertext, &len, cryptl);
 		*retlen = len;
@@ -280,8 +278,10 @@ char *	decipher_message (const char *ciphertext_, size_t len, List *cryptl, int 
 }
 
 #ifdef HAVE_SSL
-static unsigned char *	decipher_evp (const unsigned char *passwd, int passwdlen, const unsigned char *ciphertext, int cipherlen, const EVP_CIPHER *type, int *outlen, int ivsize)
+static char *	decipher_evp (const char *passwd_, int passwdlen, const char *ciphertext_, int cipherlen, const EVP_CIPHER *type, int *outlen, int ivsize)
 {
+	const unsigned char *passwd = (const unsigned char *)passwd_;
+	const unsigned char *ciphertext = (const unsigned char *)ciphertext_;
         unsigned char *outbuf;
 	unsigned char	*iv = NULL;
 	unsigned long errcode;
@@ -324,12 +324,14 @@ static unsigned char *	decipher_evp (const unsigned char *passwd, int passwdlen,
 
 	if (ivsize > 0)
 		new_free(&iv);
-	return outbuf;
+	return (char *)outbuf;
 }
 #endif
 
-void     decrypt_sed (unsigned char *str, int len, const unsigned char *passwd, int passwdlen)
+void     decrypt_sed (char *str_, int len, const char *passwd_, int passwdlen)
 {
+	unsigned char *str = (unsigned char *)str_;
+const 	unsigned char *passwd = (const unsigned char *)passwd_;
         int	passwd_pos,
                 i;
         char    mix,
@@ -352,7 +354,7 @@ void     decrypt_sed (unsigned char *str, int len, const unsigned char *passwd, 
         str[i] = (char) 0;
 }
 
-static unsigned char *	decrypt_by_prog (const unsigned char *str, size_t *len, List *cryptl)
+static char *	decrypt_by_prog (const char *str, size_t *len, List *cryptl)
 {
         char    *ret = NULL, *input;
         char *  args[3];
@@ -362,7 +364,7 @@ static unsigned char *	decrypt_by_prog (const unsigned char *str, size_t *len, L
         args[0] = malloc_strdup(crypti->prog);
         args[1] = malloc_strdup("decrypt");
         args[2] = NULL;
-        input = malloc_strdup2((const char *)crypti->passwd, "\n");
+        input = malloc_strdup2(crypti->passwd, "\n");
 
         iplen = strlen(input);
         new_realloc((void**)&input, *len + iplen);
@@ -377,13 +379,12 @@ static unsigned char *	decrypt_by_prog (const unsigned char *str, size_t *len, L
 
         new_realloc((void**)&ret, 1+*len);
         ret[*len] = 0;
-        return (unsigned char *)ret;
+        return ret;
 }
 
 /*************************************************************************/
-char *	cipher_message (const char *orig_message_, size_t len, List *cryptl, int *retlen)
+char *	cipher_message (const char *orig_message, size_t len, List *cryptl, int *retlen)
 {
-	const unsigned char *orig_message = (const unsigned char *)orig_message_;
 	Crypt *	crypti = (Crypt *)(cryptl->d);
 
 	if (retlen)
@@ -395,7 +396,7 @@ char *	cipher_message (const char *orig_message_, size_t len, List *cryptl, int 
 	    crypti->sed_type == FISHCRYPT ||
 	    crypti->sed_type == AES256CRYPT || crypti->sed_type == AESSHA256CRYPT)
 	{
-	    unsigned char *ciphertext = NULL;
+	    char *ciphertext = NULL;
 #ifdef HAVE_SSL
 	    size_t	ivlen;
 	    const EVP_CIPHER *type;
@@ -435,17 +436,17 @@ char *	cipher_message (const char *orig_message_, size_t len, List *cryptl, int 
 	}
 	else if (crypti->sed_type == SEDCRYPT || crypti->sed_type == SEDSHACRYPT)
 	{
-		unsigned char *	ciphertext;
+		char *	ciphertext;
 
 		ciphertext = new_malloc(len + 1);
 		memmove(ciphertext, orig_message, len);
-		encrypt_sed(ciphertext, len, crypti->passwd, strlen((char *)crypti->passwd));
+		encrypt_sed(ciphertext, len, crypti->passwd, strlen(crypti->passwd));
 		*retlen = len;
 		return (char *)ciphertext;
 	}
 	else if (crypti->sed_type == PROGCRYPT)
 	{
-		unsigned char *ciphertext;
+		char *ciphertext;
 
 		ciphertext = encrypt_by_prog(orig_message, &len, cryptl);
 		*retlen = len;
@@ -458,8 +459,10 @@ char *	cipher_message (const char *orig_message_, size_t len, List *cryptl, int 
 }
 
 #ifdef HAVE_SSL
-static unsigned char *	cipher_evp (const unsigned char *passwd, int passwdlen, const unsigned char *plaintext, int plaintextlen, const EVP_CIPHER *type, int *retsize, int ivsize)
+static char *	cipher_evp (const char *passwd_, int passwdlen, const char *plaintext_, int plaintextlen, const EVP_CIPHER *type, int *retsize, int ivsize)
 {
+	const unsigned char *passwd = (const unsigned char *)passwd_;
+	const unsigned char *plaintext = (const unsigned char *)plaintext_;
         unsigned char *outbuf;
         int     outlen = 0;
 	int	extralen = 0;
@@ -517,12 +520,14 @@ static unsigned char *	cipher_evp (const unsigned char *passwd, int passwdlen, c
 	*retsize = outlen + ivsize;
 	if (iv)
 		new_free(&iv);		/* XXX Is this correct? */
-	return outbuf;
+	return (char *)outbuf;
 }
 #endif
 
-void     encrypt_sed (unsigned char *str, int len, const unsigned char *passwd, int passwd_len)
+void     encrypt_sed (char *str_, int len, const char *passwd_, int passwd_len)
 {
+	unsigned char *str = (unsigned char *)str_;
+	unsigned char *passwd = (unsigned char *)passwd_;
         int     passwd_pos,
                 i;
         char    mix, 
@@ -545,7 +550,7 @@ void     encrypt_sed (unsigned char *str, int len, const unsigned char *passwd, 
         str[i] = (char) 0;
 }
 
-static unsigned char *	encrypt_by_prog (const unsigned char *str, size_t *len, List *cryptl)
+static char *	encrypt_by_prog (const char *str, size_t *len, List *cryptl)
 {
         char    *ret = NULL, *input;
         char *  args[3];
@@ -555,7 +560,7 @@ static unsigned char *	encrypt_by_prog (const unsigned char *str, size_t *len, L
         args[0] = malloc_strdup(crypti->prog);
         args[1] = malloc_strdup("encrypt");
         args[2] = NULL;
-        input = malloc_strdup2((char *)crypti->passwd, "\n");
+        input = malloc_strdup2(crypti->passwd, "\n");
 
         iplen = strlen(input);
         new_realloc((void**)&input, *len + iplen);
@@ -570,7 +575,7 @@ static unsigned char *	encrypt_by_prog (const unsigned char *str, size_t *len, L
 
         new_realloc((void**)&ret, 1+*len);
         ret[*len] = 0;
-        return (unsigned char *)ret;
+        return (char *)ret;
 }
 
 /**************************************************************************/
@@ -608,12 +613,11 @@ static void	copy_passwd (const char *orig, size_t orig_len, char **passwd, size_
  * XXX These are cut and pasted from decipher_message. 
  */
 #define CRYPTO_HELPER_FUNCTIONS(x, y, blocksize, ivsize, make_passwd, trim) \
-ssize_t	x ## _encoder (const char *orig_, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len) \
+ssize_t	x ## _encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len) \
 { 									\
-	const unsigned char *orig = (const unsigned char *)orig_;	\
 	int	retsize = 0; 						\
-	unsigned char *	retval; 					\
-	unsigned char *realpasswd;					\
+	char *	retval; 					\
+	char *realpasswd;					\
 	char *	realpasswd_;						\
 	size_t	realpasswdlen;						\
 									\
@@ -624,7 +628,7 @@ ssize_t	x ## _encoder (const char *orig_, size_t orig_len, const void *meta, siz
 	} 								\
 									\
 	make_passwd (meta, meta_len, &realpasswd_, &realpasswdlen);	\
-	realpasswd = (unsigned char *)realpasswd_;			\
+	realpasswd = (char *)realpasswd_;			\
 	retval = cipher_evp(realpasswd, realpasswdlen, orig, orig_len,	\
 				y (), &retsize, ivsize); 		\
 	if (retval && retsize > 0) 					\
@@ -646,14 +650,13 @@ ssize_t	x ## _encoder (const char *orig_, size_t orig_len, const void *meta, siz
 	return 0; 							\
 }									\
 									\
-ssize_t	x ## _decoder (const char *ciphertext_, size_t len, const void *meta, size_t meta_len, char *dest, size_t dest_len) \
+ssize_t	x ## _decoder (const char *ciphertext, size_t len, const void *meta, size_t meta_len, char *dest, size_t dest_len) \
 { 									\
-	const unsigned char *ciphertext = (const unsigned char *)ciphertext_; \
-	unsigned char *	outbuf = NULL; 					\
+	char *	outbuf = NULL; 					\
 	int	bytes_to_trim = 0;					\
 	int 	retlen = 0; 						\
 	char *	realpasswd_;						\
-	unsigned char *realpasswd;					\
+	char *realpasswd;					\
 	size_t	realpasswdlen;						\
 									\
 	if (len == 0)							\
@@ -663,7 +666,7 @@ ssize_t	x ## _decoder (const char *ciphertext_, size_t len, const void *meta, si
 	}								\
 									\
 	make_passwd (meta, meta_len, &realpasswd_, &realpasswdlen);	\
-	realpasswd = (unsigned char *)realpasswd_;			\
+	realpasswd = (char *)realpasswd_;			\
 	if (!(outbuf = decipher_evp(realpasswd, realpasswdlen, ciphertext, len, \
 				y (), &retlen, ivsize))) 		\
 	{ 								\

@@ -553,7 +553,7 @@ BUILT_IN_COMMAND(fe)
 			else
 			{
 				int		codepoint;
-				unsigned char 	fec_buffer[16], *word = fec_buffer;
+				char 		utf8buffer[16];
 				ptrdiff_t	offset;
 
 				if ((codepoint = next_code_point2(templist, &offset, 0)) < 0)
@@ -562,8 +562,8 @@ BUILT_IN_COMMAND(fe)
 					continue /* What to do? */;
 				}
 				templist += offset;
-				ucs_to_utf8(codepoint, word, 16);
-				add_local_alias(var[y], (char *)word, 0);
+				ucs_to_utf8(codepoint, utf8buffer, 16);
+				add_local_alias(var[y], utf8buffer, 0);
 			}
 		}
 		x += ind;

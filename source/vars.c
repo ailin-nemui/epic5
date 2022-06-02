@@ -734,7 +734,7 @@ int 	set_variable (const char *name, IrcVariable *var, const char *new_value, in
 			break;
 		}
 
-		if ((codepoint = next_code_point2((const unsigned char *)value, &offset, 1)) == -1)
+		if ((codepoint = next_code_point2(value, &offset, 1)) == -1)
 		{
 			say("New value of %s could not be determined", name);
 			retval = -1;
@@ -1145,7 +1145,7 @@ const 	VARIABLE *data;
 			break;
 		case CHAR_VAR:
 		{
-			unsigned char utf8str[16];
+			char utf8str[16];
 
 			ucs_to_utf8(data->integer, utf8str, sizeof(utf8str));
 			ret = malloc_strdup((const char *)utf8str);

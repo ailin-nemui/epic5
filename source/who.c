@@ -143,8 +143,8 @@ static char *who_item_full_desc (WhoEntry *item)
 		"dalnet [%d], dalnet_args [%s], who_mask [%d], "
 		"who_target [%s], who_name [%s], who_host [%s], "
 		"who_server [%s], who_nick [%s], who_real [%s], "
-		"who_stuff [%s], who_end [%s], next [%p], line ["UINTMAX_HEX_FORMAT"], "
-		"end ["UINTMAX_HEX_FORMAT"], requested ["INTMAX_FORMAT"], dirty ["INTMAX_FORMAT"]",
+		"who_stuff [%s], who_end [%s], next [%p], line [%s], "
+		"end [%s], requested ["INTMAX_FORMAT"], dirty ["INTMAX_FORMAT"]",
 			item->refnum,
 			item->dirty, item->piggyback, item->undernet_extended, 
 				S(item->undernet_extended_args),
@@ -155,8 +155,9 @@ static char *who_item_full_desc (WhoEntry *item)
 			S(item->who_server), S(item->who_nick), 
 				S(item->who_real),
 			S(item->who_stuff), S(item->who_end), 
-				(void *)item->next, (uintmax_t)item->line,
-			(uintmax_t) item->end, 
+				(void *)item->next, 
+			item->line ? "<internal>" : "<none>",
+			item->end ? "<internal>" : "<none>",
 			(intmax_t) item->request_time.tv_sec,
 			(intmax_t) item->dirty_time.tv_sec);
 	else

@@ -308,17 +308,18 @@ int	cursor_position (void *vp)
  *	str	- A string to output
  *	numcols	- The maximum number of columns to output
  */
-static int 	safe_puts (const unsigned char *str, int numcols)
+static int 	safe_puts (const char *str, int numcols)
 {
 	int 	i = 0;
-	const unsigned char *s, *x;
-	unsigned char	utf8str[8];
+	const char *s;
+	const char *x;
+	char	utf8str[8];
 	int	code_point;
 	int	cols;
 	int	allow_c1_chars = -1;
 	ptrdiff_t	offset;
 
-	s = str;
+	s = (const char *)str;
 	while ((code_point = next_code_point2(s, &offset, 1)))
 	{
 		s += offset;
@@ -390,7 +391,7 @@ static	int	recursive = 0;
  */
 static int	retokenize_input (int start)
 {
-	const unsigned char *s, *old_s;
+	const char *s, *old_s;
 	int	cols;
 	int	codepoint;
 	int	current_column;
@@ -402,7 +403,7 @@ static int	retokenize_input (int start)
 
 	while (s && *s)
 	{
-		codepoint = next_code_point2(s, &offset, 1);
+		codepoint = next_code_point2((char *)s, &offset, 1);
 		s += offset;
 		cols = codepoint_numcolumns(codepoint);
 		/* Invalid chars are probably highlights */
@@ -1298,10 +1299,10 @@ BUILT_IN_KEYBINDING(input_add_character)
 {
 	int	numcols;
 	int	numbytes;
-	unsigned char utf8str[8];
+	char utf8str[8];
 	int	utf8strlen;
 
-	utf8strlen = ucs_to_utf8(key, utf8str, sizeof(utf8str));
+	utf8strlen = ucs_to_utf8(key, (char *)utf8str, sizeof(utf8str));
 
 	/* Don't permit the input buffer to get too big. */
 	if (strlen(INPUT_BUFFER) + utf8strlen  >= INPUT_BUFFER_SIZE)

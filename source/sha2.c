@@ -542,7 +542,7 @@ static char *	SHA256_Data (const sha2_byte *data, size_t len, char digest[SHA256
 
 char *  sha256str (const char *str, size_t len, char *retval)
 {
-        SHA256_Data(str, len, retval);
+        SHA256_Data((const sha2_byte *)str, len, retval);
         return retval;
 }
 
@@ -551,8 +551,8 @@ char *	sha256 (const char *data, size_t len, char *retval)
 	SHA256_CTX	context;
 
 	SHA256_Init(&context);
-	SHA256_Update(&context, data, len);
-	SHA256_Final(retval, &context);
+	SHA256_Update(&context, (const sha2_byte *)data, len);
+	SHA256_Final((sha2_byte *)retval, &context);
 	return retval;
 }
 

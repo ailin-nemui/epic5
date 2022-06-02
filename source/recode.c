@@ -619,7 +619,7 @@ const char *	find_recoding (const char *target, iconv_t *inbound, iconv_t *outbo
  *	be used, and I don't want to make it complicated to figure that out.
  *
  */
-static const char *	decide_encoding (const unsigned char *from, const unsigned char *target, int server, iconv_t *code)
+static const char *	decide_encoding (const char *from, const char *target, int server, iconv_t *code)
 {
 	int	i = 0;
 	int	winner = -1;
@@ -1008,9 +1008,9 @@ const char *	inbound_recode (const char *from, int server, const char *to, const
  *	utf8str	- Where to put the code point in the user's encoding
  *	utf8strsiz - How big utf8str is.
  */
-int     ucs_to_console (u_32int_t codepoint, unsigned char *deststr, size_t deststrsiz)
+int     ucs_to_console (u_32int_t codepoint, char *deststr, size_t deststrsiz)
 {
-	unsigned char	utf8str[16];
+	char	utf8str[16];
 	size_t	utf8strsiz;
 	iconv_t	xlat = (iconv_t)-1;
 	int	n;
