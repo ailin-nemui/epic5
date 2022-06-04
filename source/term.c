@@ -677,9 +677,6 @@ static const	int	numcaps = sizeof tcaps / sizeof tcaps[0];
 static	int	term_echo_flag = 1;
 static	int	li;
 static	int	co;
-static	char	termcap[2048];		/* Bigger than we need, just in case */
-static	char	termcap2[2048];		/* Bigger than we need, just in case */
-static	char *	tptr = termcap2;
 
 static	void	term_establish_last_column (void);
 static void	term_enable_last_column (void);

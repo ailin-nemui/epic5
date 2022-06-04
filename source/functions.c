@@ -908,7 +908,6 @@ static int	func_exist (char *command)
 int	parse_kwargs (struct kwargs *kwargs, const char *input)
 {
 	cJSON *json = cJSON_Parse(input);
-	int	i;
 
 	if (json == NULL)
 	{
@@ -1261,7 +1260,6 @@ BUILT_IN_FUNCTION(function_left, word)
 BUILT_IN_FUNCTION(function_right, word)
 {
 	int	keepers,	/* The number of CPs to retain */
-		count,		/* How many we've copied so far */
 		code_point,	/* The current CP we're working on */
 		total,		/* How many CPs are in word */
 		ignores;	/* Leading CPs to ignore */
@@ -1308,8 +1306,7 @@ BUILT_IN_FUNCTION(function_mid, word)
 {
 	int	keepers,	/* The number of CPs to retain */
 		count,		/* How many we've copied so far */
-		code_point,	/* The current CP we're working on */
-		total;		/* How many CPs are in word */
+		code_point;	/* The current CP we're working on */
 	int	start;
 	char 	*s;		/* Pointer at next CP */
 	char	*retval;
@@ -3253,7 +3250,7 @@ BUILT_IN_FUNCTION(function_chr, word)
 	char *	blah;
 	size_t	bytes = 0;
 	size_t	cnt;
-	char 	*s, *x;
+	char 	*x;
 	char 	utf8str[8];
 	int	code_point;
 
@@ -3322,7 +3319,7 @@ BUILT_IN_FUNCTION(function_chrq, word)
 	char *	blah;
 	size_t	bytes = 0;
 	size_t	cnt;
-	char 	*s, *x;
+	char 	*x;
 	char 	utf8str[8];
 	int	code_point;
 	char	*ret;
@@ -4669,20 +4666,20 @@ BUILT_IN_FUNCTION(function_uniq, word)
 	 * This means, kill the higher valued pointers value.
 	 */
 	for (listo = 0, listi = 1; listi < listc; listi++) {
-		if (sort_it(&list[listi],&list[listo])) {
+		if (sort_it(&list[listi], &list[listo])) {
 			listo = listi;
 		} else {
-			if (list[listi]<list[listo]) {
-				*(char *)list[listo] = 0;
+			if (list[listi] < list[listo]) {
+				*list[listo] = 0;
 				listo = listi;
 			} else {
-				*(char *)list[listi] = 0;
+				*list[listi] = 0;
 			}
 		}
 	}
 
 	/* We want the remaining words to appear in their original order */
-	qsort((void *)list, listc, sizeof(char *), unsort_it);
+	qsort(list, listc, sizeof(char *), unsort_it);
 	booya = unsplitw(&list, listc, DWORD_DWORDS);
 
 #else
@@ -5950,10 +5947,8 @@ BUILT_IN_FUNCTION(function_channel, input)
 BUILT_IN_FUNCTION(function_pad, input)
 {
 	int	width;
-	size_t	awidth, len;
 	char	*pads;
 	char	*retval;
-	size_t	retvalsiz;
 	int	codepoint;
 	int	j;
 	ptrdiff_t	offset;
@@ -6740,7 +6735,7 @@ BUILT_IN_FUNCTION(function_ttyname, input)
  */
 BUILT_IN_FUNCTION(function_insert, input)
 {
-	char *s, *p;
+	char 	*s;
 	char 	*first_part, *second_part, *extra;
 	int	where;
 	char	*retval;
@@ -7725,7 +7720,6 @@ BUILT_IN_FUNCTION(function_splitw, input)
 {
 	char *	delim_str;
 	int	delim;
-	char *	str;
 	char **wordl;
 	int 	wordc;
 	char *	retval;
@@ -7733,7 +7727,8 @@ BUILT_IN_FUNCTION(function_splitw, input)
 
 	/* The delimiter is the first code point in the first argument. */
 	GET_DWORD_ARG(delim_str, input);
-	delim = next_code_point2(delim_str, &offset, 0);
+	while ((delim = next_code_point2(delim_str, &offset, 0)) == -1)
+		delim_str++;
 
 	if (!(wordc = new_split_string(input, &wordl, delim)))
 		RETURN_EMPTY;
@@ -8298,7 +8293,6 @@ BUILT_IN_FUNCTION(function_json_implode, input)
 	int err = 0;
 	int	compact = 0;
 
-	char *name1 = NULL, *flag = NULL;
 	struct kwargs kwargs[] = {
 		{ "root", KWARG_TYPE_STRING, &var, 1 },
 		{ "compact", KWARG_TYPE_BOOL, &compact, 1 },
@@ -8352,7 +8346,6 @@ BUILT_IN_FUNCTION(function_json_implode, input)
 BUILT_IN_FUNCTION(function_uuid4, input)
 {
 	char *retval;
-	char *var;
 
 	if (!my_stricmp(input, "NODASHES"))
 		retval = uuid4_generate_no_dashes();

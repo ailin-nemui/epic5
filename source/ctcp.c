@@ -156,8 +156,6 @@ static char * x (const char *from, const char *to, const char *cmd, char *args)
 static	void	add_ctcp (const char *name, int flag, const char *desc, CTCP_Handler func, CTCP_Handler repl, const char *user_func, const char *user_repl)
 {
 	CtcpEntry *ctcp;
-	int	numval;
-	const char *strval;
 	char *	name_copy;
 
 	ctcp = (CtcpEntry *)new_malloc(sizeof(CtcpEntry));
@@ -474,7 +472,6 @@ char *	do_ctcp (int request, const char *from, const char *to, char *str)
 	int	i;
 	char	*ptr = NULL;
 	int	dont_process_more = 0;
-static	time_t	last_ctcp_parsed = 0;
 	int	l;
 	char *	extra = NULL;
 	int 	delim_char;
@@ -917,9 +914,7 @@ BUILT_IN_FUNCTION(function_ctcpctl, input)
 	char *	op;
 	size_t	op_len;
 	char *	ctcp_name;
-	size_t	ctcp_name_len;
 	char *	field;
-	size_t	field_len;
 	int	i;
 
 	GET_FUNC_ARG(op, input);

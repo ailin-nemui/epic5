@@ -68,7 +68,7 @@ struct FILE___ {
 };
 typedef struct FILE___ File;
 
-static File *	FtopEntry = (File *) 0;
+static File *	FtopEntry = NULL;
 
 static File *	new_file (struct epic_loadfile *elf)
 {
@@ -554,7 +554,7 @@ struct DBM___ {
 };
 typedef struct DBM___ Dbm;
 
-static Dbm *	DtopEntry = (Dbm *) 0;
+static Dbm *	DtopEntry = NULL;
 
 static Dbm *	new_dbm (SDBM *the_db, int type);
 static void	remove_dbm (Dbm *db);
@@ -826,10 +826,12 @@ char *	dbmctl (char *input)
 	GET_FUNC_ARG(listc, input);
 	if (!my_strnicmp(listc, "OPEN", 4)) {
 		GET_FUNC_ARG(type, input);	/* Ignored for now */
+		(void)type;
 		retval = open_dbm(input, 0, 0);
 		RETURN_INT(retval);
 	} else if (!my_strnicmp(listc, "OPEN_READ", 5)) {
 		GET_FUNC_ARG(type, input);	/* Ignored for now */
+		(void)type;
 		retval = open_dbm(input, 1, 0);
 		RETURN_INT(retval);
 	} else if (!my_strnicmp(listc, "CLOSE", 2)) {

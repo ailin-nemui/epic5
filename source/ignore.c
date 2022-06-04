@@ -596,20 +596,19 @@ static int	change_ignore_mask_by_desc (const char *type, Mask *do_mask, Mask *do
  */
 static int	ignore_change (List *item, int type, void *data)
 {
-	char *changes;
+	char *	changes = data;
 
-	changes = (char *)data;
-	change_ignore_mask_by_desc(changes, &((Ignore *)(item->d))->type, 
-					    &((Ignore *)(item->d))->dont, 
-					    &((Ignore *)(item->d))->reason, 
-					    &((Ignore *)(item->d))->expiration);
+	change_ignore_mask_by_desc(changes, &(IGNORE(item)->type), 
+					    &(IGNORE(item)->dont), 
+					    &(IGNORE(item)->reason), 
+					    &(IGNORE(item)->expiration));
 
 	/*
 	 * Tell the user the new state of the ignore.
 	 * Garbage collect this ignore if it is clear.
 	 * remove_ignore() does the output for us here.
 	 */
-	if (mask_isnone(&((Ignore *)(item->d))->type) && mask_isnone(&((Ignore *)(item->d))->dont))
+	if (mask_isnone(&IGNORE(item)->type) && mask_isnone(&IGNORE(item)->dont))
 	{
 		remove_ignore(item->name);
 		return 0;

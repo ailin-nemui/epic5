@@ -63,7 +63,7 @@ typedef struct flood_stru
 	int		floods;
 }	Flooding;
 
-static	Flooding *flood = (Flooding *) 0;
+static	Flooding *flood = NULL;
 int	users = 0;
 
 

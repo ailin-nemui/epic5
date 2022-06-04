@@ -928,7 +928,6 @@ static ssize_t	read_esc_seq (const char *start, void *ptr_a, int *nd_spaces)
 	int 		args[10];
 	int		nargs;
 	unsigned char 	chr;
-	const char *	str;
 	ssize_t		len;
 
 	if (ptr_a == NULL)
@@ -937,7 +936,6 @@ static ssize_t	read_esc_seq (const char *start, void *ptr_a, int *nd_spaces)
 		a = (Attribute *)ptr_a;
 
 	*nd_spaces = 0;
-	str = start;
 	len = 0;
 
 	switch (start[len])
@@ -1039,7 +1037,7 @@ start_over:
 	    * off until we find a character that is not a number or a semicolon.
 	    * Skip everything else.
 	    */
-	   for (nargs = 0; nargs < 10; str++)
+	   for (nargs = 0; nargs < 10; )
 	   {
 		int n = 0;
 
@@ -1375,7 +1373,6 @@ STRIP_OTHER		X    -    -    -    -    -    -    -    X    X   -
 char *	new_normalize_string (const char *str, int logical, int mangle)
 {
 	char *	output;
-	unsigned char	chr;
 	Attribute	a, olda;
 	int 		pos;
 	int		maxpos;
@@ -1829,7 +1826,6 @@ char *	normalized_string_to_plain_text (const char *str_)
 	char *		output = NULL;
 	size_t		maxpos;
 	Attribute 	a;
-	size_t		span;
 	size_t		pos;
 
         /* Reset all attributes to zero */
@@ -1918,7 +1914,6 @@ const 	char	*ptr;
 		*pos_copy;
 	char 	*str_free = NULL;
 const	char	*first_ptr;
-	char	*first = NULL;
 const	char	*cont_ptr;
 	char	*cont = NULL;
 	const char 	*words;
@@ -2394,7 +2389,6 @@ char *prepare_display2 (const char *orig_str, int max_cols, int allow_truncate, 
 {
 	int 	pos = 0,            /* Current position in "buffer" */
 		col = 0,            /* Current column in display    */
-		line = 0,           /* Current pos in "output"      */
 		my_newline = 0;        /* Number of newlines           */
 	char 	*str = NULL;
 	char	*retval = NULL;
@@ -2669,7 +2663,6 @@ size_t 	output_with_count (const char *str1, int clreol, int output)
  */
 void 	add_to_screen (const char *buffer)
 {
-	Window *tmp = NULL;
 	int	window;
 	int	w = 0;
 
@@ -3119,9 +3112,7 @@ void 	repaint_window_body (Window *window)
 	if (window->screen && window->toplines_showing)
 	    for (count = 0; count < window->toplines_showing; count++)
 	    {
-		int	numls = 1;
-		char **my_lines;
-		char *n, *widthstr;
+		char 	*widthstr;
 		const char *str;
 
 		if (!(str = window->topline[count]))
@@ -3263,7 +3254,6 @@ int	create_additional_screen (void)
 	yell("Your system doesn't support job control, sorry.");
 	return NULL;
 #else
-        Window  	*win;
         Screen  	*oldscreen, *new_s;
         int     	screen_type = ST_NOTHING;
 	SSu		local_sockaddr;
@@ -3781,16 +3771,14 @@ void	translate_user_input (unsigned char byte)
 {
 static	unsigned char	workbuf[32];
 static	size_t		workbuf_idx = 0;
-const	char *	s;
+const	char *		s;
 	char		dest_ptr[32] = { 0 };
-	size_t		dest_left;
 	int		codepoint;
 	char *		in;
 	size_t		inlen;
 	char *		out;
 	size_t		outlen;
 	iconv_t		xlat;
-	int		n;
 const 	char *		enc;
 static	int		prev_char = -1;
 static	int		suspicious = 0;
@@ -4011,8 +3999,7 @@ void	fire_normal_prompt (const char *utf8str)
  */
 void 	add_wait_prompt (const char *prompt, void (*func)(char *data, const char *utf8str), const char *data, int type, int echo)
 {
-	WaitPrompt **AddLoc,
-		   *New;
+	WaitPrompt *New;
 	Screen *	s, *old_last_input_screen;;
 
 	old_last_input_screen = last_input_screen;
@@ -4088,7 +4075,6 @@ static void	destroy_prompt (Screen *s, WaitPrompt **oldprompt)
 void	chop_columns (char **str, size_t num)
 {
 	char 	*s, *x;
-	int	i, d, c;
 	int	codepoint, cols;
 	ptrdiff_t	offset;
 
@@ -4113,6 +4099,8 @@ void	chop_columns (char **str, size_t num)
 		 */
 		if (codepoint == 6)
 		{
+			int	i;
+
 			for (i = 0; i < 4; i++)
 			{
 				x++;
@@ -4165,7 +4153,6 @@ void	chop_columns (char **str, size_t num)
 void	chop_final_columns (char **str, size_t num)
 {
 	char 	*s, *x;
-	int	i, d, c;
 	int	cols, codepoint;
 	size_t	numcols;
 	ptrdiff_t	offset;

@@ -202,7 +202,6 @@ static WhoEntry *who_queue_top (int refnum)
 static WhoEntry *who_previous_query (int refnum, WhoEntry *me)
 {
 	WhoEntry *what;
-	Server *s;
 
 	if (!get_server(refnum))
 		return NULL;
@@ -714,7 +713,6 @@ static	int	last_width = -1;
 	char 	*name;
 	WhoEntry *new_w = who_queue_top(refnum);
 	int	l;
-	char 	*extra = NULL;
 
 	if (!new_w)
 	{
@@ -1182,7 +1180,6 @@ static IsonEntry *ison_wait_top (int refnum)
 
 static IsonEntry *get_new_ison_entry (int refnum, int next)
 {
-	Server *s;
 	IsonEntry *new_w;
 
 	if (!get_server(refnum))
@@ -1730,7 +1727,6 @@ void userhostbase (int refnum, char *args, const char *subargs, void (*line) (in
 			UserhostEntry *new_u = get_new_userhost_entry(refnum);
 
 			move_to_abs_word(ptr, (const char **)&next_ptr, count);
-
 			if (next_ptr && *next_ptr && next_ptr > ptr)
 				next_ptr[-1] = 0;
 

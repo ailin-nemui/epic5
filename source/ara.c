@@ -74,12 +74,11 @@ static	void	ara_insert (ara *a, int location)
  */
 static	void	ara_delete (ara *a, int location)
 {
-	size_t 	i;
-
 	if (location < 0 || (size_t)location >= a->size)
 		return;
 	if (a->size == 0 || a->list == NULL)
 		return;
+	/* XXX TODO XXX */
 }
 
 static	void	ara_enlarge_list (ara *a, size_t new_size)
@@ -268,7 +267,6 @@ AraItem	ara_update_item (ara *a, int location, AraItem data, int *errcode)
  */
 AraItem	ara_remove_item (ara *a, int location, int *errcode)
 {
-	size_t	idx;
 	AraItem retval;
 
 	retval = ara_get_item(a, location, errcode);
@@ -303,8 +301,6 @@ AraItem	ara_remove_item (ara *a, int location, int *errcode)
  */
 int	traverse_all_ara_items (ara *a, int *location)
 {
-	size_t	idx;
-
 	if (!a || a->size <= 0 || !a->list || (*location) < -1)
 		return -1;
 
@@ -384,7 +380,6 @@ int	ara_number (ara *a)
 /* Return the location of 'item' in ara, or -1 if not found */
 int	ara_find_item (ara *a, AraItem item)
 {
-	int	retval = -1;
 	size_t	idx;
 
 	if (!a)
@@ -459,7 +454,6 @@ AraItem	ara_pop (ara *a)
 /* Remove+return the 'location'th item in the ara */
 AraItem	ara_pop_item (ara *a, int location)
 {
-	size_t	idx;
 	AraItem retval;
 	int	errcode = 0;
 

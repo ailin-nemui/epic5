@@ -624,7 +624,6 @@ static const char *	decide_encoding (const char *from, const char *target, int s
 	int	i = 0;
 	int	winner = -1;
 	int	winning_score = -1;
-	ServerInfo si;
 
 	/*
 	 * Evaluate each rule.
@@ -1013,7 +1012,6 @@ int     ucs_to_console (u_32int_t codepoint, char *deststr, size_t deststrsiz)
 	char	utf8str[16];
 	size_t	utf8strsiz;
 	iconv_t	xlat = (iconv_t)-1;
-	int	n;
 	char *	source;
 	char *	dest;
 
@@ -1074,8 +1072,6 @@ BUILT_IN_COMMAND(encoding)
 	char *		arg;
 	const char *	encodingx;
 	int		x;
-	const char *	server = NULL;
-	const char *	target = NULL;
 	int		reason;
 
 	/* /ENCODING    	-> Output all rules */
@@ -1372,7 +1368,6 @@ char *	function_encodingctl (char *input)
 {
 	int	refnum, len;
 	char 	*listc;
-	char 	*ret = NULL;
 	RecodeRule *r;
 
 	GET_FUNC_ARG(listc, input);

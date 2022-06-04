@@ -231,7 +231,6 @@ int	str_to_mask (Mask *mask, const char *orig, char **rejects)
 	int	len,
 		i,
 		neg;
-	int	warn = 0;
 	char *	str;
 	size_t	cluep = 0;
 

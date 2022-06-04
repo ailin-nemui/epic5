@@ -98,7 +98,7 @@ void	set_lastlog_mask (void *stuff)
 	const char *str;
 	char *rejects = NULL;
 
-	v = (VARIABLE *)stuff;
+	v = stuff;
 	str = v->string;
 
 	if (str_to_mask(&lastlog_mask, str, &rejects))
@@ -114,7 +114,7 @@ void	set_new_server_lastlog_mask (void *stuff)
 	const char *str;
 	char *rejects = NULL;
 
-	v = (VARIABLE *)stuff;
+	v = stuff;
 	str = v->string;
 
 	if (str)
@@ -138,7 +138,7 @@ void	set_old_server_lastlog_mask (void *stuff)
 	const char *str;
 	char *rejects = NULL;
 
-	v = (VARIABLE *)stuff;
+	v = stuff;
 	str = v->string;
 
 	if (str)
@@ -172,7 +172,7 @@ void	set_notify_mask (void *stuff)
 	const char *str;
 	char *rejects = NULL;
 
-	v = (VARIABLE *)stuff;
+	v = stuff;
 	str = v->string;
 
 	if (str_to_mask(&notify_mask, str, &rejects))
@@ -188,7 +188,7 @@ void	set_current_window_mask (void *stuff)
 	const char *str;
 	char *rejects = NULL;
 
-	v = (VARIABLE *)stuff;
+	v = stuff;
 	str = v->string;
 
 	if (str_to_mask(&current_window_mask, str, &rejects))
@@ -392,7 +392,7 @@ void	set_lastlog_size (void *stuff)
 	int	size;
 	int	window = 0;
 
-	v = (VARIABLE *)stuff;
+	v = stuff;
 	size = v->integer;
 
 	while (traverse_all_windows2(&window))

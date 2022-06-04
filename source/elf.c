@@ -96,8 +96,6 @@ struct epic_loadfile * epic_fopen(char *filename, const char *mode, int do_error
  */
 static int	archive_fopen(struct epic_loadfile *elf, char *filename, const char *ext, int do_error)
 {
-    int    ret;
-
     int    pos;
     char * fname;
     char * extra;
@@ -253,8 +251,6 @@ off_t	epic_stat(const char *filename, struct stat *buf)
     struct  archive *a;
     struct  archive_entry *entry = NULL;
 #endif
-    int     ret;
-
     char *  zip;
     char *  zipstr;
     char *  sl;

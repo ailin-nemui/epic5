@@ -419,7 +419,6 @@ int	inet_ntostr (SSu *name_, char *host, int hsize, char *port, int psize, int f
 char *	inet_ssu_to_paddr (SSu *name, int flags)
 {
 	char		buffer[8192];
-	char *		retval;
 	int		gni_retval;
 	socklen_t	len;
 

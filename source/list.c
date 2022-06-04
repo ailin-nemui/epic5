@@ -115,7 +115,7 @@ List	*find_in_list (List *list, const char *name, int wild)
 
 	if (wild)
 	{
-		List	*match = (List *) 0;
+		List	*match = NULL;
 
 		for (tmp = list; tmp; tmp = tmp->next)
 			if ((current_match = cmp_func(tmp, name)) > best_match)
@@ -130,7 +130,7 @@ List	*find_in_list (List *list, const char *name, int wild)
 				return (tmp);
 	}
 
-	return ((List *) 0);
+	return NULL;
 }
 
 /*
@@ -159,7 +159,7 @@ List	*remove_from_list (List **list, const char *name)
 		last = tmp;
 	}
 
-	return ((List *) 0);
+	return NULL;
 }
 
 /*

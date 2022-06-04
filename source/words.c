@@ -828,13 +828,12 @@ char *	real_extract (char *start, int firstword, int lastword, int extended)
 	if (firstword == EOS)
 	{
 		mark = start + strlen(start);
-		move_word_rel(start, (const char **)&mark, -1, extended, "\"");
+		move_word_rel(start, &mark, -1, extended, "\"");
 	}
 
 	/* If the firstword is positive, move to that word */
 	else if (firstword >= 0)
-		real_move_to_abs_word(start, (const char **)&mark, 
-					firstword, extended, "\"");
+		real_move_to_abs_word(start, &mark, firstword, extended, "\"");
 
 	/* Its negative.  Hold off right now. */
 	else
@@ -852,8 +851,7 @@ char *	real_extract (char *start, int firstword, int lastword, int extended)
 	else 
 	{
 		if (lastword >= 0)
-			real_move_to_abs_word(start, (const char **)&mark2, 
-						lastword+1, extended, "\"");
+			real_move_to_abs_word(start, &mark2, lastword+1, extended, "\"");
 		else
 			/* its negative -- thats not valid */
 			return malloc_strdup(empty_string);

@@ -471,8 +471,7 @@ BUILT_IN_COMMAND(fe)
 		*vars,
 		*var[255],
 		*todo = NULL;
-	unsigned	ind, x, y;
-	int     old_display;
+	unsigned	ind, y;
 	int	doing_fe = !strcmp(command, "FE");
 	char	*mapvar = NULL;
 	const char	*mapsep = doing_fe ? space : empty_string;
@@ -538,7 +537,7 @@ BUILT_IN_COMMAND(fe)
 
 	will_catch_break_exceptions++;
 	will_catch_continue_exceptions++;
-	for ( x = 0 ; templist && *templist; )
+	for ( ; templist && *templist; )
 	{
 		for ( y = 0 ; y < ind ; y++ )
 		{
@@ -566,7 +565,6 @@ BUILT_IN_COMMAND(fe)
 				add_local_alias(var[y], utf8buffer, 0);
 			}
 		}
-		x += ind;
 		runcmds(todo, subargs);
 
 		if (mapvar)

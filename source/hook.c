@@ -722,7 +722,7 @@ int	do_hook_with_result (int which, char **result, const char *format, ...)
 static int 	do_hook_internal (int which, char **result, const char *format, va_list args)
 {
 	Hook		*tmp;
-	const char	*name 		= (char *) 0;
+	const char	*name 		= NULL;
 	int		retval;
 	char *		buffer		= NULL;
 	unsigned	display		= get_window_display();
@@ -1366,7 +1366,7 @@ BUILT_IN_COMMAND(oncmd)
 			 */
 			if (rem)
 			{
-				remove_hook(which, (char *) 0, sernum, 0);
+				remove_hook(which, NULL, sernum, 0);
 				return;
 			}
 	
@@ -1451,7 +1451,7 @@ void	do_stack_on (int type, char *args)
 	if (type == STACK_PUSH)
 	{
 		OnStack	*new_os;
-		new_os = (OnStack *) new_malloc(sizeof(OnStack));
+		new_os = new_malloc(sizeof(*new_os));
 		new_os->which = which;
 		new_os->list = list;
 		new_os->next = on_stack;
@@ -1462,7 +1462,7 @@ void	do_stack_on (int type, char *args)
 
 	else if (type == STACK_POP)
 	{
-		OnStack	*p, *tmp = (OnStack *) 0;
+		OnStack	*p, *tmp = NULL;
 
 		for (p = on_stack; p; tmp = p, p = p->next)
 		{

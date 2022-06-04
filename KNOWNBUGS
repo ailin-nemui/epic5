@@ -1200,3 +1200,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change (Crypt) 'passwd' to unsigned because OpenSSL wants it that way.
 * Eliminate all warnings from -Wpointer-sign 
 * - Mostly by eliminating nearly all uses of (unsigned char *)
+* Eliminate all warnings from -Wunused
+* - But not from -Wno-unused-functions or -Wno-unused-parameter
+* Remove many spurious casts to and from (void *) (c99-ism)

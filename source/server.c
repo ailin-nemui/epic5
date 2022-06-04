@@ -648,7 +648,7 @@ int	serverinfo_matches_servref (ServerInfo *si, int servref)
  */
 static	int	serverinfo_to_servref (ServerInfo *si)
 {
-	int	i, j, opened;
+	int	i, opened;
 
 	if (si->refnum != NOSERV && get_server(si->refnum) != NULL)
 		return si->refnum;
@@ -1702,7 +1702,6 @@ return_from_ssl_detour:
 		else if (s->state == SERVER_SSL_CONNECTING)
 		{
 			ssize_t c;
-			int	strict_retval = 0;
 
 			if (x_debug & DEBUG_SERVER_CONNECT)
 				yell("do_server: server [%d] finished ssl setup", i);
@@ -1839,7 +1838,6 @@ return_from_ssl_detour:
 				default:	/* New inbound data */
 				{
 					char *end;
-					int	l2;
 
 					end = strlen(buffer) + buffer;
 					if (*--end == '\n')
@@ -2885,7 +2883,6 @@ int	is_server_registered (int refnum)
  */
 void  server_is_registered (int refnum, const char *itsname, const char *ourname)
 {
-	Server *s;
 	int	window;
 
 	if (!get_server(refnum))
@@ -4438,7 +4435,6 @@ void	set_server_005 (int refnum, char *setting, const char *value)
  */
 static char *	get_all_server_groups (void)
 {
-	Server *s;
 	int	i, j;
 	char *	retval = NULL;
 	size_t	clue = 0;
@@ -4669,7 +4665,6 @@ char 	*serverctl 	(char *input)
 			RETURN_INT(next_server_in_group(refnum, 1));
 		} else if (!my_strnicmp(listc, "SSL_", 4)) {
 			Server *s;
-			int	des;
 
 			if (!(s = get_server(refnum)) || !get_server_ssl_enabled(refnum))
 				RETURN_EMPTY;
@@ -4813,9 +4808,6 @@ char 	*serverctl 	(char *input)
 		} else if (!my_strnicmp(listc, "DEFAULT_REALNAME", len)) {
 			set_server_default_realname(refnum, input);
 		} else if (!my_strnicmp(listc, "SSL_", 4)) {
-			Server *s;
-			int	des;
-
 			if (!get_server(refnum) || !get_server_ssl_enabled(refnum))
 				RETURN_EMPTY;
 

@@ -407,7 +407,6 @@ static	PyObject *	epic_run_command (PyObject *self, PyObject *args)
 {
 	char *	symbol;
 	char *	my_args;
-	PyObject *retval;
 	void    (*builtin) (const char *, char *, const char *) = NULL;
 const 	char *	alias = NULL;
 	void *	arglist = NULL;
@@ -554,7 +553,6 @@ static	PyObject *	epic_get_assign (PyObject *self, PyObject *args)
 {
 	char *	symbol;
 	PyObject *retval;
-	char *	funcval = NULL;
         char *		(*efunc) (void) = NULL;
         IrcVariable *	sfunc = NULL;
 	const char *	assign = NULL;
@@ -642,7 +640,6 @@ static	PyObject *	epic_set_set (PyObject *self, PyObject *args)
 {
 	char *	symbol;
 	char *	value;
-	PyObject *retval;
 
 	if (!PyArg_ParseTuple(args, "zz", &symbol, &value)) {
 		return NULL;
@@ -674,7 +671,6 @@ static	PyObject *	epic_set_assign (PyObject *self, PyObject *args)
 {
 	char *	symbol;
 	char *	value;
-	PyObject *retval;
 
 	if (!PyArg_ParseTuple(args, "zz", &symbol, &value)) {
 		return NULL;
@@ -798,7 +794,6 @@ int 	call_python_function_1arg (PyObject *pFunc, int vfd)
 	PyObject *args_py = NULL;
 	PyObject *pArgs = NULL, *pRetVal = NULL;
 	/* PyObject *retval_repr = NULL; */
-	char 	*r = NULL, *retvalstr = NULL;
 
 	if (!PyCallable_Check(pFunc))
 	{
@@ -1322,7 +1317,7 @@ BUILT_IN_COMMAND(pythoncmd)
 char *	call_python_directly (const char *orig_object, char *args)
 {
 	char 	*object = NULL, *module = NULL, *method = NULL;
-	PyObject *mod_py = NULL, *meth_py = NULL, *args_py = NULL;
+	PyObject *mod_py = NULL, *args_py = NULL;
 	PyObject *pModule = NULL, *pFunc = NULL, *pArgs = NULL, *pRetVal = NULL;
 	PyObject *retval_repr = NULL;
 	const char 	*r = NULL;
@@ -1438,12 +1433,12 @@ BUILT_IN_COMMAND(pydirect_cmd)
  */
 void	output_traceback (void)
 {
-	PyObject *ptype, *pvalue, *ptraceback;
-	PyObject *ptype_repr, *pvalue_repr, *ptraceback_repr;
-	char *ptype_str, *pvalue_str, *ptraceback_str;
-
 	say("The python evaluation threw an exception.");
 #if 0
+	PyObject *ptype, *pvalue, *ptraceback;
+	PyObject *ptype_repr;
+	char *ptype_str;
+
 	PyErr_Print();
 	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
 	if (ptype != NULL)
@@ -1454,6 +1449,9 @@ void	output_traceback (void)
 	}
 	if (pvalue != NULL)
 	{
+		PyObject *pvalue_repr;
+		char *pvalue_str;
+
 		pvalue_repr = PyObject_Repr(pvalue);
 		pvalue_str = PyUnicode_AsUTF8(pvalue_repr);
 		say("Value: %s", pvalue_str);
@@ -1461,6 +1459,9 @@ void	output_traceback (void)
 	if (ptraceback != NULL)
 	{
 #if 0
+		PyObject *ptraceback_repr;
+		char *ptraceback_str;
+
 		ptraceback_repr = PyObject_Repr(ptraceback);
 		ptraceback_str = PyUnicode_AsUTF8(ptraceback_repr);
 		say("Traceback: %s", ptraceback_str);

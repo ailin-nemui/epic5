@@ -755,7 +755,6 @@ static	void	list_timers (const char *command)
 static	int	create_timer_ref (const char *refnum_wanted, char **refnum_gets)
 {
 	Timer	*tmp;
-	int 	refnum = 0;
 	char	*refnum_want;
 	int	i, pts;
 

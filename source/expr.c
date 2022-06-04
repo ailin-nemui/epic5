@@ -141,9 +141,9 @@ static	char	*next_unit (char *str, const char *args, int stage)
 		op;			/* the op were working on */
 	int	got_sloshed = 0;	/* If the last char was a slash */
 
-	char	*result1 = (char *) 0,	/* raw lefthand-side of operator */
-		*result2 = (char *) 0,	/* raw righthand-side of operator */
-		*varname = (char *) 0;	/* Where we store varnames */
+	char	*result1 = NULL,	/* raw lefthand-side of operator */
+		*result2 = NULL,	/* raw righthand-side of operator */
+		*varname = NULL;	/* Where we store varnames */
 	long	value1 = 0,		/* integer value of lhs */
 		value2 = 0,		/* integer value of rhs */
 		value3 = 0;		/* integer value of operation */
@@ -1357,9 +1357,8 @@ char	*expand_alias	(const char *string, const char *args)
 {
 	char	*buffer = NULL,
 		*ptr,
-		*stuff = (char *) 0,
-		*free_stuff,
-		*quote_str = (char *) 0;
+		*stuff = NULL,
+		*quote_str = NULL;
 	char	quote_temp[2];
 	char	ch;
 	int	is_quote = 0;
@@ -1698,7 +1697,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			char 	*rest, *val;
 			int	my_dummy;
 
-			rest = (char *)after_expando(ptr + 1, 0, &my_dummy);
+			rest = after_expando(ptr + 1, 0, &my_dummy);
 			if (rest == ptr + 1)
 			{
 			    sub_buffer = malloc_strdup(args);
@@ -1830,7 +1829,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			    char  *rest, d = 0;
 			    int	  function_call = 0;
 
-			    rest = (char *)after_expando(ptr, 0, &function_call);
+			    rest = after_expando(ptr, 0, &function_call);
 			    if (*rest)
 			    {
 				d = *rest;
@@ -1871,7 +1870,6 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
  */
 static	void	TruncateAndQuote (char **buff, const char *add, ssize_t length, const char *quote_em)
 {
-	size_t	real_size;
 	char *	buffer;
 	char *	free_me = NULL;
 	int	justify;

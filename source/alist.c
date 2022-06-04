@@ -34,6 +34,9 @@
 #include "ircaux.h"
 #include "output.h"
 
+#define ALIST_ITEM(alist, loc) ((alist_item_ *) ((alist) -> list [ (loc) ]))
+#define LALIST_ITEM(alist, loc) (((alist) -> list [ (loc) ]))
+
 /* Function decls */
 static	void	check_alist_size (alist *list);
 	void 	move_alist_items (alist *list, int start, int end, int dir);
@@ -215,7 +218,6 @@ void *	find_alist_item (alist *set, const char *name, int *cnt, int *loc)
 			max;
 	u_32int_t	mask;
 	u_32int_t	hash;
-	alist_item_ *	item_;
 
 	if (set->hash == HASH_INSENSITIVE)
 		hash = ci_alist_hash(name, &mask);
@@ -331,5 +333,13 @@ void *	find_alist_item (alist *set, const char *name, int *cnt, int *loc)
 	 * Then we return the first item that matches.
 	 */
 	return ALIST_ITEM(set, min)->data;
+}
+
+void *	get_alist_item (alist *set, int location)
+{
+	if (location < 0 || location > set->max)
+		return NULL;
+
+	return ALIST_ITEM(set, location)->data;
 }
 

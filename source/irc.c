@@ -52,7 +52,7 @@ const char internal_version[] = "20220522";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 2068;
+const unsigned long	commit_id = 2069;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -488,7 +488,6 @@ static	void	parse_args (int argc, char **argv)
 	const char *cptr = NULL;
 	const char *tmp_hostname = NULL;
 	char *the_path = NULL;
-	int size;
 
 	int altargc = 0;
 	char **altargv;
@@ -621,12 +620,7 @@ static	void	parse_args (int argc, char **argv)
 			|| strchr(argv[1], ' ') != NULL 
 			|| strchr(argv[1], '\t') != NULL))
 	{
-		int 	argn, 
-			i,
-			j,
-			c = 0, 
-			n;
-		size_t	len;
+		int 	argn;
 
 		altargv = new_malloc(sizeof(char *));
 		altargv[0] = malloc_strdup(argv[0]);

@@ -259,7 +259,6 @@ void 	add_channel (const char *name, int server)
 {
 	Channel *new_c;
 	int	was_window = -1;
-	int	claim_window = -1;
 
 	if ((new_c = find_channel(name, server)))
 	{
@@ -1095,7 +1094,6 @@ static void 	show_channel (Channel *chan)
 char	*scan_channel (char *cname)
 {
 	Channel *	wc = find_channel(cname, from_server);
-	alist *		nicks;
 	char		buffer[NICKNAME_LEN + 5];
 	char		*retval = NULL;
 	int		i;

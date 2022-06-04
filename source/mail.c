@@ -301,7 +301,6 @@ static void	update_mail_level3_mbox (void)
 /************************************************************************/
 static	char *	maildir_new_path = (char *) 0;
 static	char *	maildir_cur_path = (char *) 0;
-static	char *	mail_flags = (char *) 0;
 static	time_t	maildir_new_last_changed = 0;
 static	time_t	maildir_cur_last_changed = 0;
 

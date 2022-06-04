@@ -215,33 +215,33 @@ typedef struct an_array_struct {
 #endif
 
 static an_array array_info = {
-        (char **) 0,
-        (long *) 0,
+        NULL,
+        NULL,
         0L,
 	1
 };
 
-static an_array *array_array = (an_array *) 0;
+static an_array *array_array = NULL;
 an_array *qsort_array;
 
 static int compare_indices (const void *a1, const void *a2)
 {
 	int result;
 
-	result = strcmp(qsort_array->item[*(const long*)a1],
-			qsort_array->item[*(const long*)a2]);
+	result = strcmp(qsort_array->item[*(const long *)a1],
+			qsort_array->item[*(const long *)a2]);
 
 	/* array is (to be) sorted by name, then by item number. */
 	if (result)
 		return result;
 	else
-		return *(const long*)a1 - *(const long*)a2;
+		return *(const long *)a1 - *(const long *)a2;
 }
 
 static void sort_indices (an_array *array)
 {
 	qsort_array = array;
-	qsort(array->index, array->size, sizeof(long*), compare_indices);
+	qsort(array->index, array->size, sizeof(long *), compare_indices);
 	array->unsorted = 0;
 }
 
@@ -383,7 +383,7 @@ an_array *	get_array (char *name)
                 if ((idx = find_item(&array_info, name, -1)) >= 0)
                         return &array_array[array_info.index[idx]];
 	}
-	return (an_array*) 0;
+	return NULL;
 }
 
 /*
@@ -464,7 +464,7 @@ int set_item (char* name, long item, char* input, int unsorted)
 		else if (item == array->size)
 		{
 			RESIZE(array->item, char *, array->size + 1);
-			array->item[item] = (char *) 0;
+			array->item[item] = NULL;
 			malloc_strcpy(&array->item[item], input);
 			if (unsorted || array->unsorted) {
 				array->unsorted = 1;
@@ -486,12 +486,12 @@ int set_item (char* name, long item, char* input, int unsorted)
 			array->size = 1;
 			array->item = (char **)new_malloc(sizeof(char *));
 			array->index = (long *)new_malloc(sizeof(long));
-			array->item[0] = (char*) 0;
+			array->item[0] = NULL;
 			array->index[0] = 0;
 			array->unsorted = 1;
 			malloc_strcpy(&array->item[0], input);
 			RESIZE(array_info.item, char *, array_info.size + 1);
-			array_info.item[array_info.size] = (char *) 0;
+			array_info.item[array_info.size] = NULL;
 			malloc_strcpy(&array_info.item[array_info.size], name);
 			insert_index(&array_info.index, &array_info.size, (-idx) - 1);
 			result = 1;
@@ -549,9 +549,9 @@ MATCHITEM(function_gettmatch, input, array->item[idx], {if (match >= 0) RETURN_S
 #define GET_MATCHES(fn, wm1, wm2, pre)                                       \
 BUILT_IN_FUNCTION((fn), input)                                               \
 {                                                                            \
-	char    *result = (char *) 0;                                        \
+	char    *result = NULL;                                        \
 	size_t	resclue = 0;                                                 \
-	char    *name = (char *) 0;                                          \
+	char    *name = NULL;                                          \
 	long    idx;                                                       \
 	an_array *array;                                                     \
                                                                              \
@@ -579,7 +579,7 @@ GET_MATCHES(function_igetrmatches, array->item[array->index[idx]], input, SORT_I
  */
 BUILT_IN_FUNCTION(function_numitems, input)
 {
-        char *name = (char *) 0;
+        char *name = NULL;
 	an_array *array;
 	long items = 0;
 
@@ -596,11 +596,11 @@ BUILT_IN_FUNCTION(function_numitems, input)
 #define GETITEM(fn, ret, pre)                                                \
 BUILT_IN_FUNCTION((fn), input)                                               \
 {                                                                            \
-	char *name = (char *) 0;                                             \
-	char *itemstr = (char *) 0;                                          \
+	char *name = NULL;                                             \
+	char *itemstr = NULL;                                          \
 	long item;                                                           \
 	an_array *array;                                                     \
-	char *retval = (char *) 0;                                           \
+	char *retval = NULL;                                           \
 	size_t rvclue = 0;                                                   \
                                                                              \
 	if ((name = next_arg(input, &input)) && (array = get_array(name)))   \
@@ -634,8 +634,8 @@ GETITEM(function_igetitem, array->item[array->index[item]], SORT_INDICES(array))
 #define FUNCTION_SETITEM(fn, unsorted)                                     \
 BUILT_IN_FUNCTION((fn), input)                                             \
 {                                                                          \
-	char *name = (char *) 0;                                           \
-	char *itemstr = (char *) 0;                                        \
+	char *name = NULL;                                           \
+	char *itemstr = NULL;                                        \
 	long item;                                                         \
 	int result = -1;                                                   \
                                                                            \
@@ -697,7 +697,7 @@ BUILT_IN_FUNCTION(function_numarrays, input)
 #define FINDI(func, search, trans1, trans2)                                 \
 BUILT_IN_FUNCTION((func), input)                                            \
 {                                                                           \
-        char    *name = (char *) 0;                                         \
+        char    *name = NULL;                                         \
         an_array *array;                                                    \
 	long	item = -1;                                                  \
                                                                             \
@@ -725,12 +725,12 @@ FINDI(function_ifinditems, find_items, item, item)
 #define I2I(fn, op)                                                        \
 BUILT_IN_FUNCTION((fn), input)                                             \
 {                                                                          \
-	char *name = (char *) 0;                                           \
-	char *itemstr = (char *) 0;                                        \
+	char *name = NULL;                                           \
+	char *itemstr = NULL;                                        \
 	long item;                                                         \
 	an_array *array;                                                   \
 	long found = -1;                                                   \
-	char *ret = (char *) 0;                                            \
+	char *ret = NULL;                                            \
 	size_t clue = 0;                                                   \
                                                                            \
 	if ((name = next_arg(input, &input)) && (array = get_array(name))) \

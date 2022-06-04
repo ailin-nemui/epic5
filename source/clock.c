@@ -57,7 +57,7 @@
  * calls to get_string_var, which is truly bogus, but neccesary for any
  * semblance of efficiency.
  */
-	char		*time_format = (char *) 0;	/* XXX Bogus XXX */
+	char		*time_format = NULL;	/* XXX Bogus XXX */
 static	const char	*strftime_24hour = "%R";
 static	const char	*strftime_12hour = "%I:%M%p";
 static	char		current_clock[256];
@@ -179,7 +179,7 @@ void     set_clock_format (void *stuff)
 	const VARIABLE *v;
 	const char *value;
 
-	v = (const VARIABLE *)stuff;
+	v = stuff;
 	value = v->string;
         malloc_strcpy(&time_format, value);
         reset_clock(NULL);
@@ -235,10 +235,10 @@ int	cpu_saver_timer (void *schedule_only)
 
 void    set_cpu_saver_after (void *stuff)
 {
-	VARIABLE *v;
+	const VARIABLE *v;
 	int	value;
 
-	v = (VARIABLE *)stuff;
+	v = stuff;
 	value = v->integer;
 
         if (value == 0)
@@ -256,7 +256,7 @@ void	set_cpu_saver_every (void *stuff)
 	VARIABLE *v;
 	int	value;
 
-	v = (VARIABLE *)stuff;
+	v = stuff;
 	value = v->integer;
 
 	if (value < 60)
@@ -308,7 +308,7 @@ static int	system_timer (void *entry)
 	int	nominal_timeout;
 	struct system_timer *item = NULL;
 
-	item = (struct system_timer *)entry;
+	item = entry;
 
 	if (item->honors_cpu_saver && cpu_saver)
 	{

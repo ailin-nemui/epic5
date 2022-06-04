@@ -902,7 +902,6 @@ static Window *add_to_window_list (Screen *screen, Window *new_w)
 	Window	*biggest = (Window *) 0,
 		*tmp,
 		*winner;
-	int	orig_size;
 	int	size, need;
 	int     skip_fixed;
 
@@ -1911,12 +1910,8 @@ void 	recalculate_windows (Screen *screen)
 	int	old_li = 1;
 	int	required_li = 0;
 	int	excess_li = 0;
-	int	assignable_li = 0;
 	Window	*tmp, *winner;;
 	int	window_count = 0;
-	int	offset;
-	int	lin = 0;
-	int	force;
 
 	if (dumb_mode)
 		return;
@@ -4367,7 +4362,6 @@ WINDOWCMD(add)
  */
 WINDOWCMD(back)
 {
-	Window *tmp;
 	Window *window = get_window_by_refnum_direct(refnum);
 	int	other_refnum;
 
@@ -5045,8 +5039,8 @@ WINDOWCMD(hide)
  */
 WINDOWCMD(hide_others)
 {
-	Window *tmp, *next;
-	Window *	window = get_window_by_refnum_direct(refnum);
+	Window *tmp;
+	Window *window = get_window_by_refnum_direct(refnum);
 	Screen *s;
 
 	if (!window)
@@ -5669,7 +5663,6 @@ WINDOWCMD(log_rewrite)
 WINDOWCMD(log_mangle)
 {
 	char *	arg;
-	int	mangle;
 	char *	nv;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
@@ -7060,7 +7053,6 @@ static	int	last_scroll_seconds_interval = 0;
 WINDOWCMD(scroll_seconds)
 {
 	int	val;
-	time_t	right_now, when;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
 	if (!window)
@@ -7576,8 +7568,6 @@ WINDOWCMD(clearlevel)
 /* WINDOW CLEARREGEX - Remove all lastlog items matching a regex */
 WINDOWCMD(clearregex)
 {
-	Mask		mask;
-	char *		rejects = NULL;
 	char *		arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
@@ -7703,7 +7693,6 @@ BUILT_IN_COMMAND(windowcmd)
 	int	old_status_update, 
 		old_from_server;
 	int	old_current_window;
-	int	window;
 	int	l;
 	char *	original_args = NULL;
 
@@ -8254,7 +8243,6 @@ static int	flush_scrollback_after (Window *window)
 static void	window_scrollback_backwards (Window *window, int skip_lines, int abort_if_not_found, int (*test)(Window *, Display *, void *), void *meta)
 {
 	Display *new_top;
-	int	new_lines;
 
 	if (window->scrollback_top_of_display == window->top_of_scrollback)
 	{
@@ -8319,7 +8307,6 @@ static void	window_scrollback_forwards (Window *window, int skip_lines, int abor
 {
 	Display *new_top;
 	int	unholding;
-	int	new_lines = 0;
 
 	if (window->scrollback_top_of_display)
 	{

@@ -173,7 +173,7 @@ void *	really_new_malloc (size_t size, const char *fn, int line)
 {
 	char	*ptr;
 
-	if (!(ptr = (char *)malloc(size + sizeof(MO))))
+	if (!(ptr = malloc(size + sizeof(MO))))
 		panic(1, "Malloc(%ld) failed from [%s/%d], giving up!", 
 				(long)size, fn, line);
 
@@ -300,7 +300,7 @@ void *	really_new_realloc (void **ptr, size_t size, const char *fn, int line)
 		/* Copy everything, including the MO buffer */
 		VALGRIND_MEMPOOL_FREE(mo_ptr(*ptr), *ptr);
 		VALGRIND_DESTROY_MEMPOOL(mo_ptr(*ptr));
-		if ((newptr = (char *)realloc(mo_ptr(*ptr), size + sizeof(MO))))
+		if ((newptr = realloc(mo_ptr(*ptr), size + sizeof(MO))))
 			*ptr = newptr;
 		else {
 			panic(1, "realloc() failed from [%s/%d], giving up!", fn, line);
@@ -378,7 +378,7 @@ void malloc_dump (const char *file) {
  */
 char *	upper (char *str)
 {
-	char 	*s, *p;
+	char 	*s;
 	int	c, d;
 	char	*x, *y;
 	ptrdiff_t	offset;
@@ -412,7 +412,7 @@ char *	upper (char *str)
 
 char *	lower (char *str)
 {
-	char 	*s, *p;
+	char 	*s;
 	int	c, d;
 	char	*x, *y;
 	ptrdiff_t	offset;
@@ -516,7 +516,7 @@ ssize_t	rstristr (const char *start, const char *srch)
 {
 	const char *p;
 	int	srchlen;
-	int	d, i;
+	int	i;
 	ptrdiff_t	offset;
 
 	/* There must be both a source string and a search string */
@@ -919,7 +919,7 @@ char *	strext (const char *start, const char *end)
 {
 	char *ptr, *retval;
 
-	ptr = retval = (char *)new_malloc(end-start+1);
+	ptr = retval = new_malloc(end-start+1);
 	while (start < end)
 		*ptr++ = *start++;
 	*ptr = 0;
@@ -1260,7 +1260,6 @@ char *	check_nickname (char *nick, int unused)
 
 const char *	cpindex (const char *string_, const char *search_, int howmany, size_t *cpoffset)
 {
-	const char *	retval;
 	ptrdiff_t	offset;
 	int		found = 0;
 
@@ -1364,7 +1363,6 @@ cpindex_not_found:
 
 const char *	rcpindex (const char *where_, const char *string_, const char *search_, int howmany, size_t *cpoffset)
 {
-	const char *	retval;
 	ptrdiff_t	offset;
 	int		found = 0;
 
@@ -2732,7 +2730,7 @@ int	new_split_string (char *str, char ***to, int delimiter)
 
 	/* First, count the number of segments in 'str' */
 	s = (char *)str;
-	while ((code_point = next_code_point2(s, &offset, 0)))
+	while ((code_point = next_code_point2(s, &offset, 1)))
 	{
 		s += offset;
 		if (code_point == delimiter)
@@ -2748,7 +2746,7 @@ int	new_split_string (char *str, char ***to, int delimiter)
 	/* Split up 'str' nulling out each instance of 'delimiter' */
 	i = 0;
 	s = (char *)str;
-	while ((code_point = next_code_point2(s, &offset, 0)))
+	while ((code_point = next_code_point2(s, &offset, 1)))
 	{
 		s += offset;
 
@@ -2918,7 +2916,7 @@ long	my_atol (const char *str)
 char *	malloc_dupchar (int i)
 {
 	char 	c = (char) i;	/* blah */
-	char *	ret = (char *)new_malloc(2);
+	char *	ret = new_malloc(2);
 
 	ret[0] = c;
 	ret[1] = 0;
@@ -2973,7 +2971,7 @@ size_t 	streq (const char *str1, const char *str2)
 
 char *	malloc_strndup (const char *str, size_t len)
 {
-	char *retval = (char *)new_malloc(len + 1);
+	char *retval = new_malloc(len + 1);
 	strlcpy(retval, str, len + 1);
 	return retval;
 }
@@ -4050,7 +4048,7 @@ char *	malloc_strdup (const char *str)
 		str = empty_string;
 
 	size = strlen(str) + 1;
-	ptr = (char *)new_malloc(size);
+	ptr = new_malloc(size);
 	strlcpy(ptr, str, size);
 	return ptr;
 }
@@ -4085,7 +4083,7 @@ char *	malloc_strdup2 (const char *str1, const char *str2)
 		str2 = empty_string;
 
 	msize = strlen(str1) + strlen(str2) + 1;
-	buffer = (char *)new_malloc(msize);
+	buffer = new_malloc(msize);
 	*buffer = 0;
 	strlopencat_c(buffer, msize, NULL, str1, str2, NULL);
 	return buffer;
@@ -4125,7 +4123,7 @@ char *	malloc_strdup3 (const char *str1, const char *str2, const char *str3)
 		str3 = empty_string;
 
 	msize = strlen(str1) + strlen(str2) + strlen(str3) + 1;
-	buffer = (char *)new_malloc(msize);
+	buffer = new_malloc(msize);
 	*buffer = 0;
 	strlopencat_c(buffer, msize, NULL, str1, str2, str3, NULL);
 	return buffer;
@@ -5374,7 +5372,6 @@ static ssize_t	url_encoder (const char *orig, size_t orig_len, const void *meta,
 				   "0123456789-._~";
         static const char hexnum[] = "0123456789ABCDEF";
 	size_t	orig_i, dest_i;
-	ssize_t	count = 0;
 
         if (!orig || !dest || dest_len <= 0)
                 return -1;
@@ -5395,13 +5392,11 @@ static ssize_t	url_encoder (const char *orig, size_t orig_len, const void *meta,
 			dest[dest_i++] = hexnum[c >> 4];
 		if (dest_i < dest_len)	
 			dest[dest_i++] = hexnum[c & 0x0f];
-		count += 3;
 	    }
 	    else
 	    {
 		if (dest_i < dest_len)
 			dest[dest_i++] = orig[orig_i];
-		count++;
 	    }
         }
 
@@ -5429,7 +5424,6 @@ static ssize_t	url_decoder (const char *orig, size_t orig_len, const void *meta,
 {
 	size_t	orig_i, dest_i;
 	int	val1, val2;
-	ssize_t	count = 0;
 
         if (!orig || !dest || dest_len <= 0)
                 return -1;
@@ -5456,8 +5450,6 @@ static ssize_t	url_decoder (const char *orig, size_t orig_len, const void *meta,
 	    else
 		if (dest_i < dest_len) 
 			dest[dest_i++] = orig[orig_i];
-
-	    count++;
 	}
 
 	if (dest_i >= dest_len)
@@ -5469,7 +5461,6 @@ static ssize_t	url_decoder (const char *orig, size_t orig_len, const void *meta,
 static ssize_t	enc_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
-	ssize_t	count = 0;
 
         if (!orig || !dest || dest_len <= 0)
                 return -1;
@@ -5483,7 +5474,6 @@ static ssize_t	enc_encoder (const char *orig, size_t orig_len, const void *meta,
 		   dest[dest_i++] = ((unsigned char)orig[orig_i] >> 4) + 0x41;
 		if (dest_i < dest_len)
 		   dest[dest_i++] = ((unsigned char)orig[orig_i] & 0x0f) + 0x41;
-		count += 2;
 	}
 	if (dest_i >= dest_len)
 		dest_i = dest_len - 1;
@@ -5494,7 +5484,6 @@ static ssize_t	enc_encoder (const char *orig, size_t orig_len, const void *meta,
 static ssize_t	enc_decoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
-	ssize_t	count = 0;
 
         if (!orig || !dest || dest_len <= 0)
                 return -1;
@@ -5513,7 +5502,6 @@ static ssize_t	enc_decoder (const char *orig, size_t orig_len, const void *meta,
 	    if (dest_i < dest_len)
 		dest[dest_i++] = (char) (((orig[orig_i] - 0x41) << 4) | 
 				          (orig[orig_i+1] - 0x41));
-	    count++;
 	}
 
 	if (dest_i >= dest_len)
@@ -5887,7 +5875,6 @@ static unsigned int     token_decode (const char *base, const char *token)
 static ssize_t	b64_general_decoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len, const char *base)
 {
 	size_t	orig_i, dest_i;
-	ssize_t	count = 0;
 
         if (!orig || !dest || dest_len <= 0)
                 return -1;
@@ -5917,8 +5904,6 @@ static ssize_t	b64_general_decoder (const char *orig, size_t orig_len, const voi
 	    if (marker < 1)
 		if (dest_i < dest_len)
 		    dest[dest_i++] = (char) (val & 0xff);
-
-	    count += 3;
 	}
 	if (dest_i >= dest_len)
 		dest_i = dest_len - 1;
@@ -6069,7 +6054,6 @@ static ssize_t	ctcp_decoder (const char *orig, size_t orig_len, const void *meta
 static ssize_t	null_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;
-	ssize_t	count = 0;
 
         if (!orig || !dest || dest_len <= 0)
                 return -1;
@@ -6087,7 +6071,6 @@ static ssize_t	null_encoder (const char *orig, size_t orig_len, const void *meta
 	{
 	    if (dest_i < dest_len)
 		dest[dest_i++] = orig[orig_i];
-	    count++;
 	}
 	if (dest_i >= dest_len)
 		dest_i = dest_len - 1;
@@ -6208,7 +6191,6 @@ static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *met
 {
 	size_t	orig_left = orig_len, 
 		dest_left = dest_len, 
-		n, 
 		close_it = 1;
 	int	id;
 	char 	*dest_ptr;
@@ -6218,7 +6200,7 @@ static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *met
         if (!orig || !dest || dest_len <= 0)
                 return -1;
 
-	dest_ptr = (char *) dest;
+	dest_ptr = dest;
 
 	/* 
 	 * Old libiconv(), esp as used by FreeBSD expects the 2nd argument
@@ -6461,7 +6443,7 @@ char *	transform_string_dyn (const char *type, const char *orig_str, size_t orig
 		return malloc_strdup(orig_str);
 	}
 
-	dest_str = (char *)new_malloc(dest_str_len);
+	dest_str = new_malloc(dest_str_len);
 	retval = transform_string(transform, direction, NULL, 
 				  orig_str, orig_str_len, 
 				  dest_str, dest_str_len);
@@ -6697,7 +6679,6 @@ int	recode_with_iconv (const char *from, const char *to, char **data, size_t *nu
 	char *	dest_ptr = NULL;
 	size_t	dest_left = 0;
 	size_t	dest_size = 0;
-	int	n;
 	char *	work_data;
 	char *	retstr = NULL;
 
@@ -6795,7 +6776,6 @@ int	recode_with_iconv_t (iconv_t iref, char **data, size_t *numbytes)
 	char *	dest_ptr = NULL;
 	size_t	dest_left = 0;
 	size_t	dest_size = 0;
-	int	n;
 	char *	work_data;
 	char *	retstr = NULL;
 
@@ -6925,9 +6905,8 @@ int	ucs_to_utf8 (u_32int_t key, char *utf8str_, size_t utf8strsiz)
  */
 int	strext2 (char **cut, char *buffer, size_t part2, size_t part3)
 {
-	char *part2str, *part3str, *p, *s;
+	char 	*p, *s;
 	size_t	buflen;
-	size_t	cutlen;
 	ssize_t	newlen;
 
 	if (part3 <= part2)
@@ -6947,7 +6926,7 @@ int	strext2 (char **cut, char *buffer, size_t part2, size_t part3)
 	RESIZE(*cut, char, newlen);
 	p = *cut;
 	s = buffer + part2;
-	while ((char *)s < buffer + part3)
+	while (s < buffer + part3)
 		*p++ = *s++;
 	*p++ = 0;
 
@@ -7049,7 +7028,6 @@ int	invalid_utf8str (char *utf8str)
  */
 int	is_iso2022_jp (const char *buffer)
 {
-	static	iconv_t	iso2022_jp = (iconv_t) -2;
 	const char *x;
 	int	found_one = 0;
 

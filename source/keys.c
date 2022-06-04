@@ -653,7 +653,7 @@ void *	handle_keypress (void *lastp, Timeval pressed, u_32int_t keyx, int quote_
 	 * them tell us next time they have another key to work with.
 	 */
 	if (kp->map != NULL)
-		return (void *)kp;
+		return kp;
 
 	/*
 	 * If this node is NOT ambiguous, and it is a terminal node
@@ -701,9 +701,9 @@ static void *	timeout_keypress (void *lastp, Timeval pressed)
 	 * If this node is not ambiguous (it is not bound here), but requires
 	 * more keys to complete, we have nothing to resolve.
 	 */
-	last = (Key *)lastp;
+	last = lastp;
 	if (last->bound == NULL)
-		return (void *)last; 
+		return last; 
 
 	/*
 	 * Otherwise, the current node is ambiguous.  See how long it has 
@@ -725,7 +725,7 @@ static void *	timeout_keypress (void *lastp, Timeval pressed)
 		key_exec(last);
 		return NULL; 
 	}
-	return (void *)last; /* still waiting.. */
+	return last; /* still waiting.. */
 }
 
 /* 
@@ -1481,7 +1481,7 @@ void	set_key_interval (void *stuff)
 	VARIABLE *v;
 	int msec;
 
-	v = (VARIABLE *)stuff;
+	v = stuff;
 	msec = v->integer;
 
 	if (msec < 10) {

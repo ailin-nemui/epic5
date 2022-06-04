@@ -1342,9 +1342,6 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 	int		list = 0;
 	int		old_from_server = from_server;
 	int		writeval;
-	char 		*target = NULL;
-	const char 	*utf8_text = NULL;
-	char 		*extra = NULL;
 
 	tmp[0] = 0;
 
@@ -3002,7 +2999,6 @@ static	void	process_dcc_chat_error (DCC_list *Client)
 
 static	char *	process_dcc_chat_ctcps (DCC_list *Client, char *tmp)
 {
-	char 	equal_nickname[80];
 	int	ctcp_request = 0, ctcp_reply = 0;
 	int	l;
 	char 	*target = NULL, *extra = NULL;

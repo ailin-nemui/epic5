@@ -242,7 +242,6 @@ static int	input_move_cursor (int dir, int refresh);
 BUILT_IN_KEYBINDING(debug_input_line)
 {
 	int	i;
-	char	*s;
 	int	offset, column;
 	int	codepoint;
 	char	buffer[2048];
@@ -284,7 +283,7 @@ BUILT_IN_KEYBINDING(debug_input_line)
 
 int	cursor_position (void *vp)
 {
-	Screen *s = (Screen *)vp;
+	Screen *s = vp;
 	if (!s)
 		return -1;
 
@@ -319,7 +318,7 @@ static int 	safe_puts (const char *str, int numcols)
 	int	allow_c1_chars = -1;
 	ptrdiff_t	offset;
 
-	s = (const char *)str;
+	s = str;
 	while ((code_point = next_code_point2(s, &offset, 1)))
 	{
 		s += offset;
@@ -403,7 +402,7 @@ static int	retokenize_input (int start)
 
 	while (s && *s)
 	{
-		codepoint = next_code_point2((char *)s, &offset, 1);
+		codepoint = next_code_point2(s, &offset, 1);
 		s += offset;
 		cols = codepoint_numcolumns(codepoint);
 		/* Invalid chars are probably highlights */
@@ -475,13 +474,13 @@ static int	retokenize_input (int start)
  *
  * Clear as mud?
  */
-void	update_input (void *which_screen, int update)
+void	update_input (void *which_screen_, int update)
 {
 	char	*ptr, *ptr_free;
 	int	max;
 const char *	prompt;
 	int	do_echo, old_do_echo;
-	Screen	*os, *ns;
+	Screen	*os, *ns, *which_screen = which_screen_;
 	int	saved_current_window;
 	int	cols_used;
 	int	original_update;
@@ -504,7 +503,7 @@ const char *	prompt;
 
 	/* <<<< INDENTED BACK ONE TAB FOR MY SANITY <<<<< */
 	/* XXX This is an ugly way to do this. */
-	if (which_screen && (Screen *)which_screen != ns)
+	if (which_screen && which_screen != ns)
 		continue;	/* Only update this screen */
 
 	/* Ignore inactive screens. */
@@ -1022,8 +1021,6 @@ static int	input_move_cursor (int direction, int refresh)
  */
 static void	set_input (const char *str)
 {
-	size_t len;
-
 	strlcpy(INPUT_BUFFER, str, INPUT_BUFFER_SIZE);
 	START = 0;
 	LOGICAL_CURSOR = 0;
@@ -1065,7 +1062,7 @@ void	set_input_prompt (void *stuff)
 	VARIABLE *v;
 	const char *prompt;
 
-	v = (VARIABLE *)stuff;
+	v = stuff;
 	prompt = v->string;
 
 	if (prompt)
@@ -1204,9 +1201,6 @@ BUILT_IN_KEYBINDING(input_end_of_line)
  */
 static void	cut_input (int start, int end)
 {
-	char *	buffer;
-	size_t	size;
-	int	x;
 	int	startpos;
 	int	endpos;
 
@@ -1297,12 +1291,10 @@ BUILT_IN_KEYBINDING(input_delete_next_word)
  */
 BUILT_IN_KEYBINDING(input_add_character)
 {
-	int	numcols;
-	int	numbytes;
 	char utf8str[8];
 	int	utf8strlen;
 
-	utf8strlen = ucs_to_utf8(key, (char *)utf8str, sizeof(utf8str));
+	utf8strlen = ucs_to_utf8(key, utf8str, sizeof(utf8str));
 
 	/* Don't permit the input buffer to get too big. */
 	if (strlen(INPUT_BUFFER) + utf8strlen  >= INPUT_BUFFER_SIZE)
@@ -1355,9 +1347,6 @@ BUILT_IN_KEYBINDING(input_clear_to_eol)
  */
 BUILT_IN_KEYBINDING(input_clear_to_bol)
 {
-	char	c;
-	char	*copy;
-
 	/* XXX Definitely not right */
 	cut_input(0, LOGICAL_CURSOR  - 1);
 
@@ -1612,8 +1601,6 @@ BUILT_IN_FUNCTION(function_inputctl, input)
 {
 	char 	*verb, *domain;
 	int	verblen, domainlen;
-        char    *ret = NULL;
-        int     old_status_update;
 
         GET_FUNC_ARG(verb, input);
         verblen = strlen(verb);
@@ -1622,7 +1609,7 @@ BUILT_IN_FUNCTION(function_inputctl, input)
 	    domainlen = strlen(domain);
 
 	    if (!my_strnicmp(domain, "CUTBUFFER", domainlen)) {
-		RETURN_STR((const char *)CUT_BUFFER);
+		RETURN_STR(CUT_BUFFER);
 	    } 
 	}
         else if (!my_strnicmp(verb, "SET", verblen)) {
@@ -1630,8 +1617,8 @@ BUILT_IN_FUNCTION(function_inputctl, input)
 	    domainlen = strlen(domain);
 
 	    if (!my_strnicmp(domain, "CUTBUFFER", domainlen)) {
-		malloc_strcpy((char **)&CUT_BUFFER, input);
-		RETURN_STR((const char *)CUT_BUFFER);
+		malloc_strcpy(&CUT_BUFFER, input);
+		RETURN_STR(CUT_BUFFER);
 	    } 
 	}
 

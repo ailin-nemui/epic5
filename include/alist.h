@@ -100,24 +100,6 @@ void *	remove_from_alist 	(alist *, const char *);
 void *	alist_lookup 		(alist *, const char *, int, int);
 void *	find_alist_item 	(alist *, const char *, int *, int *);
 void *	alist_pop		(alist *, int);
-
-#define ALIST_ITEM(alist, loc) ((alist_item_ *) ((alist) -> list [ (loc) ]))
-#define LALIST_ITEM(alist, loc) (((alist) -> list [ (loc) ]))
-
-/* Written by panasync */
-/* Re-written by CE */
-#define GET_SOME_ALIST_NAMES_FUNCTION(fn, alist, test)                        \
-char *(fn)(const char *str)                                                   \
-{                                                                             \
-	int i;                                                                \
-	char *ret = NULL;                                                     \
-	size_t rclue = 0;                                                     \
-	for (i = 0; (test); ++i)                                              \
-		if (!str || !*str || wild_match(str, (alist)))                \
-			malloc_strcat_wordlist_c(&ret, space, (alist), &rclue);\
-	return ret ? ret : malloc_strdup(empty_string);                       \
-}
-#define GET_ALIST_NAMES_FUNCTION(fn, alist) GET_SOME_ARRAY_NAMES_FUNCTION((fn), ((alist.list)[i]->name), (i < (alist).max))
-#define GET_BUCKET_NAMES_FUNCTION(fn, bucket) GET_SOME_ARRAY_NAMES_FUNCTION((fn), ((bucket)->list[i].name), (i < (bucket)->numitems))
+void *  get_alist_item 		(alist *, int);
 
 #endif

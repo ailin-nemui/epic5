@@ -217,10 +217,9 @@ int	codepoint_numcolumns (int ucs)
 /* *** ADDED STUFF - NOT IN ORIGINAL *** */
 int     next_code_point2 (const char *i_, ptrdiff_t *bytes_used, int resync)
 {
-        int     	offset;
         unsigned char   a, b, c, d;
-	const char *i = (const char *)i_;
-        const char *str;
+	const char *	i = i_;
+        const char *	str;
         int     	result;
 
 	if (!i_)
@@ -334,10 +333,8 @@ int     next_code_point2 (const char *i_, ptrdiff_t *bytes_used, int resync)
 int     partial_code_point (const char *i_)
 {
 	const char *i = i_;
-        int     offset;
         unsigned char    a, b, c, d;
         const char *str;
-        int     result = -1;
 
         str = i;
         a = b = c = d = 0;
@@ -507,7 +504,6 @@ int	count_initial_codepoints (const char *str, const char *p)
 {
 	const char *s;
 	int	length = 0;
-	int	x;
 	ptrdiff_t	offset;
 
 	if (str >= p)
@@ -584,36 +580,43 @@ int	quick_code_point_count (const char *str)
  *	i	A pointer to the start of a CP.
  *
  * Return Value:
- *	- If *i points at the first byte of a code point, then 
- *	  the code point that ends at the byte *i - 1.
- *	- If *i does not point at the first byte of a code point,
- *	  then the code that that contains *i.
- *	- If *i points at the start of string (st), returns 0 so you can stop.
- *	In both cases, *i is moved to the first byte of the code
- *	point whose value is returned.
+ *	- If 'i' points at the first byte of a code point, then 
+ *	  the code point that ends at the byte i - 1.
+ *	- If 'i' does not point at the first byte of a code point,
+ *	  then the code that that contains 'i'.
+ *	- If 'i' points at the start of string (st), returns 0 so you can stop.
+ *	*offset will be set to first byte of the code point whose value is returned.
+ *
+ *	If the previous code point is invalid (next_code_point2() returns -1)
+ *	then it will skip that invalid code point and keep walking backwards.
  */
 int     previous_code_point2 (const char *st, const char *i, ptrdiff_t *offset)
 {
 	const char *	c;
-	int	retval;
+	int		retval;
 	ptrdiff_t	offset2;
 
 	c = i;
-	if (c == st)
+	for (;;)
 	{
-		*offset = 0;
-		return 0;		/* Time to stop */
+		if (c == st)
+		{
+			*offset = 0;
+			return 0;		/* Time to stop */
+		}
+
+		if (c > st && ((unsigned char)*c < 0x80 || (unsigned char)*c >= 0xC0))
+			c--;
+
+		while (c > st && ((unsigned char)*c >= 0x80 && (unsigned char)*c < 0xC0))
+			c--;
+
+		if ((retval = next_code_point2(c, &offset2, 0)) >= 0)
+		{
+			*offset = c - i;
+			return retval;
+		}
 	}
-
-	if (c > st && ((unsigned char)*c < 0x80 || (unsigned char)*c >= 0xC0))
-		c--;
-
-	while (c > st && ((unsigned char)*c >= 0x80 && (unsigned char)*c < 0xC0))
-		c--;
-
-	retval = next_code_point2(c, &offset2, 1);
-	*offset = c - i;
-	return retval;
 }
 
 

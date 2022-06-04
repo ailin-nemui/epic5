@@ -1480,7 +1480,6 @@ STATUS_FUNCTION(status_mail)
 {
 	STATUS_VARS
 	const char *	number;
-	const char *	mangled_format;
 
 	/*
 	 * The order is important here.  We check to see whether or not

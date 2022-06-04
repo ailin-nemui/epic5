@@ -69,7 +69,7 @@
 							 * buffer */
 
 /* crypt_list: the list of nicknames and encryption sessions */
-static	List	*crypt_list = (List *) 0;
+static	List	*crypt_list = NULL;
 
 struct ciphertypes {
 	int	sed_type;
@@ -156,12 +156,12 @@ static void	add_to_crypt (Char *nick, Char *serv, Char *passwd, Char *prog, int 
 		if (sed_type == AES256CRYPT)
 			memcpy(d->passwd, passwd, strlen(passwd));
 		else
-			sha256(passwd, strlen(passwd), (char *)d->passwd);
+			sha256(passwd, strlen(passwd), d->passwd);
 	}
 	else
 	{
-		malloc_strcpy((char **)&d->passwd, passwd);
-		d->passwdlen = strlen((const char *)d->passwd);
+		malloc_strcpy(&d->passwd, passwd);
+		d->passwdlen = strlen(d->passwd);
 	}
 
 	/* Fill in the 'prog' field. */

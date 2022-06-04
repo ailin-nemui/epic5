@@ -356,14 +356,14 @@ static const Char *globtilde	(	const Char *pattern,
 					Char *patbuf,
 					glob_t *pglob		)
 {
+#if 1
+	return pattern;
+#else
 	struct passwd *pwd;
 	char *h;
 	const Char *p;
 	Char *b;
 
-#if 1
-	return pattern;
-#else
 	if (*pattern != TILDE || !(pglob->gl_flags & GLOB_TILDE))
 		return pattern;
 

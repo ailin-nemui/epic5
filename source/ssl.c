@@ -145,7 +145,6 @@ void	set_ssl_root_certs_location (void *stuff)
 	struct stat 	st;
 	VARIABLE *	v;
 	const char *	p;
-	Filename	path;
 
 	if (x_debug & DEBUG_SSL)
 		yell("SSL >>> HERE WE GO -- SETTING SSL ROOT CERTS LOCATION");
@@ -395,7 +394,6 @@ static ssl_info *	get_ssl_info (int vfd)
 static ssl_info *	new_ssl_info (int vfd)
 {
 	ssl_info *x;
-	int	i;
 
 	if (!(x = get_ssl_info(vfd)))
 	{
@@ -1113,7 +1111,6 @@ int	get_ssl_most_serious_error (int vfd)
  */
 static char *	internal_get_x509_sans (X509 *const cert)
 {
-	int		success = 0;
 	GENERAL_NAMES *	names = NULL;
 	int		i, count;
 	char *		retval = NULL;
@@ -1175,7 +1172,6 @@ static char *	internal_get_x509_sans (X509 *const cert)
 		if (entry->type == GEN_DNS)
 		{
 			int 	len1;
-			size_t	len2;
 			unsigned char *utf8 = NULL;
 
 			/*

@@ -44,7 +44,6 @@
  */
 
 static	FILE *	debuglogf = NULL;
-static	int	counter = 0;
 
 BUILT_IN_COMMAND(debuglogcmd)
 {

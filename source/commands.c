@@ -510,7 +510,6 @@ BUILT_IN_COMMAND(ctcp)
 {
 	const char	*to;
 	char *	stag;
-	int	i;
 	int	request;
 
 	if ((to = next_arg(args, &args)) != NULL)
@@ -925,8 +924,6 @@ BUILT_IN_COMMAND(xechocmd)
 		case 'l':
 		case 'L':
 		{
-		    int w;
-
 		    flag_arg = next_arg(args, &args);
 
 		    /* LINE (output to scratch window) */
@@ -1073,8 +1070,6 @@ BUILT_IN_COMMAND(xechocmd)
 		case 'r':
 		case 'R':   /* RAW OUTPUT TO TERMINAL */
 		{
-			int	wx;
-
 			next_arg(args, &args);
 			/*
 			 * Nuke reminded me of this.  Just because to_window
@@ -2269,8 +2264,10 @@ static void	loader_pf (const char *file_contents, off_t file_contents_size, cons
 	    } while (0);
 
 	    if (pos >= bufsize - 20) {
+		void *buffer_ = buffer;
 		bufsize *= 2;
-		new_realloc((void **)&buffer, bufsize);
+		new_realloc(&buffer_, bufsize);
+		buffer = buffer_;
 	    }
 
 	    this_char = string_fgetc(&file_contents, &file_contents_size);
@@ -3152,9 +3149,6 @@ void 	send_text (int server, const char *nick_list, const char *text, const char
 	int	old_window_display;
 	int	old_from_server;
 static	int	recursion = 0;
-	const char *target_encoding;
-	char	*buf2;
-	size_t	buf2len;
 	char *	extra = NULL;
 	const char	*recode_text;
 
