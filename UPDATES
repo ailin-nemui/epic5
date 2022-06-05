@@ -1,5 +1,10 @@
 EPIC5-2.2
 
+*** News 06/05/2022 -- EPIC5-2.1.11 (2071 - Adynaton) released here
+	This release is entirely quality improvements, focused on 
+	removing (rather than handling) type punning, and signed-
+	pointer issues where c99 behaves differently from c90.
+
 *** News 05/22/2022 -- EPIC5-2.1.10 (2059 - Casuistry) released here
 	This release is entirely quality improvements now that we've 
 	to C99 -- addressing undefined behavior, etc.
