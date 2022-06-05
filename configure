@@ -7051,7 +7051,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether your compiler supports -Wno-compound-token-split-by-macro" >&5
 $as_echo_n "checking whether your compiler supports -Wno-compound-token-split-by-macro... " >&6; }
 old_cflags="$CFLAGS"
-CFLAGS="$CFLAGS -Wno-compound-token-split-by-macro"
+CFLAGS="$CFLAGS -Wno-compound-token-split-by-macro -Werror"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 

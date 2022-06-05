@@ -174,8 +174,10 @@ static char *	archive_fgets(char *s, int n, struct archive *a)
 
 int	epic_fgetc(struct epic_loadfile *elf)
 {
+#ifdef HAVE_LIBARCHIVE
     int ret;
     char c;
+#endif
 
     if ((elf->fp)!=NULL) {
         return fgetc(elf->fp);
@@ -250,14 +252,12 @@ off_t	epic_stat(const char *filename, struct stat *buf)
 #ifdef HAVE_LIBARCHIVE
     struct  archive *a;
     struct  archive_entry *entry = NULL;
-#endif
-    char *  zip;
-    char *  zipstr;
-    char *  sl;
-    int     ziploc;
     int     scan = 0;
+    char *  zip;
+    char *  sl;
+    char *  zipstr;
+    int     ziploc;
 
-#ifdef HAVE_LIBARCHIVE
     /*
      * should probably fill the stat structure with
      * as much as possible.. i don't know what might

@@ -1237,7 +1237,7 @@ dnl	CFLAGS="$old_cflags"])
 
 AC_MSG_CHECKING(whether your compiler supports -Wno-compound-token-split-by-macro)
 old_cflags="$CFLAGS"
-CFLAGS="$CFLAGS -Wno-compound-token-split-by-macro"
+CFLAGS="$CFLAGS -Wno-compound-token-split-by-macro -Werror"
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]],[[ return 0; ]])],
 	[AC_MSG_RESULT(yes)
 	 PERL_EXTRA_CFLAGS="-Wno-compound-token-split-by-macro"
