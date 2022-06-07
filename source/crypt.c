@@ -174,7 +174,7 @@ static void	add_to_crypt (Char *nick, Char *serv, Char *passwd, Char *prog, int 
 		new_free(&d->prog);
 
 	/* XXX new_crypt has bifurcated primary passwd! */
-	ADD_TO_LIST_(&crypt_list, new_crypt);
+	add_to_list(&crypt_list, new_crypt);
 }
 
 static	List *	internal_is_crypted (Char *nick, Char *serv)
@@ -203,7 +203,7 @@ static int	internal_remove_crypt (Char *nick, Char *serv)
 {
 	List	*item = NULL;
 
-	if ((item = internal_is_crypted(nick, serv)) && REMOVE_ITEM_FROM_LIST_(&crypt_list, item))
+	if ((item = internal_is_crypted(nick, serv)) && remove_item_from_list(&crypt_list, item))
 	{
 		cleanse_crypto_item(item);
 		new_free((char **)&item->d);

@@ -2740,7 +2740,7 @@ static	int	check_window_target (int window_, int server, const char *nick)
 	if (get_window_server(window_) != server)
 		return 0;
 
-	if (EXISTS_IN_LIST_(w->nicks, nick, !USE_WILDCARDS))
+	if (find_in_list(w->nicks, nick))
 		return 1;
 
 	return 0;
@@ -2768,7 +2768,7 @@ int	remove_window_target (int window_, int server, const char *nick)
 	if (get_window_server(window_) != server)
 		return 0;
 
-	if (REMOVE_FROM_LIST_(item, &w->nicks, nick))
+	if ((item = remove_from_list(&w->nicks, nick)))
 	{
 		int	l;
 
@@ -2809,15 +2809,17 @@ static int	add_window_target (int window_, int server, const char *target, int a
 	/*
 	 * Do I already own this target?  If not, go looking for it elsewhere
 	 */
-	FIND_IN_LIST_(new_w, w->nicks, target, !USE_WILDCARDS);
-	if (!new_w)
+	if ((new_w = find_in_list(w->nicks, target)) == NULL)
 	{
 		int	need_create;
 
 		if ((other_window = get_window_for_target(server, target)))
 		{
 			if (other_window == window_)
-				need_create = 0;	/* XXX I just checked for this! */
+			{
+				yell("add_window_target: window %d, server %d, target %s, as_current %d: find_in_list says the target is not on this window but get_window_for_target says it is! -- Punting", window_, server, target, as_current);
+				return 0;		/* XXX I just checked for this! */
+			}
 			else
 			{
 				remove_window_target(other_window, server, target);
@@ -2837,7 +2839,7 @@ static int	add_window_target (int window_, int server, const char *target, int a
 			new_w->name = malloc_strdup(target);
 			new_w->d = (WNickList *)new_malloc(sizeof(WNickList));
 			((WNickList *)(new_w->d))->counter = 0;
-			ADD_TO_LIST_(&w->nicks, new_w);
+			add_to_list(&w->nicks, new_w);
 		}
 	}
 
@@ -2922,7 +2924,7 @@ static	int	add_waiting_channel (Window *win, const char *chan)
 	    if (w == win || w->server != win->server)
 		continue;
 
-	    if (REMOVE_FROM_LIST_(tmp, &w->waiting_chans, chan))
+	    if ((tmp = remove_from_list(&w->waiting_chans, chan)))
 	    {
 		new_free(&tmp->name);
 		new_free((char **)&tmp->d);
@@ -2930,14 +2932,14 @@ static	int	add_waiting_channel (Window *win, const char *chan)
 	    }
 	}
 
-	if (EXISTS_IN_LIST_(win->waiting_chans, chan, !USE_WILDCARDS))
+	if (find_in_list(win->waiting_chans, chan))
 		return -1;		/* Already present. */
 
 	tmp = (List *)new_malloc(sizeof(List));
 	tmp->name = malloc_strdup(chan);
 	tmp->d = (WNickList *)new_malloc(sizeof(WNickList *));
 	((WNickList *)(tmp->d))->counter = 0;
-	ADD_TO_LIST_(&win->waiting_chans, tmp);
+	add_to_list(&win->waiting_chans, tmp);
 	return 0;			/* Added */
 }
 
@@ -2953,7 +2955,7 @@ int	claim_waiting_channel (const char *chan, int servref)
 	    if (w->server != servref)
 		continue;
 
-	    if (REMOVE_FROM_LIST_(tmp, &w->waiting_chans, chan))
+	    if ((tmp = remove_from_list(&w->waiting_chans, chan)))
 	    {
 		new_free(&tmp->name);
 		new_free((char **)&tmp->d);
@@ -5756,7 +5758,7 @@ WINDOWCMD(merge)
 			h = window->nicks;
 			window->nicks = h->next;
 
-			ADD_TO_LIST_(&tmp->nicks, h);
+			add_to_list(&tmp->nicks, h);
 		}
 
 		windowcmd_kill(window->refnum, args);
@@ -6644,7 +6646,7 @@ EXT_WINDOWCMD(rejoin)
 			{
 			    if (w->server != from_server)
 				continue;
-			    if (EXISTS_IN_LIST_(window->waiting_chans, chan, !USE_WILDCARDS))
+			    if (find_in_list(window->waiting_chans, chan))
 			    {
 				owner = w;
 				break;

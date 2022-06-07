@@ -93,7 +93,7 @@ typedef struct
 	int 		total_max;
 	alist_func 	func;
 	hash_type 	hash;
-} MAY_ALIAS alist;
+} alist;
 
 void *	add_to_alist 		(alist *, const char *, void *);
 void *	remove_from_alist 	(alist *, const char *);

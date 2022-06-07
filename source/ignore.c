@@ -169,7 +169,7 @@ static List *new_ignore (const char *new_nick)
 	d->enabled = 1;
 	item->d = d;
 
-	ADD_TO_LIST_(&ignored_nicks, item);
+	add_to_list(&ignored_nicks, item);
 	return item;
 }
 
@@ -306,7 +306,7 @@ static int 	remove_ignore (const char *nick)
 	/*
 	 * Look for an exact match first.
 	 */
-	if (LIST_LOOKUP_(item, &ignored_nicks, new_nick, !USE_WILDCARDS, REMOVE_FROM_LIST))
+	while ((item = remove_from_list(&ignored_nicks, new_nick)))
 	{
 		say("%s removed from ignorance list (ignore refnum %d)", 
 				item->name, IGNORE(item)->refnum);
@@ -316,20 +316,6 @@ static int 	remove_ignore (const char *nick)
 		new_free((char **)&item);
 		count++;
 	}
-
-	/*
-	 * Otherwise clear everything that matches.
-	 */
-	else while (LIST_LOOKUP_(item, &ignored_nicks, nick, USE_WILDCARDS, REMOVE_FROM_LIST))
-	{
-		say("%s removed from ignorance list (ignore refnum %d)", 
-				item->name, IGNORE(item)->refnum);
-		new_free(&(item->name));
-		new_free(&(IGNORE(item)->reason));
-		new_free((char **)&item->d);
-		new_free((char **)&item);
-		count++;
-	} 
 
 	if (!count)
 		say("%s is not in the ignorance list!", new_nick);
@@ -769,7 +755,7 @@ static int	foreach_ignore (const char *nicklist, int create, int (*callback) (Li
 		    /*
 		     * Create a new ignore item if this one does not exist.
 		     */
-		    if (FIND_IN_LIST_(item, ignored_nicks, new_nick, 0) == NULL)
+		    if ((item = find_in_list(ignored_nicks, new_nick)) == NULL)
 		    {
 			if (create == 0)
 			{
@@ -1025,7 +1011,7 @@ char *	ignorectl (char *input)
 	GET_FUNC_ARG(listc, input);
 	len = strlen(listc);
 	if (!my_strnicmp(listc, "REFNUM", len)) {
-	        if (FIND_IN_LIST_(i, ignored_nicks, input, 0) == NULL)
+		if ((i = find_in_list(ignored_nicks, input)) == NULL)
 			RETURN_EMPTY;
 
 		RETURN_INT(IGNORE(i)->refnum);

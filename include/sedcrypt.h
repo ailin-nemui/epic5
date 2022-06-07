@@ -27,10 +27,6 @@
 typedef struct	CryptStru
 {
 /*
-	List	l;
-*/
-/*
-	struct	CryptStru *next;
 	char *	nick;
 */
 	char *	serv;
@@ -39,7 +35,7 @@ typedef struct	CryptStru
 	int	sed_type;
 	char *	prog;
 	int	refnum;
-}	MAY_ALIAS Crypt;
+}	Crypt;
 
 	BUILT_IN_COMMAND(encrypt_cmd);
 	char *	crypt_msg 	(const char *, List *);

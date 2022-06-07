@@ -21,13 +21,13 @@ typedef struct
 {
 	char	*name;
 	char	*value;
-} MAY_ALIAS A005_item;
+} A005_item;
 
 typedef struct WaitCmdstru
 {
         char    *stuff;
         struct  WaitCmdstru *next;
-} MAY_ALIAS WaitCmd;
+} WaitCmd;
 
 typedef struct ServerInfo 
 {

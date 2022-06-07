@@ -1214,3 +1214,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Stop redefinining NULL
 * Remove #ifdef HAVE_SSL and HAVE_ICONV since they're mandatory now
 * Build 'stringify' using $< and $@ (for separate builds) (rb zlonix)
+* Remove the c99 macro shims for (List) and rationalize the API
+* Remove the use of c99 macro shim "MAY_ALIAS" since it's untrue now
+* Move "reconnect.orig" to "reconnect.old" (rb zlonix)

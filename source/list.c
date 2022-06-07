@@ -35,7 +35,6 @@
 #include "irc.h"
 #include "list.h"
 #include "ircaux.h"
-#include "reg.h"
 
 static __inline__ int	add_list_strcmp (List *item1, List *item2)
 {
@@ -47,32 +46,23 @@ static __inline__ int	list_strcmp (List *item1, const char *str)
 	return my_stricmp(item1->name, str);
 }
 
-static __inline__ int	list_match (List *item1, const char *str)
-{
-	return wild_match(item1->name, str);
-}
-
 /*
- * add_to_list: This will add an element to a list.  The requirements for the
- * list are that the first element in each list structure be a pointer to the
- * next element in the list, and the second element in the list structure be
- * a pointer to a character (char *) which represents the sort key.  For
- * example 
+ * add_to_list: This will add an element to a list.  
  *
- * struct my_list { 
- *	struct my_list *next; 
- *	char *name; 
- * 	<whatever else you want>
- * }; 
+ * The list is always sorted by 'name' ascendingly.  Duplicate 'name' values
+ * are always retained, but are in an unspecified order, and result in name-lookups
+ * (such as "find_in_list())" being in unspecified order.
  *
- * The parameters are:  "list" which is a pointer to the head of the list. "add"
- * which is a pre-allocated element to be added to the list.
+ * Unlike in C90, you can no longer create type-punned List-congruent objects.
+ * You _must_ use the (List) object, and hang your data structure off of 'd'.
  *
- * Don't forget to use CAST_TO_LISTP(), CAST_TO_LIST() and CAST_FROM_LIST()
- * to make your use of these functions C99-safe. (see list.h)
+ * The (List) object contains 
+ *  (1) a link to the next (List) item, 
+ *  (2) a unique key ("name"), and
+ *  (3) a pointer to a data item.  Your data item may contain whatever you want.
  *
- * *** NOTE -- Use the ADD_TO_LIST_(list, add) macro.
- *  		as it is C99-safe
+ * You are always responsible for the memory of the object and its data.
+ * These routines do nothing but keep the list in sorted order.
  */
 void 	add_to_list (List **list, List *add)
 {
@@ -101,34 +91,16 @@ void 	add_to_list (List **list, List *add)
  * used as a wild card expression to match name... otherwise, normal matching
  * is done 
  *
- * *** NOTE -- Use the FIND_IN_LIST_(retval, list, name, wild) macro
- *  		as it is C99-safe
+ * If multiple items with the same 'name' have been added to the list,
+ * which one gets returned is unspecified.
  */
-List	*find_in_list (List *list, const char *name, int wild)
+List	*find_in_list (List *list, const char *name)
 {
 	List	*tmp;
-	int	best_match = 0,
-		current_match;
-	int	(*cmp_func) (List *, const char *);
 
-	cmp_func = wild ? list_match : list_strcmp;
-
-	if (wild)
-	{
-		List	*match = NULL;
-
-		for (tmp = list; tmp; tmp = tmp->next)
-			if ((current_match = cmp_func(tmp, name)) > best_match)
-				match = tmp, best_match = current_match;
-
-		return (match);
-	}
-	else
-	{
-		for (tmp = list; tmp; tmp = tmp->next)
-			if (cmp_func(tmp, name) == 0)
-				return (tmp);
-	}
+	for (tmp = list; tmp; tmp = tmp->next)
+		if (list_strcmp(tmp, name) == 0)
+			return (tmp);
 
 	return NULL;
 }
@@ -137,9 +109,6 @@ List	*find_in_list (List *list, const char *name, int wild)
  * remove_from_list: this remove the given name from the given list (again as
  * described above).  If found, it is removed from the list and returned
  * (memory is not deallocated).  If not found, null is returned. 
- *
- * *** NOTE -- Use the REMOVE_FROM_LIST_(retval, list, name) macro
- *		as it is C99-safe
  */
 List	*remove_from_list (List **list, const char *name)
 {
@@ -166,9 +135,6 @@ List	*remove_from_list (List **list, const char *name)
  * remove_item_from_list: this remove the given item from the given list 
  * (again as described above).  If found, it is removed from the list and 
  * returned (memory is not deallocated).  If not found, null is returned. 
- *
- * *** NOTE -- Use the REMOVE_ITEM_FROM_LIST_(retval, list, item) macro
- *		as it is C99-safe
  */
 List *	remove_item_from_list (List **list, List *item)
 {
@@ -189,25 +155,5 @@ List *	remove_item_from_list (List **list, List *item)
 	}
 
 	return NULL;
-}
-
-/*
- * list_lookup: this routine just consolidates remove_from_list and
- * find_in_list.  I did this cause it fit better with some already existing
- * code 
- *
- * *** NOTE -- Use the LIST_LOOKUP_(retval, list, name, wild, rem) macro
- *		as it is C99-safe
- */
-List 	*list_lookup (List **list, const char *name, int wild, int rem)
-{
-	List	*tmp;
-
-	if (rem)
-		tmp = remove_from_list(list, name);
-	else
-		tmp = find_in_list(*list, name, wild);
-
-	return (tmp);
 }
 

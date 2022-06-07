@@ -272,13 +272,13 @@ static Logfile *	logfile_add (Logfile *log, char **args)
 
 		if (log->type == LOG_TARGETS)
 		{
-		    if (FIND_IN_LIST_(new_w, log->targets, arg, !USE_WILDCARDS) == NULL)
+		    if (find_in_list(log->targets, arg) == NULL)
                     {
                         say("Added %s to log name list", arg);
                         new_w = (List *)new_malloc(sizeof(List));
                         new_w->name = malloc_strdup(arg);
 			new_w->d = NULL;
-			ADD_TO_LIST_(&log->targets, new_w);
+			add_to_list(&log->targets, new_w);
                     }
                     else
                         say("%s already on log name list", arg);
@@ -314,13 +314,13 @@ static Logfile *	logfile_add (Logfile *log, char **args)
 		}
 		else if (log->type == LOG_WINDOWS)
 		{
-		    if (FIND_IN_LIST_(new_w, log->targets, arg, !USE_WILDCARDS) == NULL)
+		    if (!find_in_list(log->targets, arg))
                     {
                         say("Added %s to log window list", arg);
                         new_w = (List *)new_malloc(sizeof(List));
                         new_w->name = malloc_strdup(arg);
 			new_w->d = NULL;
-			ADD_TO_LIST_(&log->targets, new_w);
+			add_to_list(&log->targets, new_w);
                     }
 		}
                 arg = ptr;
@@ -564,7 +564,7 @@ static Logfile *	logfile_remove (Logfile *log, char **args)
 
 		if (log->type == LOG_TARGETS)
 		{
-		    if (REMOVE_FROM_LIST_(new_nl, &log->targets, arg))
+		    if ((new_nl = remove_from_list(&log->targets, arg)))
 		    {
 			say("Removed %s from log target list", new_nl->name);
 			new_free(&new_nl->name);
@@ -804,7 +804,11 @@ void	add_to_logs (long window, int servref, const char *target, int level, const
 		if (log->targets && !target)
 			continue;
 
-		if (target && ! EXISTS_IN_LIST_(log->targets, target, USE_WILDCARDS))
+		/* 
+		 * XXX This used to use USE_WILDCARD but that was undocumented
+		 * and it's never clear that was intended
+		 */
+		if (target && !find_in_list(log->targets, target))
 			continue;
 
 		/* OK!  We want to log it now! */

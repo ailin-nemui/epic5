@@ -200,7 +200,7 @@ static List *add_binding (const char *name, BindFunction func, char *alias)
 	bp = new_malloc(sizeof(List));
 	bp->name = malloc_strdup(name);
 	bp->d = (Binding *)new_malloc(sizeof(Binding));
-	ADD_TO_LIST_(&binding_list, bp);
+	add_to_list(&binding_list, bp);
 
 	BINDING(bp)->alias = NULL;
 	BINDING(bp)->func = NULL;
@@ -232,7 +232,7 @@ static void	remove_binding (char *name)
 	if (!name)
 		return;
 
-	if (REMOVE_FROM_LIST_(bp, &binding_list, name))
+	if ((bp = remove_from_list(&binding_list, name)))
 	{
 		/* be sure to remove any keys bound to this binding first */
 		remove_bound_keys(head_keymap, bp);
@@ -283,13 +283,10 @@ static void	remove_bound_keys (Key *map, List *binding)
  */
 static List *	find_binding (const char *name) 
 {
-	List *retval;
-
 	if (!name)
 		return NULL;
 
-	FIND_IN_LIST_(retval, binding_list, name, 0);
-	return retval;
+	return find_in_list(binding_list, name);
 }
 
 /*

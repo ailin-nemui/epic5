@@ -2744,7 +2744,7 @@ void 	add_to_screen (const char *buffer)
 			continue;
 
 		    /* Must be on the nick list */
-		    if (! EXISTS_IN_LIST_(get_window_nicks(w), get_who_from(), !USE_WILDCARDS))
+		    if (find_in_list(get_window_nicks(w), get_who_from()))
 			continue;
 
 		    add_to_window(w, buffer);

@@ -191,7 +191,7 @@ typedef	struct	window_stack_stru
 {
 struct	window_stack_stru *	next;
 	int			refnum;
-}	MAY_ALIAS WindowStack;
+}	WindowStack;
 
 
 	int	traverse_all_windows		(Window **);
