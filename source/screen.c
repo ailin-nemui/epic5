@@ -128,7 +128,7 @@ static int 	rite 		(Window *, const char *);
 static void 	scroll_window   (Window *);
 static void 	add_to_window	(int, const char *);
 static	int	ok_to_output	(Window *);
-static	void	edit_codepoint (u_32int_t key);
+static	void	edit_codepoint (uint32_t key);
 static ssize_t read_esc_seq     (const char *, void *, int *);
 static ssize_t read_color_seq   (const char *, void *d, int);
 static ssize_t read_color256_seq  (const char *, void *d);
@@ -3880,7 +3880,7 @@ static	int		never_warn_again = 0;
  * edit_char: handles each character for an input stream.  Not too difficult
  * to work out.
  */
-static	void	edit_codepoint (u_32int_t key)
+static	void	edit_codepoint (uint32_t key)
 {
 	int	old_quote_hit;
 
@@ -3924,7 +3924,7 @@ static	void	edit_codepoint (u_32int_t key)
 }
 
 
-void	fire_wait_prompt (u_32int_t key)
+void	fire_wait_prompt (uint32_t key)
 {
 	WaitPrompt *	oldprompt;
         char   utf8str[8];

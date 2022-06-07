@@ -64,7 +64,6 @@ void 	notify_userhost_reply		(int, const char *nick, const char *uh);
 typedef	struct	notify_stru
 {
 	char	*nick;			/* Who are we watching? */
-	u_32int_t hash;			/* Hash of the nick */
 	int	flag;			/* Is the person on irc? */
 } NotifyItem;
 

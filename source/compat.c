@@ -1080,9 +1080,9 @@ static unsigned char		bsd_arc4_getbyte (ARC4 *as)
 }
 
 __inline__
-static u_32int_t	bsd_arc4_getword (ARC4 *as)
+static uint32_t	bsd_arc4_getword (ARC4 *as)
 {
-	u_32int_t val;
+	uint32_t val;
 
 	val = bsd_arc4_getbyte(as) << 24;
 	val |= bsd_arc4_getbyte(as) << 16;
@@ -1107,7 +1107,7 @@ void	bsd_arc4random_addrandom (unsigned char *dat, int datlen)
 	bsd_arc4_addrandom(&rs, dat, datlen);
 }
 
-u_32int_t	bsd_arc4random (void)
+uint32_t	bsd_arc4random (void)
 {
 	if (!rs_initialized)
 		bsd_arc4random_stir();

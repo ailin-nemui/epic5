@@ -1205,3 +1205,12 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove many spurious casts to and from (void *) (c99-ism)
 * Fix warnings found by wider testing
 * EPIC5-2.1.11 (2071 - Adynaton) released here
+* Replace the historical (u_32int_t) with the c99 (uint32_t)
+* Remove the now-unused 'hash' field in alist data items 
+* Remove accommodations for the long gone Interix system
+* Don't hide __A() and __N() from clang, which supports them just fine
+* We don't need to cover for systems that don't have memmove()
+* We should cast the retval of alloca() within LOCAL_COPY().
+* Stop redefinining NULL
+* Remove #ifdef HAVE_SSL and HAVE_ICONV since they're mandatory now
+* Build 'stringify' using $< and $@ (for separate builds) (rb zlonix)

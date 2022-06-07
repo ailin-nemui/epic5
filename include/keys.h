@@ -9,7 +9,7 @@
 #define __keys_h__
 
 	void	init_binds		(void);
-	void *  handle_keypress         (void *, Timeval, u_32int_t, int);
+	void *  handle_keypress         (void *, Timeval, uint32_t, int);
 	void    init_keys               (void);
 	void    init_termkeys           (void);
 	void    remove_bindings         (void);

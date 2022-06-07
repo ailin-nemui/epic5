@@ -1733,7 +1733,6 @@ return_from_ssl_detour:
 			 */
 			if (s->accept_cert == -1)
 			{
-#ifdef HAVE_SSL
 				int 	verify_error,
 					checkhost_error,
 					self_signed_error,
@@ -1791,7 +1790,6 @@ return_from_ssl_detour:
 					goto something_broke;
 				}
 			    }
-#endif
 
 			goto return_from_ssl_detour;	/* All is well! */
 		}

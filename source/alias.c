@@ -33,7 +33,6 @@
  * SUCH DAMAGE.
  */
 
-#define __need_cs_alist_hash__
 #include "irc.h"
 #define __need_ArgList_t__
 #include "alias.h"
@@ -96,7 +95,6 @@ void	destroy_arglist (ArgList **);
 typedef	struct	SymbolStru
 {
 	char	*name;			/* name of alias */
-	u_32int_t hash;			/* Hash of the name */
 
 	char *	user_variable;
 	int	user_variable_stub;

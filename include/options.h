@@ -71,9 +71,9 @@ const char compile_time_options[] = {
 					'r',
 #endif
 
-#ifdef HAVE_SSL
+#if 1
 					's',
-#endif
+#endif	/* HAVE_SSL is required now */
 
 #ifdef I_DONT_TRUST_MY_USERS
  					't',

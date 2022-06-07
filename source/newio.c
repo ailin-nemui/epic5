@@ -578,10 +578,8 @@ int 	new_open (int channel, void (*callback) (int), int io_type, int quiet, int 
 		ioe->io_callback = unix_recv;
 	else if (io_type == NEWIO_NULL)
 		ioe->io_callback = NULL;
-#ifdef HAVE_SSL
 	else if (io_type == NEWIO_SSL_CONNECT)
 		ioe->io_callback = ssl_connect;
-#endif
 	else if (io_type == NEWIO_PASSTHROUGH_READ)
 		ioe->io_callback = passthrough_event;
 	else if (io_type == NEWIO_PASSTHROUGH_WRITE)

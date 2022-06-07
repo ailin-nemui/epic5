@@ -53,7 +53,7 @@ void *	add_to_alist (alist *a, const char *name, void *item)
 	int 		count;
 	int 		location = 0;
 	void *		ret = NULL;
-	u_32int_t	mask; 	/* Dummy var */
+	uint32_t	mask; 	/* Dummy var */
 	alist_item_ *	item_;
 
 	/* Initialize our internal item */
@@ -216,8 +216,8 @@ void *	find_alist_item (alist *set, const char *name, int *cnt, int *loc)
 			tospot, /* :-) */
 			min, 
 			max;
-	u_32int_t	mask;
-	u_32int_t	hash;
+	uint32_t	mask;
+	uint32_t	hash;
 
 	if (set->hash == HASH_INSENSITIVE)
 		hash = ci_alist_hash(name, &mask);

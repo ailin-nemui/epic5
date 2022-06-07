@@ -20,7 +20,6 @@
 typedef struct
 {
 	char	*name;
-	u_32int_t hash;
 	char	*value;
 } MAY_ALIAS A005_item;
 

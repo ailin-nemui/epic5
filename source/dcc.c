@@ -3452,7 +3452,7 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 static void	process_dcc_send_handle_ack (DCC_list *dcc)
 {
 	char *		encoded_description;
-	u_32int_t	bytes;
+	uint32_t	bytes;
 	intmax_t	provisional_bytes;
 
 	if (x_debug & DEBUG_DCC_XMIT)
@@ -3652,7 +3652,7 @@ static	void		process_dcc_get_data (DCC_list *dcc)
 {
 	char		tmp[DCC_RCV_BLOCK_SIZE+1];
 	intmax_t	provisional_bytesread;
-	u_32int_t	bytestemp;
+	uint32_t	bytestemp;
 	ssize_t		bytesread;
 	char 		bytes_read[10];
 	char 		filesize[10];
@@ -3696,9 +3696,9 @@ static	void		process_dcc_get_data (DCC_list *dcc)
 	provisional_bytesread = dcc->bytes_read;
 	provisional_bytesread = provisional_bytesread >> 32;
 	provisional_bytesread = provisional_bytesread << 32;
-	bytestemp = (u_32int_t)(dcc->bytes_read - provisional_bytesread);
+	bytestemp = (uint32_t)(dcc->bytes_read - provisional_bytesread);
 	bytestemp = htonl(bytestemp);
-	if (write(dcc->socket, (char *)&bytestemp, sizeof(u_32int_t)) == -1)
+	if (write(dcc->socket, (char *)&bytestemp, sizeof(uint32_t)) == -1)
 	{
 		dcc->flags |= DCC_DELETE;
 		yell("### Writing DCC GET checksum back to %s failed.  "

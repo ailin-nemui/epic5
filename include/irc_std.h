@@ -132,26 +132,8 @@
 # endif
 #endif
 
-
-
-
-/*
- * First try to figure out if we can use GNU CC special features...
- */
-#ifndef __GNUC__
-# define __inline__		/* delete gcc keyword */
-# define __inline
-# define __A(x)
-# define __N
-#else
-# if ((__GNUC__ > 2) || (__GNUC__ >= 2) && (__GNUC_MINOR__ >= 7))
-#  define __A(x) __attribute__ ((format (printf, x, x + 1)))
-#  define __N    __attribute__ ((noreturn))
-# else
-#  define __A(x)
-#  define __N
-# endif
-#endif
+#define __A(x) __attribute__((format (printf, x, x + 1)))
+#define __N    __attribute__((noreturn))
 
 #ifdef HAVE_ATTRIBUTE_MAY_ALIAS
 #define MAY_ALIAS __attribute__((may_alias))
@@ -208,14 +190,6 @@ extern	char	*sys_errlist[];
 #ifdef HAVE_BROKEN_REALPATH
 # define realpath my_realpath
 #endif
-
-/*
- * Dont trust anyone else's NULLs.
- */
-#ifdef NULL
-#undef NULL
-#endif
-#define NULL (void *) 0
 
 /*
  * Make sure there is TRUE and FALSE
@@ -278,31 +252,8 @@ typedef char Filename[PATH_MAX + 1];
  * argument list of a function call, because bad things can happen.  Always
  * do your LOCAL_COPY as a separate step before you call a function.
  */
-#define LOCAL_COPY(y) strcpy(alloca(strlen((y)) + 1), y)
+#define LOCAL_COPY(y) strcpy((char *)alloca(strlen((y)) + 1), y)
 #define SAFE(x) (((x) && *(x)) ? (x) : empty_string)
-
-/*
- * Deal with our brokenness wrt ANSI.  Sigh.
- */
-#ifndef HAVE_MEMMOVE
-#define memmove(x, y, z) bcopy(y, x, z)
-#endif
-
-/*
- * Interix's getpgrp() does not take an argument, but the configure script
- * detects it wrongly.
- */
-#ifdef __INTERIX
-# define GETPGRP_VOID
-#endif
-
-/*
- * Interix provides intptr_t, but the shipped gcc 3.3 provides a broken
- * stddef.h that hides it from us.
- */
-#ifdef __INTERIX
-typedef int intptr_t;
-#endif
 
 /*
  * Figure out our intmax_t
@@ -316,12 +267,6 @@ typedef int intptr_t;
 # define UINTMAX_FORMAT "%ju"
 # define UINTMAX_HEX_FORMAT "%jx"
 #endif
-
-/*
- * DCC specification requires exactly a 32 bit checksum.
- * Kind of lame, actually.
- */
-typedef		uint32_t		u_32int_t;
 
 #ifdef Char
 #undef Char
@@ -393,14 +338,6 @@ typedef struct addrinfo		AI;
 typedef struct timeval		Timeval;
 #endif
 typedef struct stat		Stat;
-
-/*
- * Interix's getpgrp() does not take an argument, but the configure script
- * detects it wrongly.
- */
-#ifdef __INTERIX
-# define GETPGRP_VOID
-#endif
 
 /*
  * See if we are supposed to give valgrind a hand in memory leak checking

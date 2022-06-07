@@ -1007,7 +1007,7 @@ const char *	inbound_recode (const char *from, int server, const char *to, const
  *	utf8str	- Where to put the code point in the user's encoding
  *	utf8strsiz - How big utf8str is.
  */
-int     ucs_to_console (u_32int_t codepoint, char *deststr, size_t deststrsiz)
+int     ucs_to_console (uint32_t codepoint, char *deststr, size_t deststrsiz)
 {
 	char	utf8str[16];
 	size_t	utf8strsiz;

@@ -594,7 +594,7 @@ static void	key_exec_bt (Key *key)
  *
  * Clear as mud?
  */
-void *	handle_keypress (void *lastp, Timeval pressed, u_32int_t keyx, int quote_override) 
+void *	handle_keypress (void *lastp, Timeval pressed, uint32_t keyx, int quote_override) 
 {
 	Key 	*kp, 
 		*last;

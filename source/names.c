@@ -49,7 +49,6 @@
 typedef struct nick_stru
 {
 	char *		nick;		/* nickname of person on channel */
-	u_32int_t	hash;		/* Hash of the nickname */
 	char *		userhost;	/* Their userhost, if we know it */
 	short		suspicious;	/* True if the nick might be truncated */
 	short		chanop;		/* True if they are a channel operator */

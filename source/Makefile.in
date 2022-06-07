@@ -55,7 +55,7 @@ clean::
 
 # stringify
 stringify: stringify.c
-	$(CC) $(CFLAGS) stringify.c -o stringify
+	$(CC) $(CFLAGS) $< -o $@
 clean::
 	$(RM) stringify
 

@@ -6110,7 +6110,6 @@ static ssize_t	sha256_encoder (const char *orig, size_t orig_len, const void *me
 	return strlen(dest);
 }
 
-#ifdef HAVE_ICONV
 ssize_t iconv_list_size = 0;
 struct Iconv_stuff **iconv_list = NULL;
 
@@ -6276,9 +6275,6 @@ static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *met
 	return dest_len - dest_left;
 }
 
-#endif
-
-
 struct Transformer
 {
 	int	refnum;
@@ -6301,16 +6297,12 @@ struct Transformer default_transformers[] = {
 {	0,	"NONE",		0, 1, 8,  null_encoder,	  null_encoder	 },
 {	0,	"DEF",		0, 1, 16, crypt_encoder,  crypt_decoder	 },
 {	0,	"SHA256",	0, 0, 65, sha256_encoder, sha256_encoder },
-#ifdef HAVE_SSL
 {	0,	"BF",		1, 1, 8,  blowfish_encoder, blowfish_decoder },
 {	0,	"CAST",		1, 1, 8,  cast5_encoder,    cast5_decoder    },
 {	0,	"AES",		1, 1, 8,  aes_encoder,	    aes_decoder	     },
 {	0,	"AESSHA",	1, 1, 8,  aessha_encoder,   aessha_decoder   },
 {	0,	"FISH",		1, 1, 16, fish_encoder,     fish_decoder     },
-#endif
-#ifdef HAVE_ICONV
 {	0,	"ICONV",	1, 4, 16, iconv_recoder,  iconv_recoder },
-#endif
 {	0,	"ALL",		0, 0, 256, all_encoder,	  all_encoder	},
 {	-1,	NULL,		0, 0, 0,   NULL,	  NULL		}
 };
@@ -6838,7 +6830,7 @@ int	recode_with_iconv_t (iconv_t iref, char **data, size_t *numbytes)
  *	The number of bytes in the resulting utf8 sequence, that is, the 
  *	number of bytes written to utf8str, not counting trailing nul.
  */
-int	ucs_to_utf8 (u_32int_t key, char *utf8str_, size_t utf8strsiz)
+int	ucs_to_utf8 (uint32_t key, char *utf8str_, size_t utf8strsiz)
 {
 	unsigned char *utf8str = (unsigned char *)utf8str_;
 
@@ -7320,7 +7312,7 @@ char *	uuid4_generate_no_dashes (void)
 /*
  * I sourced this from https://en.wikipedia.org/wiki/Code_page_437
  */
-static  u_32int_t       cp437map[256] = {
+static  uint32_t       cp437map[256] = {
 #if 0
 /* 00-07 */     0x0000, 0x263a, 0x263b, 0x2665, 0x2666, 0x2663, 0x2660, 0x2022,
 /* 08-0F */     0x25D8, 0x25CB, 0x25D9, 0x2642, 0x2640, 0x266a, 0x266b, 0x263c,
@@ -7370,7 +7362,7 @@ static  u_32int_t       cp437map[256] = {
  *      utf8str - Where to put the code point in the user's encoding
  *      utf8strsiz - How big utf8str is.
  */
-static u_32int_t       cp437_to_ucs (unsigned char cp437_byte)
+static uint32_t       cp437_to_ucs (unsigned char cp437_byte)
 {
 	return cp437map[cp437_byte];
 }
@@ -7398,7 +7390,7 @@ char *  cp437_to_utf8 (const char *input, size_t inputlen, size_t *destlen)
 	size_t		dest_len;
 	size_t		s, d;
 	char *		y;
-	u_32int_t	codepoint;
+	uint32_t	codepoint;
 	char		utf8str[16];
 
 	/*

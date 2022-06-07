@@ -467,10 +467,8 @@ void 	init_variables_stage1 (void)
 	VAR(SHOW_CHANNEL_NAMES,         BOOL, NULL);
 	VAR(SHOW_NUMERICS,              BOOL, NULL);
 	VAR(SHOW_STATUS_ALL,            BOOL, update_all_status_wrapper);
-#ifdef HAVE_SSL
 	VAR(SSL_CIPHERS,		STR, NULL);
 	VAR(SSL_ROOT_CERTS_LOCATION,    STR, set_ssl_root_certs_location);
-#endif
 	VAR(STATUS_AWAY,                STR,  build_status);
 	VAR(STATUS_CHANNEL,             STR,  build_status);
 	VAR(STATUS_CHANOP,              STR,  build_status);

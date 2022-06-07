@@ -156,19 +156,11 @@
 #include "output.h"
 #include "vars.h"
 #include "words.h"
-#ifdef HAVE_SSL
-#include <openssl/evp.h>
-#include <openssl/err.h>
-#endif
 
-#ifdef HAVE_SSL
 static char *	decipher_evp (const char *passwd, int passwdlen, const char *ciphertext, int cipherlen, const EVP_CIPHER *type, int *outlen, int ivsize);
-#endif
 static char *	decrypt_by_prog (const char *str, size_t *len, List *crypt);
 
-#ifdef HAVE_SSL
 static char *	cipher_evp (const char *passwd, int passwdlen, const char *plaintext, int plaintextlen, const EVP_CIPHER *type, int *retsize, int ivsize);
-#endif
 static char *	encrypt_by_prog (const char *str, size_t *len, List *crypt);
 
 /* This function is used by CTCP handling, but not by xform! */
@@ -183,7 +175,6 @@ char *	decipher_message (const char *ciphertext, size_t len, List *cryptl, int *
 	    crypti->sed_type == FISHCRYPT)
 	{
 	    char *	outbuf = NULL;
-#ifdef HAVE_SSL
 	    const EVP_CIPHER *type;
 	    int	bytes_to_trim;
 	    int ivsize, blocksize;
@@ -248,7 +239,6 @@ char *	decipher_message (const char *ciphertext, size_t len, List *cryptl, int *
 	    /* outbuf[len - bytes_to_trim - 1] = 0; */
 	    outbuf[len - bytes_to_trim] = 0; 
 	    memmove(outbuf, outbuf + ivsize, len - ivsize);
-#endif
 	    return (char *)outbuf;
 	}
 	else if (crypti->sed_type == SEDCRYPT || crypti->sed_type == SEDSHACRYPT)
@@ -277,7 +267,6 @@ char *	decipher_message (const char *ciphertext, size_t len, List *cryptl, int *
 	return NULL;
 }
 
-#ifdef HAVE_SSL
 static char *	decipher_evp (const char *passwd_, int passwdlen, const char *ciphertext_, int cipherlen, const EVP_CIPHER *type, int *outlen, int ivsize)
 {
 	const unsigned char *passwd = (const unsigned char *)passwd_;
@@ -326,7 +315,6 @@ static char *	decipher_evp (const char *passwd_, int passwdlen, const char *ciph
 		new_free(&iv);
 	return (char *)outbuf;
 }
-#endif
 
 void     decrypt_sed (char *str_, int len, const char *passwd_, int passwdlen)
 {
@@ -397,7 +385,6 @@ char *	cipher_message (const char *orig_message, size_t len, List *cryptl, int *
 	    crypti->sed_type == AES256CRYPT || crypti->sed_type == AESSHA256CRYPT)
 	{
 	    char *ciphertext = NULL;
-#ifdef HAVE_SSL
 	    size_t	ivlen;
 	    const EVP_CIPHER *type;
 
@@ -431,7 +418,6 @@ char *	cipher_message (const char *orig_message, size_t len, List *cryptl, int *
 		yell("bummer");
 		return NULL;
 	    }
-#endif
 	    return (char *)ciphertext;
 	}
 	else if (crypti->sed_type == SEDCRYPT || crypti->sed_type == SEDSHACRYPT)
@@ -458,7 +444,6 @@ char *	cipher_message (const char *orig_message, size_t len, List *cryptl, int *
 	return NULL;
 }
 
-#ifdef HAVE_SSL
 static char *	cipher_evp (const char *passwd_, int passwdlen, const char *plaintext_, int plaintextlen, const EVP_CIPHER *type, int *retsize, int ivsize)
 {
 	const unsigned char *passwd = (const unsigned char *)passwd_;
@@ -468,7 +453,7 @@ static char *	cipher_evp (const char *passwd_, int passwdlen, const char *plaint
 	int	extralen = 0;
 	unsigned char	*iv = NULL;
 	unsigned long errcode;
-	u_32int_t	randomval;
+	uint32_t	randomval;
 	int		iv_count;
         EVP_CIPHER_CTX *context = EVP_CIPHER_CTX_new();
 
@@ -484,16 +469,16 @@ static char *	cipher_evp (const char *passwd_, int passwdlen, const char *plaint
 
 	if (ivsize > 0)
 	{
-	    if (ivsize % sizeof(u_32int_t) != 0)
+	    if (ivsize % sizeof(uint32_t) != 0)
 		panic(1, "The IV size for a crypto type you're using is %d "
 			"which is not a multiple of %ld", 
-			ivsize, (long)sizeof(u_32int_t));
+			ivsize, (long)sizeof(uint32_t));
 
 	    iv = new_malloc(ivsize);
-	    for (iv_count = 0; iv_count < ivsize; iv_count += sizeof(u_32int_t))
+	    for (iv_count = 0; iv_count < ivsize; iv_count += sizeof(uint32_t))
 	    {
 		randomval = arc4random();  
-		memmove(iv + iv_count, &randomval, sizeof(u_32int_t));
+		memmove(iv + iv_count, &randomval, sizeof(uint32_t));
 	    }
 	}
 
@@ -522,7 +507,6 @@ static char *	cipher_evp (const char *passwd_, int passwdlen, const char *plaint
 		new_free(&iv);		/* XXX Is this correct? */
 	return (char *)outbuf;
 }
-#endif
 
 void     encrypt_sed (char *str_, int len, const char *passwd_, int passwd_len)
 {
@@ -579,7 +563,6 @@ static char *	encrypt_by_prog (const char *str, size_t *len, List *cryptl)
 }
 
 /**************************************************************************/
-#ifdef HAVE_SSL
 static void	ext256_passwd (const char *orig, size_t orig_len, char **passwd, size_t *passwdlen)
 {
 	size_t	len;
@@ -698,6 +681,5 @@ CRYPTO_HELPER_FUNCTIONS(fish, EVP_bf_ecb, 8, 0, copy_passwd, 1)
 CRYPTO_HELPER_FUNCTIONS(cast5, EVP_cast5_cbc, 8, 8, copy_passwd, 1)
 CRYPTO_HELPER_FUNCTIONS(aes, EVP_aes_256_cbc, 16, 16, ext256_passwd, 1)
 CRYPTO_HELPER_FUNCTIONS(aessha, EVP_aes_256_cbc, 16, 16, sha256_passwd, 1)
-#endif
 
 

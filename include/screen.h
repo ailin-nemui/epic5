@@ -103,7 +103,7 @@ struct	ScreenStru *	next;			/* Previous screen in list */
 	int		create_additional_screen 	(void);
 #endif
 	void		add_wait_prompt 		(const char *, void (*)(char *, const char *), const char *, int, int);
-	void		fire_wait_prompt		(u_32int_t);
+	void		fire_wait_prompt		(uint32_t);
 	void		fire_normal_prompt		(const char *);
 	void		add_to_screen			(const char *);
 	void		translate_user_input		(unsigned char byte);

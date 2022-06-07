@@ -24,7 +24,7 @@ size_t	strlcat (char *, const char *, size_t);
 #endif
 
 #ifndef HAVE_ARC4RANDOM
-u_32int_t	bsd_arc4random (void);
+uint32_t	bsd_arc4random (void);
 #define arc4random bsd_arc4random
 #endif
 
