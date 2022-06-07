@@ -344,7 +344,7 @@ static int 	safe_puts (const char *str, int numcols)
 		ucs_to_console(code_point, utf8str, sizeof(utf8str));
 
 		for (x = utf8str; *x; x++)
-			term_inputline_putchar(*x);
+			term_inputline_putchar((unsigned char)*x);
 
 		i += cols;
 	}

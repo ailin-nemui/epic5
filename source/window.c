@@ -113,15 +113,8 @@ static	Window *	windows[INTERNAL_REFNUM_CUTOVER * 2 + 1] = { NULL };
 
 typedef struct  WNickListStru
 {
-#if 0
-        List            l;
-#endif
-#if 0
-struct WNickListStru *  next;
-        char *          nick;
-#endif
         int             counter;
-}       MAY_ALIAS WNickList;
+}       WNickList;
 
 
 static 	void 	revamp_window_masks 		(Window *);

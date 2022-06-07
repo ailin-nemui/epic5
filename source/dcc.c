@@ -1902,8 +1902,8 @@ jumpstart_get:
 						(long)sb.st_size);
 		
 				/* Just in case we have to fool the protocol enforcement. */
-				proto = get_server_protocol_state(from_server);
-				set_server_protocol_state(from_server, 0);
+				if ((proto = get_server_protocol_state(from_server)) >= 0)
+					set_server_protocol_state(from_server, 0);
 				send_ctcp(1, user, "DCC",
 #if 1
 					strchr(dcc->description, ' ')
@@ -1915,7 +1915,8 @@ jumpstart_get:
 					"RESUME file.ext %s %ld",
 #endif
 					dcc->othername, (long)sb.st_size);
-				set_server_protocol_state(from_server, proto);
+				if (proto >= 0)
+					set_server_protocol_state(from_server, proto);
 			}
 			else
 #endif
@@ -4052,13 +4053,14 @@ static void	dcc_getfile_resume_demanded (const char *user, char *filename, char 
 	Client->bytes_read = 0;
 
 	/* Just in case we have to fool the protocol enforcement. */
-	proto = get_server_protocol_state(from_server);
-	set_server_protocol_state(from_server, 0);
+	if ((proto = get_server_protocol_state(from_server)) >= 0)
+		set_server_protocol_state(from_server, 0);
 
 	send_ctcp(1, user, "DCC", "ACCEPT %s %s %s",
 		realfilename, port, offset);
 
-	set_server_protocol_state(from_server, proto);
+	if (proto >= 0)
+		set_server_protocol_state(from_server, proto);
 	/* Wait for them to open the connection */
 }
 

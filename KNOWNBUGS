@@ -1217,3 +1217,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove the c99 macro shims for (List) and rationalize the API
 * Remove the use of c99 macro shim "MAY_ALIAS" since it's untrue now
 * Move "reconnect.orig" to "reconnect.old" (rb zlonix)
+* get_server_protocol_state() can return -1 -- handle properly (rb zlonix)
+* Guard bogons in set_server_protocol_state()

@@ -3715,8 +3715,8 @@ static void 	do_screens (int fd)
 		 * PRIVMSG/NOTICE restrictions are suspended
 		 * when you're typing something.
 		 */
-		proto = get_server_protocol_state(from_server);
-		set_server_protocol_state(from_server, 0);
+		if ((proto = get_server_protocol_state(from_server)) >= 0)
+			set_server_protocol_state(from_server, 0);
 
 		/*
 		 * We create a 'stack' of current windows so whenever a 
@@ -3754,7 +3754,8 @@ static void 	do_screens (int fd)
 		else
 			irc_exit(1, "Hey!  Where'd my controlling terminal go?");
 
-		set_server_protocol_state(from_server, proto);
+		if (proto >= 0)
+			set_server_protocol_state(from_server, proto);
 	}
 
 	from_server = saved_from_server;

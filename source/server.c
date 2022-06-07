@@ -3776,6 +3776,9 @@ int	get_server_protocol_state (int refnum)
 	int	retval = 0;
 	int	value;
 
+	if (!get_server(refnum))
+		return -1;
+
 	if ((value = get_server_doing_ctcp(refnum)) < 0)
 		return -1;
 	if (value == 1)
@@ -3796,6 +3799,12 @@ int	get_server_protocol_state (int refnum)
 
 void	set_server_protocol_state (int refnum, int state)
 {
+	if (state < 0)
+	{
+		yell("set_server_protocol_state: refnum = %d, state = %d -- something goofed.  Tell #epic on EFNet what just happened", refnum, state);
+		return;
+	}
+
 	if (!get_server(refnum))
 		return;
 
