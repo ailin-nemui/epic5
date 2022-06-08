@@ -169,7 +169,7 @@ static List *new_ignore (const char *new_nick)
 	d->enabled = 1;
 	item->d = d;
 
-	add_to_list(&ignored_nicks, item);
+	add_item_to_list(&ignored_nicks, item);
 	return item;
 }
 

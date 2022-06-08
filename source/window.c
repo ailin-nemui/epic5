@@ -2832,7 +2832,7 @@ static int	add_window_target (int window_, int server, const char *target, int a
 			new_w->name = malloc_strdup(target);
 			new_w->d = (WNickList *)new_malloc(sizeof(WNickList));
 			((WNickList *)(new_w->d))->counter = 0;
-			add_to_list(&w->nicks, new_w);
+			add_item_to_list(&w->nicks, new_w);
 		}
 	}
 
@@ -2932,7 +2932,7 @@ static	int	add_waiting_channel (Window *win, const char *chan)
 	tmp->name = malloc_strdup(chan);
 	tmp->d = (WNickList *)new_malloc(sizeof(WNickList *));
 	((WNickList *)(tmp->d))->counter = 0;
-	add_to_list(&win->waiting_chans, tmp);
+	add_item_to_list(&win->waiting_chans, tmp);
 	return 0;			/* Added */
 }
 
@@ -5751,7 +5751,7 @@ WINDOWCMD(merge)
 			h = window->nicks;
 			window->nicks = h->next;
 
-			add_to_list(&tmp->nicks, h);
+			add_item_to_list(&tmp->nicks, h);
 		}
 
 		windowcmd_kill(window->refnum, args);

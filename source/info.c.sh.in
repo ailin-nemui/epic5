@@ -3,7 +3,7 @@
 # This file is in the public domain, such as it is.
 #
 
-info_c_sum=`cksum @srcdir@/info.c.sh`
+info_c_sum=`cksum @builddir@/info.c.sh`
 comp_host=`uname -n`
 comp_user=`id -u -n`
 comp_time=`date | \

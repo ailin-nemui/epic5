@@ -252,7 +252,6 @@ static Logfile *	logfile_activity (Logfile *log, char **args)
 static Logfile *	logfile_add (Logfile *log, char **args)
 {
         char            *ptr;
-        List *		new_w;
         char            *arg = next_arg(*args, args);
 	int		i;
 
@@ -275,10 +274,7 @@ static Logfile *	logfile_add (Logfile *log, char **args)
 		    if (find_in_list(log->targets, arg) == NULL)
                     {
                         say("Added %s to log name list", arg);
-                        new_w = (List *)new_malloc(sizeof(List));
-                        new_w->name = malloc_strdup(arg);
-			new_w->d = NULL;
-			add_to_list(&log->targets, new_w);
+			add_to_list(&log->targets, arg, NULL);
                     }
                     else
                         say("%s already on log name list", arg);
@@ -317,10 +313,7 @@ static Logfile *	logfile_add (Logfile *log, char **args)
 		    if (!find_in_list(log->targets, arg))
                     {
                         say("Added %s to log window list", arg);
-                        new_w = (List *)new_malloc(sizeof(List));
-                        new_w->name = malloc_strdup(arg);
-			new_w->d = NULL;
-			add_to_list(&log->targets, new_w);
+			add_to_list(&log->targets, arg, NULL);
                     }
 		}
                 arg = ptr;

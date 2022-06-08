@@ -36,22 +36,12 @@
 #include "list.h"
 #include "ircaux.h"
 
-static __inline__ int	add_list_strcmp (List *item1, List *item2)
-{
-	return my_stricmp(item1->name, item2->name);
-}
-
-static __inline__ int	list_strcmp (List *item1, const char *str)
-{
-	return my_stricmp(item1->name, str);
-}
-
 /*
  * add_to_list: This will add an element to a list.  
  *
  * The list is always sorted by 'name' ascendingly.  Duplicate 'name' values
  * are always retained, but are in an unspecified order, and result in name-lookups
- * (such as "find_in_list())" being in unspecified order.
+ * (such as "find_in_list()" being in unspecified order).
  *
  * Unlike in C90, you can no longer create type-punned List-congruent objects.
  * You _must_ use the (List) object, and hang your data structure off of 'd'.
@@ -64,14 +54,14 @@ static __inline__ int	list_strcmp (List *item1, const char *str)
  * You are always responsible for the memory of the object and its data.
  * These routines do nothing but keep the list in sorted order.
  */
-void 	add_to_list (List **list, List *add)
+void 	add_item_to_list (List **list, List *add)
 {
 	List	*tmp,
 		*last = NULL;
 
 	for (tmp = *list; tmp; tmp = tmp->next)
 	{
-		if (add_list_strcmp(tmp, add) > 0)
+		if (my_stricmp(tmp->name, add->name) > 0)
 			break;
 		last = tmp;
 	}
@@ -85,6 +75,16 @@ void 	add_to_list (List **list, List *add)
 	return;
 }
 
+void	add_to_list (List **list, const char *name, void *data)
+{
+	List *	tmp;
+
+	tmp = new_malloc(sizeof(*tmp));
+	tmp->name = malloc_strdup(name);
+	tmp->d = data;
+	add_item_to_list(list, tmp);
+}
+
 /*
  * find_in_list: This looks up the given name in the given list.  List and
  * name are as described above.  If wild is true, each name in the list is
@@ -94,12 +94,12 @@ void 	add_to_list (List **list, List *add)
  * If multiple items with the same 'name' have been added to the list,
  * which one gets returned is unspecified.
  */
-List	*find_in_list (List *list, const char *name)
+List *	find_in_list (List *list, const char *name)
 {
 	List	*tmp;
 
 	for (tmp = list; tmp; tmp = tmp->next)
-		if (list_strcmp(tmp, name) == 0)
+		if (my_stricmp(tmp->name, name) == 0)
 			return (tmp);
 
 	return NULL;
@@ -110,14 +110,14 @@ List	*find_in_list (List *list, const char *name)
  * described above).  If found, it is removed from the list and returned
  * (memory is not deallocated).  If not found, null is returned. 
  */
-List	*remove_from_list (List **list, const char *name)
+List *	remove_from_list (List **list, const char *name)
 {
 	List	*tmp,
 		*last = NULL;
 
 	for (tmp = *list; tmp; tmp = tmp->next)
 	{
-		if (list_strcmp(tmp, name) == 0)
+		if (my_stricmp(tmp->name, name) == 0)
 		{
 			if (last)
 				last->next = tmp->next;

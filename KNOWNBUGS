@@ -1219,3 +1219,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Move "reconnect.orig" to "reconnect.old" (rb zlonix)
 * get_server_protocol_state() can return -1 -- handle properly (rb zlonix)
 * Guard bogons in set_server_protocol_state()
+* Have info.c.sh.in use @builddir@ instead of @srcdir@ (zlonix)
+* Add add_item_to_list() for List management, fix callers
+

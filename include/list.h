@@ -17,8 +17,8 @@ struct	list_stru *	next;
 	void *		d;
 }	List;
 
-/* Don't use the internal API - Use the macros below */
-void	add_to_list 		(List **, List *);
+void	add_item_to_list 	(List **, List *);
+void	add_to_list 		(List **, const char *, void *);
 List *	find_in_list 		(List *, const char *);
 List *	remove_from_list 	(List **, const char *);
 List *	remove_item_from_list	(List **, List *);

@@ -200,7 +200,7 @@ static List *add_binding (const char *name, BindFunction func, char *alias)
 	bp = new_malloc(sizeof(List));
 	bp->name = malloc_strdup(name);
 	bp->d = (Binding *)new_malloc(sizeof(Binding));
-	add_to_list(&binding_list, bp);
+	add_item_to_list(&binding_list, bp);
 
 	BINDING(bp)->alias = NULL;
 	BINDING(bp)->func = NULL;

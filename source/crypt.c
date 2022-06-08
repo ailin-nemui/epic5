@@ -174,7 +174,7 @@ static void	add_to_crypt (Char *nick, Char *serv, Char *passwd, Char *prog, int 
 		new_free(&d->prog);
 
 	/* XXX new_crypt has bifurcated primary passwd! */
-	add_to_list(&crypt_list, new_crypt);
+	add_item_to_list(&crypt_list, new_crypt);
 }
 
 static	List *	internal_is_crypted (Char *nick, Char *serv)
