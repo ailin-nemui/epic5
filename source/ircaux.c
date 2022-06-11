@@ -4413,6 +4413,60 @@ char *	malloc_vsprintf (char **ptr, const char *format, va_list args)
 }
 
 /*
+ * malloc_strcpy_partial: Make a copy of part of a string into heap space
+ *
+ * Arguments:
+ *  'ptr' - A pointer to a variable pointer that is either:
+ *	    1) The value NULL or a valid heap pointer to space which is not
+ *		large enough to hold 'src', in which case heap space will be
+ *		allocated, and the original value of (*ptr) will be invalidated.
+ *	    2) A valid heap pointer to space which is large enough to hold 'src'
+ *		in which case 'src' will be copied to the heap space.
+ *  'src' - The string to be copied.  If NULL, (*ptr) is invalidated (freed).
+ *  'bytes' - How many bytes of 'src' to copy 
+ *
+ * Return value:
+ *  If 'src' is NULL, an invalid heap pointer.
+ *  If 'src' is not NULL, a valid heap pointer that contains a copy of 'src'.
+ *  (*ptr) is set to the return value.
+ *  This function will not return (panic) if (*ptr) is not NULL and is 
+ *	not a valid heap pointer.
+ *
+ * Notes:
+ *  If (*ptr) is not big enough to hold 'src' then the original value (*ptr) 
+ * 	will be invalidated and must not be used after this function returns.
+ *  You must deallocate the space later by passing (ptr) to the new_free() 
+ *	function.
+ */
+char *	malloc_strcpy_partial (char **ptr, const char *src, size_t bytes)
+{
+	size_t	size;
+	size_t	x;
+
+	if (!src)
+		return new_free(ptr);	/* shrug */
+
+	if (*ptr)
+	{
+		size = alloc_size(*ptr);
+		if (size == (size_t) FREED_VAL)
+			panic(1, "free()d pointer passed to malloc_strcpy");
+
+		if (size < bytes + 1)
+			new_realloc((void **)ptr, bytes + 1);
+	}
+
+	for (x = 0; x < bytes; x++)
+	{
+		(*ptr)[x] = src[x];
+		if (src[x] == 0)
+			break;
+	}
+	(*ptr)[x] = 0;
+	return *ptr;
+}
+
+/*
  * universal_next_arg_count:  Remove the first "count" words from "str", 
  *	where ``word'' is defined by all this scary text below here...
  *
@@ -7547,4 +7601,70 @@ static const char hexnum[] = "0123456789ABCDEF";
 	return 2;
 }
 
+static size_t	next_message_size (const char *orig_message);
+
+/*
+ * split_message - copy and split 'orig_message' into 'dest' in message-sized chunks
+ *
+ * Arguments:
+ *	dest 		- Where the results will go (see below)
+ *	dest_size 	- How big 'dest' is (usually 10)
+ *	orig_message 	- A message to be split up
+ *
+ * Return value:
+ *	The number of values written into 'dest'
+ *
+ * Behavior:
+ *	'dest' is expected to be a static array of (char *)s.
+ *	The 'orig_message' will be split into message-sized chunks (controlled by a /set)
+ *	  and then will be stored sequentially in dest[x].
+ *	Finally, dest[x+1] = NULL for the largest value of 'x'.
+ *
+ * Notes:
+ *	All string copies are done via malloc_strcpy(), so you don't have to new_free()
+ *		you can just keep using the same 'dest' every time and we'll overwrite
+ *		the strings
+ *	Setting dest[x+1] = NULL is done via new_free(), again for the same reason
+ */
+int	split_message (char **dest, int dest_size, const char *orig_message)
+{
+	int		i;
+	char *		ptr;
+	size_t		message_len;
+
+	for (i = 0; i < dest_size; i++)
+	{
+		if ((message_len = next_message_size(orig_message)) <= 0)
+			break;
+		ptr = dest[i];
+		malloc_strcpy_partial(&ptr, orig_message, message_len);
+		dest[i] = ptr;
+		orig_message += message_len;
+	}
+
+	ptr = dest[i];
+	new_free(&ptr);
+	dest[i] = ptr;
+	return i;
+}
+
+static size_t	next_message_size (const char *orig_message)
+{
+	size_t		orig_message_len;
+
+	if (!orig_message)
+		return 0;
+
+	if ((orig_message_len = strlen(orig_message)) < 480)
+		return orig_message_len;
+
+	orig_message_len = 479;
+	while (orig_message_len > 0 && !isspace(orig_message[orig_message_len]))
+		orig_message_len--;
+
+	if (orig_message_len == 0)
+		return 480;
+
+	return orig_message_len;
+}
 

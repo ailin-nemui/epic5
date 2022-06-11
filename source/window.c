@@ -179,8 +179,6 @@ int	new_window (Screen *screen)
 	if (dumb_mode && current_window)
 		return -1;
 
-	new_w = (Window *) new_malloc(sizeof(Window));
-
 	/*
 	 * STAGE 1 -- Ensuring all values are set to default values
 	 */
@@ -195,8 +193,6 @@ int	new_window (Screen *screen)
 			tmp = NULL;
 		}
 	}
-	new_w->refnum = new_refnum;
-	windows[new_w->refnum] = new_w;
 
 	new_refnum = 1;
 	tmp = NULL;
@@ -204,11 +200,21 @@ int	new_window (Screen *screen)
 	{
 		if (tmp->user_refnum == new_refnum)
 		{
+			if (new_refnum >= INTERNAL_REFNUM_CUTOVER)
+			{
+				yell("window new: All refnums in use, sorry");
+				return -1;
+			}
 			new_refnum++;
 			tmp = NULL;
 		}
 	}
+
+	new_w = (Window *) new_malloc(sizeof(Window));
+	new_w->refnum = new_refnum;
 	new_w->user_refnum = new_refnum;
+
+	windows[new_w->refnum] = new_w;
 	windows[new_w->user_refnum] = new_w;
 
 	new_w->name = NULL;

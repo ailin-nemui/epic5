@@ -6,6 +6,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /on dcc_raw handling should set message_from() (rb Harz)
 * The way we handle "screen is not tall enough" underflow needs work
 * Unify window query and channels in the target list.
+* Ensure /query =nick works properly (rb fudd)
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1221,4 +1222,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Guard bogons in set_server_protocol_state()
 * Have info.c.sh.in use @builddir@ instead of @srcdir@ (zlonix)
 * Add add_item_to_list() for List management, fix callers
-
+* Don't let user create too many windows (rb ce)
+* Fix configure check for raspberry pis with bad python (rb zlonix)

@@ -1150,6 +1150,8 @@ else
 			if (!PyArg_ParseTuple(args, "s", &str)) {
 				return PyLong_FromLong(-1);
 			}
+			Py_INCREF(Py_None);	/* This test is important! */
+			Py_XDECREF(Py_None);
 			return Py_BuildValue("s", "");
 		}
 
