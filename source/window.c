@@ -173,7 +173,7 @@ int	new_window (Screen *screen)
 {
 	Window	*	new_w;
 	Window	*	tmp = NULL;
-	unsigned	new_refnum;
+	unsigned	new_refnum, new_user_refnum;
 	int		i;
 
 	if (dumb_mode && current_window)
@@ -194,25 +194,25 @@ int	new_window (Screen *screen)
 		}
 	}
 
-	new_refnum = 1;
+	new_user_refnum = 1;
 	tmp = NULL;
 	while (traverse_all_windows(&tmp))
 	{
-		if (tmp->user_refnum == new_refnum)
+		if (tmp->user_refnum == new_user_refnum)
 		{
-			if (new_refnum >= INTERNAL_REFNUM_CUTOVER)
+			if (new_user_refnum >= INTERNAL_REFNUM_CUTOVER)
 			{
 				yell("window new: All refnums in use, sorry");
 				return -1;
 			}
-			new_refnum++;
+			new_user_refnum++;
 			tmp = NULL;
 		}
 	}
 
 	new_w = (Window *) new_malloc(sizeof(Window));
 	new_w->refnum = new_refnum;
-	new_w->user_refnum = new_refnum;
+	new_w->user_refnum = new_user_refnum;
 
 	windows[new_w->refnum] = new_w;
 	windows[new_w->user_refnum] = new_w;
