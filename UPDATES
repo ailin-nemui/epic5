@@ -1,5 +1,8 @@
 EPIC5-2.2
 
+*** News 06/15/2022 -- EPIC5-2.1.12 (2078 - Secondment) released here
+	This release improves build behavior for openbsd and others.
+
 *** News 06/05/2022 -- EPIC5-2.1.11 (2071 - Adynaton) released here
 	This release is entirely quality improvements, focused on 
 	removing (rather than handling) type punning, and signed-
