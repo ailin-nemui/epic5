@@ -2736,8 +2736,13 @@ static	int	check_window_target (int window_, int server, const char *nick)
 {
 	Window *	w = get_window_by_refnum_direct(window_);
 
-	if (get_window_server(window_) != server)
+	if (!nick)
 		return 0;
+
+	/* Hack to work around global targets (do this better, later) */
+	if (*nick != '=' && *nick != '%' && *nick != '@' && *nick != '/')
+		if (get_window_server(window_) != server)
+			return 0;
 
 	if (find_in_list(w->nicks, nick))
 		return 1;

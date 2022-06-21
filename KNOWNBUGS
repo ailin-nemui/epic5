@@ -1225,3 +1225,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Don't let user create too many windows (rb ce)
 * Fix configure check for raspberry pis with bad python (rb zlonix)
 * Fix window refnum bogon (rb zlonix)
+* When doing target searches, don't require global targets to have server
