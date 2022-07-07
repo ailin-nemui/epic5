@@ -4455,6 +4455,8 @@ char *	malloc_strcpy_partial (char **ptr, const char *src, size_t bytes)
 		if (size < bytes + 1)
 			new_realloc((void **)ptr, bytes + 1);
 	}
+	else
+		*ptr = (char *)new_malloc(bytes + 1);
 
 	for (x = 0; x < bytes; x++)
 	{

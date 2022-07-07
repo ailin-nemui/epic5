@@ -2740,9 +2740,12 @@ static	int	check_window_target (int window_, int server, const char *nick)
 		return 0;
 
 	/* Hack to work around global targets (do this better, later) */
-	if (*nick != '=' && *nick != '%' && *nick != '@' && *nick != '/')
-		if (get_window_server(window_) != server)
-			return 0;
+	if (*nick == '=' || *nick == '%' || *nick == '@' || *nick == '/')
+		if (find_in_list(w->nicks, nick))
+			return 1;
+
+	if (get_window_server(window_) != server)
+		return 0;
 
 	if (find_in_list(w->nicks, nick))
 		return 1;

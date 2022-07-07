@@ -6,7 +6,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * /on dcc_raw handling should set message_from() (rb Harz)
 * The way we handle "screen is not tall enough" underflow needs work
 * Unify window query and channels in the target list.
-* Ensure /query =nick works properly (rb fudd)
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1226,3 +1225,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix configure check for raspberry pis with bad python (rb zlonix)
 * Fix window refnum bogon (rb zlonix)
 * When doing target searches, don't require global targets to have server
+* Fix /query, particularly for dcc chats (rb fudd)
+* Fix a null deref found by clang static checker (it was unused code)
