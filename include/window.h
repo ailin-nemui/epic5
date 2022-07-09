@@ -25,11 +25,6 @@
  */
 struct	ScreenStru;
 
-/* var_settings indexes */
-#define OFF 			0
-#define ON 			1
-#define TOGGLE 			2
-
 /* Should be a way to make static to window.c */
 typedef	struct	DisplayStru
 {

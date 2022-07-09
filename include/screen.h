@@ -19,7 +19,7 @@
 typedef struct InputLine
 {
 	/* The current UTF8 input line (plain old c string */
-	char	input_buffer[INPUT_BUFFER_SIZE+1];
+	char		input_buffer[INPUT_BUFFER_SIZE+1];
 
 	/* The offset into input_buffer where each logical char starts */
 	int		logical_chars[INPUT_BUFFER_SIZE + 1];
@@ -34,13 +34,13 @@ typedef struct InputLine
 	int		number_of_logical_chars;
 
 	char *		input_prompt_raw;
-	char *	input_prompt;
+	char *		input_prompt;
 	int		input_prompt_len;
 	int		input_line;
 
-        char *	ind_left;
+        char *		ind_left;
         int     	ind_left_len;
-        char *	ind_right;
+        char *		ind_right;
         int     	ind_right_len;
 
 	int		refresh;
@@ -110,15 +110,15 @@ struct	ScreenStru *	next;			/* Previous screen in list */
 	void		create_new_screen		(void);
 	void		kill_screen			(struct ScreenStru *);
 
-const	char *	all_off				(void);
-		char *	new_normalize_string		(const char *, int, int);
-		char *	denormalize_string		(const char *);
-		char *	normalized_string_to_plain_text (const char *str);
-		char **	prepare_display			(int, const char *, int, int *, int);
+const	char *		all_off				(void);
+	char *		new_normalize_string		(const char *, int, int);
+	char *		denormalize_string		(const char *);
+	char *		normalized_string_to_plain_text (const char *str);
+	char **		prepare_display			(int, const char *, int, int *, int);
 	size_t		output_with_count		(const char *, int, int);
 	void    	add_to_window_scrollback 	(int, const char *, intmax_t);
 
-	char *	prepare_display2		(const char *, int, int, char, int);
+	char *		prepare_display2		(const char *, int, int, char, int);
 
 	void		chop_columns 			(char **, size_t);
 	void		chop_final_columns 		(char **, size_t);

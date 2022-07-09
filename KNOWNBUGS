@@ -1227,3 +1227,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * When doing target searches, don't require global targets to have server
 * Fix /query, particularly for dcc chats (rb fudd)
 * Fix a null deref found by clang static checker (it was unused code)
+* Fix widening when window is /clear and /window scrolladj off (rb skered)

@@ -2161,6 +2161,7 @@ static void	save_window_positions (Window *w, intmax_t *scrolling, intmax_t *hol
 static void	restore_window_positions (Window *w, intmax_t scrolling, intmax_t holding, intmax_t scrollback)
 {
 	Display *d;
+	int	clear_was_forced = 0;
 
 	/* First, we cancel all three views. */
 	w->scrolling_top_of_display = NULL;
@@ -2201,14 +2202,21 @@ static void	restore_window_positions (Window *w, intmax_t scrolling, intmax_t ho
 	 * I don't know what the right thing to do is, so I choose to
 	 * move the scrolling display to the bottom (ie, /unclear).
 	 * This seems the least worst hack.
+	 *
+	 * I changed my mind in July 2022 after talking to skered.
+	 * This can happen if you resize a window that is /clear, so the 
+	 * correct behavior is to _clear_ the window, not _unclear_ it.
 	 */
 	if (!w->scrolling_top_of_display)
-		unclear_window(w);
+	{
+		clear_window(w);
+		clear_was_forced = 1;
+	}
 
 	recalculate_window_cursor_and_display_ip(w);
 	if (w->scrolling_distance_from_display_ip >= w->display_lines)
 		unclear_window(w);
-	else if (w->scrolling_distance_from_display_ip <= w->display_lines && w->scrolladj)
+	else if (w->scrolling_distance_from_display_ip <= w->display_lines && w->scrolladj && !clear_was_forced)
 		unclear_window(w);
 	else
 	{
@@ -7916,6 +7924,7 @@ static Display *new_display_line (Display *prev, Window *w)
 	stuff->prev = prev;
 	stuff->next = NULL;
 	stuff->when = time(NULL);
+	stuff->linked_refnum = -1;
 	return stuff;
 }
 
