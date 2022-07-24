@@ -90,7 +90,7 @@ alias ctcp_cloak {
 	if (!*0) {
 		xecho -b These CTCPs are currently cloaked: $ctcpctl(INACTIVE);
 	} else {
-		fe ($0) c {
+		fe ($*) c {
 			@ctcpctl(SET $c ACTIVE 0);
 		};
 		xecho -b These CTCPs have been cloaked: $*;
@@ -101,7 +101,7 @@ alias ctcp_uncloak {
 	if (!*0) {
 		xecho -b These CTCPs are currently uncloaked: $ctcpctl(ACTIVE);
 	} else {
-		fe ($0) c {
+		fe ($*) c {
 			@ctcpctl(SET $0 ACTIVE 1);
 		};
 		xecho -b These CTCPs have been uncloaked: $*;
