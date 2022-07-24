@@ -40,9 +40,11 @@ alias do_ping_reply {
 
 alias do_clientinfo_request {
 	if (!*3) { 
-		ctcp $0 $2 $ctcpctl(ALL) 
+		ctcp $0 $2 $ctcpctl(ACTIVE) 
 	} else {
-		ctcp $0 $2 $toupper($3) $ctcpctl(GET $3 DESCRIPTION)
+		if (ctcpctl(GET $3 ACTIVE)) {
+			ctcp $0 $2 $toupper($3) $ctcpctl(GET $3 DESCRIPTION)
+		}
 	}
 };
 @ctcpctl(SET CLIENTINFO REQUEST {do_clientinfo_request $*});

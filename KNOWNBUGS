@@ -1238,4 +1238,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $ctcpctl(SET x ACTIVE 0|1), $ctcpctl([IN]ACTIVE)
 * Add /ctcp_cloak and /ctcp_uncloak to /load ctcp (rb zlonix)
 * Remove size limits on $repeat (rb ce)
-
+* Fix CTCP CLIENTINFO (x) (rb zlonix)
