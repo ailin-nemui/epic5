@@ -40,6 +40,7 @@
 
 #define __need_term_h__
 #define __need_putchar_x__
+#define NEED_WINDOWSTRU
 #include "irc.h"
 #include "alias.h"
 #include "clock.h"
@@ -64,16 +65,6 @@
 #include <sys/ioctl.h>
 
 #define CURRENT_WSERV_VERSION	4
-
-#if 0
-/*
- * When some code wants to override the default lastlog level, and needs
- * to have some output go into some explicit window (such as for /xecho -w),
- * then while to_window is set to some window, *ALL* output goes to that
- * window.  Dont forget to reset it to NULL when youre done!  ;-)
- */
-	Window	*to_window;
-#endif
 
 /*
  * When all else fails, this is the screen that is attached to the controlling
@@ -124,11 +115,11 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 static void 	do_screens	(int fd);
-static int 	rite 		(Window *, const char *);
-static void 	scroll_window   (Window *);
+static int 	rite 		(int, const char *);
+static void 	scroll_window   (int);
 static void 	add_to_window	(int, const char *);
-static	int	ok_to_output	(Window *);
-static	void	edit_codepoint (uint32_t key);
+static	int	ok_to_output	(int);
+static	void	edit_codepoint 	(uint32_t key);
 static ssize_t read_esc_seq     (const char *, void *, int *);
 static ssize_t read_color_seq   (const char *, void *d, int);
 static ssize_t read_color256_seq  (const char *, void *d);
@@ -2526,10 +2517,12 @@ const 	char	*ptr;
  *	window		- The target window for the output
  *	str		- What is to be outputted
  */
-static int 	rite (Window *window, const char *str)
+static int 	rite (int window_, const char *str)
 {
+	Window *window = get_window_by_refnum_direct(window_);
+
 	output_screen = window->screen;
-	scroll_window(window);
+	scroll_window(window->refnum);
 
 	if (window->screen && window->display_lines)
 		output_with_count(str, 1, foreground);
@@ -2896,8 +2889,8 @@ static void 	add_to_window (int window_, const char *str)
         for (my_lines = prepare_display(window->refnum, strval, cols, &numl, 0); *my_lines; my_lines++)
 	{
 		if (add_to_scrollback(window->refnum, *my_lines, refnum))
-		    if (ok_to_output(window))
-			rite(window, *my_lines);
+		    if (ok_to_output(window->refnum))
+			rite(window->refnum, *my_lines);
 	}
 	new_free(&strval);
 
@@ -2977,8 +2970,10 @@ void 	add_to_window_scrollback (int window, const char *str, intmax_t refnum)
  * differentiates between a window that is full because it is in hold mode or
  * scrollback, and a window that is full and can be scrolled.
  */
-static int	ok_to_output (Window *window)
+static int	ok_to_output (int window_)
 {
+	Window *window	= get_window_by_refnum_direct(window_);
+
 	/*
 	 * Output is ok as long as the three top of displays all are 
 	 * within a screenful of the insertion point!
@@ -3008,8 +3003,10 @@ static int	ok_to_output (Window *window)
  * ok_to_output() before you call rite().  If you do not call ok_to_output(),
  * this function will panic if the window needs to be scrolled.
  */
-static void 	scroll_window (Window *window)
+static void 	scroll_window (int window_)
 {
+	Window *window = get_window_by_refnum_direct(window_);
+
 	if (dumb_mode)
 		return;
 
@@ -3081,12 +3078,13 @@ static void 	scroll_window (Window *window)
  * repaint_window_body: redraw the entire window's scrollable region
  * The old logic for doing a partial repaint has been removed with prejudice.
  */
-void 	repaint_window_body (Window *window)
+void 	repaint_window_body (int window_)
 {
+	Window *window;
 	Display *curr_line;
 	int 	count;
 
-	if (!window)
+	if (!(window = get_window_by_refnum_direct(window_)))
 		window = get_window_by_refnum_direct(0);
 
 	if (dumb_mode || !window->screen)
@@ -3137,7 +3135,7 @@ void 	repaint_window_body (Window *window)
 	window->cursor = 0;
 	for (count = 0; count < window->display_lines; count++)
 	{
-		rite(window, curr_line->line);
+		rite(window->refnum, curr_line->line);
 
 		/*
 		 * Clean off the rest of this window.
@@ -3197,7 +3195,7 @@ void	create_new_screen (void)
 	}
 
 	new_s->last_window_refnum = 1;
-	new_s->_window_list = NULL;
+	new_s->_window_list = -1;
 	new_s->input_window = -1;
 	new_s->visible_windows = 0;
 	new_s->window_stack = NULL;
@@ -3214,7 +3212,6 @@ void	create_new_screen (void)
 	new_s->wserv_version = 0;
 	new_s->alive = 1;
 	new_s->promptlist = NULL;
-	new_s->tty_name = (char *) 0;
 	new_s->li = current_term->TI_lines;
 	new_s->co = current_term->TI_cols;
 	new_s->old_li = 0; 
@@ -3542,7 +3539,7 @@ int	create_additional_screen (void)
 /* Old screens never die. They just fade away. */
 void 	kill_screen (Screen *screen)
 {
-	Window	*window;
+	int	window;
 
 	if (!screen)
 	{
@@ -3563,15 +3560,15 @@ void 	kill_screen (Screen *screen)
 	}
 	if (screen->control)
 		screen->control = new_close(screen->control);
-	while ((window = screen->_window_list))
+	while ((window = screen->_window_list) != -1)
 	{
-		screen->_window_list = window->_next;
-		add_to_invisible_list(window->refnum);
+		screen->_window_list = get_window_next(window);
+		add_to_invisible_list(window);
 	}
 
 	/* Take out some of the garbage left around */
 	screen->input_window = -1;
-	screen->_window_list = NULL;
+	screen->_window_list = -1;
 	screen->last_window_refnum = -1;
 	screen->visible_windows = 0;
 	screen->window_stack = NULL;
@@ -3597,16 +3594,16 @@ int     number_of_windows_on_screen (Screen *screen)
         return screen->visible_windows;
 }
 
-Window *	get_screen_bottom_window (Screen *screen)
+int	get_screen_bottom_window (Screen *screen)
 {
-	Window *w;
+	int	refnum;
 
-	if (!screen->_window_list)
+	if (screen->_window_list == -1)
 		panic(1, "get_screen_bottom_window: screen %d has no windows?", screen->screennum);
 
-	for (w = screen->_window_list; w->_next; w = w->_next)
+	for (refnum = screen->_window_list; get_window_next(refnum) != -1; refnum = get_window_next(refnum))
 		;
-	return w;
+	return refnum;
 }
 
 
@@ -3654,7 +3651,7 @@ static void 	do_screens (int fd)
 		    }
 
 		    if (!strncmp(buffer, "tty=", 4))
-			malloc_strcpy(&screen->tty_name, buffer + 4);
+			(void) 0;	/* We no longer use this info */
 		    else if (!strncmp(buffer, "geom=", 5))
 		    {
 			char *ptr;

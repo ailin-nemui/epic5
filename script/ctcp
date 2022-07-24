@@ -83,4 +83,28 @@ alias do_ctcp_finger_request {
 @ctcpctl(SET UTC RESPONSE {return $stime($3-)});
 @ctcpctl(SET UTC DESCRIPTION substitutes the local timezone);
 
+# Written just for zlonix. :)
+alias ctcp_cloak {
+	if (!*0) {
+		xecho -b These CTCPs are currently cloaked: $ctcpctl(INACTIVE);
+	} else {
+		fe ($0) c {
+			@ctcpctl(SET $c ACTIVE 0);
+		};
+		xecho -b These CTCPs have been cloaked: $*;
+	};
+};
+
+alias ctcp_uncloak {
+	if (!*0) {
+		xecho -b These CTCPs are currently uncloaked: $ctcpctl(ACTIVE);
+	} else {
+		fe ($0) c {
+			@ctcpctl(SET $0 ACTIVE 1);
+		};
+		xecho -b These CTCPs have been uncloaked: $*;
+	};
+};
+
+
 #hop'2k18

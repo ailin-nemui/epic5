@@ -38,13 +38,13 @@ struct	DisplayStru *	next;
 	time_t		when;
 }	Display;
 
-#define NEED_WINDOWSTRU
 #ifdef NEED_WINDOWSTRU
 typedef	struct	WindowStru
 {
 	/* List stuff */
-struct	WindowStru *	_next;			/* Window below us on screen */
-struct	WindowStru *	_prev;			/* Window above us on screen */
+	int		_next;
+	int		_prev;
+
 struct	ScreenStru *	screen;			/* The screen we belong to */
 	short		deceased;		/* Set when the window is killed */
 
@@ -178,6 +178,10 @@ struct	ScreenStru *	screen;			/* The screen we belong to */
 
 }	Window;
 
+	int	traverse_all_windows		(Window **);
+	Window *get_window_by_refnum_direct	(int refnum);
+#endif
+
 /*
  * WindowStack: The structure for the POP, PUSH, and STACK functions. A
  * simple linked list with window refnums as the data 
@@ -189,11 +193,7 @@ struct	window_stack_stru *	next;
 }	WindowStack;
 
 
-	int	traverse_all_windows		(Window **);
-#endif
-
 	int	new_window 			(struct ScreenStru *);
-	Window *get_window_by_refnum_direct	(int refnum);
 
 extern	unsigned 	current_window_priority;
 
@@ -332,6 +332,11 @@ struct ScreenStru *get_window_screen			(int);
 	int     set_window_notified			(int, int);
 	int	set_window_notify_mask			(int, Mask);
 	int	set_window_priority			(int, int);
+
+	int	get_window_prev				(int);
+	int	get_window_next				(int);
+	int	set_window_prev				(int, int);
+	int	set_window_next				(int, int);
 
 	int	window_is_valid				(int);
 

@@ -65,6 +65,7 @@
 #define CTCP_SPECIAL	1	/* Special handlers handle everything and don't return anything */
 #define CTCP_ORDINARY   2	/* Ordinary handlers either return a inline value or you should tell the user */
 #define CTCP_REPLACE_ARGS   4	/* A "replace args" CTCP rewrites the args, but still needs to be "handled" normally */
+#define CTCP_ACTIVE	8	/* Whether to handle requests (or ignore them) */
 #define CTCP_RAW	32	/* Requires the original payload, not a recoded message */
 #define CTCP_RESTARTABLE 64	/* Requires the CTCP processing to be restarted after handling */
 
@@ -160,6 +161,7 @@ static	void	add_ctcp (const char *name, int flag, const char *desc, CTCP_Handler
 
 	ctcp = (CtcpEntry *)new_malloc(sizeof(CtcpEntry));
 	ctcp->flag = flag;
+	ctcp->flag |= CTCP_ACTIVE;		/* By default all CTCPs start as active */
 	ctcp->desc = malloc_strdup(desc);
 
 	ctcp->func = func;
@@ -616,6 +618,9 @@ char *	do_ctcp (int request, const char *from, const char *to, char *str)
 			/* Call the appropriate callback (four-ways!) */
 			if (request)
 			{
+			    /* Inactive CTCP requests are silently dropped */
+			    if ((CTCP(i)->flag & CTCP_ACTIVE))
+			    {
 				if (CTCP(i)->user_func)
 				{
 					char *args = NULL;
@@ -625,6 +630,7 @@ char *	do_ctcp (int request, const char *from, const char *to, char *str)
 				}
 				else if (CTCP(i)->func)
 					ptr = CTCP(i)->func(from, to, ctcp_command, ctcp_argument);
+			    }
 			}
 			else
 			{
@@ -932,6 +938,38 @@ BUILT_IN_FUNCTION(function_ctcpctl, input)
                 }
 		RETURN_FSTR(buffer);
 	}
+	else if (!my_strnicmp(op, "ACTIVE", op_len)) {
+                char buffer[BIG_BUFFER_SIZE + 1];
+                *buffer = '\0';
+
+                for (i = 0; i < ctcp_bucket->numitems; i++)
+                {
+			/* Inactive CTCPs are excluded here */
+			if ((CTCP(i)->flag) & CTCP_ACTIVE)
+			{
+				const char *name = CTCP_NAME(i);
+				strlcat(buffer, name, sizeof buffer);
+				strlcat(buffer, " ", sizeof buffer);
+			}
+                }
+		RETURN_FSTR(buffer);
+	}
+	else if (!my_strnicmp(op, "INACTIVE", op_len)) {
+                char buffer[BIG_BUFFER_SIZE + 1];
+                *buffer = '\0';
+
+                for (i = 0; i < ctcp_bucket->numitems; i++)
+                {
+			/* Only Inactive CTCPs are included here */
+			if (!((CTCP(i)->flag) & CTCP_ACTIVE))
+			{
+				const char *name = CTCP_NAME(i);
+				strlcat(buffer, name, sizeof buffer);
+				strlcat(buffer, " ", sizeof buffer);
+			}
+                }
+		RETURN_FSTR(buffer);
+	}
 
 	GET_FUNC_ARG(ctcp_name, input);
 	GET_FUNC_ARG(field, input);
@@ -975,6 +1013,13 @@ BUILT_IN_FUNCTION(function_ctcpctl, input)
 				CTCP(i)->flag = (CTCP(i)->flag & ~CTCP_RAW);
 			else
 				RETURN_EMPTY;
+		} else if (!my_stricmp(field, "ACTIVE")) {
+			if (!strcmp(input, one))
+				CTCP(i)->flag = (CTCP(i)->flag | CTCP_ACTIVE);
+			else if (!strcmp(input, zero))
+				CTCP(i)->flag = (CTCP(i)->flag & ~CTCP_ACTIVE);
+			else
+				RETURN_EMPTY;
 		} else {
 			RETURN_EMPTY;
 		}
@@ -991,6 +1036,8 @@ BUILT_IN_FUNCTION(function_ctcpctl, input)
 			RETURN_INT((CTCP(i)->flag & CTCP_SPECIAL) != 0);
 		} else if (!my_stricmp(field, "RAW")) {
 			RETURN_INT((CTCP(i)->flag & CTCP_RAW) != 0);
+		} else if (!my_stricmp(field, "ACTIVE")) {
+			RETURN_INT((CTCP(i)->flag & CTCP_ACTIVE) != 0);
 		} else {
 			RETURN_EMPTY;
 		}

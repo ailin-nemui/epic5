@@ -4303,6 +4303,8 @@ BUILT_IN_FUNCTION(function_repeat, words)
 
 	size = strlen(words) * num + 1;
 
+/* CE says it's time for this to go... */
+#if 0
 	/* 
 	 * Don't allow the return value to be > 1MB to avoid
 	 * "out of memory failure" panic
@@ -4312,6 +4314,7 @@ BUILT_IN_FUNCTION(function_repeat, words)
 		num = 1000000 / strlen(words);
 		size = strlen(words) * num + 1;
 	}
+#endif
 
 	retval = (char *)new_malloc(size);
 	*retval = 0;

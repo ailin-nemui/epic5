@@ -9,7 +9,7 @@
 #ifndef __screen_h__
 #define __screen_h__
 
-/* To get the definition of Window */
+/* To get the definition of WindowStack */
 #include "window.h"
 
 #define WAIT_PROMPT_LINE        0x01
@@ -60,7 +60,6 @@ struct	PromptStru *	next;
 	InputLine *	saved_input_line;
 }	WaitPrompt;
 
-#ifdef NEED_WINDOWSTRU
 typedef	struct	ScreenStru
 {
 struct	ScreenStru *	prev;			/* Next screen in list */
@@ -71,7 +70,7 @@ struct	ScreenStru *	next;			/* Previous screen in list */
 	int		screennum;		/* Refnum for this screen */
 	int		input_window;		/* Window that has the input focus */
 	unsigned 	last_window_refnum;	/* The previous input window (for /window back) */
-	Window *	_window_list;		/* The top window on me */
+	int		_window_list;		/* The top window on me */
 	int		visible_windows;	/* Number of windows on me */
 	WindowStack *	window_stack;		/* Number of windows on my stack */
 
@@ -91,7 +90,6 @@ struct	ScreenStru *	next;			/* Previous screen in list */
 	Timeval 	last_press;		/* The last time a key was pressed. */
 	void *		last_key;		/* The last Key pressed. */
 
-	char *		tty_name;
 	int		co;
 	int		li;
 	int		old_co;
@@ -99,9 +97,8 @@ struct	ScreenStru *	next;			/* Previous screen in list */
 
 }	Screen;
 
-	void		repaint_window_body		(Window *);
+	void		repaint_window_body		(int);
 	int		create_additional_screen 	(void);
-#endif
 	void		add_wait_prompt 		(const char *, void (*)(char *, const char *), const char *, int, int);
 	void		fire_wait_prompt		(uint32_t);
 	void		fire_normal_prompt		(const char *);
@@ -124,7 +121,7 @@ const	char *		all_off				(void);
 	void		chop_final_columns 		(char **, size_t);
 
 	int		number_of_windows_on_screen	(struct ScreenStru *);
-	Window *	get_screen_bottom_window	(struct ScreenStru *);
+	int		get_screen_bottom_window	(struct ScreenStru *);
 
 /* Dont do any word-wrapping, just truncate each line at its place. */
 #define PREPARE_NOWRAP	0x01

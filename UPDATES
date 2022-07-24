@@ -1,5 +1,37 @@
 EPIC5-2.2
 
+*** News 07/24/2022 -- New commands, /CTCP_CLOAK and /CTCP_UNCLOAK
+	These are implemented by the /LOAD ctcp script, which is 
+	part of the default experience
+
+	"Cloaking" a CTCP means to treat a built-in CTCP as though
+	it were not a built-in CTCP.
+	   1. It will not show up in CTCP CLIENTINFO
+	   2. Built-in handlers will NOT be called, but it will be
+	      treated like any ordinary unrecognized CTCP 
+	      (with /on ctcp_request and /on ctcp)
+
+	Usage:
+		/ctcp_cloak		List all cloaked CTCPs
+		/ctcp_uncloak		List all uncloaked CTCPs
+		/ctcp_cloak name	Cloak CTCP "name" 
+		/ctcp_uncloak name	Uncloak CTCP "name"
+
+	Zlonix wanted to do this:
+		/ctcp_cloak FINGER
+
+*** News 07/24/2022 -- $ctcpctl(SET x ACTIVE 0|1) and $ctcpctl([IN]ACTIVE)
+	There are some new $ctcpctl() facilities:
+
+	  $ctcpctl(SET x ACTIVE 0)	- Make a CTCP inactive (cloaked)
+	  $ctcpctl(SET x ACTIVE 1)	- Make a CTCP active (uncloaked)
+	  $ctcpctl(ACTIVE)		- Return all active CTCPs
+	  $ctcpctl(INACTIVE)		- Return all inactive CTCPs
+
+	All CTCPs start their life off as ACTIVE automatically.
+	The user can then inactivate them later.
+	These facilities are used for /ctcp_cloak and /ctcp_uncloak (above)
+
 *** News 06/15/2022 -- EPIC5-2.1.12 (2078 - Secondment) released here
 	This release improves build behavior for openbsd and others.
 
