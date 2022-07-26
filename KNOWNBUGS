@@ -1239,3 +1239,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /ctcp_cloak and /ctcp_uncloak to /load ctcp (rb zlonix)
 * Remove size limits on $repeat (rb ce)
 * Fix CTCP CLIENTINFO (x) (rb zlonix)
+* Fix swap_window()  (rb fro, zlonix)

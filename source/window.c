@@ -161,7 +161,12 @@ static 	int	count_fixed_windows 		(Screen *s);
 static	void 	set_screens_current_window 	(Screen *, int);
 static	int	get_next_window  		(int);
 static	int	get_previous_window 		(int);
+#if 0
 static 	void 	swap_window 			(Window *, Window *);
+#else
+static	void	swap_window			(int, int);
+#endif
+static int	ensure_window_priority 		(int refnum);
 
 static void	delete_window_contents 		(int);
 
@@ -513,7 +518,11 @@ static int	unlink_window (int window_)
 	else if (get_invisible_list())
 	{
 		window->swappable = 1;
+#if 0
 		swap_window(window, NULL);
+#else
+		swap_window(window->refnum, -1);
+#endif
 	}
 	else
 	{
@@ -1166,10 +1175,20 @@ static void	recalculate_window_positions (Screen *screen)
  * windows in their respective window lists, and retains the dimensions of
  * the windows as well 
  */
+#if 0
 static void 	swap_window (Window *v_window, Window *window)
+#else
+static	void	swap_window (int v_window_, int window_)
+#endif
 {
 	int	check_hidden = 1;
 	int	recalculate_everything = 0;
+	Window *v_window, *window;
+	Screen *screen;
+	int	v_window_current;
+	int	v_window_prev, v_window_next;
+
+	v_window = get_window_by_refnum_direct(v_window_);
 
 	/*
 	 * v_window -- window to be swapped out
@@ -1177,17 +1196,26 @@ static void 	swap_window (Window *v_window, Window *window)
 	 */
 
 	/* Find any invisible window to swap in.  Prefer swappable ones */
-	if (!window)
+	if (window_ <= 0)
 	{
 		window = NULL;
 		while (traverse_all_windows_on_screen(&window, NULL))
+		{
 			if (window->swappable)
+			{
+				window_ = window->refnum;
 				break;
+			}
+		}
 	}
+	else
+		window = get_window_by_refnum_direct(window_);
+
 	if (!window && get_invisible_list())
 	{
 		check_hidden = 0;
 		window = get_invisible_list();
+		window_ = window->refnum;
 	}
 	if (!window)
 	{
@@ -1195,12 +1223,28 @@ static void 	swap_window (Window *v_window, Window *window)
 		return;
 	}
 
-	if (get_window_screen(window->refnum) || !get_window_screen(v_window->refnum))
+	screen = get_window_screen(v_window->refnum);
+	if (v_window == current_window)
+		v_window_current = 1;
+	else
+		v_window_current = 0;
+
+	v_window_prev = get_window_prev(v_window_);
+	v_window_next = get_window_next(v_window_);
+
+	/*
+	 * THE VISIBLE WINDOW MUST BE VISIBLE
+	 * THE HIDDEN WINDOW MUST BE INVISIBLE
+	 */
+	if (get_window_screen(window_) || !get_window_screen(v_window_))
 	{
 		say("You can only SWAP a hidden window with a visible window.");
 		return;
 	}
 
+	/*
+	 * THE TWO WINDOWS MUST BE SWAPPABLE 
+	 */
 	if (!v_window->swappable)
 	{
 		if (v_window->name)
@@ -1218,15 +1262,11 @@ static void 	swap_window (Window *v_window, Window *window)
 		return;
 	}
 
-
 	/*
-	 * Put v_window on invisible list
+	 * ADD THE CURRENTLY VISIBLE WINDOW TO THE INVISIBLE LIST
+	 * REMOVE THE CURRENTLY HIDDEN WINDOW FROM THE INVISIBLE LIST
 	 */
-	get_window_screen(v_window->refnum)->last_window_refnum = v_window->refnum;
-
-	/*
-	 * Take window off invisible list
-	 */
+	screen->last_window_refnum = v_window_;
 	remove_from_invisible_list(window);
 
 	/*
@@ -1239,10 +1279,10 @@ static void 	swap_window (Window *v_window, Window *window)
 					window->toplines_showing;
 	/* XXX Manually resetting window's size? Ugh */
 	window->display_lines = v_window->display_lines + 
-			       v_window->status.number - 
-				window->status.number +
-			       v_window->toplines_showing - 
-				window->toplines_showing;
+			          v_window->status.number - 
+				    window->status.number +
+			          v_window->toplines_showing - 
+				    window->toplines_showing;
 	window->bottom = window->top + window->display_lines;
 	window->screen = get_window_screen(v_window->refnum);
 
@@ -1252,61 +1292,66 @@ static void 	swap_window (Window *v_window, Window *window)
 		recalculate_everything = 1;
 	}
 
-	if (get_window_screen(v_window->refnum)->input_window == (int)v_window->refnum)
+	/*
+	 * IF THE CURRENTLY VISIBLE WINDOW IS THE LAST INPUT WINDOW
+	 * Make the currently hidden window the last input window
+	 */
+	if (screen->input_window == (int)v_window_)
 	{
-		get_window_screen(v_window->refnum)->input_window = window->refnum;
-		window->priority = current_window_priority++;
+		screen->input_window = window_;
+		ensure_window_priority(window_);
 	}
 
 	/*
-	 * Put the window to be swapped into the screen list
+	 * Hook 'window' into the screen, first set window's prev
 	 */
-	if (get_window_prev(v_window->refnum) != -1)
+	if (v_window_prev != -1)
 	{
-		set_window_prev(window->refnum, get_window_prev(v_window->refnum));
-		set_window_next(get_window_prev(v_window->refnum), window->refnum);
+		set_window_prev(window_, v_window_prev);
+		set_window_next(v_window_prev, window_);
 	}
 	else
 	{
-		set_window_next(window->refnum, get_window_screen(window->refnum)->_window_list);
-		get_window_screen(window->refnum)->_window_list = window->refnum;
+		set_window_prev(window_, -1);
+		screen->_window_list = window_;
 	}
 
-	if (get_window_next(v_window->refnum) != -1)
+	/* 
+	 * Then set window's next
+	 */
+	if (v_window_next != -1)
 	{
-		set_window_next(window->refnum, get_window_next(v_window->refnum));
-		set_window_prev(get_window_next(v_window->refnum), window->refnum);
+		set_window_next(window_, v_window_next);
+		set_window_prev(v_window_next, window_);
 	}
 	else
-		set_window_next(window->refnum, -1);
+		set_window_next(window_, -1);
 
 	/*
 	 * Hide the window to be swapped out
 	 */
 	if (!v_window->deceased)
-		add_to_invisible_list(v_window->refnum);
+		add_to_invisible_list(v_window_);
 
 	if (recalculate_everything)
-		recalculate_windows(get_window_screen(window->refnum));
+		recalculate_windows(screen);
 	recalculate_window_cursor_and_display_ip(window);
 	resize_window_display(window);
-
-	/* XXX Should I do this before, or after, for efficiency? */
 	window_check_columns(window);
 
 	/*
 	 * And recalculate the window's positions.
 	 */
-	window_body_needs_redraw(window->refnum);
-	window_statusbar_needs_redraw(window->refnum);
+	window_body_needs_redraw(window_);
+	window_statusbar_needs_redraw(window_);
 	window->notified = 0;
 	window->current_activity = 0;
 
 	/*
 	 * Transfer current_window if the current window is being swapped out
 	 */
-	if (v_window == current_window)
-		make_window_current_by_refnum(window->refnum);
+	if (v_window_current)
+		make_window_current_by_refnum(window_);
 }
 
 /*
@@ -2353,7 +2398,7 @@ BUILT_IN_KEYBINDING(swap_last_window)
 	if (!get_invisible_list() || !get_window_screen(current_window->refnum))
 		return;
 
-	swap_window(current_window, get_invisible_list());
+	swap_window(current_window->refnum, get_invisible_list()->refnum);
 	update_all_windows();
 }
 
@@ -3773,6 +3818,20 @@ int	set_window_priority (int refnum, int priority)
 		return -1;
 }
 
+static int	ensure_window_priority (int refnum)
+{
+	Window	*w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+	{
+		w->priority = current_window_priority++;
+		return 0;
+	}
+	else
+		return -1;
+}
+
+
 FILE *	get_window_log_fp (int refnum)
 {
 	Window	*w = get_window_by_refnum_direct(refnum);
@@ -4476,7 +4535,7 @@ WINDOWCMD(back)
 	if (get_window_screen(other_refnum))
 		set_screens_current_window(get_window_screen(other_refnum), other_refnum);
 	else
-		swap_window(window, get_window_by_refnum_direct(other_refnum));
+		swap_window(window->refnum, other_refnum);
 
 	return get_window_refnum(other_refnum);
 }
@@ -5440,7 +5499,7 @@ WINDOWCMD(killswap)
 	}
 	if (get_invisible_list())
 	{
-		swap_window(window, get_invisible_list());
+		swap_window(window->refnum, get_invisible_list()->refnum);
 		if (unlink_window(refnum))
 			delete_window_contents(refnum);
 	}
@@ -6097,7 +6156,7 @@ WINDOWCMD(next)
 		return 0;
 	}
 
-	swap_window(window, next);
+	swap_window(window->refnum, next->refnum);
 	return current_window->refnum;
 }
 
@@ -6469,7 +6528,7 @@ WINDOWCMD(previous)
 		return 0;
 	}
 
-	swap_window(window, previous);
+	swap_window(window->refnum, previous->refnum);
 	return previous->refnum;
 }
 
@@ -6829,7 +6888,7 @@ WINDOWCMD(refnum_or_swap)
 		set_screens_current_window(get_window_screen(tmp->refnum), tmp->refnum);
 	}
 	else
-		swap_window(window, tmp);
+		swap_window(window->refnum, tmp->refnum);
 
 	return tmp->refnum;
 }
@@ -7518,7 +7577,7 @@ WINDOWCMD(swap)
 		return refnum;
 
 	if ((tmp = get_invisible_window("SWAP", args)))
-		swap_window(window, tmp);
+		swap_window(window->refnum, tmp->refnum);
 
 	return current_window->refnum;
 }
