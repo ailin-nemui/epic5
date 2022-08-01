@@ -89,11 +89,7 @@ static	Window	*current_window = NULL;
  * All of the hidden windows.  These windows are not on any screen, and
  * therefore are not visible.
  */
-#if 0
-static	Window	*_invisible_list = (Window *) 0;
-#else
 static	int	_invisible_list = -1;
-#endif
 
 /*
  * Each time a window is made the current window, it grabs this value and
@@ -121,56 +117,48 @@ typedef struct  WNickListStru
         int             counter;
 }       WNickList;
 
-
-static 	void 	revamp_window_masks 		(Window *);
-static	void 	clear_window 			(Window *);
+static 	void 	revamp_window_masks 		(int);
+static	void 	clear_window 			(int);
 static	void	resize_window_display 		(Window *);
 static 	int	windowcmd_next 			(int, char **);
 static 	int	windowcmd_previous 		(int, char **);
-static 	void	window_scrollback_start 	(Window *window);
-static 	void	window_scrollback_end 		(Window *window);
-static void	window_scrollback_backward 	(Window *window);
-static void	window_scrollback_forward 	(Window *window);
-static void	window_scrollback_backwards_lines 	(Window *window, int);
-static void	window_scrollback_forwards_lines	(Window *window, int);
-static 	void 	window_scrollback_to_string 	(Window *window, regex_t *str);
-static 	void 	window_scrollforward_to_string 	(Window *window, regex_t *str);
+static 	void	window_scrollback_start 	(Window *);
+static 	void	window_scrollback_end 		(Window *);
+static 	void	window_scrollback_backward 	(Window *);
+static 	void	window_scrollback_forward 	(Window *);
+static 	void	window_scrollback_backwards_lines 	(Window *, int);
+static 	void	window_scrollback_forwards_lines	(Window *, int);
+static 	void 	window_scrollback_to_string 	(Window *, regex_t *);
+static 	void 	window_scrollforward_to_string 	(Window *, regex_t *);
 static	int	change_line 			(Window *, const char *);
 static	int	add_to_display 			(Window *, const char *, intmax_t);
-static	Display *new_display_line 		(Display *prev, Window *w);
+static	Display *new_display_line 		(Display *, Window *w);
 static	int	add_waiting_channel 		(Window *, const char *);
 static 	void   	destroy_window_waiting_channels	(int);
 static 	int	flush_scrollback_after		(Window *);
 static 	int	flush_scrollback		(Window *);
-static void	unclear_window 			(Window *window);
-static	void	rebuild_scrollback 		(Window *w);
-static	void	window_check_columns 		(Window *w);
-static void	restore_window_positions 	(Window *w, intmax_t scrolling, intmax_t holding, intmax_t scrollback);
-static void	save_window_positions 		(Window *w, intmax_t *scrolling, intmax_t *holding, intmax_t *scrollback);
-static void	adjust_context_windows 		(int old_win, int new_win);
-static void	window_statusbar_needs_redraw 	(int);
-static void	window_change_server 		(Window * win, int server) ;
-static void	window_body_needs_redraw 	(int refnum);
-static void 	make_window_current 		(Window *window);
-static void 	recalculate_window_cursor_and_display_ip (Window *window);
-
-static Window *	add_to_window_list 		(Screen *screen, Window *new_w);
+static 	void	unclear_window 			(int);
+static	void	rebuild_scrollback 		(int);
+static	void	window_check_columns 		(int);
+static 	void	restore_window_positions 	(Window *, intmax_t, intmax_t, intmax_t);
+static 	void	save_window_positions 		(Window *w, intmax_t *, intmax_t *, intmax_t *);
+static 	void	adjust_context_windows 		(int, int);
+static 	void	window_statusbar_needs_redraw 	(int);
+static 	void	window_change_server 		(int, int);
+static 	void	window_body_needs_redraw 	(int);
+static 	void 	recalculate_window_cursor_and_display_ip (Window *);
+static 	Window *add_to_window_list 		(Screen *, Window *);
 static 	void 	remove_from_invisible_list 	(Window *);
-static	void 	remove_window_from_screen 	(Window *window, int hide, int recalc);
-static 	int	count_fixed_windows 		(Screen *s);
+static	void 	remove_window_from_screen 	(Window *, int, int);
+static 	int	count_fixed_windows 		(Screen *);
 static	void 	set_screens_current_window 	(Screen *, int);
 static	int	get_next_window  		(int);
 static	int	get_previous_window 		(int);
-#if 0
-static 	void 	swap_window 			(Window *, Window *);
-#else
 static	void	swap_window			(int, int);
-#endif
-static int	ensure_window_priority 		(int refnum);
-
+static	int	ensure_window_priority 		(int);
 static void	delete_window_contents 		(int);
 
-static	Window *get_invisible_list (void) { return get_window_by_refnum_direct(_invisible_list); }
+static	int	get_invisible_list (void) { return _invisible_list; }
 
 /* * * * * * * * * * * CONSTRUCTOR AND DESTRUCTOR * * * * * * * * * * * */
 /*
@@ -436,7 +424,7 @@ static int	unlink_window (int window_)
 	{
 	    if ((fixed && get_window_screen(window->refnum)->visible_windows == 1) ||
 	        (!fixed && get_window_screen(window->refnum)->visible_windows - fixed_wins <= 1
-			&& !get_invisible_list()))
+			&& get_invisible_list() < 1))
 	    {
 		say("You can't kill the only window!");
 		return 0;
@@ -515,7 +503,7 @@ static int	unlink_window (int window_)
 		remove_from_invisible_list(window);
 	else if (fixed || get_window_screen(window->refnum)->visible_windows > fixed_wins + 1)
 		remove_window_from_screen(window, 0, 1);
-	else if (get_invisible_list())
+	else if (get_invisible_list() >= 1)
 	{
 		window->swappable = 1;
 #if 0
@@ -695,10 +683,10 @@ int 	traverse_all_windows (Window **ptr)
 		while (screen && (!screen->alive || screen->_window_list == -1))
 			screen = screen->next;
 
-		if (!screen && !get_invisible_list())
+		if (!screen && get_invisible_list() < 1)
 			return 0;
 		else if (!screen)
-			*ptr = get_invisible_list();
+			*ptr = get_window_by_refnum_direct(get_invisible_list());
 		else
 			*ptr = get_window_by_refnum_direct(screen->_window_list);
 	}
@@ -726,10 +714,10 @@ int 	traverse_all_windows (Window **ptr)
 		 * If there are no other screens, then if there is a list
 		 * of hidden windows, try that.  Otherwise we're done.
 		 */
-		if (!ns && !get_invisible_list())
+		if (!ns && get_invisible_list() < 1)
 			return 0;
 		else if (!ns)
-			*ptr = get_invisible_list();
+			*ptr = get_window_by_refnum_direct(get_invisible_list());
 		else
 			*ptr = get_window_by_refnum_direct(ns->_window_list);
 	}
@@ -806,7 +794,7 @@ static int 	traverse_all_windows_on_screen (Window **ptr, Screen *s)
 	if (!*ptr)
 	{
 		if (!s)
-			*ptr = get_invisible_list();
+			*ptr = get_window_by_refnum_direct(get_invisible_list());
 		else
 			*ptr = get_window_by_refnum_direct(s->_window_list);
 	}
@@ -1175,11 +1163,7 @@ static void	recalculate_window_positions (Screen *screen)
  * windows in their respective window lists, and retains the dimensions of
  * the windows as well 
  */
-#if 0
-static void 	swap_window (Window *v_window, Window *window)
-#else
 static	void	swap_window (int v_window_, int window_)
-#endif
 {
 	int	check_hidden = 1;
 	int	recalculate_everything = 0;
@@ -1211,11 +1195,11 @@ static	void	swap_window (int v_window_, int window_)
 	else
 		window = get_window_by_refnum_direct(window_);
 
-	if (!window && get_invisible_list())
+	if (!window && get_invisible_list() >= 1)
 	{
 		check_hidden = 0;
-		window = get_invisible_list();
-		window_ = window->refnum;
+		window_ = get_invisible_list();
+		window = get_window_by_refnum_direct(window_);
 	}
 	if (!window)
 	{
@@ -1337,7 +1321,7 @@ static	void	swap_window (int v_window_, int window_)
 		recalculate_windows(screen);
 	recalculate_window_cursor_and_display_ip(window);
 	resize_window_display(window);
-	window_check_columns(window);
+	window_check_columns(window_);
 
 	/*
 	 * And recalculate the window's positions.
@@ -1665,7 +1649,7 @@ void	resize_window_display (Window *window)
 
 	/* XXX - This is a temporary hack, but it works. */
 	if (window->scrolling_distance_from_display_ip >= window->display_lines)
-		unclear_window(window);
+		unclear_window(window->refnum);
 
 	/*
 	 * Mark the window for redraw and store the new window size.
@@ -1808,7 +1792,7 @@ static	int	restart = 0;
 		{
 			debuglog("update_all_windows(%d), rebuild scrollback",
 					tmp->user_refnum);
-			rebuild_scrollback(tmp);
+			rebuild_scrollback(window_);
 		}
 
 		/* 
@@ -2028,7 +2012,7 @@ void 	recalculate_windows (Screen *screen)
 	 */
 	tmp = NULL;
 	while (traverse_all_windows_on_screen(&tmp, screen))
-		window_check_columns(tmp);
+		window_check_columns(tmp->refnum);
 
 	/*
 	 * This is much more complicated than it needs to be, and I've
@@ -2209,19 +2193,29 @@ void 	recalculate_windows (Screen *screen)
 	recalculate_window_positions(screen);
 }
 
-static	void	window_check_columns (Window *w)
+static	void	window_check_columns (int refnum)
 {
-	if (get_window_screen(w->refnum) && w->my_columns != get_window_screen(w->refnum)->co)
+	Window *w;
+
+	if (!window_is_valid(refnum))
+		return;
+
+	w = get_window_by_refnum_direct(refnum);
+	if (get_window_screen(refnum) && w->my_columns != get_window_screen(refnum)->co)
 	{
-		w->my_columns = get_window_screen(w->refnum)->co;
+		w->my_columns = get_window_screen(refnum)->co;
 		w->rebuild_scrollback = 1;
-		/* rebuild_scrollback(w); */
 	}
 }
 
-static	void	rebuild_scrollback (Window *w)
+static	void	rebuild_scrollback (int refnum)
 {
 	intmax_t	scrolling, holding, scrollback;
+	Window *w;
+
+	if (!window_is_valid(refnum))
+		return;
+	w = get_window_by_refnum_direct(refnum);
 
 	save_window_positions(w, &scrolling, &holding, &scrollback);
 	flush_scrollback(w);
@@ -2301,20 +2295,11 @@ static void	restore_window_positions (Window *w, intmax_t scrolling, intmax_t ho
 	 * correct behavior is to _clear_ the window, not _unclear_ it.
 	 */
 	if (!w->scrolling_top_of_display)
-	{
-		clear_window(w);
-#if 0
-		clear_was_forced = 1;
-#endif
-	}
+		clear_window(w->refnum);
 
 	recalculate_window_cursor_and_display_ip(w);
 	if (w->scrolling_distance_from_display_ip >= w->display_lines)
-		unclear_window(w);
-#if 0
-	else if (w->scrolling_distance_from_display_ip <= w->display_lines && w->scrolladj && !clear_was_forced)
-		unclear_window(w);
-#endif
+		unclear_window(w->refnum);
 	else
 	{
 		window_body_needs_redraw(w->refnum);
@@ -2395,10 +2380,10 @@ static int 	hide_window (Window *window)
  */
 BUILT_IN_KEYBINDING(swap_last_window)
 {
-	if (!get_invisible_list() || !get_window_screen(current_window->refnum))
+	if (get_invisible_list() < 1 || !get_window_screen(current_window->refnum))
 		return;
 
-	swap_window(current_window->refnum, get_invisible_list()->refnum);
+	swap_window(current_window->refnum, get_invisible_list());
 	update_all_windows();
 }
 
@@ -3139,7 +3124,7 @@ void	change_window_server (int old_server, int new_server)
 	{
 		Window *tmp = get_window_by_refnum_direct(window_);
 		if (tmp->server == old_server)
-			window_change_server(tmp, new_server);
+			window_change_server(window_, new_server);
 	}
 
 	if (old_server == primary_server)
@@ -3286,7 +3271,7 @@ int	renormalize_window_levels (int refnum, Mask mask)
 		mask_set(&win->window_mask, i);
 	}
 
-	revamp_window_masks(win);
+	revamp_window_masks(refnum);
 	return 0;
 }
 
@@ -3299,10 +3284,16 @@ int	renormalize_window_levels (int refnum, Mask mask)
  * it also makes sure that only one window has the level `DCC', as this is
  * not dependant on a server.
  */
-static void 	revamp_window_masks (Window *window)
+static void 	revamp_window_masks (int refnum)
 {
+	Window *window;
 	int	i;
 	int	window_;
+
+	if (!window_is_valid(refnum))
+		return;
+
+	window = get_window_by_refnum_direct(refnum);
 
 	for (i = 1; BIT_VALID(i); i++)
 	{
@@ -3495,9 +3486,14 @@ int	get_to_window (void)
 }
 
 /* * * * * * * * * * * CLEARING WINDOWS * * * * * * * * * * */
-static void 	clear_window (Window *window)
+static void 	clear_window (int window_)
 {
+	Window *window;
+
 	if (dumb_mode)
+		return;
+
+	if (!(window = get_window_by_refnum_direct(window_)))
 		return;
 
 	debuglog("clearing window: clearing window %d", window->user_refnum);
@@ -3520,14 +3516,12 @@ void 	clear_all_windows (int visible, int hidden, int unhold)
 
 	for (window_ = 0; traverse_all_windows2(&window_); )
 	{
-		Window *tmp = get_window_by_refnum_direct(window_);
-
-		if (visible && !hidden && !get_window_screen(tmp->refnum))
+		if (visible && !hidden && !get_window_screen(window_))
 			continue;
-		if (!visible && hidden && get_window_screen(tmp->refnum))
+		if (!visible && hidden && get_window_screen(window_))
 			continue;
 
-		clear_window(tmp);
+		clear_window(window_);
 	}
 }
 
@@ -3541,14 +3535,18 @@ void 	clear_window_by_refnum (int refnum, int unhold)
 
 	if (!(tmp = get_window_by_refnum_direct(refnum)))
 		tmp = current_window;
-	clear_window(tmp);
+	clear_window(tmp->refnum);
 }
 
-static void	unclear_window (Window *window)
+static void	unclear_window (int window_)
 {
+	Window *window;
 	int i;
 
 	if (dumb_mode)
+		return;
+
+	if (!(window = get_window_by_refnum_direct(window_)))
 		return;
 
 	window->scrolling_top_of_display = window->display_ip;
@@ -3570,14 +3568,12 @@ void	unclear_all_windows (int visible, int hidden, int unhold)
 
 	for (window_ = 0; traverse_all_windows2(&window_); )
 	{
-		Window *tmp = get_window_by_refnum_direct(window_);
-
-		if (visible && !hidden && !get_window_screen(tmp->refnum))
+		if (visible && !hidden && !get_window_screen(window_))
 			continue;
-		if (!visible && hidden && get_window_screen(tmp->refnum))
+		if (!visible && hidden && get_window_screen(window_))
 			continue;
 
-		unclear_window(tmp);
+		unclear_window(window_);
 	}
 }
 
@@ -3587,7 +3583,7 @@ void	unclear_window_by_refnum (int refnum, int unhold)
 
 	if (!(tmp = get_window_by_refnum_direct(refnum)))
 		tmp = current_window;
-	unclear_window(tmp);
+	unclear_window(tmp->refnum);
 }
 
 /*
@@ -4361,7 +4357,7 @@ static Window *get_window (const char *name, char **args)
  * indicating the top of the invisible window list (and thus the last window
  * made invisible) 
  */
-static Window *get_invisible_window (const char *name, char **args)
+static int	get_invisible_window (const char *name, char **args)
 {
 	char	*arg;
 	Window	*tmp;
@@ -4370,16 +4366,14 @@ static Window *get_invisible_window (const char *name, char **args)
 	{
 		if (my_strnicmp(arg, "LAST", strlen(arg)) == 0)
 		{
-			if (!get_invisible_list())
+			if (get_invisible_list() < 1)
 				say("%s: There are no hidden windows", name);
-			return (get_invisible_list());
+			return get_invisible_list();
 		}
 		if ((tmp = get_window(name, &arg)) != NULL)
 		{
 			if (!get_window_screen(tmp->refnum))
-			{
-				return (tmp);
-			}
+				return tmp->refnum;
 			else
 			{
 				if (tmp->name)
@@ -4393,7 +4387,7 @@ static Window *get_invisible_window (const char *name, char **args)
 	}
 	else
 		say("%s: Please specify a window refnum or LAST", name);
-	return ((Window *) 0);
+	return -1;
 }
 
 
@@ -4795,7 +4789,7 @@ WINDOWCMD(clear)
 	if (!args)
 		return refnum;
 
-	clear_window(window);
+	clear_window(refnum);
 	return refnum;
 }
 
@@ -4995,7 +4989,7 @@ WINDOWCMD(discon)
 
 	reassign_window_channels(window->refnum);
 	destroy_window_waiting_channels(window->refnum);
-	window_change_server(window, NOSERV); /* XXX This shouldn't be set here. */
+	window_change_server(refnum, NOSERV); /* XXX This shouldn't be set here. */
 	window_statusbar_needs_update(window->refnum);
 	return refnum;
 }
@@ -5372,14 +5366,10 @@ WINDOWCMD(indent)
  */
 WINDOWCMD(kill)
 {
-	Window *	window = get_window_by_refnum_direct(refnum);
-
-	if (!window)
-		return 0;
 	if (!args)
 		return refnum;
 
-	if (!window->killable)
+	if (get_window_killable(refnum) != 1)
 	{
 		say("You cannot kill an unkillable window");
 		return 0;
@@ -5396,31 +5386,31 @@ WINDOWCMD(kill)
  */
 WINDOWCMD(kill_all_hidden)
 {
-	Window *tmp, *next;
-	Window *	window = get_window_by_refnum_direct(refnum);
+	int	tmp_;
+	int	reset_current_window = 0;
 
-	if (!window)
-		return 0;
 	if (!args)
 		return refnum;
 
-	tmp = get_invisible_list();
-	while (tmp)
+	tmp_ = get_invisible_list();
+	while (tmp_ >= 1)
 	{
-		next = get_window_by_refnum_direct(get_window_next(tmp->refnum));
-		if (tmp->killable)
+		int	next = get_window_next(tmp_);
+
+		if (get_window_killable(tmp_) == 1)
 		{
-		    if (tmp == window)
-			window = NULL;
-		    if (unlink_window(tmp->refnum))
-			    delete_window_contents(tmp->refnum);
+		    if (get_window_refnum(tmp_) == refnum)
+			reset_current_window = 1;
+		    if (unlink_window(tmp_))
+			    delete_window_contents(tmp_);
 		}
-		tmp = next;
+		tmp_ = next;
 	}
 
-	if (!window)
-		window = current_window;
-	return window->refnum;
+	if (reset_current_window)
+		return current_window->refnum;
+	else
+		return refnum;
 }
 
 
@@ -5433,31 +5423,31 @@ WINDOWCMD(kill_all_hidden)
  */
 WINDOWCMD(kill_others)
 {
-	Window *tmp, *next;
-	Window *	window = get_window_by_refnum_direct(refnum);
+	int	tmp_;
 
-	if (!window)
+	if (!window_is_valid(refnum))
 		return 0;
 	if (!args)
 		return refnum;
 
-	if (get_window_screen(window->refnum))
-		tmp = get_window_by_refnum_direct(get_window_screen(window->refnum)->_window_list);
+	if (get_window_screen(refnum))
+		tmp_ = get_window_screen(refnum)->_window_list;
 	else
-		tmp = get_invisible_list();
+		tmp_ = get_invisible_list();
 
-	while (tmp)
+	while (tmp_ >= 1)
 	{
-		next = get_window_by_refnum_direct(get_window_next(tmp->refnum));
-		if (tmp->killable)
+		int	next = get_window_next(tmp_);
+
+		if (get_window_killable(tmp_) == 1)
 		{
-		    if (tmp != window)
+		    if (get_window_refnum(tmp_) != get_window_refnum(refnum))
 		    {
-			if (unlink_window(tmp->refnum))
-				delete_window_contents(tmp->refnum);
+			if (unlink_window(tmp_))
+				delete_window_contents(tmp_);
 		    }
 		}
-		tmp = next;
+		tmp_ = next;
 	}
 
 	return refnum;
@@ -5467,7 +5457,7 @@ WINDOWCMD(killable)
 {
 	Window *	window = get_window_by_refnum_direct(refnum);
 
-	if (!window)
+	if (!window_is_valid(refnum))
 		return 0;
 	if (!args)
 		return refnum;
@@ -5485,21 +5475,19 @@ WINDOWCMD(killable)
  */
 WINDOWCMD(killswap)
 {
-	Window *	window = get_window_by_refnum_direct(refnum);
-
-	if (!window)
+	if (!window_is_valid(refnum))
 		return 0;
 	if (!args)
 		return refnum;
 
-	if (!window->killable)
+	if (get_window_killable(refnum) == 0)
 	{
 		say("You cannot KILLSWAP an unkillable window");
 		return 0;
 	}
-	if (get_invisible_list())
+	if (get_invisible_list() >= 1)
 	{
-		swap_window(window->refnum, get_invisible_list()->refnum);
+		swap_window(refnum, get_invisible_list());
 		if (unlink_window(refnum))
 			delete_window_contents(refnum);
 	}
@@ -5518,14 +5506,12 @@ WINDOWCMD(killswap)
  */
 WINDOWCMD(last)
 {
-	Window *	window = get_window_by_refnum_direct(refnum);
-
-	if (!window)
+	if (!window_is_valid(refnum))
 		return 0;
 	if (!args)
 		return refnum;
 
-	set_screens_current_window(get_window_screen(window->refnum), 0);
+	set_screens_current_window(get_window_screen(refnum), 0);
 	return current_window->refnum;
 }
 
@@ -5645,7 +5631,7 @@ WINDOWCMD(level)
 		if (add == -1 && mask_isset(&mask, i))
 			mask_unset(&window->window_mask, i);
 	    }
-	    revamp_window_masks(window);
+	    revamp_window_masks(refnum);
 	}
 	say("Window level is %s", mask_to_str(&window->window_mask));
 	return refnum;
@@ -7297,7 +7283,7 @@ WINDOWCMD(server)
 	char *	arg;
 	Window *	window = get_window_by_refnum_direct(refnum);
 
-	if (!window)
+	if (!window_is_valid(refnum))
 		return 0;
 	if (!args)
 		return refnum;
@@ -7316,25 +7302,24 @@ WINDOWCMD(server)
 		 * This stuff only happens if the window is changing server.  
 		 * If you're not changing server, that's a no-op.
 		 */
-		if (window->server != i)
+		if (get_window_server(refnum) != i)
 		{
 			/*
 			 * Lose our channels
 			 */
-			destroy_window_waiting_channels(window->refnum);
-			reassign_window_channels(window->refnum);
+			destroy_window_waiting_channels(refnum);
+			reassign_window_channels(refnum);
 
 			/*
 			 * Associate ourselves with the new server.
 			 */
-			window_change_server(window, i);
+			window_change_server(refnum, i);
 
 			if (status > SERVER_RECONNECT && status < SERVER_EOF)
 			{
 			    if (old_server_lastlog_mask) {
-				renormalize_window_levels(window->refnum, 
-						*old_server_lastlog_mask);
-				revamp_window_masks(window);
+				renormalize_window_levels(refnum, *old_server_lastlog_mask);
+				revamp_window_masks(refnum);
 			    }
 			}
 			else if (status > SERVER_ACTIVE)
@@ -7568,16 +7553,13 @@ WINDOWCMD(status_special)
 
 WINDOWCMD(swap)
 {
-	Window *	tmp;
-	Window *	window = get_window_by_refnum_direct(refnum);
+	int	tmp;
 
-	if (!window)
-		return 0;
 	if (!args)
 		return refnum;
 
-	if ((tmp = get_invisible_window("SWAP", args)))
-		swap_window(window->refnum, tmp->refnum);
+	if ((tmp = get_invisible_window("SWAP", args)) >= 1)
+		swap_window(refnum, tmp);
 
 	return current_window->refnum;
 }
@@ -7697,7 +7679,7 @@ WINDOWCMD(unclear)
 	if (!args)
 		return refnum;
 
-	unclear_window(window);
+	unclear_window(refnum);
 	return refnum;
 }
 
@@ -8875,26 +8857,13 @@ static void 	set_screens_current_window (Screen *screen, int window)
 	w->priority = current_window_priority++;
 }
 
-void	make_window_current_by_refnum (int refnum)
-{
-	Window	*new_win;
-
-	if (refnum == -1)
-		return;
-
-	if (refnum == 0)
-		make_window_current(NULL);
-	else if ((new_win = get_window_by_refnum_direct(refnum)))
-		make_window_current(new_win);
-	else
-		say("Window [%d] doesnt exist any more.  Punting.", refnum);
-}
-
-
 /*
  * This is used to make the specified window the current window.  This
  * is preferable to directly doing the assign, because it can deal with
  * finding a current window if the old one has gone away.
+ * 
+ * This function is semi-hidden here.  There is no decl; don't call it!
+ * Instead, call make_window_current_by_refnum() below.
  */
 static void 	make_window_current (Window *window)
 {
@@ -8943,6 +8912,22 @@ static void 	make_window_current (Window *window)
 		old_screen, old_window_user_refnum,
 		new_screen, new_window_user_refnum);
 }
+
+void	make_window_current_by_refnum (int refnum)
+{
+	Window	*new_win;
+
+	if (refnum == -1)
+		return;
+
+	if (refnum == 0)
+		make_window_current(NULL);
+	else if ((new_win = get_window_by_refnum_direct(refnum)))
+		make_window_current(new_win);
+	else
+		say("Window [%d] doesnt exist any more.  Punting.", refnum);
+}
+
 
 int	make_window_current_informally (int refnum)
 {
@@ -9500,13 +9485,17 @@ static int	count_fixed_windows (Screen *s)
 	return count;
 }
 
-static void	window_change_server (Window * win, int server) 
+static void	window_change_server (int window_, int server) 
 {
+	Window *window = get_window_by_refnum_direct(window_);
 	int oldserver;
 
-	oldserver = win->server; 
-	win->server = server;
-	do_hook(WINDOW_SERVER_LIST, "%u %d %d", win->user_refnum, oldserver, server);
+	if (!window)
+		return;
+
+	oldserver = window->server; 
+	window->server = server;
+	do_hook(WINDOW_SERVER_LIST, "%u %d %d", window->user_refnum, oldserver, server);
 	update_all_status();
 }
 
@@ -9544,29 +9533,13 @@ int     set_window_lastlog_size_incr    (int window)
 int	get_window_prev			(int window)
 {
 	Window *w = get_window_by_refnum_direct(window);
-
-#if 0
-	if (w && w->_prev)
-		return w->_prev->refnum;
-	else
-		return -1;
-#else
 	return w->_prev;
-#endif
 }
 
 int	get_window_next			(int window)
 {
 	Window *w = get_window_by_refnum_direct(window);
-
-#if 0
-	if (w && w->_next)
-		return w->_next->refnum;
-	else
-		return -1;
-#else
 	return w->_next;
-#endif
 }
 
 int	set_window_prev			(int window, int prev)
@@ -9579,15 +9552,7 @@ int	set_window_prev			(int window, int prev)
 	if (window == prev)
 		panic(1, "I can't set window->prev to myself");
 
-#if 0
-	if (prev == -1)
-		w->_prev = NULL;
-	else
-		w->_prev = get_window_by_refnum_direct(prev);
-#else
 	w->_prev = prev;
-#endif
-
 	return 0;
 }
 
@@ -9601,24 +9566,39 @@ int	set_window_next			(int window, int next)
 	if (window == next)
 		panic(1, "I can't set window->next to myself");
 
-#if 0
-	if (next == -1)
-		w->_next = NULL;
-	else
-		w->_next = get_window_by_refnum_direct(next);
-#else
 	w->_next = next;
-#endif
+	return 0;
+}
 
+int	get_window_killable		(int window)
+{
+	Window *w = get_window_by_refnum_direct(window);
+
+	if (!w)
+		return -1;
+
+	return w->killable;
+}
+
+int	set_window_killable		(int window, int value)
+{
+	Window *w = get_window_by_refnum_direct(window);
+
+	if (!w)
+		return -1;
+	if (value != 0 && value != 1)
+		return -1;
+
+	w->killable = value;
 	return 0;
 }
 
 
 #if 0
 void    help_topics_window (FILE *f)
-{                                                                               
+{
         int     x;
-                                                                                
+
         for (x = 0; options[x].func; x++)
                 fprintf(f, "window %s\n", options[x].command);
 }

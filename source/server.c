@@ -2235,7 +2235,7 @@ static int	connect_next_server_address (int server)
 		continue;
 	    }
 
-	    if (inet_ntostr((SSu *)(&ai->ai_addr), p_addr, 256, p_port, 24, NI_NUMERICHOST))
+	    if (inet_ntostr((SSu *)(ai->ai_addr), p_addr, 256, p_port, 24, NI_NUMERICHOST))
 		say("Connecting to server refnum %d (%s), using address %d",
 					server, s->info->host, s->addr_counter);
 	    else

@@ -1240,3 +1240,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Remove size limits on $repeat (rb ce)
 * Fix CTCP CLIENTINFO (x) (rb zlonix)
 * Fix swap_window()  (rb fro, zlonix)
+* Make _invisible_list an int and not a pointer. yay!
+* Fix bug with /server showing p-addrs on connect (rb zlonix, skered)
+* Continue converting internal window.c functions to refnums
