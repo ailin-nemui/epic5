@@ -40,7 +40,6 @@
 
 #define __need_term_h__
 #define __need_putchar_x__
-#define NEED_WINDOWSTRU
 #include "irc.h"
 #include "alias.h"
 #include "clock.h"
@@ -2519,15 +2518,13 @@ const 	char	*ptr;
  */
 static int 	rite (int window_, const char *str)
 {
-	Window *window = get_window_by_refnum_direct(window_);
+	output_screen = get_window_screen(window_);
+	scroll_window(window_);
 
-	output_screen = window->screen;
-	scroll_window(window->refnum);
-
-	if (window->screen && window->display_lines)
+	if (get_window_screen(window_) && get_window_display_lines(window_))
 		output_with_count(str, 1, foreground);
 
-	window->cursor++;
+	set_window_cursor_incr(window_);
 	return 0;
 }
 
@@ -2662,7 +2659,7 @@ void 	add_to_screen (const char *buffer)
 	/*
 	 * Just paranoia.
 	 */
-	if (!get_window_by_refnum_direct(0))
+	if (!window_is_valid(0))
 	{
 		puts(buffer);
 		return;
@@ -2838,21 +2835,20 @@ static void 	add_to_window (int window_, const char *str)
         int             cols;
 	int		numl = 0;
 	intmax_t	refnum;
-	char *		rewriter = NULL;
+	const char *	rewriter = NULL;
 	int		mangler = 0;
-	Window *	window = get_window_by_refnum_direct(window_);
 
-	if (get_server_redirect(window->server))
-		if (redirect_text(window->server, 
-			        get_server_redirect(window->server),
-				str, NULL, 0))
+	if (get_server_redirect(get_window_server(window_)))
+		if (redirect_text(get_window_server(window_),
+			          get_server_redirect(get_window_server(window_)),
+				  str, NULL, 0))
 			return;
 
 	if (!privileged_output)
 	{
 	   static int recursion = 0;
 
-	   if (!do_hook(WINDOW_LIST, "%u %s", window->user_refnum, str))
+	   if (!do_hook(WINDOW_LIST, "%u %s", get_window_user_refnum(window_), str))
 		return;
 
 	   /* 
@@ -2868,34 +2864,34 @@ static void 	add_to_window (int window_, const char *str)
 		char	argstuff[10240];
 
 		/* Create $* and then expand with it */
-		snprintf(argstuff, 10240, "%u %s", window->user_refnum, str);
+		snprintf(argstuff, 10240, "%u %s", get_window_user_refnum(window_), str);
 		str = free_me = expand_alias(pend, argstuff);
 	    }
 	    recursion--;
 	}
 
 	/* Add to logs + lastlog... */
-	if (window->log_rewrite)
-		rewriter = window->log_rewrite;
-	if (window->log_mangle)
-		mangler = window->log_mangle;
-	add_to_log(0, window->log_fp, window->refnum, str, mangler, rewriter);
-	add_to_logs(window->refnum, from_server, get_who_from(), get_who_level(), str);
-	refnum = add_to_lastlog(window->refnum, str);
+	if (get_window_log_rewrite(window_))
+		rewriter = get_window_log_rewrite(window_);
+	if (get_window_log_mangle(window_))
+		mangler = get_window_log_mangle(window_);
+	add_to_log(0, get_window_log_fp(window_), window_, str, mangler, rewriter);
+	add_to_logs(window_, from_server, get_who_from(), get_who_level(), str);
+	refnum = add_to_lastlog(window_, str);
 
 	/* Add to scrollback + display... */
-	cols = window->my_columns;	/* Don't -1 this! already -1'd */
+	cols = get_window_my_columns(window_);	/* Don't -1 this! already -1'd */
 	strval = new_normalize_string((const char *)str, 0, display_line_mangler);
-        for (my_lines = prepare_display(window->refnum, strval, cols, &numl, 0); *my_lines; my_lines++)
+        for (my_lines = prepare_display(window_, strval, cols, &numl, 0); *my_lines; my_lines++)
 	{
-		if (add_to_scrollback(window->refnum, *my_lines, refnum))
-		    if (ok_to_output(window->refnum))
-			rite(window->refnum, *my_lines);
+		if (add_to_scrollback(window_, *my_lines, refnum))
+		    if (ok_to_output(window_))
+			rite(window_, *my_lines);
 	}
 	new_free(&strval);
 
 	/* Check the status of the window and scrollback */
-	trim_scrollback(window->refnum);
+	trim_scrollback(window_);
 
 	cursor_to_input();
 
@@ -2908,22 +2904,22 @@ static void 	add_to_window (int window_, const char *str)
 	 *
 	 * /XECHO -F sets "do_window_notifies" which overrules this.
 	 */
-	if (!window->screen && do_window_notifies)
+	if (!get_window_screen(window_) && do_window_notifies)
 	{
 	    const char *type = NULL;
 
             /* /WINDOW BEEP_ALWAYS added for archon.  */
-	    if (window->beep_always && strchr(str, '\007'))
+	    if (get_window_beep_always(window_) && strchr(str, '\007'))
 	    {
 		type = "Beep";
 		term_beep();
 	    }
-	    if (!(window->notified) &&
-			mask_isset(&window->notify_mask, get_who_level()))
+	    if (!(get_window_notified(window_)) &&
+			mask_isset(get_window_notify_mask(window_), get_who_level()))
 	    {
-		window->notified = 1;
-	    	do_hook(WINDOW_NOTIFIED_LIST, "%u %s", window->user_refnum, level_to_str(get_who_level()));
-		if (window->notify_when_hidden)
+		set_window_notified(window_, 1);
+	    	do_hook(WINDOW_NOTIFIED_LIST, "%u %s", get_window_user_refnum(window_), level_to_str(get_who_level()));
+		if (get_window_notify_when_hidden(window_))
 			type = "Activity";
 		update_all_status();
 	    }
@@ -2931,7 +2927,7 @@ static void 	add_to_window (int window_, const char *str)
 	    if (type)
 	    {
 		int l = message_setall(get_window_refnum(0), get_who_from(), get_who_level());
-		say("%s in window %d", type, window->user_refnum);
+		say("%s in window %d", type, get_window_user_refnum(window_));
 		pop_message_from(l);
 	    }
 	}
@@ -2972,21 +2968,19 @@ void 	add_to_window_scrollback (int window, const char *str, intmax_t refnum)
  */
 static int	ok_to_output (int window_)
 {
-	Window *window	= get_window_by_refnum_direct(window_);
-
 	/*
 	 * Output is ok as long as the three top of displays all are 
 	 * within a screenful of the insertion point!
 	 */
-	if (window->scrollback_top_of_display)
+	if (get_window_scrollback_top_of_display_exists(window_))
 	{
-	    if (window->scrollback_distance_from_display_ip > window->display_lines)
+	    if (get_window_scrollback_distance_from_display_ip(window_) > get_window_display_lines(window_))
 		return 0;	/* Definitely no output here */
 	}
 
-	if (get_window_hold_mode(window->refnum))
+	if (get_window_hold_mode(window_))
 	{
-	    if (window->holding_distance_from_display_ip > window->display_lines)
+	    if (get_window_holding_distance_from_display_ip(window_) > get_window_display_lines(window_))
 		return 0;	/* Definitely no output here */
 	}
 
@@ -3005,20 +2999,20 @@ static int	ok_to_output (int window_)
  */
 static void 	scroll_window (int window_)
 {
-	Window *window = get_window_by_refnum_direct(window_);
-
 	if (dumb_mode)
 		return;
 
-	if (window->cursor > window->display_lines)
+	if (get_window_cursor(window_) > get_window_display_lines(window_))
 		panic(1, "Window [%d]'s cursor [%d] is off the display [%d]",
-			window->user_refnum, window->cursor, window->display_lines);
+			get_window_user_refnum(window_), 
+			get_window_cursor(window_),
+			get_window_display_lines(window_));
 
 	/*
 	 * If the cursor is beyond the window then we should probably
 	 * look into scrolling.
 	 */
-	if (window->cursor == window->display_lines)
+	if (get_window_cursor(window_) == get_window_display_lines(window_))
 	{
 		int scroll;
 
@@ -3028,47 +3022,47 @@ static void 	scroll_window (int window_)
 		 * doing its job or something else is completely broken.
 		 * Probably shouldnt be fatal, but i want to trap these.
 		 */
-		if (window->holding_distance_from_display_ip > 
-						window->display_lines)
+		if (get_window_holding_distance_from_display_ip(window_) > 
+						get_window_display_lines(window_))
 			panic(1, "Can't output to window [%d] "
 				"because it is holding stuff: [%d] [%d]", 
-				window->user_refnum, 
-				window->holding_distance_from_display_ip, 
-				window->display_lines);
+				get_window_user_refnum(window_), 
+				get_window_holding_distance_from_display_ip(window_), 
+				get_window_display_lines(window_));
 
-		if (window->scrollback_distance_from_display_ip > 
-						window->display_lines)
+		if (get_window_scrollback_distance_from_display_ip(window_) > 
+						get_window_display_lines(window_))
 			panic(1, "Can't output to window [%d] "
 				"because it is scrolling back: [%d] [%d]", 
-				window->user_refnum, 
-				window->scrollback_distance_from_display_ip, 
-				window->display_lines);
+				get_window_user_refnum(window_), 
+				get_window_scrollback_distance_from_display_ip(window_), 
+				get_window_display_lines(window_));
 
 		/* Scroll by no less than 1 line */
-		if ((scroll = window->scroll_lines) <= 0)
+		if ((scroll = get_window_scroll_lines(window_)) <= 0)
 		    if ((scroll = get_int_var(SCROLL_LINES_VAR)) <= 0)
 			scroll = 1;
-		if (scroll > window->display_lines)
-			scroll = window->display_lines;
+		if (scroll > get_window_display_lines(window_))
+			scroll = get_window_display_lines(window_);
 
 		/* Adjust the top of the physical display */
-		if (window->screen && foreground && window->display_lines)
+		if (get_window_screen(window_) && foreground && get_window_display_lines(window_))
 		{
-			term_scroll(window->top,
-				window->top + window->cursor - 1, 
+			term_scroll(get_window_top(window_),
+				get_window_top(window_) + get_window_cursor(window_) - 1, 
 				scroll);
 		}
 
 		/* Adjust the cursor */
-		window->cursor -= scroll;
+		set_window_cursor(window_, get_window_cursor(window_) - scroll);
 	}
 
 	/*
 	 * Move to the new line and wipe it
 	 */
-	if (window->screen && window->display_lines)
+	if (get_window_screen(window_) && get_window_display_lines(window_))
 	{
-		term_move_cursor(0, window->top + window->cursor);
+		term_move_cursor(0, get_window_top(window_) + get_window_cursor(window_));
 		term_clear_to_eol();
 	}
 }
@@ -3080,70 +3074,71 @@ static void 	scroll_window (int window_)
  */
 void 	repaint_window_body (int window_)
 {
-	Window *window;
 	Display *curr_line;
 	int 	count;
 
-	if (!(window = get_window_by_refnum_direct(window_)))
-		window = get_window_by_refnum_direct(0);
+	if (!window_is_valid(window_))
+		return;
 
-	if (dumb_mode || !window->screen)
+	if (dumb_mode || !get_window_screen(window_))
 		return;
 
 	global_beep_ok = 0;		/* Suppress beeps */
 
-	if (window->scrollback_distance_from_display_ip > window->holding_distance_from_display_ip)
+	if (get_window_scrollback_distance_from_display_ip(window_) > get_window_holding_distance_from_display_ip(window_))
 	{
-	    if (window->scrolling_distance_from_display_ip >= window->scrollback_distance_from_display_ip)
-		curr_line = window->scrolling_top_of_display;
+	    if (get_window_scrolling_distance_from_display_ip(window_) >= get_window_scrollback_distance_from_display_ip(window_))
+		curr_line = get_window_scrolling_top_of_display(window_);
 	    else
-		curr_line = window->scrollback_top_of_display;
+		curr_line = get_window_scrollback_top_of_display(window_);
 	}
 	else
 	{
-	    if (window->scrolling_distance_from_display_ip >= window->holding_distance_from_display_ip)
-		curr_line = window->scrolling_top_of_display;
+	    if (get_window_scrolling_distance_from_display_ip(window_) >= get_window_holding_distance_from_display_ip(window_))
+		curr_line = get_window_scrolling_top_of_display(window_);
 	    else
-		curr_line = window->holding_top_of_display;
+		curr_line = get_window_holding_top_of_display(window_);
 	}
 
-	if (window->screen && window->toplines_showing)
-	    for (count = 0; count < window->toplines_showing; count++)
+	if (get_window_screen(window_) && get_window_toplines_showing(window_))
+	{
+	    for (count = 0; count < get_window_toplines_showing(window_); count++)
 	    {
 		char 	*widthstr;
 		const char *str;
 
-		if (!(str = window->topline[count]))
+		if (!(str = get_window_topline(window_, count)))
 			str = empty_string;
 
-		term_move_cursor(0, window->top - window->toplines_showing + count);
+		term_move_cursor(0, get_window_top(window_) - get_window_toplines_showing(window_) + count);
 		term_clear_to_eol();
 
-		widthstr = prepare_display2(str, window->my_columns, 1, ' ', 0);
+		widthstr = prepare_display2(str, get_window_my_columns(window_), 1, ' ', 0);
 		output_with_count(widthstr, 1, foreground);
 		new_free(&widthstr);
 
 /*
 		n = new_normalize_string(widthstr, 0, display_line_mangler);
-		my_lines = prepare_display(window->refnum, n, cols, &numls, PREPARE_NOWRAP);
+		my_lines = prepare_display(get_window_refnum(window_), n, cols, &numls, PREPARE_NOWRAP);
 		if (*my_lines)
 			output_with_count(*my_lines, 1, foreground);
 		new_free(&n);
 */
 	   }
+	}
 
-	window->cursor = 0;
-	for (count = 0; count < window->display_lines; count++)
+	set_window_cursor(window_, 0);
+	for (count = 0; count < get_window_display_lines(window_); count++)
 	{
-		rite(window->refnum, curr_line->line);
+		rite(get_window_refnum(window_), curr_line->line);
 
 		/*
 		 * Clean off the rest of this window.
 		 */
-		if (curr_line == window->display_ip)
+		if (curr_line == get_window_display_ip(window_))
 		{
-			window->cursor--;		/* Bumped by rite */
-			for (; count < window->display_lines; count++)
+			set_window_cursor_decr(window_);		/* Bumped by rite */
+			for (; count < get_window_display_lines(window_); count++)
 			{
 				term_clear_to_eol();
 				term_newline();

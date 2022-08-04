@@ -178,7 +178,6 @@ struct	ScreenStru *	screen;			/* The screen we belong to */
 
 }	Window;
 
-	int	traverse_all_windows		(Window **);
 	Window *get_window_by_refnum_direct	(int refnum);
 #endif
 
@@ -246,10 +245,10 @@ const	char	*get_window_echannel		(int);
 	int	get_who_line			(void);
 	int	get_to_window			(void);
 
-	void	clear_all_windows		(int, int, int);
-	void	clear_window_by_refnum		(int, int);
-	void	unclear_all_windows		(int, int, int);
-	void	unclear_window_by_refnum	(int, int);
+	void	clear_all_windows		(int, int);
+	void	clear_window_by_refnum		(int);
+	void	unclear_all_windows		(int, int);
+	void	unclear_window_by_refnum	(int);
 	void	set_scrollback_size		(void *);
 	void	set_scroll_lines		(void *);
 	void	set_continued_line		(void *);
@@ -320,11 +319,18 @@ struct ScreenStru *get_window_screen			(int);
 	int	get_window_toplines_showing 		(int);
 	int	get_window_user_refnum			(int);
 	Char *	get_window_uuid				(int);
+	int	get_window_scroll_lines			(int);
+	Char *	get_window_log_rewrite 			(int window);
+	int	get_window_log_mangle 			(int window);
+	int     get_window_beep_always 			(int window);
+	Mask *  get_window_notify_mask 			(int window);
+	int     get_window_notify_when_hidden 		(int window);
 
 	int	set_window_change_line			(int, int);
 	int	set_window_cursor 			(int, int);
 	int	set_window_cursor_decr 			(int);
 	int	set_window_cursor_incr 			(int);
+	void	set_window_display_lines		(int, int);
 	int	set_window_indent			(int, int);
 	int	set_window_killable			(int, int);
 	int	set_window_lastlog_mask			(int, Mask);
@@ -334,6 +340,11 @@ struct ScreenStru *get_window_screen			(int);
 	int     set_window_notified			(int, int);
 	int	set_window_notify_mask			(int, Mask);
 	int	set_window_priority			(int, int);
+	int	set_window_scroll_lines			(int, int);
+	void    set_window_log_rewrite 			(int window, const char *value);
+	void    set_window_log_mangle 			(int window, int value);
+	void    set_window_swappable 			(int refnum, int value);
+
 
 	int	get_window_prev				(int);
 	int	get_window_next				(int);

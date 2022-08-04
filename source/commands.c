@@ -458,8 +458,7 @@ BUILT_IN_COMMAND(e_clear)
 	char	*arg;
 	int	all = 0,
 		visible = 0,
-		hidden = 0,
-		unhold = 0;
+		hidden = 0;
 	int	clear = !strcmp(command, "CLEAR");
 
 	while ((arg = next_arg(args, &args)) != NULL)
@@ -467,10 +466,6 @@ BUILT_IN_COMMAND(e_clear)
 		/* -ALL and ALL here becuase the help files used to be wrong */
 		if (!my_strnicmp(arg, "ALL", 1) || !my_strnicmp(arg+1, "ALL", 1))
 			visible = 0, hidden = 0, all = 1;
-
-		/* UNHOLD */
-		else if (!my_strnicmp(arg+1, "UNHOLD", 1))
-			unhold = 1;		/* Obsolete */
 
 		else if (!my_strnicmp(arg+1, "VISIBLE", 1))
 			visible = 1, hidden = 0, all = 1;
@@ -485,16 +480,16 @@ BUILT_IN_COMMAND(e_clear)
 	if (all)
 	{
 		if (clear)
-			clear_all_windows(visible, hidden, unhold);
+			clear_all_windows(visible, hidden);
 		else
-			unclear_all_windows(visible, hidden, unhold);
+			unclear_all_windows(visible, hidden);
 	}
 	else
 	{
 		if (clear)
-			clear_window_by_refnum(0, unhold);
+			clear_window_by_refnum(0);
 		else
-			unclear_window_by_refnum(0, unhold);
+			unclear_window_by_refnum(0);
 	}
 
 	update_all_windows();

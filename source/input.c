@@ -1510,13 +1510,13 @@ BUILT_IN_KEYBINDING(toggle_insert_mode)
 /* This keybinding should be scripted. */
 BUILT_IN_KEYBINDING(my_clear_screen)
 {
-	clear_window_by_refnum(0, 1);
+	clear_window_by_refnum(0);
 }
 
 /* This keybinding should be scripted. */
 BUILT_IN_KEYBINDING(input_unclear_screen)
 {
-	unclear_window_by_refnum(0, 1);
+	unclear_window_by_refnum(0);
 }
 
 

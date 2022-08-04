@@ -1243,3 +1243,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make _invisible_list an int and not a pointer. yay!
 * Fix bug with /server showing p-addrs on connect (rb zlonix, skered)
 * Continue converting internal window.c functions to refnums
+* More conversions of internal window.c functions to refnums
