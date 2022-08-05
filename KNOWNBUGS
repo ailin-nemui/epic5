@@ -1244,3 +1244,8 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bug with /server showing p-addrs on connect (rb zlonix, skered)
 * Continue converting internal window.c functions to refnums
 * More conversions of internal window.c functions to refnums
+* Complete conversion of internal functions from (Window *) to (int). Yay!
+* Create screen restful api (well, the getters at least)
+* De-orbit global "Screen *screen_list" in favor of get_screen_by_refnum()
+* Make everything that used (Screen *) use int refnums (except windows)
+

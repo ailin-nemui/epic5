@@ -88,10 +88,13 @@ BUILT_IN_KEYBINDING(refresh_screen)
 void	redraw_all_screens (void)
 {
 	Screen *s, *old_os;
+	int	s_;
 
 	old_os = output_screen;
-	for (s = screen_list; s; s = s->next)
+	for (s_ = 0; traverse_all_screens(&s_); )
 	{
+		s = get_screen_by_refnum(s_);
+
 		if (!s->alive)
 			continue;
 

@@ -89,7 +89,7 @@
  * The list of all the screens we're handling.  Under most cases, there's 
  * only one screen on the list, "main_screen".
  */
-	Screen	*screen_list = NULL;
+static	Screen	*screen_list = NULL;
 
 /*
  * How things output to the display get mangled (set via /set mangle_display)
@@ -4319,4 +4319,263 @@ int	parse_mangle (const char *value, int nvalue, char **rv)
 
 	return nvalue;
 }
+
+int	traverse_all_screens (int *screen_)
+{
+	Screen *s;
+
+	if (!*screen_)
+		s = screen_list;
+	else
+	{
+		for (s = screen_list; s; s = s->next)
+		{
+			if (s->screennum == *screen_)
+			{
+				s = s->next;
+				break;
+			}
+		}
+	}
+
+	if (!s)
+		return 0;
+
+	*screen_ = s->screennum;
+	return 1;
+}
+
+Screen *get_screen_by_refnum (int screen_)
+{
+	Screen *s;
+
+	for (s = screen_list; s; s = s->next)
+		if (s->screennum == screen_)
+			return s;
+
+	return NULL;
+}
+
+
+int             get_screen_prev                 (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return -1;
+	if (s->prev)
+		return s->prev->screennum;
+	return -1;
+}
+
+int             get_screen_next                 (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return -1;
+	if (s->next)
+		return s->next->screennum;
+	return -1;
+}
+
+int             get_screen_alive                (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return -1;
+	return s->alive;
+}
+
+int             get_screen_screennum            (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return -1;
+	return s->screennum;
+}
+
+int             get_screen_input_window         (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return -1;
+	return s->input_window;
+}
+
+int             get_screen_last_window_refnum   (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return -1;
+	return (int)s->last_window_refnum;
+}
+
+int             get_screen_window_list          (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return -1;
+	return s->_window_list;
+}
+
+int             get_screen_visible_windows      (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return -1;
+	return s->visible_windows;
+}
+
+WindowStack *   get_screen_window_stack         (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return NULL;
+	return s->window_stack;
+}
+
+FILE *          get_screen_fpin                 (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return NULL;
+	return s->fpin;
+}
+
+int             get_screen_fdin                 (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return -1;
+	return s->fdin;
+}
+
+FILE *          get_screen_fpout                (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return NULL;
+	return s->fpout;
+}
+
+int             get_screen_fdout                (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return -1;
+	return s->fdout;
+}
+
+int             get_screen_control              (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return -1;
+	return s->control;
+}
+
+int             get_screen_wserv_version        (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return -1;
+	return s->wserv_version;
+}
+
+InputLine *     get_screen_input_line           (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return NULL;
+	return s->il;
+}
+
+WaitPrompt *    get_screen_prompt_list          (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return NULL;
+	return s->promptlist;
+}
+
+int             get_screen_quote_hit            (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return -1;
+	return s->quote_hit;
+}
+
+Timeval         get_screen_last_press           (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return (Timeval){0, 0};
+	return s->last_press;
+}
+
+void *          get_screen_last_key             (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return NULL;
+	return s->last_key;
+}
+
+int             get_screen_columns              (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return -1;
+	return s->co;
+}
+
+int             get_screen_lines                (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return -1;
+	return s->li;
+}
+
+int             get_screen_old_columns          (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return -1;
+	return s->old_co;
+}
+
+int             get_screen_old_lines            (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return -1;
+	return s->old_li;
+}
+
+
+void            set_screen_alive                (int screen_, int value)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->alive = value;
+}
+
+void            set_screen_input_window         (int screen_, int value)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->input_window = value;
+}
+
+void            set_screen_last_window_refnum   (int screen_, int value)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->last_window_refnum = value;
+}
+
 

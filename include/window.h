@@ -46,6 +46,9 @@ typedef	struct	WindowStru
 	int		_prev;
 
 struct	ScreenStru *	screen;			/* The screen we belong to */
+#if 0
+	int		screen_;		/* The screen we belong to */
+#endif
 	short		deceased;		/* Set when the window is killed */
 
 	unsigned 	refnum;			/* Unique refnum for window */
@@ -177,8 +180,6 @@ struct	ScreenStru *	screen;			/* The screen we belong to */
 	char *		activity_format[11];
 
 }	Window;
-
-	Window *get_window_by_refnum_direct	(int refnum);
 #endif
 
 /*
@@ -191,11 +192,9 @@ struct	window_stack_stru *	next;
 	int			refnum;
 }	WindowStack;
 
-
-	int	new_window 			(struct ScreenStru *);
-
 extern	unsigned 	current_window_priority;
 
+	int	new_window 			(struct ScreenStru *);
 	BUILT_IN_COMMAND(windowcmd);
 	int	window_is_holding		(int);
 	int	unhold_a_window			(int);
@@ -218,15 +217,11 @@ extern	unsigned 	current_window_priority;
 	char *	get_window_status_line		(int, int);
 	BUILT_IN_KEYBINDING(update_all_status_kb);
 	void	update_all_status		(void);
-#if 0
-	void	set_window_prompt		(int, const char *);
-	Char *	get_window_prompt		(int);
-#endif
 	Char *	get_window_target		(int);
 	Char *	get_window_equery		(int);
 	BUILT_IN_KEYBINDING(switch_query);
 	int	is_current_channel		(const char *, int);
-const	char	*get_window_echannel		(int);
+	Char	*get_window_echannel		(int);
 	void	destroy_waiting_channels	(int);
 	int     claim_waiting_channel 		(const char *chan, int servref);
 	int	get_window_server		(int);
@@ -303,7 +298,7 @@ const	char	*get_window_echannel		(int);
 	List *	get_window_nicks			(int);
 	int	get_window_notified			(int);
 	Char *	get_window_notify_name 			(int);
-	int     get_window_priority			(int);
+	unsigned get_window_priority			(int);
 	int	get_window_refnum			(int);
 struct ScreenStru *get_window_screen			(int);
 	int     get_window_scrollback_distance_from_display_ip 	(int);
@@ -344,7 +339,6 @@ struct ScreenStru *get_window_screen			(int);
 	void    set_window_log_rewrite 			(int window, const char *value);
 	void    set_window_log_mangle 			(int window, int value);
 	void    set_window_swappable 			(int refnum, int value);
-
 
 	int	get_window_prev				(int);
 	int	get_window_next				(int);

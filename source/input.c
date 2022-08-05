@@ -358,6 +358,7 @@ void 	cursor_to_input (void)
 	Screen *oldscreen = last_input_screen;
 	Screen *screen;
 static	int	recursive = 0;
+	int	s;
 
 	if (recursive)
 		return;
@@ -366,8 +367,10 @@ static	int	recursive = 0;
 		return;		/* Dont bother */
 
 	recursive = 1;
-	for (screen = screen_list; screen; screen = screen->next)
+	s = 0;
+	while (traverse_all_screens(&s))
 	{
+		screen = get_screen_by_refnum(s);
 		if (screen->alive)
 		{
 			output_screen = screen;
@@ -485,6 +488,7 @@ const char *	prompt;
 	int	cols_used;
 	int	original_update;
 	Screen	*oos;
+	int	s;
 
 	/*
 	 * No input line in dumb or bg mode.
@@ -498,10 +502,11 @@ const char *	prompt;
 	original_update = update;
 	oos = output_screen;
 
-        for (ns = screen_list; ns; ns = ns->next)
+	for (s = 0; traverse_all_screens(&s);)
 	{
-
 	/* <<<< INDENTED BACK ONE TAB FOR MY SANITY <<<<< */
+	ns = get_screen_by_refnum(s);
+
 	/* XXX This is an ugly way to do this. */
 	if (which_screen && which_screen != ns)
 		continue;	/* Only update this screen */

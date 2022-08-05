@@ -123,12 +123,46 @@ const	char *		all_off				(void);
 	int		number_of_windows_on_screen	(struct ScreenStru *);
 	int		get_screen_bottom_window	(struct ScreenStru *);
 
+	int     	traverse_all_screens		(int *screen_);
+	Screen *	get_screen_by_refnum		(int screen_);
+
+	/* * * */
+	Screen *	get_screen_by_refnum		(int);
+	int		get_screen_prev			(int);
+	int		get_screen_next			(int);
+	int		get_screen_alive		(int);
+	int		get_screen_screennum		(int);
+	int		get_screen_input_window		(int);
+	int		get_screen_last_window_refnum	(int);
+	int		get_screen_window_list		(int);
+	int		get_screen_visible_windows	(int);
+	WindowStack *	get_screen_window_stack		(int);
+	FILE *		get_screen_fpin			(int);
+	int		get_screen_fdin			(int);
+	FILE *		get_screen_fpout		(int);
+	int		get_screen_fdout		(int);
+	int		get_screen_control		(int);
+	int		get_screen_wserv_version	(int);
+	InputLine *	get_screen_input_line		(int);
+	WaitPrompt *	get_screen_prompt_list		(int);
+	int		get_screen_quote_hit		(int);
+	Timeval		get_screen_last_press		(int);
+	void *		get_screen_last_key		(int);
+	int		get_screen_columns		(int);
+	int		get_screen_lines		(int);
+	int		get_screen_old_columns		(int);
+	int		get_screen_old_lines		(int);
+
+	void		set_screen_alive		(int, int);
+	void		set_screen_input_window		(int, int);
+	void		set_screen_last_window_refnum	(int, int);
+
+
 /* Dont do any word-wrapping, just truncate each line at its place. */
 #define PREPARE_NOWRAP	0x01
 
 extern	struct ScreenStru *main_screen;
 extern	struct ScreenStru *last_input_screen;
-extern	struct ScreenStru *screen_list;
 extern	struct ScreenStru *output_screen;
 extern	int		display_line_mangler;
 

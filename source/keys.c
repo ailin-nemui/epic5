@@ -741,14 +741,17 @@ static int	do_input_timeouts (void *ignored)
 	Screen *oldscreen = last_input_screen;
 	int 	server = from_server;
 	Screen *screen;
+	int	s;
 
 	/*
 	 * Walk each screen and call timeout_keypress() on it.
 	 * timeout_keypress() checks to see if it has an ambiguous
 	 * keybinding and then resolves it
 	 */
-	for (screen = screen_list; screen; screen = screen->next) 
+	for (s = 0; traverse_all_screens(&s); )
 	{
+		screen = get_screen_by_refnum(s);
+
 		/* Ignore inactive screens */
 		if (!screen->alive) 
 			continue;
