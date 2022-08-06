@@ -3189,7 +3189,7 @@ void	create_new_screen (void)
 			screen_list = new_s;
 	}
 
-	new_s->last_window_refnum = 1;
+	new_s->last_window_refnum = -1;
 	new_s->_window_list = -1;
 	new_s->input_window = -1;
 	new_s->visible_windows = 0;

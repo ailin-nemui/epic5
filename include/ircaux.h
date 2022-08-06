@@ -208,7 +208,7 @@ const 	char *	strfill			(char, int);
 #define malloc_strcat_word(x,y,z,a) malloc_strcat_word_c((x),(y),(z),(a),NULL)
 
 	char *  universal_next_arg_count (char *, char **, int, int, int, const char *);
-	void    dequoter                (char **, size_t *, int, int, const char *);
+	void    dequoter                (char **, int, int, const char *);
 
 #define my_isspace(x) isspace(x)
 #define my_isdigit(x) \

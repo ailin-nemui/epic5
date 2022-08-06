@@ -1248,4 +1248,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Create screen restful api (well, the getters at least)
 * De-orbit global "Screen *screen_list" in favor of get_screen_by_refnum()
 * Make everything that used (Screen *) use int refnums (except windows)
-
+* Don't have dequoter() take clue, was causing ub (sorry, ce) (rb zlonix)
+* Fix screen->last_window_refnum, was wrong type (rb zlonix)

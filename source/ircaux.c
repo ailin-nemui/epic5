@@ -4558,7 +4558,11 @@ char *	universal_next_arg_count (char *str, char **new_ptr, int count, int exten
 	if (**new_ptr && *new_ptr > str)
 	{
 		(*new_ptr)[-1] = 0;
+#if 0
 		clue = (*new_ptr) - str - 1;
+#else
+		clue = (*new_ptr) - str;
+#endif
 	}
 	else
 		clue = 0;	/* XXX Not sure about this */
@@ -4586,7 +4590,7 @@ char *	universal_next_arg_count (char *str, char **new_ptr, int count, int exten
 	}
 
 	if (dequote)
-		dequoter(&str, &clue, count == 1 ? 0 : 1, extended, delims);
+		dequoter(&str, count == 1 ? 0 : 1, extended, delims);
 
 	if (x_debug & DEBUG_EXTRACTW_DEBUG)
 		yell("<<<< universal_next_arg_count: End:   [%s] [%s]", 
@@ -4617,12 +4621,10 @@ char *	universal_next_arg_count (char *str, char **new_ptr, int count, int exten
  * Notes:
  *	None.
  */
-void	dequoter (char **str, size_t *clue, int full, int extended, const char *delims)
+void	dequoter (char **str, int full, int extended, const char *delims)
 {
 	int	simple;
 	char	what;
-	size_t	orig_size;
-	orig_size = *clue + 1;
 
 	/*
 	 * Solve the problem of a string with one word...
@@ -4656,19 +4658,18 @@ void	dequoter (char **str, size_t *clue, int full, int extended, const char *del
 		 * XXX I'm choosing to pass through a single delim instead of
 		 *	chomping it.  I'm not sure if this is the right choice.
 		 */
-		if (*clue > 0 && ((simple == 1 && (*str)[*clue] == what) ||
-				  (simple == 0 && strchr(delims, (*str)[*clue]))))
+		size_t	end = strlen(*str);
+		if (end > 1 && ((simple == 1 && what == (*str)[end-1]) ||
+			        (simple == 0 && strchr(delims, (*str)[end-1]))))
 		{
 			if (x_debug & DEBUG_EXTRACTW_DEBUG)
 				yell("#### dequoter: simple string ends with delim...");
 
 			/* Kill the closing quote. */
-			(*str)[*clue] = 0;
-			(*clue)--;
+			(*str)[end-1] = 0;
 
 			/* Kill the opening quote. */
 			(*str)++;
-			(*clue)--;
 		}
 	    }
 	    return;
@@ -4683,7 +4684,7 @@ void	dequoter (char **str, size_t *clue, int full, int extended, const char *del
 		char *retval;		/* our temp working buffer */
 		size_t rclue;		/* A working clue for 'retval' */
 		char *this_word;	/* The start of each word */
-		size_t this_len;	/* How long the word is */
+		size_t	orig_size = strlen(*str);
 
 		orig_str = *str;	/* Keep this for later use */
 		retval = alloca(orig_size);	/* Reserve space for a full copy */
@@ -4698,16 +4699,14 @@ void	dequoter (char **str, size_t *clue, int full, int extended, const char *del
 		 */
 		while ((this_word = universal_next_arg_count(*str, str, 1, extended, 0, delims)))
 		{
-			this_len = strlen(this_word) - 1;
-			dequoter(&this_word, &this_len, 0, extended, delims);
+			dequoter(&this_word, 0, extended, delims);
 			if (rclue > 0)
 				strlcat_c(retval, space, orig_size, &rclue);
 			strlcat_c(retval, this_word, orig_size, &rclue);
 		}
 
 		*orig_str = 0;
-		*clue = 0;
-		strlcpy_c(orig_str, retval, orig_size, clue);
+		strlcpy(orig_str, retval, orig_size);
 		*str = orig_str;
 	}
 }
@@ -4764,7 +4763,6 @@ char *	safe_next_arg (char *str, char **new_ptr)
 char *	last_arg (char **src, size_t *cluep, int extended)
 {
 	char *mark, *start, *end;
-	size_t	clue2;
 
 	start = *src;
 	end = start + *cluep;
@@ -4781,8 +4779,7 @@ char *	last_arg (char **src, size_t *cluep, int extended)
 	else
 		*src = NULL;		/* We're done, natch! */
 
-	clue2 = strlen(mark) - 1;
-	dequoter(&mark, &clue2, 0, extended, "\"");
+	dequoter(&mark, 0, extended, "\"");
 	return mark;
 }
 

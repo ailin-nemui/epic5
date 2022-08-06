@@ -4764,7 +4764,7 @@ WINDOWCMD(back)
 	if (!args)
 		return refnum;
 
-	if (!(other_refnum = last_input_screen->last_window_refnum))
+	if ((other_refnum = last_input_screen->last_window_refnum) < 1)
 		other_refnum = last_input_screen->_window_list;
 
 	make_window_current_by_refnum(other_refnum);
@@ -9075,7 +9075,10 @@ static void 	set_screens_current_window (Screen *screen, int window)
 
 	if (window == 0 || ((w = get_window_by_refnum_direct(window)) == NULL))
 	{
-		w = get_window_by_refnum_direct(screen->last_window_refnum);
+		if (screen->last_window_refnum >= 1)
+			w = get_window_by_refnum_direct(screen->last_window_refnum);
+		else
+			w = NULL;
 
 		/* Cant use a window that is now on a different screen */
 		/* Check check a window that doesnt exist, too! */
