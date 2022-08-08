@@ -1250,3 +1250,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make everything that used (Screen *) use int refnums (except windows)
 * Don't have dequoter() take clue, was causing ub (sorry, ce) (rb zlonix)
 * Fix screen->last_window_refnum, was wrong type (rb zlonix)
+* Fix /window clearlevel (need to normalize window refnums) (rb zlonix)
+* Fix ub with utf-8 detection for non-utf8 console users.
+* Revert dequoter() changes above (rb zlonix, ce)
+* Fix ub with decryption (rb zlonix) [this code makes me nervous]

@@ -3804,7 +3804,7 @@ static	int		never_warn_again = 0;
 	enc = find_recoding("console", &xlat, NULL);
 
 	/* Very crude, ad-hoc check for UTF8 type things */
-	if (strcmp(enc, "UTF-8") &&  (prev_char == -1 || ((prev_char & 0x80U) == 0x80U)))
+	if (strcmp(enc, "UTF-8") &&  (prev_char != -1 && ((prev_char & 0x80U) == 0x80U)))
 	{
 	    if ((prev_char & 0xE0U) == 0xC0U)
 	    {

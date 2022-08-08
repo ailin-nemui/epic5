@@ -1872,7 +1872,7 @@ BUILT_IN_FUNCTION(function_tolower, input)
 
 BUILT_IN_FUNCTION(function_curpos, input)
 {
-	RETURN_INT(cursor_position(get_window_screen(0)));
+	RETURN_INT(cursor_position(get_window_screennum(0)));
 }
 
 BUILT_IN_FUNCTION(function_channels, input)

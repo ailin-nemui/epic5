@@ -18,7 +18,7 @@
 	char	input_pause 			(char *);
 	void	set_input_prompt		(void *);
 	void	update_input 			(void *, int);
-	int     cursor_position 		(void *s);
+	int     cursor_position 		(int);
 	char *	function_inputctl		(char *);
 
 /* keybinding functions */

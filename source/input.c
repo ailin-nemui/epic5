@@ -85,7 +85,6 @@ static int	input_move_cursor (int dir, int refresh);
  * These are sanity macros.  The file was completely unreadable before 
  * I put these in here.  I make no apologies for them.
  *
- * current_screen	The screen we are working on
  * INPUT_BUFFER		The input buffer for the screen we are working on.
  * LOGICAL_CHARS
  * LOGICAL_COLUMN
@@ -114,15 +113,13 @@ static int	input_move_cursor (int dir, int refresh);
  * CUT_BUFFER		The saved cut buffer (for deletes)
  */
 
-#define current_screen		last_input_screen
-
 /*
  * This is a UTF8 C string containing the input line.
  * Although ultimately this is the master reference copy of the input line,
  * any time you change stuff in it, you need to call retokenize_input_line()
  * to refresh the metadata and update_input() to refresh the screen.
  */
-#define INPUT_LINE		current_screen->il
+#define INPUT_LINE		get_screen_input_line(last_input_screen->screennum)
 #define INPUT_BUFFER 		INPUT_LINE->input_buffer
 
 /*
@@ -281,10 +278,11 @@ BUILT_IN_KEYBINDING(debug_input_line)
 	yell("PHYSICAL CURSOR AT %d %d", PHYSICAL_CURSOR, INPUT_LINE_ROW);
 }
 
-int	cursor_position (void *vp)
+int	cursor_position (int screennum)
 {
-	Screen *s = vp;
-	if (!s)
+	InputLine *il;
+
+	if (!(il = get_screen_input_line(screennum)))
 		return -1;
 
 	/* 
@@ -293,8 +291,7 @@ int	cursor_position (void *vp)
 	 * are all utf8 aware, we want to actually return the logical
 	 * character itself.
 	 */
-	/*return s->il->logical_chars[s->il->logical_cursor]; */
-	return s->il->logical_cursor;
+	return il->logical_cursor;
 }
 
 #define LOGICAL_LOCATION	LOGICAL_CHARS[LOGICAL_CURSOR]

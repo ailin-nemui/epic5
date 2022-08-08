@@ -900,7 +900,6 @@ static void 	remove_from_invisible_list (int window_)
 
 void 	add_to_invisible_list (int window_)
 {
-	Window *window = get_window_by_refnum_direct(window_);
 	int	old_invisible_list;
 	int	refnum;
 
@@ -925,9 +924,9 @@ void 	add_to_invisible_list (int window_)
 	_invisible_list = window_;
 
 	if (get_window_screen(window_))
-		window->my_columns = get_window_screen(window_)->co;
+		set_window_my_columns(window_, get_window_screen(window_)->co);
 	else
-		window->my_columns = current_term->TI_cols;	/* Whatever */
+		set_window_my_columns(window_, current_term->TI_cols);	/* Whatever */
 	set_window_screen(window_, NULL);
 }
 
@@ -1408,12 +1407,9 @@ static	void	swap_window (int v_window_, int window_)
 static void 	move_window_to (int window_, int offset)
 {
 	Screen *s;
-	Window *window;
 
 	if (!window_is_valid(window_))
 		return;
-
-	window = get_window_by_refnum_direct(window_);
 
 	/* /window move_to -1 is bogus -- but maybe it shouldn't be.  */
 	if (offset <= 0)
@@ -1455,7 +1451,7 @@ static void 	move_window_to (int window_, int offset)
 		set_window_prev(window_, -1);
 		set_window_next(window_, s->_window_list);
 		set_window_prev(s->_window_list, window_);
-		s->_window_list = window->refnum;
+		s->_window_list = window_;
 	}
 
 	/* Move the window to the bottom of the screen */
@@ -2753,6 +2749,31 @@ static void	set_window_screen (int refnum, Screen *value)
 
 	if ((tmp = get_window_by_refnum_direct(refnum)))
 		tmp->screen = value;
+}
+
+int	get_window_screennum (int refnum)
+{
+	Window *tmp;
+
+	if (!(tmp = get_window_by_refnum_direct(refnum)))
+		tmp = get_window_by_refnum_direct(current_window_);
+	return tmp->screen->screennum;
+}
+
+int	set_window_screennum (int refnum, int screennum)
+{
+	Window *tmp;
+
+	if ((tmp = get_window_by_refnum_direct(refnum)))
+	{
+		Screen *s = get_screen_by_refnum(screennum);
+		if (s)
+		{
+			tmp->screen = s;
+			return 1;
+		}
+	}
+	return 0;
 }
 
 
@@ -4268,6 +4289,19 @@ int	get_window_top (int refnum)
 		return 0;
 }
 
+int	set_window_my_columns (int refnum, int value)
+{
+	Window *w = get_window_by_refnum_direct(refnum);
+
+	if (w)
+	{
+		w->my_columns = value;
+		return w->my_columns;
+	}
+	return 0;
+
+}
+
 int	get_window_my_columns (int refnum)
 {
 	Window *w = get_window_by_refnum_direct(refnum);
@@ -4277,6 +4311,7 @@ int	get_window_my_columns (int refnum)
 	else
 		return 0;
 }
+
 
 int	set_window_cursor (int refnum, int value)
 {
@@ -7914,7 +7949,6 @@ WINDOWCMD(clearlevel)
 	arg = next_arg(*args, args);;
 	if (str_to_mask(&mask, arg, &rejects))
 		standard_level_warning("/WINDOW CLEARLEVEL", &rejects);
-
 	clear_level_from_lastlog(window->refnum, &mask);
 	return refnum;
 }
@@ -8277,7 +8311,11 @@ int 	add_to_scrollback (int window_, const char *str, intmax_t refnum)
 	 * If this is a scratch window, do that somewhere else
 	 */
 	if (get_window_change_line(window_) != -1)
+	{
+		debuglog("add_to_scrollback: change_line: window %d line %d str %s", 
+				window_, get_window_change_line(window_), str);
 		return change_line(window_, str);
+	}
 
 	return add_to_display(window_, (const char *)str, refnum);
 }
@@ -8306,19 +8344,30 @@ static int	add_to_display (int window_, const char *str, intmax_t refnum)
 	Window *window;
 
 	if (!window_is_valid(window_))
+	{
+		debuglog("add_to_display: window_ %d is invalid", window_);
 		return 0;
+	}
 
 	window = get_window_by_refnum_direct(window_);
 
 	/* 
 	 * Add to the bottom of the scrollback buffer, and move the 
 	 * bottom of scrollback (display_ip) after it. 
+	 *
+	 * The "display_ip" is always BLANK -- so first we create a new
+	 * blank display line (display_ip->next) then we fill in the previous
+	 * blank display line (display_ip)
 	 */
 	window->display_ip->next = new_display_line(window->display_ip, window_);
 	malloc_strcpy(&window->display_ip->line, str);
 	window->display_ip->linked_refnum = refnum;
 	window->display_ip = window->display_ip->next;
 	window->display_buffer_size++;
+	debuglog("add_to_display: Window %d, lastlog refnum %lu, display refnum %lu, str: %s", 
+			window_, (unsigned long)refnum, (unsigned long)window->display_ip->unique_refnum, str);
+	debuglog("add_to_display: saniy check - this should be the same: (%lu) %s",
+			(unsigned long)window->display_ip->prev->linked_refnum, window->display_ip->prev->line);
 
 	/*
 	 * Mark that the scrollable view, the scrollback view, and the hold
@@ -8365,7 +8414,10 @@ static int	add_to_display (int window_, const char *str, intmax_t refnum)
 	 * The return value 0 tells the caller "don't do any output"
 	 */
 	if (window->display_lines == 0)
+	{
+		debuglog("window_ %d's display_lines was 0 -- punting", window_);
 		return 0;		/* XXX Do soemthing better, someday */
+	}
 
 	/*
 	 * Handle overflow in the scrollable view -- If the scrollable view
@@ -8877,18 +8929,16 @@ static void	window_scrollback_forward (int window_)
 {
 	int 	ratio = get_int_var(SCROLLBACK_RATIO_VAR);
 	int	my_lines;
-	Window *window;
 
 	if (!window_is_valid(window_))
 		return;
-	window = get_window_by_refnum_direct(window_);
 
 	if (ratio < 1) 
 		ratio = 1;
 	if (ratio > 100) 
 		ratio = 100;
 
-	if ((my_lines = window->display_lines * ratio / 100) < 1)
+	if ((my_lines = get_window_display_lines(window_) * ratio / 100) < 1)
 		my_lines = 1;
 	window_scrollback_forwards_lines(window_, my_lines);
 }
@@ -8902,18 +8952,16 @@ static void	window_scrollback_backward (int window_)
 {
 	int 	ratio = get_int_var(SCROLLBACK_RATIO_VAR);
 	int	my_lines;
-	Window *window;
 
 	if (!window_is_valid(window_))
 		return;
-	window = get_window_by_refnum_direct(window_);
 
 	if (ratio < 1) 
 		ratio = 1;
 	if (ratio > 100) 
 		ratio = 100;
 
-	if ((my_lines = window->display_lines * ratio / 100) < 1)
+	if ((my_lines = get_window_display_lines(window_) * ratio / 100) < 1)
 		my_lines = 1;
 	window_scrollback_backwards_lines(window_, my_lines);
 }

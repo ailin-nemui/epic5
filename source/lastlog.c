@@ -209,6 +209,8 @@ intmax_t	add_to_lastlog (int window, const char *line)
 	Lastlog *new_l;
 	Mask	mask;
 
+	window = get_window_refnum(window);
+
 	new_l = (Lastlog *)new_malloc(sizeof(Lastlog));
 	new_l->dead = 0;
 	new_l->refnum = global_lastlog_refnum++;
@@ -270,6 +272,8 @@ void 	trim_lastlog (int window)
 {
 	Lastlog *item;
 
+	window = get_window_refnum(window);
+
 	if (get_window_lastlog_size(window) <= get_window_lastlog_max(window))
 		return;
 
@@ -302,6 +306,8 @@ void 	truncate_lastlog (int window)
 {
 	Lastlog *item;
 
+	window = get_window_refnum(window);
+
 	debuglog("truncate_lastlog: Preparing to truncate lastlog for window %d.",
 			get_window_user_refnum(window));
 	debuglog("truncate_lastlog: Will remove %d entr(y/ies) from window %d",
@@ -324,6 +330,8 @@ void 	truncate_lastlog (int window)
 void 	clear_level_from_lastlog (int window, Mask *levels)
 {
 	Lastlog *item;
+
+	window = get_window_refnum(window);
 
 	item = oldest_lastlog_for_window(window);
 	while (item)
@@ -349,6 +357,8 @@ void 	clear_regex_from_lastlog (int window, const char *regex)
 	Lastlog *item;
 	regex_t	preg;
 	int	errcode;
+
+	window = get_window_refnum(window);
 
 	if (!regex)
 		return;
@@ -1405,7 +1415,14 @@ void	reconstitute_scrollback (int window)
 	for (li = lastlog_oldest; li; li = li->newer)
 	{
 	    if (li->window == window)
+	    {
+		debuglog("reconstitute_scrollback: YES window %d (%d) refnum %d msg %s", li->window, window, li->refnum, li->msg);
 		add_to_window_scrollback(window, li->msg, li->refnum);
+	    }
+	    else
+	    {
+		debuglog("reconstitute_scrollback: NO   window %d (%d) refnum %d msg %s", li->window, window, li->refnum, li->msg);
+	    }
 	}
 }
 	

@@ -889,7 +889,11 @@ void	prepare_alias_call (void *al, char **stuff)
 
 		/* Do dequoting last so it's useful for ``defaults'' */
 		if (next_val && *next_val && do_dequote_it == 1)
-			dequoter(&next_val, 1, type, "\"");
+		{
+			size_t clue;
+			clue = strlen(next_val);
+			dequoter(&next_val, &clue, 1, type, "\"");
+		}
 
 		/* Add the local variable */
 		add_local_alias(args->vars[i], next_val, 0);

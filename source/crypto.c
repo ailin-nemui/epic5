@@ -634,46 +634,70 @@ ssize_t	x ## _encoder (const char *orig, size_t orig_len, const void *meta, size
 }									\
 									\
 ssize_t	x ## _decoder (const char *ciphertext, size_t len, const void *meta, size_t meta_len, char *dest, size_t dest_len) \
-{ 									\
-	char *	outbuf = NULL; 					\
-	int	bytes_to_trim = 0;					\
-	int 	retlen = 0; 						\
-	char *	realpasswd_;						\
-	char *realpasswd;					\
-	size_t	realpasswdlen;						\
-									\
-	if (len == 0)							\
-	{								\
-		*dest = 0; 						\
-		return 0; 						\
-	}								\
-									\
-	make_passwd (meta, meta_len, &realpasswd_, &realpasswdlen);	\
-	realpasswd = (char *)realpasswd_;			\
-	if (!(outbuf = decipher_evp(realpasswd, realpasswdlen, ciphertext, len, \
-				y (), &retlen, ivsize))) 		\
-	{ 								\
-		yell("bummer"); 					\
-		return -1; 						\
-	} 								\
-									\
-	if ( trim )							\
-	{								\
-		bytes_to_trim = outbuf[len - 1]; 			\
-		if (bytes_to_trim > blocksize)				\
-		{							\
-			yell("Wants to trim %d byts with block size of %d",\
-				bytes_to_trim, blocksize);		\
-			bytes_to_trim = blocksize - 1;			\
-		}							\
-		outbuf[len - bytes_to_trim] = 0;  			\
-		memmove(outbuf, outbuf + ivsize, len - bytes_to_trim); 	\
-	}								\
-									\
-	memcpy(dest, outbuf, retlen); 					\
-	dest[retlen] = 0; 						\
-	new_free(&outbuf);						\
-	return retlen;							\
+{ 														\
+	char *	outbuf = NULL; 											\
+	int 	retlen = 0; 											\
+	char *	realpasswd_;											\
+	char *	realpasswd;											\
+	size_t	realpasswdlen;											\
+														\
+	if (len == 0)												\
+	{													\
+		*dest = 0; 											\
+		return 0; 											\
+	}													\
+														\
+	make_passwd (meta, meta_len, &realpasswd_, &realpasswdlen);						\
+	realpasswd = (char *)realpasswd_;									\
+	if (!(outbuf = decipher_evp(realpasswd, realpasswdlen, ciphertext, len, y (), &retlen, ivsize)))	\
+	{ 													\
+		yell("bummer"); 										\
+		return -1; 											\
+	} 													\
+														\
+	/*													\
+	 * Let's talk about padding/trimming...									\
+	 *													\
+	 * Stock ircII does this thing where it always reserves one more byte than is in the plaintext,		\
+	 * before it rounds up to the blocksize.								\
+	 *	message of size 7 + extra byte -> 8 -> 1 block of 8 bytes, with a "pad" of 0 (8 - 8)		\
+	 *	message of size 8 + extra byte -> 9 -> 2 blocks of 8 bytes, with a "pad" of 7 (16 - 9)		\
+	 * The final byte of the final packet is a "pad byte", which indicates how many bytes exist between	\
+	 * the end of the message and the "pad byte".  								\
+	 *													\
+	 * This is fraught because 										\
+	 *  (1) It's non-standard, and nobody but ircII does this						\
+	 *  (2) OpenSSL just zero-fills pad bytes rather than being clever					\
+	 *  (3) There's no way to tell when the message ends if you ignore it!					\
+ 	 * with the first byte not part of the message and are between 						\
+	 * 													\
+	 * So what do we do?											\
+	 *  (1) Look at the pad byte										\
+	 *  (2) If it seems reasonable as a pad value, use it.							\
+	 *  (3) If it doesn't seem reasonable, ignore it.							\
+	 *  (4) Hope and pray I didn't break anything								\
+	 */													\
+	if ( trim )												\
+	{													\
+		int	bytes_to_trim = (int)(unsigned char)outbuf[len - 1];					\
+														\
+		if (bytes_to_trim == 0)		/* How OpenSSL (and we) do it */				\
+		{												\
+		}												\
+		else if (bytes_to_trim > blocksize)								\
+		{												\
+			debuglog("Wants to trim %d bytes with block size of %d",				\
+				bytes_to_trim, blocksize);							\
+			bytes_to_trim = bytes_to_trim % blocksize;						\
+		}												\
+		outbuf[len - bytes_to_trim] = 0;  								\
+		memmove(outbuf, outbuf + ivsize, len - bytes_to_trim); 						\
+	}													\
+														\
+	memcpy(dest, outbuf, retlen); 										\
+	dest[retlen] = 0; 											\
+	new_free(&outbuf);											\
+	return retlen;												\
 }
 
 CRYPTO_HELPER_FUNCTIONS(blowfish, EVP_bf_cbc, 8, 8, copy_passwd, 1)
@@ -681,5 +705,4 @@ CRYPTO_HELPER_FUNCTIONS(fish, EVP_bf_ecb, 8, 0, copy_passwd, 1)
 CRYPTO_HELPER_FUNCTIONS(cast5, EVP_cast5_cbc, 8, 8, copy_passwd, 1)
 CRYPTO_HELPER_FUNCTIONS(aes, EVP_aes_256_cbc, 16, 16, ext256_passwd, 1)
 CRYPTO_HELPER_FUNCTIONS(aessha, EVP_aes_256_cbc, 16, 16, sha256_passwd, 1)
-
 
