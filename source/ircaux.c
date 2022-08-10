@@ -4555,16 +4555,27 @@ char *	universal_next_arg_count (char *str, char **new_ptr, int count, int exten
 		yell(">>>> universal_next_arg_count: Start: [%s], count [%d], extended [%d], dequote [%d], delims [%s]", str, count, extended, dequote, delims);
 
 	real_move_to_abs_word(str, (const char **)new_ptr, count, extended, delims);
+	debuglog(">>>> universal_next_arg_count: real_move_to_abs_word: str [%s] *new_ptr [%s]", str, new_ptr);
+
 	if (**new_ptr && *new_ptr > str)
 	{
 		(*new_ptr)[-1] = 0;
 		clue = (*new_ptr) - str - 1;
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+			yell(">>>> universal_next_arg_count: real_move_to_abs_word: str [%s] *new_ptr [%s] strlen [%ld] clue [%ld]", 
+				str, *new_ptr, (long)strlen(*new_ptr), (long)clue);
 	}
 	else
+	{
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+			yell(">>>> universal_next_arg_count: real_move_to_abs_word: not snipping -- clue = 0");
 		clue = 0;	/* XXX Not sure about this */
+	}
 
 	/* XXX Is this really correct? This seems wrong. */
 	remove_trailing_spaces(str, &clue);
+	if (x_debug & DEBUG_EXTRACTW_DEBUG)
+		yell(">>>> universal_next_arg_count: removed trailing spaces [%s] [%ld]", str, (long)clue);
 
 	/* Arf! */
 	if (dequote == -1)
@@ -4586,11 +4597,16 @@ char *	universal_next_arg_count (char *str, char **new_ptr, int count, int exten
 	}
 
 	if (dequote)
+	{
+		if (x_debug & DEBUG_EXTRACTW_DEBUG)
+			yell(">>>> universal_next_arg_count: dequoting - count [%d], extended [%d] delims [%s]", count, extended, delims);
 		dequoter(&str, &clue, count == 1 ? 0 : 1, extended, delims);
+	}
 
 	if (x_debug & DEBUG_EXTRACTW_DEBUG)
-		yell("<<<< universal_next_arg_count: End:   [%s] [%s]", 
-						str, *new_ptr);
+	{
+		yell("<<<< universal_next_arg_count: End:   [%s] [%s]", str, *new_ptr);
+	}
 	return str;
 }
 
@@ -4662,13 +4678,23 @@ void	dequoter (char **str, size_t *clue, int full, int extended, const char *del
 			if (x_debug & DEBUG_EXTRACTW_DEBUG)
 				yell("#### dequoter: simple string ends with delim...");
 
+			if (x_debug & DEBUG_EXTRACTW_DEBUG)
+				yell("dequoter: before: *str [%s], *clue [%ld]", *str, *clue);
+
 			/* Kill the closing quote. */
 			(*str)[*clue] = 0;
 			(*clue)--;
 
+			if (x_debug & DEBUG_EXTRACTW_DEBUG)
+				yell("dequoter: middle: *str [%s], *clue [%ld]", *str, *clue);
+
 			/* Kill the opening quote. */
 			(*str)++;
-			(*clue)--;
+			if (*clue > 0)
+				(*clue)--;
+
+			if (x_debug & DEBUG_EXTRACTW_DEBUG)
+				yell("dequoter: after: *str [%s], *clue [%ld]", *str, *clue);
 		}
 	    }
 	    return;

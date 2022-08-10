@@ -1254,3 +1254,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix ub with utf-8 detection for non-utf8 console users.
 * Revert dequoter() changes above (rb zlonix, ce)
 * Fix ub with decryption (rb zlonix) [this code makes me nervous]
+* Try a gentler fix for the ub in dequoter()
