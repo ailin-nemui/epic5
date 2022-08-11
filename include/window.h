@@ -130,6 +130,8 @@ struct	ScreenStru *	screen;			/* The screen we belong to */
 	Display *	scrollback_top_of_display;
 	int		scrollback_distance_from_display_ip;
 
+	Display *	clear_point;
+
 	int		display_counter;
 	short		hold_slider;
 
@@ -242,8 +244,8 @@ extern	unsigned 	current_window_priority;
 
 	void	clear_all_windows		(int, int);
 	void	clear_window_by_refnum		(int);
-	void	unclear_all_windows		(int, int);
-	void	unclear_window_by_refnum	(int);
+	void	unclear_all_windows		(int, int, int);
+	void	unclear_window_by_refnum	(int, int);
 	void	set_scrollback_size		(void *);
 	void	set_scroll_lines		(void *);
 	void	set_continued_line		(void *);

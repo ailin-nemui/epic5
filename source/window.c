@@ -136,8 +136,8 @@ static	void	window_body_needs_redraw 	(int refnum);
 static	void	rebalance_windows 		(Screen *screen);
 static	void	window_check_columns 		(int refnum);
 static	void	rebuild_scrollback 		(int refnum);
-static	void	save_window_positions 		(int window_, intmax_t *scrolling, intmax_t *holding, intmax_t *scrollback);
-static	void	restore_window_positions 	(int window_, intmax_t scrolling, intmax_t holding, intmax_t scrollback);
+static	void	save_window_positions 		(int window_, intmax_t *, intmax_t *, intmax_t *, intmax_t *);
+static	void	restore_window_positions 	(int window_, intmax_t, intmax_t, intmax_t, intmax_t);
 static	void 	my_goto_window 			(Screen *s, int which);
 static	int 	hide_window 			(int window_);
 static	void 	show_window 			(int window_);
@@ -199,6 +199,9 @@ static	int	get_window_deceased 		(int window);
 static	void	set_window_deceased 		(int window, int value);
 static	int 	windowcmd_next 			(int refnum, char **args);
 static	int 	windowcmd_previous 		(int refnum, char **args);
+static 	Display *get_window_clear_point         (int window);
+static int	reset_window_clear_point	(int window);
+
 
 static	int	get_invisible_list 		(void) { return _invisible_list; }
 ;
@@ -325,6 +328,7 @@ int	new_window (Screen *screen)
 	new_w->scrollback_distance_from_display_ip = -1; /* Filled in later */
 	new_w->display_counter = 1;
 	new_w->hold_slider = get_int_var(HOLD_SLIDER_VAR);
+	new_w->clear_point = NULL;			/* Filled in later */
 
 	/* The scrollback indicator */
 	new_w->scrollback_indicator = (Display *)new_malloc(sizeof(Display));
@@ -1684,7 +1688,12 @@ static void	resize_window_display (int window_)
 	    {
 		for (i = 0; i < cnt; i++)
 		{
+			Display *cp;
+
 			if (!tmp || !tmp->prev)
+				break;
+			cp = get_window_clear_point(window_);
+			if (tmp == cp)
 				break;
 			tmp = tmp->prev;
 		}
@@ -2289,22 +2298,22 @@ static	void	window_check_columns (int refnum)
 
 static	void	rebuild_scrollback (int refnum)
 {
-	intmax_t	scrolling, holding, scrollback;
+	intmax_t	scrolling, holding, scrollback, clearpoint;
 	Window *w;
 
 	if (!window_is_valid(refnum))
 		return;
 	w = get_window_by_refnum_direct(refnum);
 
-	save_window_positions(refnum, &scrolling, &holding, &scrollback);
+	save_window_positions(refnum, &scrolling, &holding, &scrollback, &clearpoint);
 	flush_scrollback(refnum);
 	reconstitute_scrollback(refnum);
-	restore_window_positions(refnum, scrolling, holding, scrollback);
+	restore_window_positions(refnum, scrolling, holding, scrollback, clearpoint);
 	w->rebuild_scrollback = 0;
 	do_hook(WINDOW_REBUILT_LIST, "%d", get_window_user_refnum(refnum));
 }
 
-static void	save_window_positions (int window_, intmax_t *scrolling, intmax_t *holding, intmax_t *scrollback)
+static void	save_window_positions (int window_, intmax_t *scrolling, intmax_t *holding, intmax_t *scrollback, intmax_t *clearpoint)
 {
 	Window *w;
 
@@ -2332,9 +2341,14 @@ static void	save_window_positions (int window_, intmax_t *scrolling, intmax_t *h
 		*scrollback = w->scrollback_top_of_display->linked_refnum;
 	else
 		*scrollback = -1;
+
+	if (w->clear_point)
+		*clearpoint = w->clear_point->linked_refnum;
+	else
+		*clearpoint = -1;
 }
 
-static void	restore_window_positions (int window_, intmax_t scrolling, intmax_t holding, intmax_t scrollback)
+static void	restore_window_positions (int window_, intmax_t scrolling, intmax_t holding, intmax_t scrollback, intmax_t clearpoint)
 {
 	Display *d;
 	Window *w;
@@ -2348,6 +2362,7 @@ static void	restore_window_positions (int window_, intmax_t scrolling, intmax_t 
 	w->scrolling_top_of_display = NULL;
 	w->holding_top_of_display = NULL;
 	w->scrollback_top_of_display = NULL;
+	w->clear_point = NULL;
 
 	/* 
 	 * Then we find the FIRST scrollback item that is linked to the
@@ -2363,6 +2378,8 @@ static void	restore_window_positions (int window_, intmax_t scrolling, intmax_t 
 		w->holding_top_of_display = d;
 	    if (d->linked_refnum == scrollback && !w->scrollback_top_of_display)
 		w->scrollback_top_of_display = d;
+	    if (d->linked_refnum == clearpoint && !w->clear_point)
+		w->clear_point = d;
 	}
 
 	/*
@@ -2376,6 +2393,8 @@ static void	restore_window_positions (int window_, intmax_t scrolling, intmax_t 
 		w->holding_top_of_display = w->top_of_scrollback;
 	if (!w->scrollback_top_of_display && scrollback != -1)
 		w->scrollback_top_of_display = w->top_of_scrollback;
+	if (!w->clear_point && clearpoint != -1)
+		w->clear_point = w->top_of_scrollback;
 
 	/* 
 	 * We must _NEVER_ allow scrolling_top_of_display to be NULL.
@@ -2393,6 +2412,8 @@ static void	restore_window_positions (int window_, intmax_t scrolling, intmax_t 
 
 	recalculate_window_cursor_and_display_ip(w->refnum);
 	if (w->scrolling_distance_from_display_ip >= w->display_lines)
+		unclear_window(w->refnum);
+	else if (w->scrolling_distance_from_display_ip <= w->display_lines && w->scrolladj)
 		unclear_window(w->refnum);
 	else
 	{
@@ -3612,6 +3633,7 @@ static void 	clear_window (int window_)
 
 	debuglog("clearing window: clearing window %d", window->user_refnum);
 	window->scrolling_top_of_display = window->display_ip;
+	window->clear_point = window->display_ip;
 	if (window->notified)
 	{
 		window->notified = 0;
@@ -3666,6 +3688,8 @@ static void	unclear_window (int window_)
 	{
 		if (window->scrolling_top_of_display == window->top_of_scrollback)
 			break;
+		if (window->scrolling_top_of_display == window->clear_point)
+			break;
 		window->scrolling_top_of_display = window->scrolling_top_of_display->prev;
 	}
 
@@ -3674,7 +3698,7 @@ static void	unclear_window (int window_)
 	window_statusbar_needs_redraw(window->refnum);
 }
 
-void	unclear_all_windows (int visible, int hidden)
+void	unclear_all_windows (int visible, int hidden, int force)
 {
 	int	window_;
 
@@ -3684,18 +3708,20 @@ void	unclear_all_windows (int visible, int hidden)
 			continue;
 		if (!visible && hidden && get_window_screen(window_))
 			continue;
+		if (force)
+			reset_window_clear_point(window_);
 
 		unclear_window(window_);
 	}
 }
 
-void	unclear_window_by_refnum (int refnum)
+void	unclear_window_by_refnum (int refnum, int force)
 {
-	Window *tmp;
-
-	if (!(tmp = get_window_by_refnum_direct(refnum)))
-		tmp = get_window_by_refnum_direct(current_window_);
-	unclear_window(tmp->refnum);
+	if (!window_is_valid(refnum))
+		refnum = 0;
+	if (force)
+		reset_window_clear_point(refnum);
+	unclear_window(refnum);
 }
 
 /*
@@ -9897,6 +9923,25 @@ int	set_window_killable		(int window, int value)
 
 	w->killable = value;
 	return 0;
+}
+
+static Display *get_window_clear_point		(int window)
+{
+	Window *w = get_window_by_refnum_direct(window);
+
+	if (!w)
+		return NULL;
+	return w->clear_point;
+}
+
+static int	reset_window_clear_point	(int window)
+{
+	Window *w = get_window_by_refnum_direct(window);
+
+	if (!w)
+		return 0;
+	w->clear_point = NULL;
+	return 1;
 }
 
 

@@ -460,6 +460,7 @@ BUILT_IN_COMMAND(e_clear)
 		visible = 0,
 		hidden = 0;
 	int	clear = !strcmp(command, "CLEAR");
+	int	force = 1;
 
 	while ((arg = next_arg(args, &args)) != NULL)
 	{
@@ -473,6 +474,9 @@ BUILT_IN_COMMAND(e_clear)
 		else if (!my_strnicmp(arg+1, "HIDDEN", 1))
 			visible = 0, hidden = 1, all = 1;
 
+		else if (!my_strnicmp(arg+1, "NOFORCE", 1))
+			force = 0;
+
 		else
 			say("Unknown flag: %s", arg);
 	}
@@ -482,14 +486,14 @@ BUILT_IN_COMMAND(e_clear)
 		if (clear)
 			clear_all_windows(visible, hidden);
 		else
-			unclear_all_windows(visible, hidden);
+			unclear_all_windows(visible, hidden, force);
 	}
 	else
 	{
 		if (clear)
 			clear_window_by_refnum(0);
 		else
-			unclear_window_by_refnum(0);
+			unclear_window_by_refnum(0, force);
 	}
 
 	update_all_windows();

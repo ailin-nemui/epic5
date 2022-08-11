@@ -1518,7 +1518,7 @@ BUILT_IN_KEYBINDING(my_clear_screen)
 /* This keybinding should be scripted. */
 BUILT_IN_KEYBINDING(input_unclear_screen)
 {
-	unclear_window_by_refnum(0);
+	unclear_window_by_refnum(0, 1);
 }
 
 

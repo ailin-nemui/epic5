@@ -5947,7 +5947,12 @@ static unsigned int     token_decode (const char *base, const char *token)
         else if (marker > 0)
             return DECODE_ERROR;
         else
-            val += posfunc(base, token[i]);
+	{
+	    int d = posfunc(base, token[i]);
+	    if (d < 0 || d > 63)
+		return DECODE_ERROR;
+            val += d;
+	}
     }
     if (marker > 2)
         return DECODE_ERROR;
