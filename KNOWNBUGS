@@ -7,9 +7,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * The way we handle "screen is not tall enough" underflow needs work
 * Unify window query and channels in the target list.
 * Allow /ignore for a nick!user@host but only on a channel
-* In b64_general_decoder() calls token_decode() calls posfunc(), can returns -1
-   -- Which is an error (DECODE_ERROR)
-* /window clearlevel leaves blank lines at bottom instead of honoring /window scrolladj
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1262,4 +1259,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * When moving the "top of scrolling" around, honor the clear_point
 * The /unclear command will ignore the clear_point (backwards compatible)
 * The /unclear -noforce flag will honor the clear_point
+* Fix ub when decoding base64 data with invalid characters
 

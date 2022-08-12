@@ -1,5 +1,29 @@
 EPIC5-2.2
 
+*** News 08/11/2022 -- New concept to the /CLEAR command
+	When you /CLEAR a window, it's empty, right?  But quite a few
+	operations can result in a window getting bigger.  You can 
+	/WINDOW GROW or /WINDOW CLEARLEVEL or you can resize the screen.
+	Usually when everything in a window fits in the new size, but
+	does not take up all of the room, EPIC has to decide what to do
+	with the new space.  Does it redisplay info that was previously
+	scrolled off? ("pinning the bottom")  Does it display blank lines
+	at the bottom of the window? ("pinning the top").
+
+	People disagree on this point, and that's part of why the 
+	/WINDOW SCROLLADJ feature exists.  But it's clear that a second
+	signal is important -- the /CLEAR command.
+
+	Each time you /CLEAR (or /WINDOW CLEAR) it will set the window's
+	"clear point".  When EPIC adjusts a window's scrollback to fill
+	in blank lines, the top of the window can never go before the 
+	"clear point", and so that's how it will decide whether you 
+	want to redisplay old stuff, or keep blank lines on the bottom.
+
+	The /UNCLEAR command unconditionally "pins the bottom", and for
+	backwards compatability, it ignores the "clear point".  However, 
+	if you want it to honor the clear point, use /UNCLEAR -NOFORCE
+
 *** News 07/24/2022 -- New commands, /CTCP_CLOAK and /CTCP_UNCLOAK
 	These are implemented by the /LOAD ctcp script, which is 
 	part of the default experience
