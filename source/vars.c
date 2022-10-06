@@ -496,6 +496,7 @@ void 	init_variables_stage1 (void)
 	VAR(STATUS_PREFIX_WHEN_NOT_CURRENT, STR,  build_status);
 	VAR(STATUS_QUERY,               STR,  build_status);
 	VAR(STATUS_SCROLLBACK,          STR,  build_status);
+	VAR(STATUS_SEQUENCE_POINT,      STR,  build_status);
 	VAR(STATUS_SERVER,              STR,  build_status);
 	VAR(STATUS_SSL_OFF,             STR,  build_status);
 	VAR(STATUS_SSL_ON,              STR,  build_status);

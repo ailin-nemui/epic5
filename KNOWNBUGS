@@ -7,6 +7,11 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * The way we handle "screen is not tall enough" underflow needs work
 * Unify window query and channels in the target list.
 * Allow /ignore for a nick!user@host but only on a channel
+[12:19PM] <zlonix> hop, i've found easier way to reproduce the flush_scrollback bug, - epic5 -q, load scan, join #test1234,
++window flush_scrollback, scan, window clearlevel other -
+* Use-after-free ....
+	see ubsan.log.74089
+	#0 0x8431a0 in save_window_positions /usr/home/jnelson/git/epic5/source/window.c:2379:33
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1260,4 +1265,12 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * The /unclear command will ignore the clear_point (backwards compatible)
 * The /unclear -noforce flag will honor the clear_point
 * Fix ub when decoding base64 data with invalid characters
+* Add /xdebug sequence_points and %{2}P and /set status_sequence_point
+* Also, $sequence_point().  This is all an easter egg.
+* Create notion of "Window Attachments", that belong to the screen
+* Create screen-focused API to manage "window attachments" (window list)
+* In the meantime, change (Window)->_next and ->_prev to ->_next_ and ->_prev_
+* Sanity check the window-based window list from the screen-based window list
+* Fix bug with 'clearpoint' (rb zlonix)
+* Updated reconnect script (zlonix)
 

@@ -27,6 +27,10 @@ package reconnect;
 ##  - Major rewrite of script logic - now we don't use infinite timers,
 ##    but use re-scheduling - the timer schedules itself if appropriate.
 ##    Idea by hop@efnet.
+##
+## Version 3.0 (September, 2022)
+##  - Uppon reconnect send one join line with all channels and keys instead
+##    of bunch separate joins.
 
 ## This script do basic reconnection procedure for you, it hooks on newly
 ## implemented hook 'reconnect_required', it is thrown when network connection
@@ -103,18 +107,44 @@ addset auto_reconnect bool {
 			timer -delete auto_reconnect.$group_enc;
 			^assign -auto_reconnect.failures[$group_enc];
 
-			foreach auto_reconnect[$group_enc] uuid {
-				fe ($auto_reconnect[$group_enc][$uuid]) chan key {
-					@ :win = windowctl(REFNUM $uuid);
+			## Send one line with all channels to join
+			## https://www.rfc-editor.org/rfc/rfc1459#section-4.2.1
+			@ :chans = auto_reconnect[$group_enc][chans];
+			@ :keys = auto_reconnect[$group_enc][keys];
 
-					## window could've been removed by user during reconnect
-					if (@win)
-						window $win channel "$chan $key";
-				};
-				^assign -auto_reconnect[$group_enc][$uuid];
+			if (@chans) {
+				quote join $sar(g/ /,/$chans) $sar(g/ /,/$keys);
 			};
 
-			^assign -auto_reconnect[$group_enc];
+		};
+		on #-channel_claim 100 * {
+			@ :group = serverctl(GET $0 GROUP);
+
+			if (group == [<default>]) {
+				@ :group_enc = encode($serverctl(GET $0 NAME));
+			} else {
+				@ :group_enc = encode($serverctl(GET $0 GROUP));
+			};
+
+			## If we can't find the channel in auto_reconnect array for the
+			## group - we're not in reconnect situation, user just has joined
+			## a channel on his own - do not proceed.
+			@ :idx = findw($1 $auto_reconnect[$group_enc][chans]);
+			if (idx == -1) {
+				return;
+			};
+
+			@ :key = word($idx $auto_reconnect[$group_enc][keys]);
+			@ :uuid = word($idx $auto_reconnect[$group_enc][wins]);
+			@ :win = windowctl(REFNUM $uuid);
+
+			if (windowctl(GET $win SERVER) == *0 && windowctl(GET $2 uuid) != uuid) {
+				window $uuid claim $1;
+			};
+
+			@ ::auto_reconnect[$group_enc][chans] = notw($idx $auto_reconnect[$group_enc][chans]);
+			@ ::auto_reconnect[$group_enc][keys] = notw($idx $auto_reconnect[$group_enc][keys]);
+			@ ::auto_reconnect[$group_enc][wins] = notw($idx $auto_reconnect[$group_enc][wins]);
 
 		};
 		alias auto_reconnect.handler (server, void) {
@@ -192,7 +222,9 @@ addset auto_reconnect bool {
 					@ :group_enc = encode($group);
 				};
 
-				push auto_reconnect[$group_enc][$uuid] $1 $key($1);
+				push auto_reconnect[$group_enc][chans] $1;
+				push auto_reconnect[$group_enc][keys] $key($1);
+				push auto_reconnect[$group_enc][wins] $uuid;
 			};
 		};
 		alias lsreconnects (void) {

@@ -143,6 +143,7 @@ extern struct timeval	idle_time;
 extern struct timeval	now;
 extern struct timeval	input_timeout;
 extern		jmp_buf	panic_jumpseat;
+extern		intmax_t sequence_point;
 
 extern const	char *	compile_info;
 extern const 	char 	configure_args[];

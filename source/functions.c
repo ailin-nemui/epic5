@@ -388,6 +388,7 @@ static	char
 #endif
 	*function_sar 		(char *),
 	*function_seek		(char *),
+	*function_sequence_point (char *),
 	*function_server_version (char *),
 	*function_serverctl	(char *),
 	*function_servports	(char *),
@@ -718,6 +719,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "RUBY",		function_ruby		},
 #endif
 	{ "SAR",		function_sar 		},
+	{ "SEQUENCE_POINT",	function_sequence_point	},
 	{ "SERVERCTL",		function_serverctl	},
 	{ "SERVERWIN",		function_serverwin	},
 	{ "SERVPORTS",		function_servports	},
@@ -8628,5 +8630,10 @@ BUILT_IN_FUNCTION(function_unveil, input)
 	else
 		RETURN_EMPTY;
 #endif
+}
+
+BUILT_IN_FUNCTION(function_sequence_point, input)
+{
+	RETURN_INT(sequence_point);
 }
 

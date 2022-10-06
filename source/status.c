@@ -107,6 +107,7 @@ STATUS_FUNCTION(status_swappable);
 STATUS_FUNCTION(status_activity);
 STATUS_FUNCTION(status_window_prefix);
 STATUS_FUNCTION(status_server_status);
+STATUS_FUNCTION(status_sequence_point);
 
 /* These are used as placeholders for some expandos */
 static	char	*mode_format 		= (char *) 0;
@@ -119,6 +120,7 @@ static	char	*cpu_saver_format 	= (char *) 0;
 static	char	*mail_format 		= (char *) 0;
 static	char	*nick_format		= (char *) 0;
 static	char	*server_format 		= (char *) 0;
+static	char	*sp_format 		= (char *) 0;
 static	char	*notify_format 		= (char *) 0;
 
 	Status	main_status;
@@ -219,6 +221,7 @@ struct status_formats status_expandos[] = {
 { 2, '7', status_user,	 	NULL,			NULL },
 { 2, '8', status_user,	 	NULL, 			NULL },
 { 2, '9', status_user,	 	NULL, 			NULL },
+{ 2, 'P', status_sequence_point, &sp_format,		&STATUS_SEQUENCE_POINT_VAR },
 { 2, 'S', status_server,        &server_format,     	&STATUS_SERVER_VAR },
 { 2, 'W', status_window,	NULL, 			NULL },
 { 2, '+', status_mode,		&mode_format,       	&STATUS_MODE_VAR },
@@ -1891,4 +1894,20 @@ BUILT_IN_FUNCTION(function_status_oneoff, input)
 
 	RETURN_MSTR(retval);
 }
+
+STATUS_FUNCTION(status_sequence_point)
+{
+	STATUS_VARS
+	char resultstr[100];
+
+	if (x_debug & DEBUG_SEQUENCE_POINTS)
+	{
+		snprintf(resultstr, sizeof(resultstr), UINTMAX_FORMAT, sequence_point);
+		PRESS(sp_format, resultstr);
+		RETURN
+	}
+	else
+		return empty_string;
+}
+
 

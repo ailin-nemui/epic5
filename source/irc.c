@@ -52,7 +52,7 @@ const char internal_version[] = "20220615";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 2092;
+const unsigned long	commit_id = 2093;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -168,6 +168,8 @@ int		do_window_notifies = 1;
 
 jmp_buf		panic_jumpseat;
 int		system_reset = 0;
+
+intmax_t	sequence_point = 0;
 
 /*
  * If set, outbound connections will be bind()ed to the address
@@ -877,6 +879,8 @@ static	int		level = 0,
 			last_warn = 0;
 	Timeval		timer;
 
+	sequence_point++;
+
 	if (system_reset)
 	{
 		int	i;
@@ -981,6 +985,9 @@ static	int		level = 0,
 	/* Redraw the screen after a SIGCONT */
 	if (need_redraw)
 		redraw_all_screens();
+
+	if (x_debug & DEBUG_SEQUENCE_POINTS)
+		update_all_status();
 
 	/* Make sure all the windows and status bars are made current */
 	update_all_windows();

@@ -3164,7 +3164,8 @@ void 	repaint_window_body (int window_)
 void	create_new_screen (void)
 {
 	Screen	*new_s = NULL, *list;
-	static	int	refnumber = 0;
+static	int	refnumber = 0;
+	int	i;
 
 	for (list = screen_list; list; list = list->next)
 	{
@@ -3226,6 +3227,9 @@ void	create_new_screen (void)
         new_s->il->ind_right = malloc_strdup(empty_string);
         new_s->il->ind_right_len = 0;
 	new_s->il->echo = 1;
+
+	for (i = 0 ; i <= MAX_WINDOWS_ON_SCREEN; i++)
+		new_s->_windows[i].window = -1;
 
 	last_input_screen = new_s;
 
@@ -4578,4 +4582,284 @@ void            set_screen_last_window_refnum   (int screen_, int value)
 	s->last_window_refnum = value;
 }
 
+
+/****************************************************/
+int	screen_add_window_before (int screen_, int existing_window_, int new_window_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	int	ewp;
+
+	if (!s)
+		return 0;
+
+	if ((ewp = screen_window_find(screen_, existing_window_)) >= 0)
+	{
+		if (screen_windows_make_room_at(screen_, ewp))
+		{
+			s->_windows[ewp].window = new_window_;
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int	screen_add_window_after (int screen_, int existing_window_, int new_window_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	int	ewp;
+
+	if (!s)
+		return 0;
+
+	if ((ewp = screen_window_find(screen_, existing_window_)) >= 0)
+	{
+		if (screen_windows_make_room_at(screen_, ewp + 1))
+		{
+			s->_windows[ewp + 1].window = new_window_;
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int	screen_add_window_first (int screen_, int new_window_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+
+	if (!s)
+		return 0;
+
+	if (screen_windows_make_room_at(screen_, 0))
+	{
+		s->_windows[0].window = new_window_;
+		return 1;
+	}
+	return 0;
+}
+
+int	screen_add_window_last (int screen_, int new_window_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	int	lp;
+
+	if (!s)
+		return 0;
+
+	if ((lp = screen_window_find(screen_, -1)) >= 0)
+	{
+		s->_windows[lp].window = new_window_;
+		return 1;
+	}
+	return 0;
+}
+
+int	screen_remove_window (int screen_, int old_window_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	int	location;
+
+	if (!s)
+		return 0;
+
+	for (location = 0; location <= MAX_WINDOWS_ON_SCREEN; location++)
+	{
+		if (s->_windows[location].window == old_window_)
+			s->_windows[location].window = -1;
+	}
+	if (screen_windows_squeeze(screen_))
+		return 1;
+	return 0;
+}
+
+int	screen_windows_squeeze (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	int	location;
+
+	if (!s)
+		return 0;
+
+	for (location = 0; location <= MAX_WINDOWS_ON_SCREEN; location++)
+	{
+		/* Squeeze both 0 and -1 */
+		if (s->_windows[location].window <= 0)
+		{
+			int	squeezer;
+			for (squeezer = location; squeezer < MAX_WINDOWS_ON_SCREEN; squeezer++)
+				s->_windows[squeezer] = s->_windows[squeezer + 1];
+		}
+	}
+	return 1;
+}
+
+int	screen_windows_make_room_at (int screen_, int location)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	int	end = location;
+
+	if (!s)
+		return 0;
+
+	if (location < 0 || location > MAX_WINDOWS_ON_SCREEN )
+		return 0;		/* No. */
+
+	while (end <= MAX_WINDOWS_ON_SCREEN && s->_windows[end].window != -1)
+		end++;
+
+	if (end > MAX_WINDOWS_ON_SCREEN)
+		return 0;		/* No more room */
+
+	while (end >= location)
+	{
+		s->_windows[end + 1] = s->_windows[end];
+		end--;
+	}
+
+	s->_windows[location].window = 0;	/* Window 0 is "placeholder" */
+	return 1;
+}
+
+int	screen_window_find (int screen_, int window_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	int	location;
+
+	if (!s)
+		return -1;
+
+	for (location = 0; location <= MAX_WINDOWS_ON_SCREEN; location++)
+		if (s->_windows[location].window == window_)
+			return location;
+
+	return -1;
+}
+
+int	screen_window_swap (int screen_, int v_window_, int window_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	int	location;
+
+	if (!s)
+		return -1;
+
+	if ((location = screen_window_find(screen_, v_window_)) >= 0)
+	{
+		s->_windows[location].window = window_;
+		return 1;
+	}
+	return 0;
+}
+
+int	screen_window_dump (int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	int	location;
+
+	if (!s)
+		return -1;
+
+	yell("Screen %d (%#lx)", screen_, (intptr_t)s);
+	for (location = 0; location <= MAX_WINDOWS_ON_SCREEN; location++)
+	{
+		if (s->_windows[location].window != -1)
+			yell("Screen %d, location %d, window %d", screen_, location, s->_windows[location].window);
+	}
+	return 0;
+
+}
+
+int	screen_window_place (int screen_, int location, int window_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	int	x;
+
+	if (!s)
+	{
+#if 0
+		yell("Screen_window_place: screen %d is invalid", screen_);
+#endif
+		return -1;
+	}
+	if (location < 1 || location > MAX_WINDOWS_ON_SCREEN)
+	{
+#if 0
+		yell("Screen_window_place: location %d is invalid", location);
+#endif
+		return -1;
+	}
+
+	/* If we're moving UP the window, put it above the window that is already there */
+	if ((x = screen_window_find(screen_, window_)) >= 0)
+		if (x >= location)
+			location--;
+
+#if 0
+	yell("screen_window_place: %d, %d (-1), %d", screen_, location, window_);
+#endif
+
+	if ((x = screen_window_find(screen_, window_)) >= 0)
+	{
+		WindowAttachment wa = s->_windows[x];
+
+#if 0
+		yell("Moving existing window %d from %d to %d (-1)", window_, x, location);
+#endif
+		screen_windows_make_room_at(screen_, location);
+		if ((x = screen_window_find(screen_, window_)) >= 0)
+			s->_windows[x].window = 0;
+		s->_windows[location] = wa;
+		screen_windows_squeeze(screen_);
+#if 0
+		yell("Done");
+#endif
+	}
+	else
+	{
+#if 0
+		yell("Making room for new window %d on %d/%d (-1)", window_, screen_, location);
+#endif
+		screen_windows_make_room_at(screen_, location);
+		s->_windows[location].window = window_;
+		screen_windows_squeeze(screen_);
+#if 0
+		yell("done");
+#endif
+	}
+
+	return 0;
+}
+
+int	screen_get_window_prev (int screen_, int window_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	int	x;
+
+	if (!s)
+		return -1;
+
+	x = screen_window_find(screen_, window_);
+	if (x < 0)
+		return -1;	/* Not on screen */
+	else if (x == 0)
+		return -1;	/* First window on screen */
+	else
+		return s->_windows[x - 1].window;
+}
+
+int	screen_get_window_next (int screen_, int window_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	int	x;
+
+	if (!s)
+		return -1;
+
+	x = screen_window_find(screen_, window_);
+	if (x < 0)
+		return -1;	/* Not on screen */
+	else if (x >= MAX_WINDOWS_ON_SCREEN)
+		return -1;	/* No windows past this point */
+	else
+		return s->_windows[x + 1].window;
+}
 

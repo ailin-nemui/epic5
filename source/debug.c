@@ -79,6 +79,7 @@ static struct debug_opts opts[] =
 	{ "UNICODE",		DEBUG_UNICODE },
 	{ "DWORD",        	DEBUG_DWORD },
 	{ "RECODE",		DEBUG_RECODE },
+	{ "SEQUENCE_POINTS",	DEBUG_SEQUENCE_POINTS },
 	{ "ALL",		~0},
 	{ NULL,			0 },
 };

@@ -47,7 +47,6 @@ typedef struct InputLine
 	int		echo;
 }	InputLine;
 
-
 typedef struct PromptStru
 {
 struct	PromptStru *	next;
@@ -59,6 +58,11 @@ struct	PromptStru *	next;
 	InputLine *	my_input_line;
 	InputLine *	saved_input_line;
 }	WaitPrompt;
+
+typedef struct _window_attachment
+{
+	int		window;
+} WindowAttachment;
 
 typedef	struct	ScreenStru
 {
@@ -95,6 +99,8 @@ struct	ScreenStru *	next;			/* Previous screen in list */
 	int		old_co;
 	int		old_li;
 
+#define MAX_WINDOWS_ON_SCREEN	1000
+	WindowAttachment	_windows[MAX_WINDOWS_ON_SCREEN + 1];	/* This is experimental, for now */
 }	Screen;
 
 	void		repaint_window_body		(int);
@@ -156,6 +162,23 @@ const	char *		all_off				(void);
 	void		set_screen_alive		(int, int);
 	void		set_screen_input_window		(int, int);
 	void		set_screen_last_window_refnum	(int, int);
+
+
+	int    		screen_add_window_before 	(int screen_, int existing_window_, int new_window_);
+	int     	screen_add_window_after 	(int screen_, int existing_window_, int new_window_);
+	int     	screen_add_window_first 	(int screen_, int new_window_);
+	int     	screen_add_window_last 		(int screen_, int new_window_);
+	int     	screen_remove_window 		(int screen_, int old_window_);
+	int     	screen_windows_squeeze 		(int screen_);
+	int     	screen_windows_make_room_at 	(int screen_, int location);
+	int     	screen_window_find 		(int screen_, int window_);
+	int     	screen_window_dump 		(int screen_);
+	int		screen_window_place		(int screen_, int location, int window_);
+	int     	screen_window_swap 		(int screen_, int v_window_, int window_);
+
+
+	int     	screen_get_window_prev 		(int screen_, int window_);
+	int     	screen_get_window_next 		(int screen_, int window_);
 
 
 /* Dont do any word-wrapping, just truncate each line at its place. */

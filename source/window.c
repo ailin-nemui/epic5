@@ -201,6 +201,7 @@ static	int 	windowcmd_next 			(int refnum, char **args);
 static	int 	windowcmd_previous 		(int refnum, char **args);
 static 	Display *get_window_clear_point         (int window);
 static int	reset_window_clear_point	(int window);
+static int	set_window_list_check		(int window, int value);
 
 
 static	int	get_invisible_list 		(void) { return _invisible_list; }
@@ -378,13 +379,8 @@ int	new_window (Screen *screen)
 
 	/* Screen list stuff */
 	/* new_w->screen = screen; */	/* add_to_window_list() does this */
-#if 0
-	new_w->_next = NULL;
-	new_w->_prev = NULL;
-#else
-	new_w->_next = -1;
-	new_w->_prev = -1;
-#endif
+	new_w->_next_ = -1;
+	new_w->_prev_ = -1;
 	new_w->deceased = 0;
 
 	/*
@@ -1001,6 +997,8 @@ static int	add_to_window_list (Screen *screen, int window_)
 		new_w->screen = screen;
 		screen->_window_list = new_w->refnum;
 		new_w->my_columns = screen->co;	/* Whatever */
+		if (screen_add_window_first(screen->screennum, new_w->refnum) == 0)
+			yell("screen_add_window_first(%d, %d) failed!", screen->screennum, new_w->refnum);
 
 		if (dumb_mode)
 		{
@@ -1080,6 +1078,8 @@ static int	add_to_window_list (Screen *screen, int window_)
 
 	old_winner_prev = get_window_prev(winner_refnum);
 
+	if (!screen_add_window_before(get_window_screennum(winner_refnum), winner_refnum, new_w->refnum))
+		yell("screen_add_window_before(%d, %d, %d) failed", get_window_screennum(winner_refnum), winner_refnum, new_w->refnum);
 	set_window_prev(new_w->refnum, old_winner_prev);
 	set_window_next(new_w->refnum, winner_refnum);
 
@@ -1151,6 +1151,9 @@ static void 	remove_window_from_screen (int window_, int hide, int recalc)
 	old_next = get_window_next(window_);
 	old_prev = get_window_prev(window_);
 
+	if (screen_remove_window(get_window_screennum(window_), window_) == 0)
+		yell("screen_remove_window(%d, %d) failed!", get_window_screennum(window_), window_);
+
 	if (old_prev != -1)
 		set_window_next(old_prev, old_next);
 	else
@@ -1216,6 +1219,35 @@ static void	recalculate_window_positions (Screen *screen)
 }
 
 /*
+ * swap_window: Replace a visible window with an invisible window
+ *
+ * Arguments:
+ *	v_window_	- The refnum of a visible window.
+ *	window_		- A valid hidden window refnum 
+ *			  If not a valid hidden window refnum (either <= 0 or 
+ *			  just invalid), silently replaced with an unspecified
+ *			  hidden window (usually the LAST window)
+ *
+ * Caveats:
+ *	This function tries to avoid recoverable failures.  If the window
+ *	to be swapped in is unacceptable, an acceptable alternative will
+ *	be chosen rather than failing the operation.
+ *	
+ * Errors:
+ *	- If there are no hidden windows, obviously you can't swap one in
+ *	- If v_window_ is not visible
+ *	- If window_ is not invisible (it tries to avoid this)
+ *	- If v_window_ is not swappable
+ *	- If window_ is not swappable and there are other hidden windows
+ *		Note that in situations where you didn't select window_,
+ *		the client may select an unswappable window and then fail on 
+ *		it, rather than looking for a hidden window that wouldn't fail.
+ *		Allowing this to fail could be considered a bug
+ *
+ *
+ *	If "window_" is not a valid hidden window, then a hidden window
+ *	will be selected to avoid failure.
+ *
  * swap_window: This swaps the given window with the current window.  The
  * window passed must be invisible.  Swapping retains the positions of both
  * windows in their respective window lists, and retains the dimensions of
@@ -1376,6 +1408,8 @@ static	void	swap_window (int v_window_, int window_)
 	if (!v_window->deceased)
 		add_to_invisible_list(v_window_);
 
+	screen_window_swap(screen->screennum, v_window_, window_);
+
 	if (recalculate_everything)
 		recalculate_windows(screen);
 	recalculate_window_cursor_and_display_ip(window_);
@@ -1448,6 +1482,8 @@ static void 	move_window_to (int window_, int offset)
 				"but s->_window_list is %d", 
 				get_window_user_refnum(window_), get_window_user_refnum(s->_window_list));
 
+		set_window_list_check(window_, 0);
+
 		set_window_next(get_window_prev(window_), get_window_next(window_));
 		if (get_window_next(window_) != -1)
 			set_window_prev(get_window_next(window_), get_window_prev(window_));
@@ -1456,6 +1492,8 @@ static void 	move_window_to (int window_, int offset)
 		set_window_next(window_, s->_window_list);
 		set_window_prev(s->_window_list, window_);
 		s->_window_list = window_;
+
+		set_window_list_check(window_, 1);
 	}
 
 	/* Move the window to the bottom of the screen */
@@ -1464,6 +1502,8 @@ static void 	move_window_to (int window_, int offset)
 		/* If it's already at the bottom, we're done. */
 		if (get_window_next(window_) == -1)
 			return;
+
+		set_window_list_check(window_, 0);
 
 		if (get_window_prev(window_) != -1)
 			set_window_next(get_window_prev(window_), get_window_next(window_));
@@ -1474,6 +1514,8 @@ static void 	move_window_to (int window_, int offset)
 		set_window_prev(window_, get_screen_bottom_window(s));
 		set_window_next(get_window_prev(window_), window_);
 		set_window_next(window_, -1);
+
+		set_window_list_check(window_, 1);
 	}
 
 	/* Otherwise it's moving somewhere in the middle */
@@ -1506,6 +1548,8 @@ static void 	move_window_to (int window_, int offset)
 		if (get_window_refnum(get_window_next(w_)) == get_window_refnum(window_))
 			return;
 
+		set_window_list_check(window_, 0);
+
 		/* Unlink our target window first */
 		if (get_window_prev(window_) != -1)
 			set_window_next(get_window_prev(window_), get_window_next(window_));
@@ -1518,16 +1562,24 @@ static void 	move_window_to (int window_, int offset)
 		set_window_prev(window_, w_);
 		set_window_next(window_, get_window_next(w_));
 
+#if 0
 		/* One last sanity check */
 		if (get_window_prev(window_) == -1 || get_window_next(window_) == -1)
 			panic(1, "window_move_to(%d): Window %d's prev and "
 				"next are both null, but that's impossible", 
 				offset, get_window_user_refnum(window_));
+#endif
 
 		set_window_prev(get_window_next(window_), window_);
 		set_window_next(get_window_prev(window_), window_);
+
+		set_window_list_check(window_, 1);
 	}
 
+#if 0
+	yell("screen_window_place(%d, %d, %d)", s->screennum, offset, window_);
+#endif
+	screen_window_place(s->screennum, offset, window_);
 	set_screens_current_window(s, window_);
 	make_window_current_by_refnum(window_);
 	recalculate_window_positions(s);
@@ -2322,6 +2374,7 @@ static void	save_window_positions (int window_, intmax_t *scrolling, intmax_t *h
 		*scrolling = -1;
 		*holding = -1;
 		*scrollback = -1;
+		*clearpoint = -1;
 		return;
 	}
 
@@ -7216,6 +7269,20 @@ WINDOWCMD(scratch)
 	return refnum;
 }
 
+WINDOWCMD(screen_debug)
+{
+	int	screen;
+
+	if (!window_is_valid(refnum))
+		return 0;
+
+	if ((screen = get_window_screennum(refnum)))
+		screen_window_dump(screen);
+	else
+		yell("invisible window screen dump not supported (yet)");
+	return refnum;
+}
+
 /* XXX - Need to come back and fix this... */
 WINDOWCMD(scroll)
 {
@@ -8068,6 +8135,7 @@ static const window_ops options [] = {
 	{ "REJOIN",		windowcmd_rejoin		},
 	{ "REMOVE",		windowcmd_remove 		},
 	{ "SCRATCH",		windowcmd_scratch		},
+	{ "SCREEN_DEBUG",	windowcmd_screen_debug		},
 	{ "SCROLL",		windowcmd_scroll		},
 	{ "SCROLLADJ",		windowcmd_scrolladj		},
 	{ "SCROLLBACK",		windowcmd_scrollback		}, /* * */
@@ -8557,12 +8625,14 @@ static int	flush_scrollback (int window_)
         w->holding_distance_from_display_ip = -1;   /* Filled in later */
         w->scrollback_top_of_display = NULL;        /* Filled in later */
         w->scrollback_distance_from_display_ip = -1; /* Filled in later */
+	w->clear_point = NULL;			    /* Filled in later? */
         w->display_counter = 1;
 
 	/* Reconstitute a new scrollback buffer */
         w->top_of_scrollback = new_display_line(NULL, w->refnum);
         w->top_of_scrollback->line = NULL;
         w->top_of_scrollback->next = NULL;
+	w->top_of_scrollback->prev = NULL;
         w->display_buffer_size = 1;
         w->display_ip = w->top_of_scrollback;
         w->scrolling_top_of_display = w->top_of_scrollback;
@@ -9862,16 +9932,48 @@ int     set_window_lastlog_size_incr    (int window)
 	return 0;
 }
 
+static	int	list_check = 1;
+
+static int	set_window_list_check		(int window, int value)
+{
+	int	old_value = list_check;
+
+	list_check = value;
+	return old_value;
+}
+
 int	get_window_prev			(int window)
 {
 	Window *w = get_window_by_refnum_direct(window);
-	return w->_prev;
+	int	sp;
+
+	if (w->screen)
+	{
+	    if (list_check)
+	    {
+		sp = screen_get_window_prev(w->screen->screennum, w->refnum);
+		if (sp != w->_prev_)
+			yell("for window %d, screen says prev is %d, window thinks it's %d", window, sp, w->_prev_);
+	    }
+	}
+	return w->_prev_;
 }
 
 int	get_window_next			(int window)
 {
 	Window *w = get_window_by_refnum_direct(window);
-	return w->_next;
+	int	sp;
+
+	if (w->screen)
+	{
+	    if (list_check)
+	    {
+		sp = screen_get_window_next(w->screen->screennum, w->refnum);
+		if (sp != w->_next_)
+			yell("for window %d, screen says next is %d, window thinks it's %d", window, sp, w->_next_);
+	    }
+	}
+	return w->_next_;
 }
 
 int	set_window_prev			(int window, int prev)
@@ -9884,7 +9986,7 @@ int	set_window_prev			(int window, int prev)
 	if (window == prev)
 		panic(1, "I can't set window->prev to myself");
 
-	w->_prev = prev;
+	w->_prev_ = prev;
 	return 0;
 }
 
@@ -9898,7 +10000,7 @@ int	set_window_next			(int window, int next)
 	if (window == next)
 		panic(1, "I can't set window->next to myself");
 
-	w->_next = next;
+	w->_next_ = next;
 	return 0;
 }
 

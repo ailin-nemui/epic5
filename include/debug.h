@@ -28,7 +28,7 @@ extern	char *	function_xdebug (char *);
 #define DEBUG_BROKEN_CLOCK	(1UL << 15)
 #define DEBUG_CHANNELS		(1UL << 16)
 #define DEBUG_UNKNOWN		(1UL << 17)
-#define DEBUG_18		(1UL << 18)
+#define DEBUG_SEQUENCE_POINTS	(1UL << 18)
 #define DEBUG_19		(1UL << 19)
 #define DEBUG_NEW_MATH_DEBUG    (1UL << 20)
 #define DEBUG_21		(1UL << 21)

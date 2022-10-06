@@ -42,8 +42,8 @@ struct	DisplayStru *	next;
 typedef	struct	WindowStru
 {
 	/* List stuff */
-	int		_next;
-	int		_prev;
+	int		_next_;
+	int		_prev_;
 
 struct	ScreenStru *	screen;			/* The screen we belong to */
 #if 0
