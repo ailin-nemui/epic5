@@ -23,7 +23,7 @@ extern	int	meta_mode;
  * escape sequences.
  */
 #if !defined(WTERM_C) && !defined(WSERV_C)
-#define current_ftarget (output_screen ? output_screen->fpout : stdout)
+#define current_ftarget (output_screen >= 0 ? get_screen_fpout(output_screen) : stdout)
 
 # ifdef __need_putchar_x__
 __inline__ static int putchar_x (int c) { 

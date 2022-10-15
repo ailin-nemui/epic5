@@ -87,22 +87,20 @@ BUILT_IN_KEYBINDING(refresh_screen)
 
 void	redraw_all_screens (void)
 {
-	Screen *s, *old_os;
+	int	old_os;
 	int	s_;
 
 	old_os = output_screen;
 	for (s_ = 0; traverse_all_screens(&s_); )
 	{
-		s = get_screen_by_refnum(s_);
-
-		if (!s->alive)
+		if (!get_screen_alive(s_))
 			continue;
 
-		output_screen = s;
+		output_screen = s_;
 		unflash();
 		term_clear_screen();
-		if (s == main_screen && term_resize())
-			recalculate_windows(s);
+		if (s_ == main_screen && term_resize())
+			recalculate_windows(s_);
 	}
 
 	/* Logically mark all windows as needing a redraw */
@@ -112,7 +110,7 @@ void	redraw_all_screens (void)
 	update_all_windows();
 
 	/* Physically redraw all input lines */
-	update_input(NULL, UPDATE_ALL);
+	update_input(-1, UPDATE_ALL);
 
 	output_screen = old_os;
 	need_redraw = 0;

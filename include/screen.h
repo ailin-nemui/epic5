@@ -12,96 +12,10 @@
 /* To get the definition of WindowStack */
 #include "window.h"
 
+#define WAIT_PROMPT_NONE	0x00
 #define WAIT_PROMPT_LINE        0x01
 #define WAIT_PROMPT_KEY         0x02
 #define WAIT_PROMPT_DUMMY	0x04
-
-typedef struct InputLine
-{
-	/* The current UTF8 input line (plain old c string */
-	char		input_buffer[INPUT_BUFFER_SIZE+1];
-
-	/* The offset into input_buffer where each logical char starts */
-	int		logical_chars[INPUT_BUFFER_SIZE + 1];
-
-	/* The logical column in which each logical char lives */
-	int		logical_columns[INPUT_BUFFER_SIZE + 1];
-
-	/* Upon which logical char does the cursor sit? */
-	int		logical_cursor;
-
-	int		first_display_char;
-	int		number_of_logical_chars;
-
-	char *		input_prompt_raw;
-	char *		input_prompt;
-	int		input_prompt_len;
-	int		input_line;
-
-        char *		ind_left;
-        int     	ind_left_len;
-        char *		ind_right;
-        int     	ind_right_len;
-
-	int		refresh;
-	int		echo;
-}	InputLine;
-
-typedef struct PromptStru
-{
-struct	PromptStru *	next;
-
-	char *		data;
-	int		type;
-	void		(*func) (char *, const char *);
-
-	InputLine *	my_input_line;
-	InputLine *	saved_input_line;
-}	WaitPrompt;
-
-typedef struct _window_attachment
-{
-	int		window;
-} WindowAttachment;
-
-typedef	struct	ScreenStru
-{
-struct	ScreenStru *	prev;			/* Next screen in list */
-struct	ScreenStru *	next;			/* Previous screen in list */
-	int		alive;
-
-	/* List stuff and overhead */
-	int		screennum;		/* Refnum for this screen */
-	int		input_window;		/* Window that has the input focus */
-	int	 	last_window_refnum;	/* The previous input window (for /window back) */
-	int		_window_list;		/* The top window on me */
-	int		visible_windows;	/* Number of windows on me */
-	WindowStack *	window_stack;		/* Number of windows on my stack */
-
-	/* Output stuff */
-	FILE *		fpin;			/* The input FILE (eg, stdin) */
-	int		fdin;			/* The input FD (eg, 0) */
-	FILE *		fpout;			/* The output FILE (eg, stdout) */
-	int		fdout;			/* The output FD (eg, 1) */
-	int		control;		/* The control FD (to wserv) */
-	int		wserv_version;		/* The version of wserv talking to */
-
-	InputLine *	il;
-	WaitPrompt *	promptlist;
-
-	/* Key qualifier stuff */
-	int		quote_hit;		/* True after QUOTE_CHARACTER hit */
-	Timeval 	last_press;		/* The last time a key was pressed. */
-	void *		last_key;		/* The last Key pressed. */
-
-	int		co;
-	int		li;
-	int		old_co;
-	int		old_li;
-
-#define MAX_WINDOWS_ON_SCREEN	1000
-	WindowAttachment	_windows[MAX_WINDOWS_ON_SCREEN + 1];	/* This is experimental, for now */
-}	Screen;
 
 	void		repaint_window_body		(int);
 	int		create_additional_screen 	(void);
@@ -111,7 +25,7 @@ struct	ScreenStru *	next;			/* Previous screen in list */
 	void		add_to_screen			(const char *);
 	void		translate_user_input		(unsigned char byte);
 	void		create_new_screen		(void);
-	void		kill_screen			(struct ScreenStru *);
+	void		kill_screen			(int);
 
 const	char *		all_off				(void);
 	char *		new_normalize_string		(const char *, int, int);
@@ -126,14 +40,11 @@ const	char *		all_off				(void);
 	void		chop_columns 			(char **, size_t);
 	void		chop_final_columns 		(char **, size_t);
 
-	int		number_of_windows_on_screen	(struct ScreenStru *);
-	int		get_screen_bottom_window	(struct ScreenStru *);
-
+	int		get_screen_bottom_window	(int);
+	int		screen_is_valid			(int);
 	int     	traverse_all_screens		(int *screen_);
-	Screen *	get_screen_by_refnum		(int screen_);
 
 	/* * * */
-	Screen *	get_screen_by_refnum		(int);
 	int		get_screen_prev			(int);
 	int		get_screen_next			(int);
 	int		get_screen_alive		(int);
@@ -149,8 +60,8 @@ const	char *		all_off				(void);
 	int		get_screen_fdout		(int);
 	int		get_screen_control		(int);
 	int		get_screen_wserv_version	(int);
-	InputLine *	get_screen_input_line		(int);
-	WaitPrompt *	get_screen_prompt_list		(int);
+	void *		get_screen_input_line		(int);
+	int		get_screen_prompt_list_type	(int);
 	int		get_screen_quote_hit		(int);
 	Timeval		get_screen_last_press		(int);
 	void *		get_screen_last_key		(int);
@@ -158,11 +69,29 @@ const	char *		all_off				(void);
 	int		get_screen_lines		(int);
 	int		get_screen_old_columns		(int);
 	int		get_screen_old_lines		(int);
+	int		get_screen_fixed_windows	(int);
 
 	void		set_screen_alive		(int, int);
 	void		set_screen_input_window		(int, int);
 	void		set_screen_last_window_refnum	(int, int);
-
+	void		set_screen_window_list		(int, int);
+	void		set_screen_visible_windows	(int, int);
+	void		set_screen_visible_windows_incr	(int);
+	void		set_screen_visible_windows_dec	(int);
+	void		set_screen_window_stack		(int, WindowStack *);
+	void		set_screen_lines		(int, int);
+	void		set_screen_columns		(int, int);
+	void		set_screen_old_lines		(int, int);
+	void		set_screen_old_columns		(int, int);
+	void		set_screen_quote_hit		(int, int);
+	void		set_screen_fdin			(int, int);
+	void		set_screen_fdout		(int, int);
+	void		set_screen_fpin			(int, FILE *);
+	void		set_screen_fpout		(int, FILE *);
+	void		set_screen_control		(int, int);
+	void		set_screen_last_key		(int, void *);
+	void		set_screen_last_press		(int, Timeval);
+	void		set_screen_input_line		(int, void *);
 
 	int    		screen_add_window_before 	(int screen_, int existing_window_, int new_window_);
 	int     	screen_add_window_after 	(int screen_, int existing_window_, int new_window_);
@@ -176,17 +105,16 @@ const	char *		all_off				(void);
 	int		screen_window_place		(int screen_, int location, int window_);
 	int     	screen_window_swap 		(int screen_, int v_window_, int window_);
 
-
 	int     	screen_get_window_prev 		(int screen_, int window_);
 	int     	screen_get_window_next 		(int screen_, int window_);
-
 
 /* Dont do any word-wrapping, just truncate each line at its place. */
 #define PREPARE_NOWRAP	0x01
 
-extern	struct ScreenStru *main_screen;
-extern	struct ScreenStru *last_input_screen;
-extern	struct ScreenStru *output_screen;
+extern	int		main_screen;
+extern	int		output_screen;
+extern	int		last_input_screen;
+
 extern	int		display_line_mangler;
 
 #endif /* _SCREEN_H_ */

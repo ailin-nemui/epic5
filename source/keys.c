@@ -738,9 +738,8 @@ static void *	timeout_keypress (void *lastp, Timeval pressed)
  */
 static int	do_input_timeouts (void *ignored)
 {
-	Screen *oldscreen = last_input_screen;
+	int	oldscreen = last_input_screen;
 	int 	server = from_server;
-	Screen *screen;
 	int	s;
 
 	/*
@@ -750,26 +749,26 @@ static int	do_input_timeouts (void *ignored)
 	 */
 	for (s = 0; traverse_all_screens(&s); )
 	{
-		screen = get_screen_by_refnum(s);
-
 		/* Ignore inactive screens */
-		if (!screen->alive) 
+		if (!get_screen_alive(s))
 			continue;
 
 		/* Ignore screens without ambiguous sequences */
-		if (!screen->last_key || screen->last_key == head_keymap)
+		if (!get_screen_last_key(s) || get_screen_last_key(s) == head_keymap)
 			continue;
 
 		/* Set up context and check the sequence */
-		last_input_screen = output_screen = screen;
-		make_window_current_by_refnum(screen->input_window);
+		last_input_screen = s;
+		output_screen = s;
+		make_window_current_by_refnum(get_screen_input_window(s));
 		from_server = get_window_server(0);
 
-		screen->last_key = timeout_keypress(screen->last_key,
-						    screen->last_press);
+		set_screen_last_key(s, timeout_keypress(get_screen_last_key(s),
+							get_screen_last_press(s)));
 	}
 
-	output_screen = last_input_screen = oldscreen;
+	last_input_screen = oldscreen;
+	output_screen = oldscreen;
 	from_server = server;
 	return 0;
 }

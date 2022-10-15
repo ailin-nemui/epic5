@@ -1273,4 +1273,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Sanity check the window-based window list from the screen-based window list
 * Fix bug with 'clearpoint' (rb zlonix)
 * Updated reconnect script (zlonix)
+* Finalize replacement of (Screen *) with (int) refnums.
+* Move Screen definition inside screen.c. Yay!
 

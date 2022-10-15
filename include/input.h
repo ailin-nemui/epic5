@@ -17,9 +17,12 @@
 	void	init_input 			(void);
 	char	input_pause 			(char *);
 	void	set_input_prompt		(void *);
-	void	update_input 			(void *, int);
+	void	update_input 			(int, int);
 	int     cursor_position 		(int);
 	char *	function_inputctl		(char *);
+
+	void *	new_input_line			(const char *, int);
+	void	destroy_input_line		(void *);
 
 /* keybinding functions */
 	BUILT_IN_KEYBINDING(backward_character);

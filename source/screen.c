@@ -40,6 +40,8 @@
 
 #define __need_term_h__
 #define __need_putchar_x__
+#define __need_ScreenStru__
+
 #include "irc.h"
 #include "alias.h"
 #include "clock.h"
@@ -69,13 +71,13 @@
  * When all else fails, this is the screen that is attached to the controlling
  * terminal, and we know *that* screen will always be there.
  */
-	Screen	*main_screen;
+	int	main_screen = -1;
 
 /*
  * This is the screen in which we last handled an input event.  This takes
  * care of the input duties that "current_screen" used to handle.
  */
-	Screen	*last_input_screen;
+	int	last_input_screen = -1;
 
 /*
  * This is used to set the default output device for tputs_x().  This takes
@@ -83,18 +85,70 @@
  * the input screen and output screen are independant, it isnt impossible 
  * for a command in one screen to cause output in another.
  */
-	Screen	*output_screen;
-
-/*
- * The list of all the screens we're handling.  Under most cases, there's 
- * only one screen on the list, "main_screen".
- */
-static	Screen	*screen_list = NULL;
+	int	output_screen = -1;
 
 /*
  * How things output to the display get mangled (set via /set mangle_display)
  */
 	int	display_line_mangler = 0;
+
+/*******************/
+typedef struct PromptStru
+{
+struct  PromptStru *    next;
+
+        char *          data;
+        int             type;
+        void            (*func) (char *, const char *);
+
+        void *          my_input_line;
+        void *          saved_input_line;
+}       WaitPrompt;
+
+typedef struct _window_attachment
+{
+        int             window;
+} WindowAttachment;
+
+typedef	struct	ScreenStru
+{
+struct	ScreenStru *	prev;			/* Next screen in list */
+struct	ScreenStru *	next;			/* Previous screen in list */
+	int		alive;
+
+	/* List stuff and overhead */
+	int		screennum;		/* Refnum for this screen */
+	int		input_window;		/* Window that has the input focus */
+	int	 	last_window_refnum;	/* The previous input window (for /window back) */
+	int		_window_list;		/* The top window on me */
+	int		visible_windows;	/* Number of windows on me */
+	WindowStack *	window_stack;		/* Number of windows on my stack */
+
+	/* Output stuff */
+	FILE *		fpin;			/* The input FILE (eg, stdin) */
+	int		fdin;			/* The input FD (eg, 0) */
+	FILE *		fpout;			/* The output FILE (eg, stdout) */
+	int		fdout;			/* The output FD (eg, 1) */
+	int		control;		/* The control FD (to wserv) */
+	int		wserv_version;		/* The version of wserv talking to */
+
+	void *		il;			/* InputLine (opaque - see input.c) */
+	WaitPrompt *	promptlist;
+
+	/* Key qualifier stuff */
+	int		quote_hit;		/* True after QUOTE_CHARACTER hit */
+	Timeval 	last_press;		/* The last time a key was pressed. */
+	void *		last_key;		/* The last Key pressed. */
+
+	int		co;
+	int		li;
+	int		old_co;
+	int		old_li;
+
+#define MAX_WINDOWS_ON_SCREEN	1000
+	WindowAttachment	_windows[MAX_WINDOWS_ON_SCREEN + 1];	/* This is experimental, for now */
+}	Screen;
+
 
 
 /* * * * * * * * * * * * * OUTPUT CHAIN * * * * * * * * * * * * * * * * * * *
@@ -113,18 +167,29 @@ static	Screen	*screen_list = NULL;
  * front of the low-level terminal stuff.
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-static void 	do_screens	(int fd);
-static int 	rite 		(int, const char *);
-static void 	scroll_window   (int);
-static void 	add_to_window	(int, const char *);
-static	int	ok_to_output	(int);
-static	void	edit_codepoint 	(uint32_t key);
-static ssize_t read_esc_seq     (const char *, void *, int *);
-static ssize_t read_color_seq   (const char *, void *d, int);
-static ssize_t read_color256_seq  (const char *, void *d);
-static void	destroy_prompt (Screen *s, WaitPrompt **oldprompt);
+static	void		do_screens		(int);
+static	int		rite			(int, const char *);
+static	void		scroll_window		(int);
+static	void		add_to_window		(int, const char *);
+static	int		ok_to_output		(int);
+static	void		edit_codepoint		(uint32_t);
+static	ssize_t		read_esc_seq		(const char *, void *, int *);
+static	ssize_t		read_color_seq		(const char *, void *, int);
+static	ssize_t		read_color256_seq	(const char *, void *);
 
+static 	WaitPrompt *	get_screen_prompt_list	(int);
+static  void		set_screen_prompt_list	(int, WaitPrompt *);
+static	void		destroy_prompt		(int, WaitPrompt **);
 
+/*
+ * The list of all the screens we're handling.  Under most cases, there's 
+ * only one screen on the list, "main_screen".
+ * XXX This should become an array at some point.
+ */
+static	Screen *	screen_list = NULL;
+static	Screen *	get_screen_by_refnum	(int);
+
+/********************/
 /*
  * "Attributes" were an invention for epic5, and the general idea was
  * to handle all character markups (bold/color/reverse/etc) not as toggle
@@ -2518,10 +2583,10 @@ const 	char	*ptr;
  */
 static int 	rite (int window_, const char *str)
 {
-	output_screen = get_window_screen(window_);
+	output_screen = get_window_screennum(window_);
 	scroll_window(window_);
 
-	if (get_window_screen(window_) && get_window_display_lines(window_))
+	if (get_window_screennum(window_) >= 0 && get_window_display_lines(window_))
 		output_with_count(str, 1, foreground);
 
 	set_window_cursor_incr(window_);
@@ -2904,7 +2969,7 @@ static void 	add_to_window (int window_, const char *str)
 	 *
 	 * /XECHO -F sets "do_window_notifies" which overrules this.
 	 */
-	if (!get_window_screen(window_) && do_window_notifies)
+	if ((get_window_screennum(window_) < 0) && do_window_notifies)
 	{
 	    const char *type = NULL;
 
@@ -3046,7 +3111,7 @@ static void 	scroll_window (int window_)
 			scroll = get_window_display_lines(window_);
 
 		/* Adjust the top of the physical display */
-		if (get_window_screen(window_) && foreground && get_window_display_lines(window_))
+		if (get_window_screennum(window_) >= 0 && foreground && get_window_display_lines(window_))
 		{
 			term_scroll(get_window_top(window_),
 				get_window_top(window_) + get_window_cursor(window_) - 1, 
@@ -3060,7 +3125,7 @@ static void 	scroll_window (int window_)
 	/*
 	 * Move to the new line and wipe it
 	 */
-	if (get_window_screen(window_) && get_window_display_lines(window_))
+	if (get_window_screennum(window_) >= 0 && get_window_display_lines(window_))
 	{
 		term_move_cursor(0, get_window_top(window_) + get_window_cursor(window_));
 		term_clear_to_eol();
@@ -3080,7 +3145,7 @@ void 	repaint_window_body (int window_)
 	if (!window_is_valid(window_))
 		return;
 
-	if (dumb_mode || !get_window_screen(window_))
+	if (dumb_mode || get_window_screennum(window_) < 0)
 		return;
 
 	global_beep_ok = 0;		/* Suppress beeps */
@@ -3100,7 +3165,7 @@ void 	repaint_window_body (int window_)
 		curr_line = get_window_holding_top_of_display(window_);
 	}
 
-	if (get_window_screen(window_) && get_window_toplines_showing(window_))
+	if (get_window_screennum(window_) >= 0 && get_window_toplines_showing(window_))
 	{
 	    for (count = 0; count < get_window_toplines_showing(window_); count++)
 	    {
@@ -3213,28 +3278,15 @@ static	int	refnumber = 0;
 	new_s->old_li = 0; 
 	new_s->old_co = 0;
 
-	new_s->il = new_malloc(sizeof(InputLine));
-	new_s->il->input_buffer[0] = '\0';
-	new_s->il->first_display_char = 0;
-	new_s->il->number_of_logical_chars = 0;
-	new_s->il->input_prompt_raw = NULL;
-	new_s->il->input_prompt = malloc_strdup(empty_string);
-        new_s->il->input_prompt_len = 0;
-	new_s->il->input_line = 23;
-
-        new_s->il->ind_left = malloc_strdup(empty_string);
-        new_s->il->ind_left_len = 0;
-        new_s->il->ind_right = malloc_strdup(empty_string);
-        new_s->il->ind_right_len = 0;
-	new_s->il->echo = 1;
+	new_s->il = new_input_line(NULL, 1);
 
 	for (i = 0 ; i <= MAX_WINDOWS_ON_SCREEN; i++)
 		new_s->_windows[i].window = -1;
 
-	last_input_screen = new_s;
+	last_input_screen = new_s->screennum;
 
-	if (!main_screen)
-		main_screen = new_s;
+	if (main_screen < 0)
+		main_screen = new_s->screennum;
 
 	init_input();
 }
@@ -3250,7 +3302,7 @@ int	create_additional_screen (void)
 	yell("Your system doesn't support job control, sorry.");
 	return NULL;
 #else
-        Screen  	*oldscreen, *new_s;
+	int		oldscreen, new_s;
         int     	screen_type = ST_NOTHING;
 	SSu		local_sockaddr;
         SSu		new_socket;
@@ -3270,7 +3322,7 @@ int	create_additional_screen (void)
 
 
 	/* Don't "move" this down! It belongs here. */
-	oldscreen = get_window_screen(0);
+	oldscreen = get_window_screennum(0);
 
 	if (!use_input)
 		return -1;
@@ -3362,8 +3414,8 @@ int	create_additional_screen (void)
 	else if (screen_type == ST_XTERM)
 	{
 	    snprintf(geom, 31, "%dx%d", 
-		oldscreen->co + 1, 
-		oldscreen->li);
+		get_screen_columns(oldscreen) + 1, 
+		get_screen_lines(oldscreen));
 
 	    opts = malloc_strdup(get_string_var(XTERM_OPTIONS_VAR));
 	    if (!(xterm = getenv("XTERM")))
@@ -3481,7 +3533,7 @@ int	create_additional_screen (void)
 		close(new_cmd);
 		kill_screen(new_s);
 		kill(child, SIGKILL);
-		if (new_s->fdin != 0)
+		if (get_screen_fdin(new_s) != 0)
 		{
 			say("The wserv only connected once -- it's probably "
 			    "an old, incompatable version.");
@@ -3494,36 +3546,36 @@ int	create_additional_screen (void)
 	    }
 	    default:
 	    {
-		if (new_s->fdin == 0) 
+		if (get_screen_fdin(new_s) == 0) 
 		{
-			new_s->fdin = accept(new_cmd, &new_socket.sa, &new_sock_size);
-			if ((new_s->fdout = new_s->fdin) < 0)
+			set_screen_fdin(new_s, accept(new_cmd, &new_socket.sa, &new_sock_size));
+			set_screen_fdout(new_s, get_screen_fdin(new_s));
+			if (get_screen_fdout(new_s) < 0)
 			{
 				close(new_cmd);
 				kill_screen(new_s);
-				yell("Couldn't establish data connection "
-					"to new screen");
+				yell("Couldn't establish data connection to new screen");
 				return -1;
 			}
-			new_open(new_s->fdin, do_screens, NEWIO_RECV, 1, -1);
-			new_s->fpin = new_s->fpout = fdopen(new_s->fdin, "r+");
+			new_open(get_screen_fdin(new_s), do_screens, NEWIO_RECV, 1, -1);
+			set_screen_fpin(new_s, fdopen(get_screen_fdin(new_s), "r+"));
+			set_screen_fpout(new_s, get_screen_fpin(new_s));
 			continue;
 		}
 		else
 		{
 			int	refnum;
 
-			new_s->control = accept(new_cmd, &new_socket.sa, &new_sock_size);
+			set_screen_control(new_s, accept(new_cmd, &new_socket.sa, &new_sock_size));
 			close(new_cmd);
-			if (new_s->control < 0)
+			if (get_screen_control(new_s) < 0)
 			{
                                 kill_screen(new_s);
-                                yell("Couldn't establish control connection "
-                                        "to new screen");
+                                yell("Couldn't establish control connection to new screen");
                                 return -1;
                         }
 
-			new_open(new_s->control, do_screens, NEWIO_RECV, 1, -1);
+			new_open(get_screen_control(new_s), do_screens, NEWIO_RECV, 1, -1);
 
                         if ((refnum = new_window(new_s)) < 1)
                                 panic(1, "WINDOW is NULL and it shouldnt be!");
@@ -3536,16 +3588,17 @@ int	create_additional_screen (void)
 }
 
 /* Old screens never die. They just fade away. */
-void 	kill_screen (Screen *screen)
+void 	kill_screen (int screen_)
 {
 	int	window;
+	Screen *screen = get_screen_by_refnum(screen_);
 
 	if (!screen)
 	{
 		say("You may not kill the hidden screen.");
 		return;
 	}
-	if (main_screen == screen)
+	if (main_screen == screen_)
 	{
 		say("You may not kill the main screen");
 		return;
@@ -3576,11 +3629,11 @@ void 	kill_screen (Screen *screen)
 	screen->fdin = -1;
 	screen->fdout = -1;
 
-	/* XXX Should do a proper wiping of the input line */
-	new_free(&screen->il->input_prompt);
+	destroy_input_line(screen->il);
+	screen->il = NULL;
 
 	/* Dont fool around. */
-	if (last_input_screen == screen)
+	if (last_input_screen == screen->screennum)
 		last_input_screen = main_screen;
 
 	screen->alive = 0;
@@ -3588,15 +3641,13 @@ void 	kill_screen (Screen *screen)
 	say("The screen is now dead.");
 }
 
-int     number_of_windows_on_screen (Screen *screen)
+int	get_screen_bottom_window (int screen_)
 {
-        return screen->visible_windows;
-}
-
-int	get_screen_bottom_window (Screen *screen)
-{
+	Screen *screen;
 	int	refnum;
 
+	if (!(screen = get_screen_by_refnum(screen_)))
+		panic(1, "get_screen_bottom_window: screen %d is hidden", screen_);
 	if (screen->_window_list == -1)
 		panic(1, "get_screen_bottom_window: screen %d has no windows?", screen->screennum);
 
@@ -3644,7 +3695,7 @@ static void 	do_screens (int fd)
 		{
 		    if (dgets(screen->control, buffer, IO_BUFFER_SIZE, 1) < 0)
 		    {
-			kill_screen(screen);
+			kill_screen(screen->screennum);
 			yell("Error from remote screen.");
 			continue;
 		    }
@@ -3658,7 +3709,7 @@ static void 	do_screens (int fd)
 				*ptr++ = 0;
 			screen->li = atoi(buffer + 5);
 			screen->co = atoi(ptr);
-			recalculate_windows(screen);
+			recalculate_windows(screen->screennum);
 		    }
 		    else if (!strncmp(buffer, "version=", 8))
 		    {
@@ -3668,7 +3719,7 @@ static void 	do_screens (int fd)
 			{
 			    yell("WSERV version %d is incompatable "
 					"with this binary", version);
-			    kill_screen(screen);
+			    kill_screen(screen->screennum);
 			}
 			screen->wserv_version = version;
 		    }
@@ -3685,9 +3736,9 @@ static void 	do_screens (int fd)
 		 * If normal data comes in, and the wserv didn't tell me
 		 * what its version is, then throw it out of the system.
 		 */
-		if (screen != main_screen && screen->wserv_version == 0)
+		if (screen->screennum != main_screen && screen->wserv_version == 0)
 		{
-			kill_screen(screen);
+			kill_screen(screen->screennum);
 			yell("The WSERV used to create this new screen "
 				"is too old.");
 			return;		/* Bail out entirely */
@@ -3702,8 +3753,8 @@ static void 	do_screens (int fd)
 		 * Set the global processing context for the client to the 
 		 * processing context of the screen's current input window.
 		 */
-		last_input_screen = screen;
-		output_screen = screen;
+		last_input_screen = screen->screennum;
+		output_screen = screen->screennum;
 		make_window_current_by_refnum(screen->input_window);
 		from_server = get_window_server(0);
 
@@ -3743,8 +3794,8 @@ static void 	do_screens (int fd)
 		}
 
 		/* An EOF/error error on a wserv screen kills that screen */
-		else if (screen != main_screen)
-			kill_screen(screen);
+		else if (screen->screennum != main_screen)
+			kill_screen(screen->screennum);
 
 		/* An EOF/error on main screen kills the whole client. */
 		else
@@ -3888,13 +3939,13 @@ static	void	edit_codepoint (uint32_t key)
          * This is only used by /pause to see when a keypress event occurs,
          * but not to impact how that keypress is handled at all.
          */
-        if (last_input_screen->promptlist &&
-            last_input_screen->promptlist->type == WAIT_PROMPT_DUMMY)
+        if (get_screen_prompt_list(last_input_screen) &&
+            get_screen_prompt_list(last_input_screen)->type == WAIT_PROMPT_DUMMY)
 		fire_wait_prompt(key);
 
         /* were we waiting for a keypress? */
-        if (last_input_screen->promptlist && 
-                last_input_screen->promptlist->type == WAIT_PROMPT_KEY)
+        if (get_screen_prompt_list(last_input_screen) && 
+            get_screen_prompt_list(last_input_screen)->type == WAIT_PROMPT_KEY)
         {
 		fire_wait_prompt(key);
 		return;
@@ -3908,16 +3959,16 @@ static	void	edit_codepoint (uint32_t key)
 	 * quote_hit flag when we're done. (Is it cheaper to unconditionally
 	 * set it to 0, or to do a test-and-set?  Does it matter?)
 	 */
-	old_quote_hit = last_input_screen->quote_hit;
+	old_quote_hit = get_screen_quote_hit(last_input_screen);
 
-	last_input_screen->last_key = handle_keypress(
-		last_input_screen->last_key,
-		last_input_screen->last_press, key,
-		last_input_screen->quote_hit);
-	get_time(&last_input_screen->last_press);
+	set_screen_last_key(last_input_screen, handle_keypress(
+		get_screen_last_key(last_input_screen),
+		get_screen_last_press(last_input_screen), key,
+		get_screen_quote_hit(last_input_screen)));
+	set_screen_last_press(last_input_screen, get_time(NULL));
 
 	if (old_quote_hit)
-		last_input_screen->quote_hit = 0;
+		set_screen_quote_hit(last_input_screen, 0);
 }
 
 
@@ -3926,9 +3977,9 @@ void	fire_wait_prompt (uint32_t key)
 	WaitPrompt *	oldprompt;
         char   utf8str[8];
 
-	oldprompt = last_input_screen->promptlist;
-	last_input_screen->promptlist = oldprompt->next;
-	last_input_screen->il = oldprompt->saved_input_line;
+	oldprompt = get_screen_prompt_list(last_input_screen);
+	set_screen_prompt_list(last_input_screen, oldprompt->next);
+	set_screen_input_line(last_input_screen, oldprompt->saved_input_line);
 	update_input(last_input_screen, UPDATE_ALL);
 
 	ucs_to_utf8(key, utf8str, sizeof(utf8str));
@@ -3941,9 +3992,9 @@ void	fire_normal_prompt (const char *utf8str)
 {
 	WaitPrompt *	oldprompt;
 
-	oldprompt = last_input_screen->promptlist;
-	last_input_screen->promptlist = oldprompt->next;
-	last_input_screen->il = oldprompt->saved_input_line;
+	oldprompt = get_screen_prompt_list(last_input_screen);
+	set_screen_prompt_list(last_input_screen, oldprompt->next);
+	set_screen_input_line(last_input_screen, oldprompt->saved_input_line);
 	update_input(last_input_screen, UPDATE_ALL);
 
 	(*oldprompt->func)(oldprompt->data, utf8str);
@@ -3997,12 +4048,13 @@ void	fire_normal_prompt (const char *utf8str)
 void 	add_wait_prompt (const char *prompt, void (*func)(char *data, const char *utf8str), const char *data, int type, int echo)
 {
 	WaitPrompt *New;
-	Screen *	s, *old_last_input_screen;;
+	int	s;
+	int	old_last_input_screen;;
 
 	old_last_input_screen = last_input_screen;
 
-	if (get_window_screen(0))
-		s = get_window_screen(0);
+	if (get_window_screennum(0) >= 0)
+		s = get_window_screennum(0);
 	else
 		s = main_screen;
 
@@ -4011,40 +4063,22 @@ void 	add_wait_prompt (const char *prompt, void (*func)(char *data, const char *
 	New->data = malloc_strdup(data);
 	New->type = type;
 	New->func = func;
+	New->my_input_line = new_input_line(prompt, echo);
+	New->saved_input_line = get_screen_input_line(s);
+	set_screen_input_line(s, New->my_input_line);
 
-	New->my_input_line = (InputLine *)new_malloc(sizeof(InputLine));
-        New->my_input_line->input_buffer[0] = '\0';
-        New->my_input_line->first_display_char = 0;
-        New->my_input_line->number_of_logical_chars = 0;
-	New->my_input_line->input_prompt_raw = malloc_strdup(prompt);
-        New->my_input_line->input_prompt = malloc_strdup(empty_string);
-        New->my_input_line->input_prompt_len = 0;
-        New->my_input_line->input_line = 23;
-        New->my_input_line->ind_left = malloc_strdup(empty_string);
-        New->my_input_line->ind_left_len = 0;
-        New->my_input_line->ind_right = malloc_strdup(empty_string);
-        New->my_input_line->ind_right_len = 0;
-	New->my_input_line->echo = echo;
-	New->saved_input_line = s->il;
-	s->il = New->my_input_line;
-
-	New->next = s->promptlist;
-	s->promptlist = New;
+	New->next = get_screen_prompt_list(s);
+	set_screen_prompt_list(s, New);
 
 	init_input();
 	update_input(last_input_screen, UPDATE_ALL);
 	last_input_screen = old_last_input_screen;
 }
 
-static void	destroy_prompt (Screen *s, WaitPrompt **oldprompt)
+static void	destroy_prompt (int s_, WaitPrompt **oldprompt)
 {
-	/* s->il = (*oldprompt)->saved_input_line; */
-
-	new_free(&(*oldprompt)->my_input_line->ind_right);
-	new_free(&(*oldprompt)->my_input_line->ind_left);
-	new_free(&(*oldprompt)->my_input_line->input_prompt);
-	new_free(&(*oldprompt)->my_input_line->input_prompt_raw);
-	new_free((char **)&(*oldprompt)->my_input_line);
+	destroy_input_line((*oldprompt)->my_input_line);
+	(*oldprompt)->my_input_line = NULL;
 	new_free(&(*oldprompt)->data);
 	new_free((char **)oldprompt);
 
@@ -4324,6 +4358,27 @@ int	parse_mangle (const char *value, int nvalue, char **rv)
 	return nvalue;
 }
 
+int	screen_is_valid (int screen_)
+{
+	Screen *s;
+
+	if (screen_ < 0)
+		return 0;
+
+	for (s = screen_list; s; s = s->next)
+	{
+		if (s->screennum == screen_)
+		{
+			if (s->alive)
+				return 1;
+			else
+				return 0;
+		}
+	}
+
+	return 0;
+}
+
 int	traverse_all_screens (int *screen_)
 {
 	Screen *s;
@@ -4349,9 +4404,12 @@ int	traverse_all_screens (int *screen_)
 	return 1;
 }
 
-Screen *get_screen_by_refnum (int screen_)
+static Screen *get_screen_by_refnum (int screen_)
 {
 	Screen *s;
+
+	if (screen_ == -1)
+		return NULL;
 
 	for (s = screen_list; s; s = s->next)
 		if (s->screennum == screen_)
@@ -4485,7 +4543,7 @@ int             get_screen_wserv_version        (int screen_)
 	return s->wserv_version;
 }
 
-InputLine *     get_screen_input_line           (int screen_)
+void *     get_screen_input_line           (int screen_)
 {
 	Screen *s = get_screen_by_refnum(screen_);
 	if (!s)
@@ -4493,12 +4551,22 @@ InputLine *     get_screen_input_line           (int screen_)
 	return s->il;
 }
 
-WaitPrompt *    get_screen_prompt_list          (int screen_)
+static WaitPrompt *    get_screen_prompt_list          (int screen_)
 {
 	Screen *s = get_screen_by_refnum(screen_);
 	if (!s)
 		return NULL;
 	return s->promptlist;
+}
+
+int	get_screen_prompt_list_type		(int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return WAIT_PROMPT_NONE;
+	if (!s->promptlist)
+		return WAIT_PROMPT_NONE;
+	return s->promptlist->type;
 }
 
 int             get_screen_quote_hit            (int screen_)
@@ -4582,6 +4650,157 @@ void            set_screen_last_window_refnum   (int screen_, int value)
 	s->last_window_refnum = value;
 }
 
+void		set_screen_window_list		(int screen_, int value)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->_window_list = value;
+}
+
+void		set_screen_visible_windows	(int screen_, int value)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->visible_windows = value;
+}
+
+void		set_screen_visible_windows_incr	(int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->visible_windows++;
+}
+
+void		set_screen_visible_windows_dec	(int screen_)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->visible_windows--;
+}
+
+void		set_screen_window_stack		(int screen_, WindowStack *ws)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->window_stack = ws;
+}
+
+void		set_screen_lines		(int screen_, int value)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->li = value;
+}
+
+void		set_screen_columns		(int screen_, int value)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->co = value;
+}
+
+void		set_screen_old_lines		(int screen_, int value)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->old_li = value;
+}
+
+void		set_screen_old_columns		(int screen_, int value)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->old_co = value;
+}
+
+void		set_screen_quote_hit		(int screen_, int value)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->quote_hit = value;
+}
+
+void		set_screen_fdin			(int screen_, int value)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->fdin = value;
+}
+
+void		set_screen_fdout		(int screen_, int value)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->fdout = value;
+}
+
+void		set_screen_fpin			(int screen_, FILE *value)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->fpin = value;
+}
+
+void		set_screen_fpout		(int screen_, FILE *value)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->fpout = value;
+}
+
+void		set_screen_control		(int screen_, int value)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->fdout = value;
+}
+
+void		set_screen_last_key		(int screen_, void *value)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->last_key = value;
+}
+
+void		set_screen_last_press		(int screen_, Timeval value)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->last_press = value;
+}
+
+static void		set_screen_prompt_list		(int screen_, WaitPrompt *value)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->promptlist = value;
+}
+
+void		set_screen_input_line		(int screen_, void *value)
+{
+	Screen *s = get_screen_by_refnum(screen_);
+	if (!s)
+		return;
+	s->il = value;
+}
 
 /****************************************************/
 int	screen_add_window_before (int screen_, int existing_window_, int new_window_)

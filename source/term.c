@@ -751,8 +751,8 @@ void	term_reset (void)
 	tcsetattr(tty_des, TCSADRAIN, &oldb);
 
 	if (current_term->TI_csr)
-		tputs_x(tparm2(current_term->TI_csr, 0, main_screen->li - 1));
-	term_gotoxy(0, main_screen->li - 1);
+		tputs_x(tparm2(current_term->TI_csr, 0, get_screen_lines(main_screen) - 1));
+	term_gotoxy(0, get_screen_lines(main_screen) - 1);
 #if use_alt_screen
 	if (current_term->TI_rmcup)
 		tputs_x(current_term->TI_rmcup);
@@ -1271,10 +1271,10 @@ int	term_resize (void)
 	{
 		old_li = current_term->TI_lines;
 		old_co = current_term->TI_cols;
-		if (main_screen)
-			main_screen->li = current_term->TI_lines;
-		if (main_screen)
-			main_screen->co = current_term->TI_cols;
+		if (main_screen >= 0)
+			set_screen_lines(main_screen, current_term->TI_lines);
+		if (main_screen >= 0)
+			set_screen_columns(main_screen, current_term->TI_cols);
 		return 1;
 	}
 	return 0;

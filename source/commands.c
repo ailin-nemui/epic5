@@ -988,11 +988,11 @@ BUILT_IN_COMMAND(xechocmd)
 			/* Chew up the argument. */
 			/*flag_arg =*/ next_arg(args, &args);
 
-			if (get_window_screen(0))
+			if (get_window_screennum(0) >= 0)
 			    to_window_refnum = get_window_refnum(0);
-			else if (last_input_screen && 
-				 last_input_screen->input_window)
-			    to_window_refnum = last_input_screen->input_window;
+			else if (last_input_screen >= 0 && 
+				 get_screen_input_window(last_input_screen) > 0)
+			    to_window_refnum = get_screen_input_window(last_input_screen);
 			else
 			    to_window_refnum = lookup_any_visible_window();
 			break;
@@ -1078,10 +1078,10 @@ BUILT_IN_COMMAND(xechocmd)
 			 * to_window->screen.
 			 */
 			if (to_window_refnum != -1 && 
-					get_window_screen(to_window_refnum))
-				output_screen = get_window_screen(to_window_refnum);
+					get_window_screennum(to_window_refnum) >= 0)
+				output_screen = get_window_screennum(to_window_refnum);
 			else
-				output_screen = get_window_screen(0);
+				output_screen = get_window_screennum(0);
 			tputs_x(args);
 			term_flush();
 			return;
@@ -2687,7 +2687,7 @@ BUILT_IN_COMMAND(sendlinecmd)
 	server = from_server;
 	display = swap_window_display(1);
 	parse_statement(args, 1, NULL);
-	update_input(NULL, UPDATE_ALL);
+	update_input(-1, UPDATE_ALL);
 	swap_window_display(display);
 	from_server = server;
 }

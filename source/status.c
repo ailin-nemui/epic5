@@ -493,9 +493,9 @@ int	make_status (int window_, Status *status)
 	char	rhs_buffer  [BIG_BUFFER_SIZE + 1];
 	const char	*func_value [MAX_FUNCTIONS];
 	size_t		save_size;
-	Screen	*	screen;
 	int		anything_changed = 0;
 	int		user_refnum;
+	int		screen_columns;
 
 	/* Should this be a panic? */
 	if (window_ == 0 || status == NULL)
@@ -514,11 +514,13 @@ int	make_status (int window_, Status *status)
 	}
 
 	/* For hidden windows, we just pretend they're on the main screen */
-	if (!(screen = get_window_screen(window_)))
+	if (get_window_screennum(window_) < 0)
 	{
 		debuglog("make_status(%d) -- updating hidden window", user_refnum);
-		screen = main_screen;
+		screen_columns = get_screen_columns(main_screen);
 	}
+	else
+		screen_columns = get_screen_columns(get_window_screennum(window_));
 
 	for (status_line = 0; status_line < status->number; status_line++)
 	{
@@ -720,7 +722,7 @@ int	make_status (int window_, Status *status)
 			/*
 			 * Dont allow more than CO printable characters
 			 */
-			if (pr_lhs + pr_rhs >= screen->co)
+			if (pr_lhs + pr_rhs >= screen_columns)
 			{
 				*cp = 0;
 				break;
@@ -748,7 +750,7 @@ int	make_status (int window_, Status *status)
 			}
 			ucs_to_utf8(fillchar, utf8str, sizeof(utf8str));
 
-			numf = screen->co - pr_lhs - 1;
+			numf = screen_columns - pr_lhs - 1;
 			if (start_rhs)
 				numf -= pr_rhs;
 
@@ -855,7 +857,7 @@ int	redraw_status (int window_, Status *status)
 			continue;
 		}
 
-		if (dumb_mode || !foreground || !get_window_screen(window_))
+		if (dumb_mode || !foreground || get_window_screennum(window_) < 0)
 		{
 			debuglog("redraw_status(%d/%d/%d): dumb/bg/hidden",
 				user_refnum, status_line, line);
@@ -865,7 +867,7 @@ int	redraw_status (int window_, Status *status)
 		/*
 		 * Output the status line to the screen
 		 */
-		output_screen = get_window_screen(window_);
+		output_screen = get_window_screennum(window_);
 		term_move_cursor(0, get_window_bottom(window_) + status_line);
 		output_with_count(status_str, 1, 1);
 		debuglog("redraw_status(%d/%d/%d): status redrawn",
@@ -1000,7 +1002,7 @@ int     permit_status_update (int flag)
 /*
  * This tests to see if the window IS the current window on its screen
  */
-#define IS_CURRENT_WINDOW (get_window_screen(window_) && get_window_screen(window_)->input_window == window_)
+#define IS_CURRENT_WINDOW (get_window_screennum(window_) >= 0 && get_screen_input_window(get_window_screennum(window_)) == window_)
 
 /*
  * This tests to see if all expandoes are to appear in all status bars
@@ -1656,9 +1658,9 @@ STATUS_FUNCTION(status_window)
 	switch (map)
 	{
 		case 0:
-			if (!get_window_screen(window_))
+			if (get_window_screennum(window_) < 0)
 				break;
-			if (number_of_windows_on_screen(get_window_screen(window_)) <= 1)
+			if (get_screen_visible_windows(get_window_screennum(window_)) <= 1)
 				break;
 			/* FALLTHROUGH */
 		case 3:

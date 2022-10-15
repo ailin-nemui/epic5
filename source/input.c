@@ -81,6 +81,38 @@ static int	input_move_cursor (int dir, int refresh);
  */
 	static	char *	input_prompt;
 
+typedef struct InputLine
+{
+        /* The current UTF8 input line (plain old c string */
+        char            input_buffer[INPUT_BUFFER_SIZE+1];
+
+        /* The offset into input_buffer where each logical char starts */
+        int             logical_chars[INPUT_BUFFER_SIZE + 1];
+
+        /* The logical column in which each logical char lives */
+        int             logical_columns[INPUT_BUFFER_SIZE + 1];
+
+        /* Upon which logical char does the cursor sit? */
+        int             logical_cursor;
+
+        int             first_display_char;
+        int             number_of_logical_chars;
+
+        char *          input_prompt_raw;
+        char *          input_prompt;
+        int             input_prompt_len;
+        int             input_line;
+
+        char *          ind_left;
+        int             ind_left_len;
+        char *          ind_right;
+        int             ind_right_len;
+
+        int             refresh;
+        int             echo;
+}       InputLine;
+
+
 /* 
  * These are sanity macros.  The file was completely unreadable before 
  * I put these in here.  I make no apologies for them.
@@ -119,7 +151,7 @@ static int	input_move_cursor (int dir, int refresh);
  * any time you change stuff in it, you need to call retokenize_input_line()
  * to refresh the metadata and update_input() to refresh the screen.
  */
-#define INPUT_LINE		get_screen_input_line(last_input_screen->screennum)
+#define INPUT_LINE		((InputLine *)get_screen_input_line(last_input_screen))
 #define INPUT_BUFFER 		INPUT_LINE->input_buffer
 
 /*
@@ -352,8 +384,7 @@ static int 	safe_puts (const char *str, int numcols)
 /* cursor_to_input: move the cursor to the input line, if not there already */
 void 	cursor_to_input (void)
 {
-	Screen *oldscreen = last_input_screen;
-	Screen *screen;
+	int	oldscreen = last_input_screen;
 static	int	recursive = 0;
 	int	s;
 
@@ -367,17 +398,17 @@ static	int	recursive = 0;
 	s = 0;
 	while (traverse_all_screens(&s))
 	{
-		screen = get_screen_by_refnum(s);
-		if (screen->alive)
+		if (get_screen_alive(s))
 		{
-			output_screen = screen;
-			last_input_screen = screen;
+			output_screen = s;
+			last_input_screen = s;
 /*yell("moving cursor to %d %d", PHYSICAL_CURSOR, INPUT_LINE_ROW); */
 			term_move_cursor(PHYSICAL_CURSOR, INPUT_LINE_ROW);
 			term_flush();
 		}
 	}
-	output_screen = last_input_screen = oldscreen;
+	last_input_screen = oldscreen;
+	output_screen = oldscreen;
 	recursive = 0;
 }
 
@@ -474,18 +505,17 @@ static int	retokenize_input (int start)
  *
  * Clear as mud?
  */
-void	update_input (void *which_screen_, int update)
+void	update_input (int which_screen, int update)
 {
 	char	*ptr, *ptr_free;
 	int	max;
 const char *	prompt;
 	int	do_echo, old_do_echo;
-	Screen	*os, *ns, *which_screen = which_screen_;
 	int	saved_current_window;
 	int	cols_used;
 	int	original_update;
-	Screen	*oos;
 	int	s;
+	int	os_, oos_;
 
 	/*
 	 * No input line in dumb or bg mode.
@@ -494,28 +524,26 @@ const char *	prompt;
 		return;
 
 	/* Save the state of things */
-	os = last_input_screen;
+	os_ = last_input_screen;
 	saved_current_window = get_window_refnum(0);
 	original_update = update;
-	oos = output_screen;
+	oos_ = output_screen;
 
 	for (s = 0; traverse_all_screens(&s);)
 	{
 	/* <<<< INDENTED BACK ONE TAB FOR MY SANITY <<<<< */
-	ns = get_screen_by_refnum(s);
 
 	/* XXX This is an ugly way to do this. */
-	if (which_screen && which_screen != ns)
+	if (which_screen >= 0 && which_screen != s)
 		continue;	/* Only update this screen */
 
 	/* Ignore inactive screens. */
-	if (!ns->alive)
+	if (!get_screen_alive(s))
 		continue;
 
 	/* XXX The (mis)use of last_input_screen is lamentable */
-	last_input_screen = ns;
-	output_screen = ns;
-	make_window_current_informally(ns->input_window);
+	last_input_screen = output_screen = s;
+	make_window_current_informally(get_screen_input_window(s));
 	update = original_update;
 	do_echo = INPUT_LINE->echo;
 
@@ -667,8 +695,7 @@ const char *	prompt;
 
 	new_free(&ptr);
 
-	ptr_free = expand_alias(get_string_var(INPUT_INDICATOR_LEFT_VAR), 
-					empty_string);
+	ptr_free = expand_alias(get_string_var(INPUT_INDICATOR_LEFT_VAR), empty_string);
 	ptr = new_normalize_string(ptr_free, 0, display_line_mangler);
 	new_free(&ptr_free);
 
@@ -681,8 +708,7 @@ const char *	prompt;
 
 	new_free(&ptr);
 
-	ptr_free = expand_alias(get_string_var(INPUT_INDICATOR_RIGHT_VAR), 
-					empty_string);
+	ptr_free = expand_alias(get_string_var(INPUT_INDICATOR_RIGHT_VAR), empty_string);
 	ptr = new_normalize_string(ptr_free, 0, display_line_mangler);
 	new_free(&ptr_free);
 
@@ -707,17 +733,17 @@ const char *	prompt;
 	 * If the screen has resized, then we need to re-compute the
 	 * side-to-side scrolling effect.
 	 */
-	if ((last_input_screen->li != last_input_screen->old_li) ||
-	    (last_input_screen->co != last_input_screen->old_co) ||
-	    (INPUT_LINE_ROW != last_input_screen->li))
+	if (get_screen_lines(last_input_screen) != get_screen_old_lines(last_input_screen) ||
+	    get_screen_columns(last_input_screen) != get_screen_old_columns(last_input_screen) ||
+	    (INPUT_LINE_ROW != get_screen_lines(last_input_screen)))
 	{
 		/*
 		 * The input line is always the bottom line
 		 */
-		INPUT_LINE_ROW = last_input_screen->li - 1;
+		INPUT_LINE_ROW = get_screen_lines(last_input_screen) - 1;
 
-		last_input_screen->old_co = last_input_screen->co;
-		last_input_screen->old_li = last_input_screen->li;
+		set_screen_old_columns(last_input_screen, get_screen_columns(last_input_screen));
+		set_screen_old_lines(last_input_screen, get_screen_lines(last_input_screen));
 	}
 
 
@@ -766,14 +792,14 @@ const char *	prompt;
 		 *	
 		 */
 		totalcols = input_column_count(INPUT_BUFFER);
-		if (totalcols > last_input_screen->co - INPUT_PROMPT_LEN)
+		if (totalcols > get_screen_columns(last_input_screen) - INPUT_PROMPT_LEN)
 			zone0_overflow = 1;
 
 		/*
 		 * Is the cursor in zone 0?
 		 */
 		if (LOGICAL_COLUMN[LOGICAL_CURSOR] < 
-			last_input_screen->co - 
+			get_screen_columns(last_input_screen) - 
 				INPUT_PROMPT_LEN - 
 				WIDTH -
 				zone0_overflow * IND_RIGHT_LEN)
@@ -792,7 +818,7 @@ const char *	prompt;
 			int	zone;
 
 			/* We know how big zone 0 is */
-			zone0_length = last_input_screen->co - 
+			zone0_length = get_screen_columns(last_input_screen) - 
 					INPUT_PROMPT_LEN - 
 					WIDTH -
 					IND_RIGHT_LEN;
@@ -810,7 +836,7 @@ const char *	prompt;
 			 * that adding IND_RIGHT_LEN is cheating, but
 			 * that's a very small thing.  I think?
 			 */
-			zone_length = last_input_screen->co - 
+			zone_length = get_screen_columns(last_input_screen) -
 					INPUT_PROMPT_LEN -
 					WIDTH -
 					IND_LEFT_LEN -
@@ -869,9 +895,9 @@ const char *	prompt;
 		else
 			cols_used = INPUT_PROMPT_LEN;
 
-		if (cols_used > (last_input_screen->co - WIDTH))
+		if (cols_used > (get_screen_columns(last_input_screen) - WIDTH))
 		{
-			cols_used = last_input_screen->co - WIDTH;
+			cols_used = get_screen_columns(last_input_screen) - WIDTH;
 			if (cols_used < 0)
 				cols_used = 0;
 		}
@@ -892,16 +918,16 @@ const char *	prompt;
 		term_echo(do_echo);
 
 		if (input_column_count(INPUT_BUFFER + LOGICAL_CHARS[START]) >
-				last_input_screen->co - cols_used)
+				get_screen_columns(last_input_screen) - cols_used)
 		{
 			cols_used += IND_RIGHT_LEN;
 			safe_puts(INPUT_BUFFER + LOGICAL_CHARS[START],
-				  last_input_screen->co - cols_used);
+				  get_screen_columns(last_input_screen) - cols_used);
 			output_with_count(IND_RIGHT, 0, 1);
 		}
 		else 
 			safe_puts(INPUT_BUFFER + LOGICAL_CHARS[START],
-				  last_input_screen->co - cols_used);
+				  get_screen_columns(last_input_screen) - cols_used);
 
 		term_echo(old_do_echo);
 
@@ -931,7 +957,7 @@ const char *	prompt;
 		/* XXX 1 Col per byte assumption */
 
 		/* don't ask me why these needed to be split up */
-		max = last_input_screen->co;
+		max = get_screen_columns(last_input_screen);
 		max -= PHYSICAL_CURSOR;
 
 		old_do_echo = term_echo(do_echo);
@@ -968,8 +994,8 @@ const char *	prompt;
 	/* <<<<< END INDENT ONE TAB BACK FOR MY SANITY <<<<<< */
 	}
 
-	output_screen = oos;
-        last_input_screen = os;
+	output_screen = oos_;
+        last_input_screen = os_;
 	make_window_current_informally(saved_current_window);
 }
 
@@ -1074,7 +1100,7 @@ void	set_input_prompt (void *stuff)
 	else
 		return;
 
-	update_input(NULL, UPDATE_ALL);
+	update_input(-1, UPDATE_ALL);
 }
 
 
@@ -1392,7 +1418,7 @@ BUILT_IN_KEYBINDING(input_reset_line)
 
 BUILT_IN_KEYBINDING(refresh_inputline)
 {
-	update_input(NULL, UPDATE_ALL);
+	update_input(-1, UPDATE_ALL);
 }
 
 /*
@@ -1452,8 +1478,8 @@ BUILT_IN_KEYBINDING(send_line)
 
 	update_input(last_input_screen, UPDATE_ALL);
 
-	holding_already = window_is_holding(last_input_screen->input_window);
-	do_unscroll = window_is_scrolled_back(last_input_screen->input_window);
+	holding_already = window_is_holding(get_screen_input_window(last_input_screen));
+	do_unscroll = window_is_scrolled_back(get_screen_input_window(last_input_screen));
 
 	/*
 	 * Hold_mode is weird.  Hold_mode gets even weirder when you're in
@@ -1463,14 +1489,11 @@ BUILT_IN_KEYBINDING(send_line)
 	 * whether to do the scrolldown before or after you run the command.
 	 */
 	if (holding_already == 0)
-		unhold_a_window(last_input_screen->input_window);
+		unhold_a_window(get_screen_input_window(last_input_screen));
 
 	/* XXX This should be rolled together with fire_wait_prompt */
-	if (last_input_screen->promptlist && 
-		last_input_screen->promptlist->type == WAIT_PROMPT_LINE)
-	{
+	if (get_screen_prompt_list_type(last_input_screen) == WAIT_PROMPT_LINE)
 		fire_normal_prompt(line);
-	}
 	else
 	{
 		int old = system_exception;
@@ -1482,9 +1505,9 @@ BUILT_IN_KEYBINDING(send_line)
 	}
 
 	if (holding_already == 1)
-		unhold_a_window(last_input_screen->input_window);
+		unhold_a_window(get_screen_input_window(last_input_screen));
 
-	if (get_window_hold_mode(last_input_screen->input_window) &&
+	if (get_window_hold_mode(get_screen_input_window(last_input_screen)) &&
 			do_unscroll == 1)
 		scrollback_forwards(0, NULL);	/* XXX - Keybinding */
 
@@ -1525,7 +1548,7 @@ BUILT_IN_KEYBINDING(input_unclear_screen)
 /* This keybinding should be in screen.c */
 BUILT_IN_KEYBINDING(quote_char)
 {
-	last_input_screen->quote_hit = 1;
+	set_screen_quote_hit(last_input_screen, 1);
 }
 
 /* 
@@ -1626,4 +1649,41 @@ BUILT_IN_FUNCTION(function_inputctl, input)
 
 	RETURN_EMPTY;
 }
+
+/* These used to belong to the Screen, but no longer! */
+void *	new_input_line (const char *prompt, int echo)
+{
+	InputLine *	my_input_line;
+
+        my_input_line = (InputLine *)new_malloc(sizeof(InputLine));
+        my_input_line->input_buffer[0] = '\0';
+        my_input_line->first_display_char = 0;
+        my_input_line->number_of_logical_chars = 0;
+	if (prompt)
+		my_input_line->input_prompt_raw = malloc_strdup(prompt);
+	else
+		my_input_line->input_prompt_raw = NULL;
+
+	my_input_line->input_prompt = malloc_strdup(empty_string);
+        my_input_line->input_prompt_len = 0;
+        my_input_line->input_line = 23;
+        my_input_line->ind_left = malloc_strdup(empty_string);
+        my_input_line->ind_left_len = 0;
+        my_input_line->ind_right = malloc_strdup(empty_string);
+        my_input_line->ind_right_len = 0;
+        my_input_line->echo = echo;
+	return (void *)my_input_line;
+}
+
+void	destroy_input_line (void *p)
+{
+	InputLine *	my_input_line = (InputLine *)p;
+
+        new_free(&my_input_line->ind_right);
+        new_free(&my_input_line->ind_left);
+        new_free(&my_input_line->input_prompt);
+        new_free(&my_input_line->input_prompt_raw);
+        new_free((char **)&my_input_line);
+}
+ 
 

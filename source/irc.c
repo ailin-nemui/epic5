@@ -52,7 +52,7 @@ const char internal_version[] = "20220615";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 2093;
+const unsigned long	commit_id = 2094;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -1120,7 +1120,7 @@ int 	main (int argc, char *argv[])
 		init_variables_stage2();
 		permit_status_update(1);
 		build_status(NULL);
-		update_input(NULL, UPDATE_ALL);
+		update_input(-1, UPDATE_ALL);
 	}
 	else
 	{
