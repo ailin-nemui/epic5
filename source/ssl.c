@@ -475,13 +475,14 @@ static ssl_info *	unlink_ssl_info (int vfd)
  *	channel -- The channel that is mapped to the vfd (passed to new_open())
  *	hostname -- The hostname we intend to connect to.  This is used for
  *		    hostname checking in the SSL certificate
+ *	cert -- The client certificate (must be a filename containing a PEM cert)
  *
  * RETURN VALUE:
  *	-1	Something really died
  *	 0	SSL negotiation is pending
  *	 1	SSL negotiation is complete (not supported)
  */
-int	ssl_startup (int vfd, int channel, const char *hostname)
+int	ssl_startup (int vfd, int channel, const char *hostname, const char *cert)
 {
 	ssl_info *	x;
 
@@ -509,11 +510,31 @@ int	ssl_startup (int vfd, int channel, const char *hostname)
 		return -1;
 	}
 
-	SSL_set_fd(x->ssl, channel);
-        SSL_set_ex_data(x->ssl, mydata_index, x);
+	if (cert && *cert)
+	{
+		if (!SSL_use_certificate_chain_file(x->ssl, cert))
+		{
+			syserr(SRV(vfd), "SSL_use_certificate_chain_file(%s) for fd %d failed", cert, vfd);
+			errno = EINVAL;
+			return -1;
+		}
+	}
 
-	if (!SSL_set1_host(x->ssl, hostname)) {
-		syserr(SRV(vfd), "Could not set hostname for SSL peer for %d", vfd);
+	if (!SSL_set_fd(x->ssl, channel))
+	{
+		syserr(SRV(vfd), "SSL_set_fd(%d) for fd %d failed", channel, vfd);
+		errno = EINVAL;
+		return -1;
+	}
+	if (!SSL_set_ex_data(x->ssl, mydata_index, x))
+	{
+		syserr(SRV(vfd), "SSL_set_ex_data(%d) for fd %d failed", mydata_index, vfd);
+		errno = EINVAL;
+		return -1;
+	}
+	if (!SSL_set1_host(x->ssl, hostname)) 
+	{
+		syserr(SRV(vfd), "SSL_set1_host(%s) for fd %d failed", hostname, vfd);
 		errno = EINVAL;
 		return -1;
 	}

@@ -69,6 +69,9 @@ static	void	strip_modes (const char *, const char *, const char *);
 /* User and host information from server 2.7 */
 const char	*FromUserHost = empty_string;
 
+/* CAP tags information */
+const char	*Tags = empty_string;
+
 /*
  * is_channel: determines if the argument is a channel.  If it's a number,
  * begins with MULTI_CHANNEL and has no '*', or STRING_CHANNEL, then its a
@@ -178,6 +181,21 @@ static void 	BreakArgs (char *Input, const char **Sender, const char **OutPut)
 	for (ArgCount = 0; ArgCount <= MAXPARA + 1; ArgCount++)
 		OutPut[ArgCount] = NULL;
 	ArgCount = 0;
+
+	/*
+	 * Look for CAP tags.
+	 * @aaa=bbb;ccc;example.com/ddd=eee <rfc1459 message>
+	 */
+	if (*Input == '@')
+	{
+		Tags = ++Input;
+
+		while (*Input && *Input != space)
+			Input++;
+		while (*Input == space)
+			*Input++ = 0;
+	} else
+		Tags = empty_string;
 
 	/*
 	 * The RFC describes it fully, but in a short form, a line looks like:

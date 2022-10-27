@@ -43,6 +43,8 @@
 #include "vars.h"
 #include "hook.h"
 #include "input.h"
+#include "levels.h"
+#include "lastlog.h"
 #include "commands.h"
 #include "window.h"
 #include "screen.h"

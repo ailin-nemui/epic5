@@ -1,5 +1,35 @@
 EPIC5-2.2
 
+*** News 10/26/2022 -- Basic CAP support, /load capctl (zlonix)
+	The /load capctl script, written by zlonix, provides
+	the /CAPCTL command, which permits you to register CAPs
+	that you wish the client to activate on your behave when
+	you connect to a particular server.  
+
+	Turning on arbitrary CAPs results in unspecified behavior
+	(ie, if it breaks things, that's not a bug)
+	Turning on 'account-tag' or 'multi-prefix' should be safe.
+
+*** News 10/26/2022 -- New built in function, $tags() for CAP tags (zlonix)
+	If you turn on the CAP 'account-tag', some servers (which 
+	includes ZNC) will start sending you CAP tags, which you can 
+	fetch with $tags().  How to parse and/or use them is left for
+	future expansion.  Stay tuned.
+
+*** News 10/26/2022 -- New server description field "cert" (client certs)
+	Some servers support "client certificates" for their SSL connections.
+	Client certificates are similar to server certificates -- they verify
+	your identity to the server.  Some networks use this for authentication
+	with servers.
+
+	You create a *.pem cert, using the same instructions as for every other
+	client, and then provide that file in the "cert" field:
+
+		/server irc.network.com:6697:type=irc-ssl:\
+			cert=/home/user/.certs/network.pem
+
+	"cert" does not support tildes in filenames.  Use $realpath() for that.
+
 *** News 08/11/2022 -- New concept to the /CLEAR command
 	When you /CLEAR a window, it's empty, right?  But quite a few
 	operations can result in a window getting bigger.  You can 

@@ -45,6 +45,7 @@
 #include "vars.h"
 #include "server.h"
 #include "list.h"
+#include "lastlog.h"
 #include "termx.h"
 #include "names.h"
 #include "ircaux.h"
@@ -60,6 +61,148 @@
 #include "reg.h"
 #include "timer.h"
 #include <math.h>
+
+typedef	struct	WindowStru
+{
+	/* List stuff */
+	int		_next_;
+	int		_prev_;
+
+	int		screen_;		/* The screen we belong to */
+	short		deceased;		/* Set when the window is killed */
+
+	unsigned 	refnum;			/* Unique refnum for window */
+	unsigned 	user_refnum;		/* Sequencing number used by the user */
+	char *		name;			/* Logical name for window */
+	char *		uuid;			/* UUID4 for window (never changes) */
+	unsigned 	priority;		/* "Current window Priority" */
+
+	/* Output rule stuff */
+	int		server;			/* Server that win is connected to */
+	Mask		window_mask;		/* Window level for the window */
+	List *		waiting_chans;		/*
+					 	 * When you JOIN or reconnect, if this
+					 	 * is set, a JOIN to that channel will
+					 	 * put that channel into this win.
+					 	 */
+	List *		nicks;			/* List of nick-queries for this win */
+	int		query_counter;		/* Is there a query anyways? */
+	char *		claimed_channel;	/* A /WINDOW CLAIM claim */
+
+	/* Internal flags */
+	short		top;			/* SCREEN line for top of window */
+	short		bottom;			/* SCREEN line for bottom of window */
+	short		cursor;			/* WINDOW line where the cursor is */
+	short		change_line;		/* True if this is a scratch window */
+	short		update;			/* True if window display is dirty */
+	short		rebuild_scrollback;	/* True if scrollback needs rebuild */
+
+	/* User-settable flags */
+	short		notify_when_hidden;	/* True to notify for hidden output */
+	short		notified;		/* True if we have notified */
+	char *		notify_name;		/* The name for %{1}F */
+	short		beep_always;		/* True if a beep to win always beeps */
+	Mask		notify_mask;		/* the notify mask.. */
+	short		skip;			/* Whether window should be skipped */
+	short		old_co;			/* .... */
+	short		my_columns;		/* How wide we are when hidden */
+	short		indent;			/* How far /set indent goes */
+	short		swappable;		/* Can it be swapped in or out? */
+	short		scrolladj;		/* Push back top-of-win on grow? */
+	short		killable;		/* Can it be killed? */
+	short		scroll_lines;		/* How many lines scroll at a time? */
+	char *		original_server_string;
+
+	/* Input and Status stuff */
+	char *		prompt;			/* Current EXEC prompt for window */
+	Status		status;			/* Current status line info */
+
+	/* SCROLLBACK stuff */
+	/*
+	 * The "scrollback" buffer is a linked list of lines that have
+	 * appeared, are appearing, or will appear on the visible window.
+	 * The "top" of the scrollback buffer usually floats forward in
+	 * the line as items are added.  The visible part of the screen is
+	 * always somewhere in the buffer (usually at the bottom), unless
+	 * the user is in "scrollback mode" or "hold mode".  When the user
+	 * is in either of these modes, then the top of the scrollback buffer
+	 * is frozen (so as not to disrupt the current contents of the screen)
+	 * and the bottom of the buffer floats as is neccesary.  When the user
+	 * ends these modes, the buffer is reset to the "scrollback_point" and
+	 * then is floated to its original dimensions from there.  The lastlog
+	 * has nothing to do with scrollback any longer.
+	 *
+	 * The "display_ip" is always a blank line where the NEXT displayable
+	 * line will go.  When the user does a /clear, the screen is scrolled
+	 * up until display_ip is the top_of_display.  
+	 */
+	Display *	top_of_scrollback;	/* Start of the scrollback buffer */
+	Display *	display_ip;		/* End of the scrollback buffer */
+	int		display_buffer_size;	/* How big the scrollback buffer is */
+	int		display_buffer_max;	/* How big its supposed to be */
+
+	Display *	scrolling_top_of_display;
+	int		scrolling_distance_from_display_ip;
+
+	Display *	holding_top_of_display;
+	int		holding_distance_from_display_ip;
+
+	Display *	scrollback_top_of_display;
+	int		scrollback_distance_from_display_ip;
+
+	Display *	clear_point;
+
+	int		display_counter;
+	short		hold_slider;
+
+	Display *	scrollback_indicator;	/* The === thing */
+
+	/*
+	 * Window geometry stuff
+	 *
+	 * The scrollable part of the window starts at the "top" value and 
+	 * continues on for "display_lines" lines.  The scrollable part does
+	 * not include the toplines, and does not include the status bar(s).
+	 * Each window also has a shadow "logical size" which is a unitless
+	 * number used to calculate the relative size of each window.  When
+	 * the screen size changes, we subtract all of the non-negotiable 
+	 * parts (toplines, status bars, fixed windows) and then distribute
+	 * what is left to each window.
+	 */
+	short		display_lines;		/* How many lines window size is */
+	short		logical_size;		/* How many units window size is */
+	short		fixed_size;		/* True if window doesnt rebalance */
+	short		old_display_lines;	/* How big window was on last resize */
+
+	/* HOLD_MODE stuff */
+	short		hold_interval;		/* How often to update status bar */
+
+	/* /LASTLOG stuff */
+	Mask		lastlog_mask;		/* The LASTLOG_LEVEL, determines what
+						 * messages go to lastlog */
+	int		lastlog_size;		/* number of messages in lastlog. */
+	int		lastlog_max;		/* Max number of messages in lastlog */
+
+	/* /WINDOW LOG stuff */
+	short		log;			/* True if file logging is on */
+	char *		logfile;		/* window's logfile name */
+	FILE *		log_fp;			/* file pointer for the log file */
+	char *		log_rewrite;		/* Overrules /set log_rewrite */
+	int		log_mangle;		/* Overrules /set mangle_logfiles */
+	char *		log_mangle_str;		/* String version of log_mangle */
+
+	/* TOPLINES stuff */
+	short		toplines_wanted;
+	short		toplines_showing;
+	char *		topline[10];
+
+	/* ACTIVITY stuff */
+	short		current_activity;
+	char *		activity_data[11];
+	char *		activity_format[11];
+
+}	Window;
+
 
 static const char *onoff[] = { "OFF", "ON" };
 
@@ -117,7 +260,7 @@ typedef struct  WNickListStru
         int             counter;
 }       WNickList;
 
-static Window *	get_window_by_refnum_direct 	(int refnum);
+static	Window *get_window_by_refnum_direct 	(int refnum);
 static	int	get_invisible_list 		(void) ;
 static	int	unlink_window 			(int window_);
 static	void	delete_window_contents 		(int window_);
@@ -176,8 +319,8 @@ static	void	go_back_to_indicator 		(int window_);
 static	void 	delete_display_line 		(Display *stuff);
 static	Display *new_display_line 		(Display *prev, int window_);
 static	int	add_to_display 			(int window_, const char *str, intmax_t refnum);
-static	int	flush_scrollback 		(int window_);
-static	int	flush_scrollback_after 		(int window_);
+static	int	flush_scrollback 		(int window_, int abandon);
+static	int	flush_scrollback_after 		(int window_, int abandon);
 static	void	window_scrollback_backwards 	(int window_, int skip_lines, int abort_if_not_found, int (*test)(int, Display *, void *), void *meta);
 static	void	window_scrollback_forwards 	(int window_, int skip_lines, int abort_if_not_found, int (*test)(int, Display *, void *), void *meta);
 static	int	window_scroll_lines_tester 	(int window_, Display *line, void *meta);
@@ -202,12 +345,11 @@ static	void	set_window_deceased 		(int window, int value);
 static	int 	windowcmd_next 			(int refnum, char **args);
 static	int 	windowcmd_previous 		(int refnum, char **args);
 static 	Display *get_window_clear_point         (int window);
-static int	reset_window_clear_point	(int window);
-static int	set_window_list_check		(int window, int value);
-
+static	int	reset_window_clear_point	(int window);
+static	int	set_window_list_check		(int window, int value);
 
 static	int	get_invisible_list 		(void) { return _invisible_list; }
-;
+
 /* * * * * * * * * * * CONSTRUCTOR AND DESTRUCTOR * * * * * * * * * * * */
 /*
  * new_window: This creates a new window on the screen.  It does so by either
@@ -2379,7 +2521,7 @@ static	void	rebuild_scrollback (int refnum)
 	w = get_window_by_refnum_direct(refnum);
 
 	save_window_positions(refnum, &scrolling, &holding, &scrollback, &clearpoint);
-	flush_scrollback(refnum);
+	flush_scrollback(refnum, 0);
 	reconstitute_scrollback(refnum);
 	restore_window_positions(refnum, scrolling, holding, scrollback, clearpoint);
 	w->rebuild_scrollback = 0;
@@ -5465,7 +5607,7 @@ WINDOWCMD(flush)
 	if (!args)
 		return refnum;
 
-	flush_scrollback_after(refnum);
+	flush_scrollback_after(refnum, 1);
 	return refnum;
 }
 
@@ -5479,7 +5621,7 @@ WINDOWCMD(flush_scrollback)
 	if (!args)
 		return refnum;
 
-	flush_scrollback(refnum);
+	flush_scrollback(refnum, 1);
 	return refnum;
 }
 
@@ -8614,7 +8756,7 @@ int	trim_scrollback (int window_)
  * XXX This is cut and pasted from new_window() and clear_window().  That
  * is a horrible abuse. this needs to be refactored someday.
  */
-static int	flush_scrollback (int window_)
+static int	flush_scrollback (int window_, int abandon)
 {
 	Display *holder, *curr_line;
 	Window *w;
@@ -8653,6 +8795,8 @@ static int	flush_scrollback (int window_)
 	while ((curr_line = holder))
 	{
 		holder = curr_line->next;
+		if (abandon)
+			dont_need_lastlog_item(w->refnum, curr_line->linked_refnum);
 		new_free(&curr_line->line);
 		new_free((char **)&curr_line);
 	}
@@ -8687,7 +8831,7 @@ static int	flush_scrollback (int window_)
  * coming and epic will keep holding new output.  This is not really a bug,
  * it's just the way things work.
  */
-static int	flush_scrollback_after (int window_)
+static int	flush_scrollback_after (int window_, int abandon)
 {
 	Display *curr_line, *next_line;
 	int	count;
@@ -8734,6 +8878,8 @@ static int	flush_scrollback_after (int window_)
 	while (curr_line != window->display_ip)
 	{
 		next_line = curr_line->next;
+		if (abandon)
+			dont_need_lastlog_item(window->refnum, curr_line->linked_refnum);
 		delete_display_line(curr_line);
 		window->display_buffer_size--;
 		curr_line = next_line;

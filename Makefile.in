@@ -34,15 +34,6 @@ LIBS = @LIBS@
 #		"NULL format", as those uses are intentional.
 CFLAGS = @CFLAGS@
 
-# Compiler flags -- These flags are passed only to the compiler.
-#		    Common flags include:
-# -ansi		These two flags turn on "ansi" or "standard" mode on some
-# -std1		vendor compilers.  This flag is required for the Digital
-#		Alpha 'cc' compiler, and may be required for other compilers
-#		that don't allow ansi C extensions without it.  GCC does
-#		not require this flag, though EPIC will compile with it.
-ANSIFLAGS =
-
 # Linker flags -- These flags are passed only to the linker.
 #		  Common flags include:
 # -s		Strip all debugging information from the resulting binary. 
@@ -90,7 +81,6 @@ VERSION  = @VERSION@
 SHELL = /bin/sh
 MAKE2 = $(MAKE) $(MFLAGS)
 MFLAGS ='CC=$(CC)'					\
-	'ANSIFLAGS=$(ANSIFLAGS)'			\
 	'CFLAGS=$(CFLAGS)'				\
 	'DEFS=$(DEFS)'					\
 	'INSTALL_WSERV=$(wserv_exe)'			\

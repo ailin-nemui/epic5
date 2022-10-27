@@ -58,6 +58,7 @@
 #include "input.h"
 #include "ircaux.h"
 #include "keys.h"
+#include "lastlog.h"
 #include "log.h"
 #include "names.h"
 #include "output.h"
@@ -413,6 +414,7 @@ static	char
 	*function_strtol	(char *),
 	*function_substr	(char *),
 	*function_symbolctl	(char *),
+	*function_tags		(char *),
 	*function_tan		(char *),
 	*function_tanh		(char *),
 	*function_tell		(char *),
@@ -750,6 +752,7 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "STRTOL",		function_strtol		},
 	{ "SUBSTR",		function_substr		},
 	{ "SYMBOLCTL",		function_symbolctl	},
+	{ "TAGS",		function_tags		},
 	{ "TAN",		function_tan		},
 	{ "TANH",		function_tanh		},
 	{ "TDIFF",		function_tdiff 		},
@@ -8637,3 +8640,7 @@ BUILT_IN_FUNCTION(function_sequence_point, input)
 	RETURN_INT(sequence_point);
 }
 
+BUILT_IN_FUNCTION(function_tags, input)
+{
+	RETURN_STR(Tags);
+}

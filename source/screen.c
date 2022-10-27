@@ -51,6 +51,7 @@
 #include "output.h"
 #include "vars.h"
 #include "server.h"
+#include "lastlog.h"
 #include "list.h"
 #include "termx.h"
 #include "names.h"
@@ -2894,9 +2895,9 @@ void 	add_to_screen (const char *buffer)
 static void 	add_to_window (int window_, const char *str)
 {
 	const char *	pend;
-	char *	strval;
-	char *	free_me = NULL;
-        char **       my_lines;
+	char *		strval;
+	char *		free_me = NULL;
+        char **       	my_lines;
         int             cols;
 	int		numl = 0;
 	intmax_t	refnum;

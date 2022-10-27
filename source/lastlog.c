@@ -56,6 +56,7 @@ typedef struct	lastlog_stru
 	time_t	created;
 	time_t	expires;
 	int	visible;
+	int	needed;
 	intmax_t refnum;
 	int	window;
 	int	dead;
@@ -256,6 +257,8 @@ intmax_t	add_to_lastlog (int window, const char *line)
 	else
 		new_l->visible = 0;
 
+	new_l->needed = 1;
+
 	/* * * */
 	return new_l->refnum;
 }
@@ -321,6 +324,28 @@ void 	truncate_lastlog (int window)
 		remove_lastlog_item(item);
 		item = next_item;
 	}
+}
+
+/* 
+ * A window may repudiate a lastlog item which means it won't show up
+ * upon a scrollback rebuild
+ */
+void	dont_need_lastlog_item (int window, intmax_t item_refnum)
+{
+	Lastlog *item;
+
+	window = get_window_refnum(window);
+
+	item = oldest_lastlog_for_window(window);
+	while (item)
+	{
+		Lastlog *next_item = newer_lastlog_entry(item, window);
+
+		if (item->refnum == item_refnum)
+			item->needed = 0;
+		item = next_item;
+	}
+
 }
 
 /*
@@ -1414,7 +1439,7 @@ void	reconstitute_scrollback (int window)
 
 	for (li = lastlog_oldest; li; li = li->newer)
 	{
-	    if (li->window == window)
+	    if (li->window == window && li->needed)
 	    {
 		debuglog("reconstitute_scrollback: YES window %d (%d) refnum %d msg %s", li->window, window, li->refnum, li->msg);
 		add_to_window_scrollback(window, li->msg, li->refnum);

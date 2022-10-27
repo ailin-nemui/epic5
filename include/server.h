@@ -43,6 +43,7 @@ typedef struct ServerInfo
         const char *  server_type;
         const char *  proto_type;
 	const char *  vhost;
+	const char *  cert;
 } ServerInfo;
 typedef ServerInfo SI;
 
@@ -235,6 +236,7 @@ const	char *	get_server_itsname		(int);
 const	char *	get_server_group		(int);
 const	char *  get_server_server_type		(int);
 const	char *	get_server_vhost		(int);
+const	char *	get_server_cert			(int);
 
 	void	set_server_version_string	(int, const char *);
 const 	char *	get_server_version_string	(int);

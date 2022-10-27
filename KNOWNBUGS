@@ -7,11 +7,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * The way we handle "screen is not tall enough" underflow needs work
 * Unify window query and channels in the target list.
 * Allow /ignore for a nick!user@host but only on a channel
-[12:19PM] <zlonix> hop, i've found easier way to reproduce the flush_scrollback bug, - epic5 -q, load scan, join #test1234,
-+window flush_scrollback, scan, window clearlevel other -
-* Use-after-free ....
-	see ubsan.log.74089
-	#0 0x8431a0 in save_window_positions /usr/home/jnelson/git/epic5/source/window.c:2379:33
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1275,4 +1270,13 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Updated reconnect script (zlonix)
 * Finalize replacement of (Screen *) with (int) refnums.
 * Move Screen definition inside screen.c. Yay!
+* Remove unused ANSIFLAGS from Makefile
+* Add $tags(), support for CAP tags (zlonix)
+* Add script for CAP negotitation (zlonix)
+* Add "cert" field for server descs (client-side SSL certs) (rb tjh)
+* Add ability to specify client-side cert for SSL (generally)
+* Move Window definition inside window.c YAY~!
+* Add dont_need_lastlog_item() so windows can repudiate lastlog items
+* Make /window flush_scrollback repudiate lastlog items
+* That way rebuilding the scrollback doesn't make flushed things re-appear
 

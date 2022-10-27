@@ -16,6 +16,7 @@ const 	char	*PasteArgs 	(const char **, int);
 	void    rfc1459_any_to_utf8 (char *, size_t, char **);
 
 extern	const char	*FromUserHost;
+extern	const char	*Tags;
 
 #endif
 

@@ -74,6 +74,7 @@ const char ridiculous_version_name[] = "Secondment";
 #include "termx.h"
 #include "exec.h"
 #include "screen.h"
+#include "lastlog.h"
 #include "log.h"
 #include "server.h"
 #include "hook.h"

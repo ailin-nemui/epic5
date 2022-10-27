@@ -174,6 +174,7 @@ int	clear_serverinfo (ServerInfo *s)
         s->server_type = NULL;
 	s->proto_type = NULL;
 	s->vhost = NULL;
+	s->cert = NULL;
 	s->freestr = NULL;		/* XXX ? */
 	s->fulldesc = NULL;		/* XXX ? */
 	s->clean = 1;
@@ -195,7 +196,7 @@ int	clear_serverinfo (ServerInfo *s)
  * 'type'     is the server protocol type, either "IRC" or "IRC-SSL"
  * 'proto'    is the socket protocol type, either 'tcp4' or 'tcp6' or neither.
  * 'vhost'    is the virtual hostname to use for this connection.
- * 'ssl-strict' is whether you require ssl server to have a bona fide ssl cert
+ * 'cert'     is the local certificate file (PEM) to use for SSL
  *
  * --
  * A new-style server description is a colon separated list of values:
@@ -203,10 +204,10 @@ int	clear_serverinfo (ServerInfo *s)
  *   host=HOST	   port=PORTNUM   pass=PASSWORD 
  *   nick=NICK     group=GROUP    type=PROTOCOL_TYPE
  *   proto=SOCKETYPE  vhost=HOST  
- *   ssl-strict=NO
+ *   cert=/path/to/file.pem
  *
  * for example:
- *	host=irc.server.com:group=efnet:type=IRC-SSL:ssl-strict=NO
+ *	host=irc.server.com:group=efnet:type=IRC-SSL:cert=~/.certs/network.pem
  * 
  * The command type ("host", "port") can be abbreviated as long as it's
  * not ambiguous:
@@ -219,7 +220,7 @@ int	clear_serverinfo (ServerInfo *s)
  *	 irc.server.com:group=efnet:IRC-SSL
  */
 
-enum serverinfo_fields { HOST, PORT, PASS, NICK, GROUP, TYPE, PROTO, VHOST, SSL_STRICT, LASTFIELD };
+enum serverinfo_fields { HOST, PORT, PASS, NICK, GROUP, TYPE, PROTO, VHOST, CERT, LASTFIELD };
 
 /*
  * str_to_serverinfo:  Create or Modify a temporary ServerInfo based on string.
@@ -314,8 +315,8 @@ int	str_to_serverinfo (char *str, ServerInfo *s)
 				fieldnum = PROTO;
 			else if (!my_strnicmp(descstr, "VHOST", 1))
 				fieldnum = VHOST;
-			else if (!my_strnicmp(descstr, "SSL_STRICT", 5))
-				fieldnum = SSL_STRICT;
+			else if (!my_strnicmp(descstr, "CERT", 1))
+				fieldnum = CERT;
 			else
 			{
 				say("Server desc field type [%s] not recognized.", 
@@ -390,6 +391,8 @@ int	str_to_serverinfo (char *str, ServerInfo *s)
 		    else
 			s->vhost = descstr;
 		}
+		else if (fieldnum == CERT)
+			s->cert = descstr;
 
 		/*
 		 * We go one past "type" because we want to allow
@@ -453,6 +456,7 @@ static	int	preserve_serverinfo (ServerInfo *si)
 	}
         else
 	   malloc_strcat2_c(&resultstr, si->vhost, ":", &clue);
+	malloc_strcat2_c(&resultstr, si->cert, ":", &clue);
 
 	new_free(&si->freestr);
 	new_free(&si->fulldesc);
@@ -513,6 +517,8 @@ static	void	update_serverinfo (ServerInfo *old_si, ServerInfo *new_si)
 		old_si->proto_type = new_si->proto_type;
 	if (new_si->vhost)
 		old_si->vhost = new_si->vhost;
+	if (new_si->cert)
+		old_si->cert = new_si->cert;
 
 	preserve_serverinfo(old_si);
 	return;
@@ -1649,7 +1655,7 @@ something_broke:
 				/* (ie, on systems where vfd != channel) */
 				int	ssl_err;
 
-				ssl_err =  ssl_startup(des, des, get_server_name(i));
+				ssl_err =  ssl_startup(des, des, get_server_name(i), get_server_cert(i));
 
 				/* SSL connection failed */
 				if (ssl_err == -1)
@@ -3669,6 +3675,19 @@ const char *	get_server_vhost (int servref )
 		return "<none>";
 }
 
+const char *	get_server_cert (int servref )
+{
+	Server *s;
+
+	if (!(s = get_server(servref)))
+		return NULL;
+
+	if (s->info->cert && *s->info->cert)
+		return s->info->cert;
+	else
+		return NULL;		/* XXX Is this correct? */
+}
+
 
 /* 
  * Getter and setter for "itsname"
@@ -4662,6 +4681,9 @@ char 	*serverctl 	(char *input)
 			RETURN_INT(get_server_autoclose(refnum));
 		} else if (!my_strnicmp(listc, "FULLDESC", len)) {
 			RETURN_STR(get_server_fulldesc(refnum));
+		} else if (!my_strnicmp(listc, "CERT", len)) {
+			ret = get_server_cert(refnum);
+			RETURN_STR(ret);
 		} else if (!my_strnicmp(listc, "REALNAME", len)) {
 			RETURN_STR(get_server_realname(refnum));
 		} else if (!my_strnicmp(listc, "DEFAULT_REALNAME", len)) {

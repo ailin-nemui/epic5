@@ -11,14 +11,6 @@
 
 #include "levels.h"
 
-#if 0
-/* 
- * Window and Lastlog are mutually referential.  So we cant include
- * window.h here. so to break the loop we forward declare Window here.
- */
-struct WindowStru;
-#endif
-
 extern	Mask	current_window_mask;
 extern	Mask *	new_server_lastlog_mask;
 extern	Mask *	old_server_lastlog_mask;
@@ -33,6 +25,7 @@ extern	double	output_expires_after;
 	void	set_notify_mask 		(void *);
 	int	recount_window_lastlog		(int);
 	void	trim_lastlog			(int);
+	void	dont_need_lastlog_item		(int, intmax_t);
 	void	set_current_window_mask 	(void *);
 	intmax_t add_to_lastlog 		(int, const char *);
 	char *	function_line			(char *);
