@@ -3182,14 +3182,6 @@ void 	repaint_window_body (int window_)
 		widthstr = prepare_display2(str, get_window_my_columns(window_), 1, ' ', 0);
 		output_with_count(widthstr, 1, foreground);
 		new_free(&widthstr);
-
-/*
-		n = new_normalize_string(widthstr, 0, display_line_mangler);
-		my_lines = prepare_display(get_window_refnum(window_), n, cols, &numls, PREPARE_NOWRAP);
-		if (*my_lines)
-			output_with_count(*my_lines, 1, foreground);
-		new_free(&n);
-*/
 	   }
 	}
 

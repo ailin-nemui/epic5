@@ -1279,4 +1279,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add dont_need_lastlog_item() so windows can repudiate lastlog items
 * Make /window flush_scrollback repudiate lastlog items
 * That way rebuilding the scrollback doesn't make flushed things re-appear
-
+* Fixes to above (rb zlonix)

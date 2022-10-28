@@ -1,0 +1,50 @@
+if (word(2 $loadinfo()) != [pf]) {
+	load -pf $word(1 $loadinfo());
+	return;
+};
+
+package capctl;
+
+## Capability negotiation script for EPIC5.
+## Written by zlonix@efnet, public domain.
+##
+## Version: 1.0 (September, 2022)
+##  - Initial roll-out
+
+## This script allows you to request needed capabilities from CAP-enabled server, 
+## at present only simple and unconditional requests are supported, so there are 
+## no checks for NAKs from the server, or any other complicated logic.
+##
+## Version 302 of the LS protocol is not supported at present time.
+##
+## Be careful about which capabilities you enable, because it will change the
+## way server send you messages. Capabilities which use message-tags are safe to
+## turn on, you can get them with built-in function $tags(), which you can check
+## in your hooks, it works the same way as $userhost() does.
+##
+## Usage:
+##	capctl req *.libera.chat account-tag draft/example-1 draft/example-2
+##
+## This will request three capabilities uppon connect to a server matching
+## *.libera.chat.
+
+alias capctl (verb, server, caps) {
+	if (@verb && @server && @caps) {
+		@ :server_enc = encode($server);
+
+		@ push(cap.servers $server);
+		@ cap[$server_enc][$verb] = caps;
+	};
+};
+
+on #-server_established 1000 '\\\\[$$cap.servers\\\\] %' {
+	@ :server = servername();
+	@ :idx = rmatch($server $cap.servers)-1;
+	@ :server_enc = encode($word($idx $cap.servers));
+
+	quote CAP REQ :$cap[$server_enc][req];
+};
+
+on ^odd_server_stuff '\\\\[$$cap.servers\\\\] CAP % ACK *' {
+	quote CAP END;
+};

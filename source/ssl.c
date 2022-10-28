@@ -512,27 +512,35 @@ int	ssl_startup (int vfd, int channel, const char *hostname, const char *cert)
 
 	if (cert && *cert)
 	{
-		if (!SSL_use_certificate_chain_file(x->ssl, cert))
+		yell("Using client certificate file %s", cert);
+		if (SSL_use_certificate_file(x->ssl, cert, SSL_FILETYPE_PEM) <= 0)
 		{
-			syserr(SRV(vfd), "SSL_use_certificate_chain_file(%s) for fd %d failed", cert, vfd);
+			syserr(SRV(vfd), "SSL_use_certificate_file(%s) for fd %d failed", cert, vfd);
 			errno = EINVAL;
 			return -1;
 		}
+		if (SSL_use_PrivateKey_file(x->ssl, cert, SSL_FILETYPE_PEM) <= 0)
+		{
+			syserr(SRV(vfd), "SSL_use_PrivateKey_file(%s) for fd %d failed", cert, vfd);
+			errno = EINVAL;
+			return -1;
+		}
+		yell("Success");
 	}
 
-	if (!SSL_set_fd(x->ssl, channel))
+	if (SSL_set_fd(x->ssl, channel) <= 0)
 	{
 		syserr(SRV(vfd), "SSL_set_fd(%d) for fd %d failed", channel, vfd);
 		errno = EINVAL;
 		return -1;
 	}
-	if (!SSL_set_ex_data(x->ssl, mydata_index, x))
+	if (SSL_set_ex_data(x->ssl, mydata_index, x) <= 0)
 	{
 		syserr(SRV(vfd), "SSL_set_ex_data(%d) for fd %d failed", mydata_index, vfd);
 		errno = EINVAL;
 		return -1;
 	}
-	if (!SSL_set1_host(x->ssl, hostname)) 
+	if (SSL_set1_host(x->ssl, hostname) <= 0) 
 	{
 		syserr(SRV(vfd), "SSL_set1_host(%s) for fd %d failed", hostname, vfd);
 		errno = EINVAL;
