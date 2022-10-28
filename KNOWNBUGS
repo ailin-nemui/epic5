@@ -1280,3 +1280,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Make /window flush_scrollback repudiate lastlog items
 * That way rebuilding the scrollback doesn't make flushed things re-appear
 * Fixes to above (rb zlonix)
+* Fixes/improvements from zlonix for the above

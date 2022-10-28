@@ -1,0 +1,117 @@
+if (word(2 $loadinfo()) != [pf]) {
+	load -pf $word(1 $loadinfo());
+	return;
+};
+
+package sasl_external;
+
+## SASL EXTERNAL authentication script for EPIC5.
+## Written by zlonix@efnet, public domain.
+##
+## Version: 1.0 (January, 2022)
+##  - Initial roll-out
+
+## To use this script you will need to generate a certificate and add it to
+## NickServ fingerprint list. Instructions for Libera.Chat can be obtained here:
+## https://libera.chat/guides/certfp
+##
+## Add the following line to your ircII.servers file:
+## irc.libera.chat:7000:nick=YOURNICK:type=IRC-SSL:cert=<full path to the cert>
+##
+## Note full path restrictment, you can't use tildes there.
+##
+## Then put the following in your .epicrc or .ircrc file:
+##  sasl_external *.libera.chat
+## This will try EXTERNAL auth on all Libera.Chat servers
+
+
+load capctl;
+
+alias sasl_external (server) {
+	if (@server) {
+		if (findw($server $sasl_external.servers) == -1) {
+			@ push(sasl_external.servers $server);
+		};
+	};
+
+};
+
+alias sasl_external.setstate (server, state, void) {
+	@ :enc = encode($server);
+
+	if (state != [null]) {
+		assign sasl_external.status.$enc $state;
+	} else {
+		assign -sasl_external.status.$enc;
+	};
+};
+
+alias sasl_external.getstate (server, void) {
+	@ :enc = encode($server);
+
+	return $sasl_external.status[$enc];
+};
+
+on #-server_established 100 '\\\\[$$sasl_external.servers\\\\] %' {
+	@ :server = servername();
+	@ :server_enc = encode($server);
+	@ :state = sasl_external.getstate($server);
+	@ ::sasl_in_progress[$server_enc] = 1;
+
+	if (serverctl(GET $servernum() CERT) == []) {
+		xecho -b sasl_external: no client certificate, disconnecting from the server $server;
+		disconnect;
+	};
+
+	if (state == []) {
+		sasl_external.setstate $server req_sent;
+
+		quote CAP REQ :sasl;
+
+	} else {
+		xecho -b sasl_external: server_established: server $server is in a wrong state [$state] (should be <empty>);
+		sasl_external.setstate $server null;
+	};
+};
+
+on ^odd_server_stuff '\\\\[$$sasl_external.servers\\\\] CAP % ACK *sasl*' {
+	@ :server = servername();
+	@ :state = sasl_external.getstate($server);
+
+	if (state == [req_sent]) {
+		sasl_external.setstate $server meth_sent;
+
+		quote AUTHENTICATE EXTERNAL;
+	} else {
+		xecho -b sasl_external: odd_server_stuff: CAP ACK: server $server \(real: $0\) is in a wrong state [$state] (should be "req_sent");
+		sasl_external.setstate $server null;
+	};
+
+};
+
+on ^odd_server_stuff '\* AUTHENTICATE \+' {
+	@ :server = servername();
+	@ :state = sasl_external.getstate($server);
+
+	if (state == [meth_sent]) {
+		sasl_external.setstate $server auth_sent;
+
+		quote AUTHENTICATE +;
+	} else {
+		xecho -b sasl_external: odd_server_stuff: AUTHENTICATE: server $server \(real: $0\) is in a wrong state [$state] (should be "meth_sent");
+		sasl_external.setstate $server null;
+	};
+};
+
+on -903 '\\\\[$$sasl_external.servers\\\\] *' {
+	@ :server = servername();
+	@ :state = sasl_external.getstate($server);
+
+	if (state == [auth_sent]) {
+		sasl_external.setstate $server null;
+#		quote CAP END;
+	} else {
+		xecho -b sasl_external: 903: server $server \(real: $0\) is in a wrong state [$state] (should be "auth_sent");
+		sasl_external.setstate $server null;
+	};
+};

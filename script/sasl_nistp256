@@ -85,6 +85,8 @@ package sasl_nistp256;
 ## The script hasn't been checked for coexistence with all other CAP IRCv3
 ## functionality, because currently there is none in EPIC5.
 
+load capctl;
+
 addset sasl_nistp256_ecdsatool str;
 
 alias sasl_nistp256 (server, nick, file, void) {
@@ -116,7 +118,9 @@ alias sasl_nistp256.getstate (server, void) {
 
 on #-server_established 100 '\\\\[$$sasl_nistp256.servers\\\\] %' {
 	@ :server = servername();
+	@ :server_enc = encode($server);
 	@ :state = sasl_nistp256.getstate($server);
+	@ ::sasl_in_progress[$server_enc] = 1;
 
 	if (state == []) {
 		sasl_nistp256.setstate $server req_sent;
@@ -185,7 +189,7 @@ on -903 '\\\\[$$sasl_nistp256.servers\\\\] *' {
 
 	if (state == [chal_sent]) {
 		sasl_nistp256.setstate $server null;
-		quote CAP END;
+#		quote CAP END;
 	} else {
 		xecho -b sasl_nistp256: 903: server $server \(real: $0\) is in a wrong state [$state] (should be "chal_sent");
 		sasl_nistp256.setstate $server null;

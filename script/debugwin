@@ -1,0 +1,40 @@
+if (word(2 $loadinfo()) != [pf]) {
+	load -pf $word(1 $loadinfo());
+	return;
+};
+
+#       Copyright (c) 2007 BlackJac@EFNet
+#
+#       Version: 1.5.2007.02.19.1
+#
+#	This script creates a hidden debug window that displays all raw DCC
+#	data and all raw data sent to and received from the server.
+
+package debugwin;
+
+# Comment or modify these lines to configure line wrapping and indentation.
+set -CONTINUED_LINE;
+set INDENT ON;
+
+alias debugwin (void) {
+	if (winnam(DebugWindow)) {
+		fe (dcc_raw raw_irc send_to_server) dd {
+			^on #$dd -2147483648 -"*";
+		};
+		^window refnum DebugWindow killswap;
+		xecho -c $banner Destroyed hidden debug window;
+	} else {
+		^on #-dcc_raw -2147483648 "*" {
+			xecho -w DebugWindow $strftime(%F %T %Z) [DCC] $*;
+		};
+		^on #-raw_irc -2147483648 "*" {
+			xecho -w DebugWindow $strftime(%F %T %Z) [RECV] $*;
+		};
+		^on #-send_to_server -2147483648 "*" {
+			xecho -w DebugWindow $strftime(%F %T %Z) [SEND] $2-;
+		};
+		^window new_hide swap last double off level none name DebugWindow status_format "30,47 * Debug Window * %> * Debug Window * -1";
+		^window back;
+		xecho -c $banner Created hidden debug window [refnum $winnum(DebugWindow)];
+	};
+};

@@ -76,6 +76,8 @@ package sasl_auth;
 ##    will be failed, it can happen if you have very long
 ##    password;
 
+load capctl;
+
 alias sasl_auth (server, method, user, password, void) {
 	if (@server && @method && @user) {
 		if (findw($server $sasl_auth.servers) == -1) {
@@ -120,7 +122,9 @@ alias sasl_auth.getstate (server, void) {
 
 on #-server_established 100 '\\\\[$$sasl_auth.servers\\\\] %' {
 	@ :server = servername();
+	@ :server_enc = encode($server);
 	@ :state = sasl_auth.getstate($server);
+	@ ::sasl_in_progress[$server_enc] = 1;
 	
 	if (state == []) {
 		sasl_auth.setstate $server req_sent;
@@ -202,7 +206,7 @@ on -903 '\\\\[$$sasl_auth.servers\\\\] *' {
 
 	if (state == [auth_sent]) {
 		sasl_auth.setstate $server null;
-		quote CAP END;
+#		quote CAP END;
 	} else {
 		xecho -b sasl_auth: 903: server $server \(real: $0\) is in a wrong state [$state] (should be "auth_sent");
 		sasl_auth.setstate $server null;
