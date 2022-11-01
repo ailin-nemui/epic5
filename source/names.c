@@ -440,7 +440,6 @@ const	char	*prefix;
 			if (is_me(server, nick))
 				chan->voice = 1;
 			isvoice = 1;
-			break;
 		}
 		else if (*nick == '@')
 		{
@@ -455,7 +454,6 @@ const	char	*prefix;
 					half_assed = -1;
 			}
 			ischop = 1;
-			break;
 		}
 		else if (*nick == '%')
 		{
@@ -468,7 +466,6 @@ const	char	*prefix;
 					isvoice = -1;
 			}
 			half_assed = 1;
-			break;
 		}
 		else
 		{
