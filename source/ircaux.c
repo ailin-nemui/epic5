@@ -2402,16 +2402,22 @@ const char *	plural (int number)
 char ctime_failure[] = "ctime failed";
 const char *	my_ctime (time_t when)
 {
-	char *x;
+	static char 	x[50];
 
-	if ((x = ctime(&when)))
+#if 0
+	if (ctime_r(&when, x))
 		chomp(x);
 	else
-		x = ctime_failure;
+		strlcpy(x, ctime_failure, sizeof(x));
+#else
+	struct tm	time_val;
+
+	time_val = *localtime(&when);
+	strftime(x, sizeof(x), "%c", &time_val);
+#endif
 
 	return x;
 }
-
 
 const char *	my_ltoa (long foo)
 {

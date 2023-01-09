@@ -831,11 +831,15 @@ static	int	dcc_get_connect_addrs (DCC_list *dcc)
 	return 0;
 
 something_broke:
-	say("DCC %s connection with %s could not be established: %s",
-		type, dcc->user, 
-		retval ? strerror(retval) : "(internal error)");
-	dcc->flags |= DCC_DELETE;
-	return -1;
+	{
+		int	l = message_from(dcc->user, LEVEL_DCC);
+		say("DCC %s connection with %s could not be established: %s",
+			type, dcc->user, 
+			retval ? strerror(retval) : "(internal error)");
+		dcc->flags |= DCC_DELETE;
+		pop_message_from(l);
+		return -1;
+	}
 }
 
 /*
@@ -868,12 +872,19 @@ static int	dcc_connected (int fd)
 	if ((dcc->flags & DCC_TYPES) != DCC_RAW && 
 	    (dcc->flags & DCC_TYPES) != DCC_RAW_LISTEN)
 	{
-		char p_addr[256];
-		char p_port[24];
-		char *encoded_description;
+		char	p_addr[256];
+		char	p_port[24];
+		char *	encoded_description;
+		int	l;
+
+		l = message_from(dcc->user, LEVEL_DCC);
 
 		if (inet_ntostr(&dcc->peer_sockaddr, p_addr, 256, p_port, 24, NI_NUMERICHOST))
-			yell("Couldn't get host/port for this connection.");
+		{
+			yell("dcc_connected: Couldn't convert socket address to p-addr/host for %s %s", type, dcc->user);
+			strlcpy(p_addr, "unknown addr", sizeof(p_addr));
+			strlcpy(p_port, "???", sizeof(p_port));
+		}
 
 		encoded_description = dcc_urlencode(dcc->description);
 
@@ -887,25 +898,22 @@ static int	dcc_connected (int fd)
 		 */
 		if (!strcmp(type, "SEND"))
 		{
-		    if ((jvs_blah = do_hook(DCC_CONNECT_LIST,
-					"%s %s %s %s %s " INTMAX_FORMAT,
+		    if ((jvs_blah = do_hook(DCC_CONNECT_LIST, "%s %s %s %s %s " INTMAX_FORMAT,
 					dcc->user, type, p_addr, p_port,
 					encoded_description,
 					dcc->filesize)))
 			    /*
 			     * Compatability with bitchx
 			     */
-			jvs_blah = do_hook(DCC_CONNECT_LIST,
-					"%s GET %s %s %s " INTMAX_FORMAT, 
+			jvs_blah = do_hook(DCC_CONNECT_LIST, "%s GET %s %s %s " INTMAX_FORMAT, 
 					dcc->user, p_addr, p_port,
 					encoded_description,
 					dcc->filesize);
 		}
 		else
 		{
-		    jvs_blah = do_hook(DCC_CONNECT_LIST,
-				"%s %s %s %s", 
-				dcc->user, type, p_addr, p_port);
+		    jvs_blah = do_hook(DCC_CONNECT_LIST, "%s %s %s %s", 
+					dcc->user, type, p_addr, p_port);
 		}
 
 		if (jvs_blah)
@@ -913,7 +921,9 @@ static int	dcc_connected (int fd)
 		    say("DCC %s connection with %s[%s:%s] established",
 				type, dcc->user, p_addr, p_port);
 		}
+
 		new_free(&encoded_description);
+		pop_message_from(l);
 	}
 	unlock_dcc(dcc);
 
@@ -1001,18 +1011,22 @@ static	int	dcc_connect (DCC_list *dcc)
     {
 	if (!(dcc->flags & DCC_THEIR_OFFER))
 	{
+		int l = message_from(dcc->user, LEVEL_DCC);
 		say("Can't connect on a dcc that was not offered [%s]", dcc->user);
 		dcc->flags |= DCC_DELETE;
 		retval = -1;
+		pop_message_from(l);
 		break;
 	}
 
 	/* inet_vhostsockaddr doesn't usually return an error */
 	if (inet_vhostsockaddr(family(&dcc->offer), -1, NULL, &local, &locallen) < 0)
 	{
+		int l = message_from(dcc->user, LEVEL_DCC);
 		say("Can't figure out your virtual host.  "
 		    "Use /HOSTNAME to reset it and try again.");
 		retval = -1;
+		pop_message_from(l);
 		break;
 	}
 
@@ -1021,6 +1035,7 @@ static	int	dcc_connect (DCC_list *dcc)
 	if (dcc->socket < 0)
 	{
 		char *encoded_description = dcc_urlencode(dcc->description);
+		int l = message_from(dcc->user, LEVEL_DCC);
 
 		/* XXX Error message may need to be tuned here. */
 		if (do_hook(DCC_LOST_LIST,"%s %s %s ERROR",
@@ -1030,6 +1045,8 @@ static	int	dcc_connect (DCC_list *dcc)
 					encoded_description : 
 					"<any>"))
 			say("Unable to create connection: (%d)", dcc->socket);
+
+		pop_message_from(l);
 
 		if (encoded_description)
 			new_free(&encoded_description);
@@ -1045,9 +1062,13 @@ static	int	dcc_connect (DCC_list *dcc)
 	if ((seconds = get_int_var(DCC_CONNECT_TIMEOUT_VAR)) > 0)
 	{
 /*
+		int l = message_from(dcc->user, LEVEL_DCC);
+
 		say("A non-blocking connect() for your DCC has been initiated."
 		    "  It could take a while to complete."
 		    "  I'll check on it in %d seconds", seconds);
+
+		pop_message_from(l);
 */
 		add_timer(0, empty_string, seconds, 1,
 			  do_expire_dcc_connects, NULL, NULL,
@@ -1073,12 +1094,15 @@ static	int	dcc_listen (DCC_list *dcc)
 	int	old_server = from_server;
 	char	p_port[12];
 	int	retval = 0;
+	int	l;
 
 	/*
 	 * Initialize our idea of what is going on.
 	 */
 	if (from_server == NOSERV)
 		from_server = get_window_server(0);
+
+	l = message_from(dcc->user, LEVEL_DCC);
 
     do
     {
@@ -1150,6 +1174,7 @@ static	int	dcc_listen (DCC_list *dcc)
     while (0);
 
 dcc_listen_bail:
+	pop_message_from(l);
 	from_server = old_server;
 	return retval;
 }
@@ -1172,10 +1197,13 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	const char *	type = dcc_types[dcc->flags & DCC_TYPES];
 	int	family_;
 	int	server = from_server < 0 ? primary_server : from_server;
+	int	l;
 
 	if (!is_server_registered(server))
 	{
+		int	l = message_from(dcc->user, LEVEL_DCC);
 		yell("You cannot use DCC while not connected to a server.");
+		pop_message_from(l);
 		return;
 	}
 
@@ -1205,7 +1233,10 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 	 */
 	if (family_ != family(&my_sockaddr))
 	{
+	    int	l = message_from(dcc->user, LEVEL_DCC);
+
 	    if (get_int_var(DCC_USE_GATEWAY_ADDR_VAR))
+		/* FROM_MESSAGE */
 		yell("When using /SET DCC_USE_GATEWAY_ADDR ON, I can only "
 		     "support DCC in the same address family (IPv4 or IPv6) "
 		     "as you are using to connect to the server.");
@@ -1220,6 +1251,7 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 		     "me for an address family that I don't support.");
 
 	    dcc->flags |= DCC_DELETE;
+	    pop_message_from(l);
 	    return;
 	}
 
@@ -1229,19 +1261,26 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 		my_sockaddr.si6.sin6_port = dcc->local_sockaddr.si6.sin6_port;
 	else
 	{
-		yell("Could not send a CTCP handshake becuase the address "
-		     "family is not supported.");
+		int	l = message_from(dcc->user, LEVEL_DCC);
+
+		yell("Could not send a CTCP handshake becuase the address family is not supported.");
 		dcc->flags |= DCC_DELETE;
+
+		pop_message_from(l);
 		return;
 	}
 
-	if (inet_ntostr(&my_sockaddr, p_host, 128, p_port, 24, 
-					GNI_INTEGER | NI_NUMERICHOST)) 
+	if (inet_ntostr(&my_sockaddr, p_host, 128, p_port, 24, GNI_INTEGER | NI_NUMERICHOST)) 
 	{
+		int	l = message_from(dcc->user, LEVEL_DCC);
+
 		yell("dcc_send_booster_ctcp: I couldn't figure out your hostname (or the port you tried to use was invalid).  I have to delete this DCC");
 		if (get_int_var(DCC_USE_GATEWAY_ADDR_VAR))
+			/* FROM_MESSAGE */
 			yell("dcc_send_booster_ctcp: You have /SET DCC_USE_GATEWAY_ADDR ON, which uses the hostname the irc server shows to the network.  If you're using a fake hostname, that would cause this problem.  Use /SET DCC_USE_GATEWAY_ADDR OFF if you have a fake hostname on irc (but that still won't work behind a NAT router");
 		dcc->flags |= DCC_DELETE;
+
+		pop_message_from(l);
 		return;
 	}
 
@@ -1261,6 +1300,8 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 		nopath++;
 	else
 		nopath = dcc->description;
+
+	l = message_from(dcc->user, LEVEL_DCC);
 
 	/*
 	 * If this is a DCC SEND...
@@ -1306,6 +1347,7 @@ static void	dcc_send_booster_ctcp (DCC_list *dcc)
 		    say("Sent DCC %s request to %s", type, dcc->user);
 	}
 	unlock_dcc(dcc);
+	pop_message_from(l);
 }
 
 
@@ -1342,6 +1384,7 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 	int		list = 0;
 	int		old_from_server = from_server;
 	int		writeval;
+	int		l;
 
 	tmp[0] = 0;
 
@@ -1362,11 +1405,14 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 
 	if (!(dcc = dcc_searchlist(type, user, desc, NULL, -1)))
 	{
+		l = message_from(user, LEVEL_DCC);
 		say("No active DCC %s:%s connection for %s",
 			dcc_types[type], desc, user);
+		pop_message_from(l);
 		return;
 	}
 
+	l = message_from(dcc->user, LEVEL_DCC);
 
 	/*
 	 * Check for CTCPs... whee.
@@ -1412,6 +1458,7 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 		say("Outbound write() failed: %s", strerror(errno));
 
 		from_server = old_from_server;
+		pop_message_from(l);
 		return;
 	}
 
@@ -1427,6 +1474,7 @@ const	char 		*text_display, 	/* What to tell the user we sent */
 	}
 
 	get_time(&dcc->lasttime);
+	pop_message_from(l);
 	return;
 }
 
@@ -1541,10 +1589,14 @@ DCC_SUBCOMMAND(dcc_chat_subcmd)
 	unsigned short	portnum = 0;		/* Any port by default */
 	int		family = AF_INET;	/* IPv4 by default */
 	int		i;
+	int		l;
+
 
 	if (argc == 0)
 	{
+		l = message_from(NULL, LEVEL_DCC);
 		say("Usage: /DCC CHAT <nick> [-p port]|[-6]|[-4]");
+		pop_message_from(l);
 		return;
 	}
 
@@ -1581,15 +1633,17 @@ DCC_SUBCOMMAND(dcc_chat_subcmd)
 	{
 		if ((dcc->flags & DCC_ACTIVE) || (dcc->flags & DCC_MY_OFFER))
 		{
-			say("Sending a booster CTCP handshake for "
-				"an existing DCC CHAT to %s", user);
+			l = message_from(dcc->user, LEVEL_DCC);
+			say("Sending a booster CTCP handshake for an existing DCC CHAT to %s", user);
 			dcc_send_booster_ctcp(dcc);
+			pop_message_from(l);
 			return;
 		}
 	}
 	else
 		dcc = dcc_create(DCC_CHAT, user, "chat", NULL, family, 0);
 
+	l = message_from(dcc->user, LEVEL_DCC);
 	dcc->flags |= DCC_TWOCLIENTS;
 	dcc->want_port = portnum;
 	fill_in_default_port(dcc);
@@ -1597,7 +1651,9 @@ DCC_SUBCOMMAND(dcc_chat_subcmd)
 	if (dcc->flags & DCC_THEIR_OFFER)
 		dcc_connect(dcc);
 	else
-		dcc_listen(dcc);	
+		dcc_listen(dcc);
+
+	pop_message_from(l);
 }
 
 /*
@@ -1622,6 +1678,7 @@ DCC_SUBCOMMAND(dcc_close_subcmd)
 
 	if (argc < 2)
 	{
+		/* MESSAGE_FROM */
 		say("Usage: /DCC CLOSE <type> <nick> [<file>]");
 		return;
 	}
@@ -1638,6 +1695,7 @@ DCC_SUBCOMMAND(dcc_close_subcmd)
 
 		if (!dcc_types[i])
 		{
+			/* MESSAGE_FROM */
 			say("DCC CLOSE: Unknown DCC type: %s", argv[0]);
 			return;
 		}
@@ -1673,6 +1731,7 @@ DCC_SUBCOMMAND(dcc_close_subcmd)
 			dcc->user, 
 			dcc_types[my_type],
                         encoded_description ? encoded_description : "<any>"))
+		    /* MESSAGE_FROM */
 		    say("DCC %s:%s to %s closed", 
 			dcc_types[my_type],
 			file ? file : "<any>", 
@@ -1686,6 +1745,7 @@ DCC_SUBCOMMAND(dcc_close_subcmd)
 	}
 
 	if (!count)
+		/* MESSAGE_FROM */
 		say("No DCC %s:%s to %s found", 
 			(type == -1 ? "<any>" : dcc_types[type]), 
 			(file ? file : "<any>"), 
@@ -1743,6 +1803,7 @@ static void dcc_resume (char *args)
 
 static void	handle_invalid_savedir (const char *pathname)
 {
+	/* MESSAGE_FROM */
 	say("DCC GET: Can't save file because %s is not a valid directory.",
 					pathname);
 	say("DCC GET: Check /SET DCC_STORE_PATH and try again.");
@@ -1768,6 +1829,7 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 
 	if (argc < 2)
 	{
+		/* MESSAGE_FROM */
 		say("You must supply a nickname for DCC GET");
 		return;
 	}
@@ -1799,6 +1861,7 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 		/* Pretend the user did /dcc rename get <user> argv[2] argv[3] */
 		if (!(b = new_bucket()))
 		{
+			/* FROM_MESSAGE */
 			yell("DCC GET: new_bucket() failed. [1] help!");
 			return;
 		}
@@ -1835,6 +1898,7 @@ DCC_SUBCOMMAND(dcc_get_subcmd)
 jumpstart_get:
 		if (!(b = new_bucket()))
 		{
+			/* FROM_MESSAGE */
 			yell("DCC GET: new_bucket() failed.  [2] Help!");
 			return;
 		}
@@ -1885,6 +1949,7 @@ jumpstart_get:
 
 				if ((file = open(fullname, O_WRONLY|O_APPEND, 0644)) == -1)
 				{
+					/* MESSAGE_FROM */
 					say("Unable to open %s: %s", fullname, strerror(errno));
 					unlock_dcc(dcc);
 					continue;
@@ -1897,6 +1962,7 @@ jumpstart_get:
 						ltoa(ntohs(dcc->offer.si.sin_port)));
 		
 				if (x_debug & DEBUG_DCC_XMIT)
+					/* FROM_MESSAGE */
 					yell("SENDING DCC RESUME to [%s] [%s|%s|%ld]", 
 						user, filename, dcc->othername, 
 						(long)sb.st_size);
@@ -1923,6 +1989,7 @@ jumpstart_get:
 			{
 				if ((file = open(fullname, O_WRONLY|O_TRUNC|O_CREAT, 0644))==-1)
 				{
+					/* MESSAGE_FROM */
 					say("Unable to open %s: %s", fullname, strerror(errno));
 					unlock_dcc(dcc);
 					continue;
@@ -1940,8 +2007,10 @@ jumpstart_get:
 	if (!count)
 	{
 		if (filename)
+			/* MESSAGE_FROM */
 			say("No file (%s) offered in SEND mode by %s", filename, user);
 		else
+			/* MESSAGE_FROM */
 			say("No file offered in SEND mode by %s", user);
 	}
 }
@@ -2150,11 +2219,13 @@ static	void	dcc_send_raw (char *args)
 
 	if (!(name = next_arg(args, &args)))
 	{
+		/* MESSAGE_FROM */
 		say("No name specified for DCC RAW");
 		return;
 	}
 	if (!(host = next_arg(args, &args)))
 	{
+		/* MESSAGE_FROM */
 		say("No hostname specified for DCC RAW");
 		return;
 	}
@@ -2178,6 +2249,7 @@ static	void	dcc_rename (char *args)
 	
 	if (!(user = next_arg(args, &args)) || !(temp = next_arg(args, &args)))
 	{
+		/* MESSAGE_FROM */
 		say("You must specify a nick and new filename for DCC RENAME");
 		return;
 	}
@@ -2194,6 +2266,7 @@ static	void	dcc_rename (char *args)
 	{
 		if (!oldf || !newf)
 		{
+		    /* MESSAGE_FROM */
 		    say("You must specify a new nickname for DCC RENAME -CHAT");
 		    return;
 		}
@@ -2206,12 +2279,14 @@ static	void	dcc_rename (char *args)
 	{
 		if (type == DCC_FILEREAD && (dcc->flags & DCC_ACTIVE))
 		{
+			/* MESSAGE_FROM */
 			say("Too late to rename that file");
 			return;
 		}
 
 		if (type == DCC_FILEREAD)
 		{
+			/* MESSAGE_FROM */
 			say("File %s from %s renamed to %s",
 				dcc->description ? dcc->description : "<any>",
 				user, newf);
@@ -2221,18 +2296,21 @@ static	void	dcc_rename (char *args)
 		{
 			if (is_channel(newf))
 			{
+				/* MESSAGE_FROM */
 				say("I can't permit you to DCC RENAME to "
 					"something that looks like a channel, "
 					"sorry.");
 				return;
 			}
 
+			/* MESSAGE_FROM */
 			say("DCC CHAT from %s changed to new nick %s",
 				user, newf);
 			malloc_strcpy(&dcc->user, newf);
 		}
 	}
 	else
+		/* MESSAGE_FROM */
 		say("%s has not yet offered you the file %s",
 			user, oldf ? oldf : "<any>");
 }
@@ -2286,6 +2364,7 @@ static	void	dcc_filesend (char *args)
 		 */
                 if (normalize_filename(this_arg, fullname))
                 {
+			/* MESSAGE_FROM */
                         say("%s is not a valid directory", fullname);
                         continue;
                 }
@@ -2305,6 +2384,7 @@ static	void	dcc_filesend (char *args)
 		if (!strncmp(fullname, "/etc/", 5) || 
 				!end_strcmp(fullname, "/passwd", 7))
 		{
+			/* MESSAGE_FROM */
 			say("Send Request Rejected");
 			continue;
 		}
@@ -2312,12 +2392,14 @@ static	void	dcc_filesend (char *args)
 
 		if (access(fullname, R_OK))
 		{
+			/* MESSAGE_FROM */
 			say("Cannot send %s because you dont have read permission", fullname);
 			continue;
 		}
 
 		if (isdir(fullname))
 		{
+			/* MESSAGE_FROM */
 			say("Cannot send %s because it is a directory", fullname);
 			continue;
 		}
@@ -2329,6 +2411,7 @@ static	void	dcc_filesend (char *args)
 			if ((Client->flags & DCC_ACTIVE) ||
 			    (Client->flags & DCC_MY_OFFER))
 			{
+				/* MESSAGE_FROM */
 				say("Sending a booster CTCP handshake for "
 					"an existing DCC SEND:%s to %s", 
 					fullname, user);
@@ -2348,6 +2431,7 @@ static	void	dcc_filesend (char *args)
 	} /* The IF */
 
 	if (!filenames_parsed)
+		/* FROM_MESSAGE */
 		yell("Usage: /DCC SEND <[=]nick> <file> [<file> ...]");
 }
 
@@ -2368,6 +2452,7 @@ char	*dcc_raw_listen (int family, unsigned short port)
     {
 	if (port && port < 1024)
 	{
+		/* MESSAGE_FROM */
 		say("May not bind to a privileged port");
 		break;
 	}
@@ -2379,6 +2464,7 @@ char	*dcc_raw_listen (int family, unsigned short port)
 		if ((Client->flags & DCC_ACTIVE) ||
 		    (Client->flags & DCC_MY_OFFER))
 		{
+			/* MESSAGE_FROM */
 			say("A previous DCC RAW_LISTEN on %s exists", PortName);
 			break;
 		}
@@ -2428,6 +2514,7 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
 	my_sockaddr.sa.sa_family = family;
 	if (inet_strton(host, port, &my_sockaddr, AI_ADDRCONFIG))
 	{
+		/* MESSAGE_FROM */
 		say("Unknown host: %s", host);
 		break;
 	}
@@ -2436,6 +2523,7 @@ char	*dcc_raw_connect (const char *host, const char *port, int family)
 	{
 	    if (Client->flags & DCC_ACTIVE)
 	    {
+		/* MESSAGE_FROM */
 		say("A previous DCC RAW to %s on %s exists", host, port);
 		break;
 	    }
@@ -2526,6 +2614,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	{
 	    if (!size || !*size || !is_number(size))
 	    {
+		/* MESSAGE_FROM */
 		say("DCC SEND (%s) received from %s without a file size",
 					description, user);
 		break;
@@ -2542,8 +2631,8 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 		 */
 		if (!port || !*port)
 		{
-		    say("DCC RESUME received from %s without a resume location",
-					user);
+		    /* MESSAGE_FROM */
+		    say("DCC RESUME received from %s without a resume location", user);
 		    break;
 		}
 		dcc_getfile_resume_demanded(user, description, address, port);
@@ -2560,8 +2649,8 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 #endif
         else
         {
-                say("Unknown DCC %s (%s) received from %s", 
-				type, description, user);
+		/* MESSAGE_FROM */
+                say("Unknown DCC %s (%s) received from %s", type, description, user);
 		break;
         }
 
@@ -2574,8 +2663,9 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	offer.sa.sa_family = AF_UNSPEC;
 	if ((err = inet_strton(address, port, &offer, AI_NUMERICHOST)))
 	{
-		say("DCC %s (%s) request from %s had mangled return address "
-			"[%s] (%d)", type, description, user, address, err);
+		/* MESSAGE_FROM */
+		say("DCC %s (%s) request from %s had mangled return address [%s] (%d)", 
+			type, description, user, address, err);
 		break;
 	}
 
@@ -2586,6 +2676,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	 */
 	if (inet_ntostr(&offer, p_addr, 256, NULL, 0, NI_NUMERICHOST))
 	{
+		/* MESSAGE_FROM */
 		say("DCC %s (%s) request from %s could not be converted back "
 		    "into a p-addr [%s] [%s]", 
 			type, description, user, address, port);
@@ -2599,6 +2690,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	{
 	    if (offer.si.sin_addr.s_addr == 0)
 	    {
+		/* FROM_MESSAGE */
 		yell("### DCC handshake from %s ignored becuase it had "
 				"an null address", user);
 		break;
@@ -2625,6 +2717,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 
 		if (!(fromhost = strchr(FromUserHost, '@')))
 		{
+			/* FROM_MESSAGE */
 			yell("### Incoming handshake from a non-user peer!");
 			break;
 		}
@@ -2633,6 +2726,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 		irc_addr.sa.sa_family = family(&offer);
 		if (inet_strton(fromhost, port, &irc_addr, AI_ADDRCONFIG))
 		{
+			/* FROM_MESSAGE */
 			yell("### Incoming handshake has an address or port "
 				"[%s:%s] that could not be figured out!", 
 				fromhost, port);
@@ -2643,10 +2737,10 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 		{
 		   if (irc_addr.si.sin_addr.s_addr != offer.si.sin_addr..s_addr)
 		   {
+			/* MESSAGE_FROM */
 			say("WARNING: Fake dcc handshake detected! [%x]", 
 				V4ADDR(offer.si).s_addr);
-			say("Unless you know where this dcc request is "
-				"coming from");
+			say("Unless you know where this dcc request is coming from");
 			say("It is recommended you ignore it!");
 		   }
 		}
@@ -2660,6 +2754,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	/* 	CHECK HANDSHAKE PORT FOR VALIDITY 	*/
 	if ((realport = strtoul(port, NULL, 10)) < 1024)
 	{
+		/* MESSAGE_FROM */
 		say("DCC %s (%s) request from %s rejected because it "
 			"specified reserved port number (%hu) [%s]", 
 				type, description, user, 
@@ -2697,6 +2792,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 		{
 		    char *copy;
 
+		    /* MESSAGE_FROM */
 		    say("DCC CHAT already requested by %s, connecting.", user);
 		    dcc_create(dtype, user, "chat", NULL, family(&offer), filesize);
 		    copy = LOCAL_COPY(user);
@@ -2710,6 +2806,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 		 */
 		else
 		{
+		    /* MESSAGE_FROM */
 		    say("DCC %s collision for %s:%s", type, user, description);
 		    send_ctcp(0, user, "DCC", "DCC %s collision occured while connecting to %s (%s)", 
 			type, get_server_nickname(from_server), description);
@@ -2725,6 +2822,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	     */
 	    if (dcc->flags & DCC_ACTIVE)
 	    {
+	        /* MESSAGE_FROM */
 		say("Received DCC %s request from %s while previous "
 			"session still active", type, user);
 		break;
@@ -2793,36 +2891,43 @@ display_it:
 
 		if ((intmax_t)statit.st_size < dcc->filesize)
 		{
+		    /* MESSAGE_FROM */
 		    say("WARNING: File [%s] exists but is smaller than "
 			"the file offered.", realfilename);
 		    xclose = resume = ren = get = 1;
 		}
 		else if ((intmax_t)statit.st_size == dcc->filesize)
 		{
+		    /* MESSAGE_FROM */
 		    say("WARNING: File [%s] exists, and its the same size.",
 			realfilename);
 		    xclose = ren = get = 1;
 		}
 		else
 		{
+		    /* MESSAGE_FROM */
 		    say("WARNING: File [%s] already exists.", realfilename);
 		    xclose = ren = get = 1;
 		}
 
 		if (xclose)
+		    /* MESSAGE_FROM */
 		    say("Use /DCC CLOSE GET %s %s        to not get the file.",
 				user, dcc->description);
 #ifdef MIRC_BROKEN_DCC_RESUME
 		if (resume)
+		    /* MESSAGE_FROM */
 		    say("Use /DCC RESUME %s %s           to continue the "
 			"copy where it left off.",
 				user, dcc->description);
 #endif
 		if (get)
+		    /* MESSAGE_FROM */
 		    say("Use /DCC GET %s %s              to overwrite the "
 			"existing file.", 
 				user, dcc->description);
 		if (ren)
+		    /* MESSAGE_FROM */
 		    say("Use /DCC RENAME %s %s newname   to save it to a "
 			"different filename.", 
 				user, dcc->description);
@@ -2832,11 +2937,13 @@ display_it:
 
 	/* Thanks, Tychy! (lherron@imageek.york.cuny.edu) */
 	if ((dcc->flags & DCC_TYPES) == DCC_FILEREAD)
+		    /* MESSAGE_FROM */
 		say("DCC %s (%s "INTMAX_FORMAT") request received "
 				"from %s!%s [%s (%s)]",
 			type, description, dcc->filesize, user, 
 			FromUserHost, p_addr, port);
 	else
+		    /* MESSAGE_FROM */
 		say("DCC %s (%s) request received from %s!%s [%s (%s)]", 
 			type, description, user, FromUserHost, p_addr, port);
     }
@@ -2884,6 +2991,7 @@ void	do_dcc (int fd)
 
 		if (Client->flags & DCC_DELETE)
 		{
+		    /* MESSAGE_FROM */
 		    say("DCC fd %d is ready, client is deleted.  Closing.", fd);
 		    Client->socket = new_close(Client->socket);
 		}
@@ -2927,6 +3035,7 @@ void	do_dcc (int fd)
 
 	if (!found_it)
 	{
+	   /* FROM_MESSAGE */
 	   yell("DCC callback for fd %d but it doesn't exist any more! "
 			"Closing it.  Wish me luck!", fd);
 	   new_close(fd);
@@ -2959,6 +3068,7 @@ static	void	process_dcc_chat_connection (DCC_list *Client)
 	if (c1 != sizeof(fd) || c2 != sizeof(Client->peer_sockaddr.ss))
 	{
 		Client->flags |= DCC_DELETE;
+		/* FROM_MESSAGE */
 		yell("### DCC Error: accept() failed.");
 		return;
 	}
@@ -2969,6 +3079,7 @@ static	void	process_dcc_chat_connection (DCC_list *Client)
 	else
 	{
 		Client->flags |= DCC_DELETE;
+		/* FROM_MESSAGE */
 		yell("### DCC Error: accept() failed.  Punting.");
 		return;
 	}
@@ -2981,6 +3092,7 @@ static	void	process_dcc_chat_connection (DCC_list *Client)
 	lock_dcc(Client);
 	if (do_hook(DCC_CONNECT_LIST, "%s CHAT %s %s", 
 				Client->user, p_addr, p_port))
+		    /* MESSAGE_FROM */
 	    say("DCC chat connection to %s[%s:%s] established", 
 				Client->user, p_addr, p_port);
 	unlock_dcc(Client);
@@ -2992,6 +3104,7 @@ static	void	process_dcc_chat_error (DCC_list *Client)
 {
 	lock_dcc(Client);
 	if (do_hook(DCC_LOST_LIST, "%s CHAT ERROR", Client->user))
+		    /* MESSAGE_FROM */
 		say("DCC CHAT connection to %s lost", Client->user);
 	Client->flags |= DCC_DELETE;
 	unlock_dcc(Client);
@@ -3152,6 +3265,7 @@ static void	process_dcc_chat_connected (DCC_list *dcc)
 	if (dcc_get_connect_addrs(dcc))
 	{
 	    if (do_hook(DCC_LOST_LIST, "%s CHAT ERROR", dcc->user))
+		    /* MESSAGE_FROM */
 		say("DCC CHAT connection to %s lost", dcc->user);
 	    dcc->flags |= DCC_DELETE;
 	    unlock_dcc(dcc);
@@ -3200,12 +3314,14 @@ static	void		process_incoming_listen (DCC_list *Client)
 	if (c1 != sizeof(new_socket) || c2 != sizeof(remaddr.ss))
 	{
 		Client->flags |= DCC_DELETE;
+		/* FROM_MESSAGE */
 		yell("### DCC Error: accept() failed.");
 		return;
 	}
 
 	if (new_socket < 0)
 	{
+		/* FROM_MESSAGE */
 		yell("### DCC Error: accept() failed.  Punting.");
 		return;
 	}
@@ -3238,6 +3354,7 @@ static	void		process_incoming_listen (DCC_list *Client)
 			NewClient->user, NewClient->description, l_port))
             if (do_hook(DCC_CONNECT_LIST,"%s RAW %s %s", 
 			NewClient->user, NewClient->description, l_port))
+		    /* MESSAGE_FROM */
 		say("DCC RAW connection to %s on %s via %s established",
 			NewClient->description, NewClient->user, p_port);
 	unlock_dcc(Client);
@@ -3275,6 +3392,7 @@ static	void		process_dcc_raw_data (DCC_list *Client)
 				Client->user, Client->description))
        		if (do_hook(DCC_LOST_LIST,"%s RAW %s", 
 				Client->user, Client->description))
+		    /* MESSAGE_FROM */
 			say("DCC RAW connection to %s on %s lost",
 				Client->user, Client->description);
 		Client->flags |= DCC_DELETE;
@@ -3296,6 +3414,7 @@ static	void		process_dcc_raw_data (DCC_list *Client)
 			char *  dest;
 			if (!(dest = transform_string_dyn("+CTCP", bufptr, 
 							bytesread, NULL)))
+		/* FROM_MESSAGE */
 				yell("DCC RAW: Could not CTCP enquote [%s]",
 					bufptr);
 			else
@@ -3308,6 +3427,7 @@ static	void		process_dcc_raw_data (DCC_list *Client)
 		lock_dcc(Client);
 		if (do_hook(DCC_RAW_LIST, "%s %s D %s",
 				Client->user, Client->description, bufptr))
+		    /* MESSAGE_FROM */
 			say("Raw data on %s from %s: %s",
 				Client->user, Client->description, bufptr);
 		unlock_dcc(Client);
@@ -3331,6 +3451,7 @@ static void	process_dcc_raw_connected (DCC_list *dcc)
 	if (dcc_get_connect_addrs(dcc))
 	{
 	    if (do_hook(DCC_LOST_LIST, "%s RAW ERROR", dcc->user))
+		    /* MESSAGE_FROM */
 		say("DCC RAW connection to %s lost", dcc->user);
 	    dcc->flags |= DCC_DELETE;
 	    unlock_dcc(dcc);
@@ -3385,6 +3506,7 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 	if (c1 != sizeof(new_fd) || c2 != sizeof(dcc->peer_sockaddr.ss))
 	{
 		dcc->flags |= DCC_DELETE;
+		/* FROM_MESSAGE */
 		yell("### DCC Error: accept() failed.");
 		return;
 	}
@@ -3393,6 +3515,7 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 	if ((dcc->socket = new_fd) < 0)
 	{
 		dcc->flags |= DCC_DELETE;
+		/* FROM_MESSAGE */
 		yell("### DCC Error: accept() failed.  Punting.");
 		return;
 	}
@@ -3409,6 +3532,7 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 	size = DCC_BLOCK_SIZE;
 	if (setsockopt(dcc->socket, SOL_SOCKET, SO_SNDLOWAT, 
 				&size, sizeof(size)) < 0)
+		    /* MESSAGE_FROM */
 		say("setsockopt failed: %s", strerror(errno));
 #endif
 
@@ -3422,6 +3546,7 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 	if (do_hook(DCC_CONNECT_LIST, "%s SEND %s %s %s "INTMAX_FORMAT,
 			dcc->user, p_addr, p_port,
 			dcc->description, dcc->filesize))
+		    /* MESSAGE_FROM */
 	    say("DCC SEND connection to %s[%s:%s] established", 
 			dcc->user, p_addr, p_port);
 	new_free(&encoded_description);
@@ -3434,6 +3559,7 @@ static void	process_dcc_send_connection (DCC_list *dcc)
 	if ((dcc->file = open(dcc->description, O_RDONLY)) == -1)
 	{
 		dcc->flags |= DCC_DELETE;
+		    /* MESSAGE_FROM */
 		say("Unable to open %s: %s", dcc->description, strerror(errno));
 		return;
 	}
@@ -3472,6 +3598,7 @@ static void	process_dcc_send_handle_ack (DCC_list *dcc)
 		encoded_description = dcc_urlencode(dcc->description);
 		if (do_hook(DCC_LOST_LIST,"%s SEND %s CONNECTION LOST",
 			dcc->user, encoded_description))
+		    /* MESSAGE_FROM */
 		    say("DCC SEND:%s connection to %s lost",
 			dcc->description, dcc->user);
 		new_free(&encoded_description);
@@ -3608,6 +3735,7 @@ static void	process_dcc_send_data (DCC_list *dcc)
 		if (write(dcc->socket, tmp, bytesread) < bytesread)
 		{
 			dcc->flags |= DCC_DELETE;
+		    /* MESSAGE_FROM */
 			say("Outbound write() failed: %s", strerror(errno));
 			from_server = old_from_server;
 			return;
@@ -3657,13 +3785,16 @@ static	void		process_dcc_get_data (DCC_list *dcc)
 	ssize_t		bytesread;
 	char 		bytes_read[10];
 	char 		filesize[10];
+	int		l;
+
+	l = message_from(dcc->user, LEVEL_DCC);
 
 	/* Sanity check -- file size is not permitted to be omitted! */
 	if (!dcc->filesize)
 	{
-		say("DCC GET from %s lost -- Filesize is 0, no data to xfer",
-				dcc->user);
+		say("DCC GET from %s lost -- Filesize is 0, no data to xfer", dcc->user);
 		DCC_close_filesend(dcc, "GET", "TRANSFER COMPLETE");
+		pop_message_from(l);
 		return;
 	}
 
@@ -3672,14 +3803,13 @@ static	void		process_dcc_get_data (DCC_list *dcc)
 	{
 		if (dcc->bytes_read < dcc->filesize)
 		{
-		    say("DCC GET to %s lost -- Remote peer closed connection", 
-				dcc->user);
-		    DCC_close_filesend(dcc, "GET",
-					"REMOTE PEER CLOSED CONNECTION");
+		    say("DCC GET to %s lost -- Remote peer closed connection", dcc->user);
+		    DCC_close_filesend(dcc, "GET", "REMOTE PEER CLOSED CONNECTION");
 		}
 		else 
 		    DCC_close_filesend(dcc, "GET", "TRANSFER COMPLETE");
 
+		pop_message_from(l);
 		return;
 	}
 
@@ -3687,8 +3817,9 @@ static	void		process_dcc_get_data (DCC_list *dcc)
 	if ((write(dcc->file, tmp, bytesread)) == -1)
 	{
 		dcc->flags |= DCC_DELETE;
-		say("Write to local file [%d] failed: %s",
-					 dcc->file, strerror(errno));
+		say("Write to local file [%d] failed: %s", dcc->file, strerror(errno));
+
+		pop_message_from(l);
 		return;
 	}
 
@@ -3702,8 +3833,9 @@ static	void		process_dcc_get_data (DCC_list *dcc)
 	if (write(dcc->socket, (char *)&bytestemp, sizeof(uint32_t)) == -1)
 	{
 		dcc->flags |= DCC_DELETE;
-		yell("### Writing DCC GET checksum back to %s failed.  "
-				"Giving up.", dcc->user);
+		yell("### Writing DCC GET checksum back to %s failed.  Giving up.", dcc->user);
+
+		pop_message_from(l);
 		return;
 	}
 
@@ -3711,9 +3843,10 @@ static	void		process_dcc_get_data (DCC_list *dcc)
 	if (dcc->bytes_read > dcc->filesize)
 	{
 		dcc->flags |= DCC_DELETE;
-		yell("### DCC GET WARNING: incoming file is larger then the "
-			"handshake said");
+		yell("### DCC GET WARNING: incoming file is larger then the handshake said");
 		yell("### DCC GET: Closing connection");
+
+		pop_message_from(l);
 		return;
 	}
 
@@ -3724,10 +3857,13 @@ static	void		process_dcc_get_data (DCC_list *dcc)
 		dcc->user, 
 		bytes_read, filesize,
 		(int)(dcc->bytes_read * 100.0 / dcc->filesize));
+	pop_message_from(l);
 }
 
 static void	process_dcc_get_connected (DCC_list *dcc)
 {
+	int	l;
+
 	lock_dcc(dcc);
 	if (x_debug & DEBUG_SERVER_CONNECT)
 	    yell("process_dcc_get_connected: dcc [%s] now ready to write", 
@@ -3737,8 +3873,10 @@ static void	process_dcc_get_connected (DCC_list *dcc)
 	{
 	    char *edesc = dcc_urlencode(dcc->description);
 
+	    l = message_from(dcc->user, LEVEL_DCC);
 	    if (do_hook(DCC_LOST_LIST, "%s GET %s ERROR", dcc->user, edesc))
 		say("DCC GET connection to %s lost", dcc->user);
+	    pop_message_from(l);
 	    new_free(&edesc);
 	    dcc->flags |= DCC_DELETE;
 	    unlock_dcc(dcc);
@@ -3840,14 +3978,14 @@ void 	dcc_reject (const char *from, char *type, char *args)
 }
 
 
-static void	DCC_close_filesend (DCC_list *Client, const char *info,
-		const char *errormsg)
+static void	DCC_close_filesend (DCC_list *Client, const char *info, const char *errormsg)
 {
 	char	lame_ultrix[13];	/* should be plenty */
 	char	lame_ultrix2[13];
 	char	lame_ultrix3[13];
 	double 	xtime, xfer;
 	char	*encoded_description;
+	int	l;
 
 	/* XXX - Can't we do this by calling calc_speed? */
 	xtime = time_diff(Client->starttime, get_time(NULL));
@@ -3876,12 +4014,14 @@ static void	DCC_close_filesend (DCC_list *Client, const char *info,
 		/* assume the other end encoded the filename */
 		encoded_description = malloc_strdup(Client->description);
 
+	l = message_from(Client->user, LEVEL_DCC);
 	if (do_hook(DCC_LOST_LIST,"%s %s %s %s %s",
 		Client->user, info, encoded_description, lame_ultrix,
 		errormsg))
 	     say("DCC %s:%s [%skb] with %s completed in %s sec (%s kb/sec)",
 		info, Client->description, lame_ultrix2, Client->user, 
 		lame_ultrix3, lame_ultrix);
+	pop_message_from(l);
 
 	new_free(&encoded_description);
 	Client->flags |= DCC_DELETE;
@@ -3980,6 +4120,7 @@ int	wait_for_dcc (const char *descriptor)
 
 	if (!is_number(descriptor))
 	{
+		/* FROM_MESSAGE */
 		yell("File descriptor (%s) should be a number", descriptor);
 		return -1;
 	}

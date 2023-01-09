@@ -56,7 +56,11 @@
  * This is a pointer to a function that may be used as a /BINDing.  
  * The functions themselves live in input.c (and a few other places).
  */
+#if 0
 typedef void (*BindFunction) (unsigned int, char *);
+#else
+typedef BUILT_IN_KEYBINDING((*BindFunction));
+#endif
 
 
 /*

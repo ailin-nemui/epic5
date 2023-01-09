@@ -52,7 +52,7 @@ const char internal_version[] = "20220615";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 2098;
+const unsigned long	commit_id = 2099;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -462,7 +462,9 @@ static	void	show_version (void)
 	printf("Compilation FLAGS: %s\n", compile_cflags);
 	printf("Compilation LIBS: %s\n", compile_libs);
 	printf("Compilation link: %s\n", final_link);
-	exit (0);
+	printf("OpenSSL version: %#8.8lx\n", OpenSSL_version_num());
+	printf("OpenSSL version: %s\n", OpenSSL_version(OPENSSL_VERSION));
+	exit(0);
 }
 
 /*
@@ -1059,6 +1061,7 @@ int 	main (int argc, char *argv[])
 	fprintf(stderr, "Version (%s), Commit Id (%lu) -- Date (%s)\n", 
 				irc_version, commit_id, internal_version);
 	fprintf(stderr, "%s\n", compile_info);
+	fprintf(stderr, "OpenSSL version: %#8.8lx\n", OpenSSL_version_num());
 
 #ifndef NO_JOB_CONTROL
 	/* If we're a bot, do the bot thing. */

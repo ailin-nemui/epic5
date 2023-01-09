@@ -1282,3 +1282,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fixes to above (rb zlonix)
 * Fixes/improvements from zlonix for the above
 * Fix handling CAP multi-prefix (rb zlonix)
+* Use ctime_r() [c99] instead of ctime() [c90]
+* Add /clearignore in 2.8script (rb sobriquet)
+* Begin a project to clean up message_from() in dcc [sb Harz]

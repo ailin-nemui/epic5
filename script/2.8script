@@ -45,5 +45,13 @@ alias leave
 };
 
 # Ban list:
-on ^367 * { xecho -b $[$CHANNEL_NAME_WIDTH]1 $2-; }
+on ^367 * { xecho -b $[$CHANNEL_NAME_WIDTH]1 $2-; };
+
+# I added this for sobriquet - Purge all ignores
+alias clearignore { 
+	for refnum in ($ignorectl(REFNUMS)) {
+		@ignorectl(DELETE $refnum);
+	};
+};
+
 
