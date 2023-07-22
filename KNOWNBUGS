@@ -16,6 +16,9 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   [10:32AM] <Harzilein> was epic always so chatty?
   [10:32AM] <zlonix> yes
   [10:32AM] <Harzilein> it still says *** You are now talking to channel #emacs
+* [ 2:53AM] <zlonix> hop, how this git thing will be handled in 'release' tarballs? currently i see no .git
++folder in release tar.xz, and when i 'make' with .git folder removed i see 'fatal: not a git repository (or
++any parent up to mount point /)' 
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1297,3 +1300,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Handle /redirect /cmd better so it behaves sensibly.
 * Expand the range of unicode 6 emojis (from 1f5ff to 1f6ff)
 * Add /on ping (rb skered)
+* Fix the addition of 'git_commit' to handle releases (rb zlonix)

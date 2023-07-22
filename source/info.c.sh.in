@@ -17,7 +17,8 @@ final_link=`grep -- "-o epic5" Makefile | ./stringify final_link`
 compile_cflags=`grep \^CFLAGS ../Makefile | ./stringify compile_cflags`
 compile_libs=`grep \^LIBS ../Makefile | ./stringify compile_libs`
 #git_commit=`(git show-ref HEAD || echo "no-git no-git") | awk '{printf("%s", $1)}' | ./stringify git_commit`
-git_commit=`(if test "x$(command -v git)" != "x"; then git rev-parse --short HEAD ; else echo "no-git no-git" ; fi) | awk '{printf("%s", $1)}' | ./stringify git_commit`
+#git_commit=`(if test "x$(command -v git)" != "x"; then git rev-parse --short HEAD ; else echo "no-git no-git" ; fi) | awk '{printf("%s", $1)}' | ./stringify git_commit`
+git_commit=`(if test "x$(command -v git)" = "x" -o "x$(git rev-parse --short HEAD 2>/dev/null)" = "x" ; then echo "no-git no-git" ; else git rev-parse --short HEAD; fi) | awk '{printf("%s", $1)}' | ./stringify git_commit`
 
 # Dump the C file...
 cat > info.c << __E__O__F__
