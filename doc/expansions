@@ -230,7 +230,7 @@ The "evaluator" is parse_line, and it is called by the following:
 	* Full expansion ({...} are protected; no double expansion)
 	* $* is passed in from above.
 
-* exec.c		handle_fieldesc
+* exec.c		handle_filedesc
 	* To run the commands of /exec -line, -error, -linepart, -errorpart,
 	  or /exec -end.
 	* Full expansion (syntax forces use of {}s, so no double expansion)

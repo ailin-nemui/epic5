@@ -847,7 +847,8 @@ static void	p_ping (const char *from, const char *comm, const char **ArgList)
 	if (!(message = ArgList[0]))
 		{ rfc1459_odd(from, comm, ArgList); return; }
 
-	send_to_server("PONG %s", message);
+	if (do_hook(PING_LIST, "%s %s", from, message))
+		send_to_server("PONG %s", message);
 }
 
 static void	p_silence (const char *from, const char *comm, const char **ArgList)

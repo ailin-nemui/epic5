@@ -1,5 +1,15 @@
 EPIC5-2.2
 
+*** News 07/17/2023 -- New /ON, /ON PING (rb skered)
+       The /ON PING will be thrown when the server sends you a PING
+       after you've been idle for some time.   Yes, you can suppress
+       the default handling, which will probably result in you being
+       disconnected.  Whatever floats your boat.
+
+               $0    - The server that sent you the PING
+               $1-   - The ping message itself.  
+                       Do /QUOTE PONG $1- to respond
+
 *** News 10/26/2022 -- Basic CAP support, /load capctl (zlonix)
 	The /load capctl script, written by zlonix, provides
 	the /CAPCTL command, which permits you to register CAPs
@@ -238,7 +248,7 @@ EPIC5-2.2
 		Use (or don't use) the final column based on whether the
 		client is sure (or isn't sure) if it's safe.
 
-*** News 03/27/2021 -- EPIC5-2.1.7 (2011 - Cinereous) released here
+*** News 03/27/2022 -- EPIC5-2.1.7 (2011 - Cinereous) released here
 
 *** News 03/21/2022 -- New built in function $rgb()
 	There are three ways to call the $rgb() function:

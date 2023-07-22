@@ -151,6 +151,7 @@ extern const 	char 	compiler_version[];
 extern const	char	final_link[];
 extern const	char	compile_cflags[];
 extern const	char	compile_libs[];
+extern const	char	git_commit[];
 
 /* irc.c's extern functions */
 	void	io 			(const char *);

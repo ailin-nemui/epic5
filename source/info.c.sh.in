@@ -16,6 +16,8 @@ compiler_version=`$CC -v 2>&1 | ./stringify compiler_version`
 final_link=`grep -- "-o epic5" Makefile | ./stringify final_link`
 compile_cflags=`grep \^CFLAGS ../Makefile | ./stringify compile_cflags`
 compile_libs=`grep \^LIBS ../Makefile | ./stringify compile_libs`
+#git_commit=`(git show-ref HEAD || echo "no-git no-git") | awk '{printf("%s", $1)}' | ./stringify git_commit`
+git_commit=`(if test "x$(command -v git)" != "x"; then git rev-parse --short HEAD ; else echo "no-git no-git" ; fi) | awk '{printf("%s", $1)}' | ./stringify git_commit`
 
 # Dump the C file...
 cat > info.c << __E__O__F__
@@ -28,10 +30,12 @@ const char *compile_host = "$comp_host";
 const char *compile_time = "$comp_time";
 const char *info_c_sum   = "$info_c_sum";
 const char *compile_info = "Compiled by $comp_user@$comp_host on $comp_time";
+
 $configure_args
 $compiler_version
 $compile_cflags
 $compile_libs
 $final_link
+$git_commit
 
 __E__O__F__

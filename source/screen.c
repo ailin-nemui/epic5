@@ -2907,7 +2907,7 @@ static void 	add_to_window (int window_, const char *str)
 	if (get_server_redirect(get_window_server(window_)))
 		if (redirect_text(get_window_server(window_),
 			          get_server_redirect(get_window_server(window_)),
-				  str, NULL, 0))
+				  str, NULL, 1))
 			return;
 
 	if (!privileged_output)

@@ -3083,7 +3083,7 @@ static	int 	recursion = 0;
 		allow = do_hook(REDIRECT_LIST, "%s %s", nick_list, text);
 
 	/* Suppress output */
-	if (strcmp(nick_list, "0") == 0 || *nick_list == '@') 
+	if (strcmp(nick_list, "0") == 0 || *nick_list == '@' || *nick_list == '/') 
 		retval = 1;
 	else
 		retval = 0;

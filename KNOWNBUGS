@@ -7,6 +7,15 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * The way we handle "screen is not tall enough" underflow needs work
 * Unify window query and channels in the target list.
 * Allow /ignore for a nick!user@host but only on a channel
+* Add /set server_default_type, irc or irc-ssl (rb nick_)
+* Typing 😂😂😂 to the input line doesn't work right
+* I don't think /msg @L1 is implemented correctly
+    - check out files.c:file_write for type == 2
+* [10:32AM] <Harzilein> 104:#emacs is already current window of 10
+  [10:32AM] *** Mode Change for #epic by morty1: +o Harzilein
+  [10:32AM] <Harzilein> was epic always so chatty?
+  [10:32AM] <zlonix> yes
+  [10:32AM] <Harzilein> it still says *** You are now talking to channel #emacs
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1285,3 +1294,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Use ctime_r() [c99] instead of ctime() [c90]
 * Add /clearignore in 2.8script (rb sobriquet)
 * Begin a project to clean up message_from() in dcc [sb Harz]
+* Handle /redirect /cmd better so it behaves sensibly.
+* Expand the range of unicode 6 emojis (from 1f5ff to 1f6ff)
+* Add /on ping (rb skered)

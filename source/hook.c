@@ -198,6 +198,7 @@ Hookables hook_function_templates[] =
 	{ "OPERWALL",		NULL,	2,	0,	0,	NULL, 0 },
 	{ "OPER_NOTICE",	NULL,	2,	0,	0,	NULL, 0 },
 	{ "PART",		NULL,	2,	0,	0,	NULL, 0 },
+	{ "PING",		NULL,	2,	0,	0,	NULL, 0 },
 	{ "PONG",		NULL,	2,	0,	0,	NULL, 0 },
 	{ "PUBLIC",		NULL,	3,	0,	0,	NULL, 0 },
 	{ "PUBLIC_MSG",		NULL,	3,	0,	0,	NULL, 0 },
