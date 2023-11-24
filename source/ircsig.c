@@ -56,8 +56,8 @@ int	unblock_signal (int sig_no)
 }
 
 /* array of signal handlers containing mostly NULL */
-sigfunc *signal_handlers[NSIG];
-volatile int    signals_caught[NSIG];
+sigfunc *		signal_handlers[NSIG];
+volatile sig_atomic_t	signals_caught[NSIG];
 
 /* grand unified signal handler, which sets flags for scriptable signals
  * - pegasus
@@ -66,7 +66,7 @@ static void	signal_handler (int sig_no)
 {
 	signals_caught[0] = 1;
 	signals_caught[sig_no]++;
-	if (NULL != signal_handlers[sig_no])
+	if (signal_handlers[sig_no])
 		signal_handlers[sig_no](sig_no);
 }
 

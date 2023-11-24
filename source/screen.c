@@ -234,10 +234,10 @@ const char *all_off (void)
 	Attribute 	old_a, a;
 	static	unsigned char	retval[6];
 
-	a->reverse = a->bold = a->blink = a->underline = a->altchar = 0;
-	a->color_fg = a->fg_color = a->color_bg = a->bg_color = 0;
-	a->italic = 0;
-	*old_a = *a;
+	a.reverse = a.bold = a.blink = a.underline = a.altchar = 0;
+	a.color_fg = a.fg_color = a.color_bg = a.bg_color = 0;
+	a.italic = 0;
+	old_a = a;
 	display_attributes(retval, &old_a, &a);
 	return (char *)retval;
 #else

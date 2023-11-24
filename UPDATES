@@ -227,7 +227,7 @@ EPIC5-2.2
 	hopefully they'll not have to patch the heck out of epic to make 
 	it behave like all the other programs
 
-*** News 03/28/2021 -- New /SET, /SET AUTOMARGIN_OVERRIDE (default OFF)
+*** News 03/28/2022 -- New /SET, /SET AUTOMARGIN_OVERRIDE (default OFF)
 	Previously, automargin support was conditionally built into 
 	the client at compile time.  The default was to include it.
 	The support is now always included.

@@ -67,7 +67,7 @@
 #endif
 #include <sys/ioctl.h>
 
-volatile	int		need_redraw;
+volatile sig_atomic_t	need_redraw;
 static	int		tty_des;		/* descriptor for the tty */
 static	struct	termios	oldb, newb;
 	char		my_PC;

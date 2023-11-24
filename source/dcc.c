@@ -2735,7 +2735,7 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 		}
 		else if (family(&offer) == AF_INET)
 		{
-		   if (irc_addr.si.sin_addr.s_addr != offer.si.sin_addr..s_addr)
+		   if (irc_addr.si.sin_addr.s_addr != offer.si.sin_addr.s_addr)
 		   {
 			/* MESSAGE_FROM */
 			say("WARNING: Fake dcc handshake detected! [%x]", 

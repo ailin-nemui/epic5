@@ -10,6 +10,14 @@ package colors;
 ##
 ## Version: 1.0 (Febrary, 2022)
 ##  - Initial roll-out
+##
+## Version 1.1 (November, 2023)
+##  - Added /color command to colorize nicks in on public{_other} output,
+##    it helps keep up with active channels
+##
+##    /color <net> <nick> <color>
+##   Colors can be specified by name (red, blue, brightcyan, etc) or by
+##   hex value, if your terminal supports 256 colors - from %X00 to %XFF
 
 ## This script adds colors for general events, like public or private messages,
 ## notices, ctcps, etc. It also adds basic /scan alias to show participants in a
@@ -54,6 +62,44 @@ alias scan (chan default "$C")
         };
 };
 
+alias color (net, nick, color, void) {
+	if (!@net || !@nick || !@color) {
+		xecho -b Usage: /color <net> <nick> <color>;
+		return;
+	};
+
+	switch ($color) {
+		(brightblack) { @ :code = [%K]; }
+		(brightred) { @ :code = [%R]; }
+		(brightgreen) { @ :code = [%G]; }
+		(brightyellow) { @ :code = [%Y]; }
+		(brightblue) { @ :code = [%B]; }
+		(brightmagenta) { @ :code = [%M]; }
+		(brightcyan) { @ :code = [%C]; }
+		(brightwhite) { @ :code = [%W]; }
+
+		(black) { @ :code = [%k]; }
+		(red) { @ :code = [%r]; }
+		(green) { @ :code = [%g]; }
+		(yellow) { @ :code = [%y]; }
+		(blue) { @ :code = [%b]; }
+		(magenta) { @ :code = [%m]; }
+		(cyan) { @ :code = [%c]; }
+		(white) { @ :code = [%w]; }
+
+		## 256 color support, use %X00 - %XFF
+		(%X*) { @ :code = color; }
+
+		(*) {
+			xecho -b Unknown color;
+			return;
+		}
+	};
+
+	@ ::nickcolors[$net][$nick] = code;
+	xecho -b Assigned$cparse($code color) to $nick on $net;
+};
+
 set -status_user;
 set banner $cparse(%G>%g>%K>%n);
 set input_prompt [$$T] ;
@@ -81,10 +127,22 @@ on ^ctcp * {
 	echo $cparse("%K>%n>%W> %G$$0 %K[%g$$userhost()%K]%g requested $$2- from $$1" $*);
 };
 on ^public * {
-	echo $cparse("%B<%C$$chanflag($0 $1)%n$$0%B>%n $$2-" $*);
+	@ :net = serverctl(get $servernum() 005 NETWORK);
+
+	if (:color = nickcolors[$net][$0]) {
+		echo $cparse("%B<%C$$chanflag($0 $1)$color$$0%B>%n $$2-" $*);
+	} else {
+		echo $cparse("%B<%C$$chanflag($0 $1)%n$$0%B>%n $$2-" $*);
+	};
 };
 on ^public_other * {
-	echo $cparse("%b<%c$$chanflag($0 $1)%n$$0%K:%n$$1%b\>%n $$2-" $*);
+	@ :net = serverctl(get $servernum() 005 NETWORK);
+
+	if (:color = nickcolors[$net][$0]) {
+		echo $cparse("%b<%c$$chanflag($0 $1)$color$$0%K:%n$$1%b\>%n $$2-" $*);
+	} else {
+		echo $cparse("%b<%c$$chanflag($0 $1)%n$$0%K:%n$$1%b\>%n $$2-" $*);
+	};
 };
 on ^channel_signoff * {
 	xecho -b $cparse("SignOff %c$$1%n: $$0 $${*2 ? [%K\(%n$2-%K\)%n] : []}" $*);

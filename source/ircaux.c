@@ -6045,6 +6045,40 @@ static ssize_t	sed_decoder (const char *orig, size_t orig_len, const void *meta,
 	return len;
 }
 
+/*
+ * RFC1459 messages are ALMOST 8-bit clean.
+ * However, the RFC1459 syntax reserves these three characters, which may not be
+ * used in the payload of any message
+ *	\r 	- return
+ *	\n	- newline
+ *	\0	- nul
+ *
+ * IRC II has always supported "CTCP ENCODING" which is a serde that allows you to create an 
+ * 8 bit transport layer over RFC1459 messages.  It does this by reserving two additional
+ * characters:
+ *	\a	- ctcp delim
+ *	\	- ctcp quote
+ *
+ * CTCP encoding thus encodes 8 bit clean data into a format which may be used as an 
+ * RFC1459 message by making the following transformations
+ *
+ * 	Input Byte		Output Bytes
+ *	-----------------	-----------------------------
+ *	0x0d   (\r)		0x5c 0x72	("\" + "r")
+ *	0x0a   (\n)		0x5c 0x6e	("\" + "n")
+ *	0x00   (\0)		0x5c 0x30	("\" + "0")
+ *	0x5c   (\\)		0x5c 0x5c	("\" + "\")
+ *	0x01   (\a)		0x5c 0x61	("\" + "a"}
+ *
+ * All CTCP messages are expected to be CTCP encoded.  eg:
+ *     PRIVMSG <target> :\001<ctcp encoded message>\001\r\n
+ * Regretably, most clients don't support that.
+ *
+ * Some non-IRC servers (such as ircv3) have it in their mind to censor messages
+ * which do not comply with some other regime (such as well-formed utf-8 sequences).
+ * For those chat systems, you'd need to use another serde, that outputs utf-8 
+ * sequences -- perhaps RFC1421 ("base64").  That won't help you with CTCP, though.
+ */
 static ssize_t	ctcp_encoder (const char *orig, size_t orig_len, const void *meta, size_t meta_len, char *dest, size_t dest_len)
 {
 	size_t	orig_i, dest_i;

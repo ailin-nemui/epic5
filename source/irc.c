@@ -52,7 +52,7 @@ const char internal_version[] = "20220615";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 2101;
+const unsigned long	commit_id = 2102;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -150,7 +150,7 @@ const char	*unknown_userhost = "<UNKNOWN>@<UNKNOWN>";
 int		dead = 0;
 
 /* The number of pending SIGINTs (^C) still unprocessed. */
-volatile int	cntl_c_hit = 0;
+volatile sig_atomic_t	cntl_c_hit = 0;
 
 /* This is 1 if we are in the foreground process group */
 int		foreground = 1;
@@ -334,7 +334,7 @@ die_now:
 	exit(1);
 }
 
-volatile int	dead_children_processes;
+volatile sig_atomic_t	dead_children_processes;
 
 /* 
  * This is needed so that the fork()s we do to read compressed files dont
@@ -345,7 +345,7 @@ static SIGNAL_HANDLER(child_reap)
 	dead_children_processes = 1;
 }
 
-volatile int	segv_recurse = 0;
+volatile sig_atomic_t	segv_recurse = 0;
 
 /* sigsegv: something to handle segfaults in a nice way */
 static SIGNAL_HANDLER(coredump)
@@ -850,10 +850,10 @@ static void	do_signals(void)
 	{
 		while (signals_caught[sig_no])
 		{
-			do_hook(SIGNAL_LIST, "%d %d", sig_no,
-				signals_caught[sig_no]);
-			do_hook(SIGNAL_LIST, "%s %d", get_signal_name(sig_no),
-				signals_caught[sig_no]);
+			do_hook(SIGNAL_LIST, "%d %ld", sig_no,
+				(long)signals_caught[sig_no]);
+			do_hook(SIGNAL_LIST, "%s %ld", get_signal_name(sig_no),
+				(long)signals_caught[sig_no]);
 			signals_caught[sig_no]--;
 		}
 	}

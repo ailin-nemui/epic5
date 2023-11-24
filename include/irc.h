@@ -88,7 +88,7 @@
 extern		int	background;
 extern		int	current_numeric;
 extern		int	dead;
-extern volatile	int	dead_children_processes;
+extern volatile	sig_atomic_t	dead_children_processes;
 extern		int	dont_connect;
 extern		int	dumb_mode;
 extern		int	foreground;

@@ -16,8 +16,8 @@ extern	int	will_catch_return_exceptions;
 extern	int	break_exception;
 extern	int	continue_exception;
 extern	int	return_exception;
-extern	int	system_exception;
-extern	const char *	current_command;
+extern	volatile sig_atomic_t	system_exception;
+extern	const char *		current_command;
 
 extern	int	need_defered_commands;
 

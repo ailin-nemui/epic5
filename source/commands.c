@@ -94,7 +94,7 @@
 	int	break_exception = 0;
 	int	continue_exception = 0;
 	int	return_exception = 0;
-	int	system_exception = 0;
+volatile sig_atomic_t	system_exception = 0;
 
 /* commands and whatnot */
 static  void    abortcmd 	(const char *, char *, const char *);
