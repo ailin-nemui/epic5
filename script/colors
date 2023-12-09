@@ -18,6 +18,42 @@ package colors;
 ##    /color <net> <nick> <color>
 ##   Colors can be specified by name (red, blue, brightcyan, etc) or by
 ##   hex value, if your terminal supports 256 colors - from %X00 to %XFF
+##
+## Version 1.2 (December, 2023)
+## - Added /hilight command to hilight nick, which said specific patterns
+##   look at http://epicsol.org/pattern, there is no particular order in
+##   which patterns will be evaluated, so *te* and *test* may be matched
+##   on 'test' in random (but then constant) order, it's done for
+##   simplicity of the implementation. This may be revised in future, if
+##   there is a demand.
+##
+##   Hilight wins in a tie against a nick coloring.
+##
+##   /hilight <net> <pattern> <color>
+##   Colors are specified as in /color command
+##
+##   /hilight and /color commands without arguments prints current hilight
+##   and nick coloring lists
+##
+##   Both /hilight and /color commands accept * as net argument to match
+##   all networks
+##
+## - Added /set hilight_log and /set hilight_log_file to log hilights.
+##
+## - Added /set hilight_beep to beep on hilights.
+##
+## - Added /set chanflags [on|off], turned 'on' by default - this set
+##   controlls whether or not to display @/%/+ statuses in public messages.
+##
+## - Colors in /hilight and /color now accepts background change - you can
+##   use %1%W to get white on red. (http://help.epicsol.org/cparse)
+##
+## - Added /set colors to turn on/off theming
+##
+## - Added /set hilight to turn on/off hilighting
+##
+##   These two sets are independent - you can turn off colors and use only
+##   hilighting feature.
 
 ## This script adds colors for general events, like public or private messages,
 ## notices, ctcps, etc. It also adds basic /scan alias to show participants in a
@@ -27,47 +63,33 @@ package colors;
 ## give better experience for novice users, who used to other, more colorful
 ## clients.
 
+load addset;
+
+addset chanflags bool;
+set chanflags on;
+
+addset hilight bool;
+addset hilight_log bool;
+addset hilight_log_file str;
+addset hilight_beep bool;
+
+addset colors bool {
+	if (*0 == [on]) {
+		theme.default.install;
+	} else {
+		theme.default.clean;
+	};
+};
+
 alias chanflag (nick, chan, void) {
-	return ${ischanop($nick $chan) ? [@] : ishalfop($nick $chan) == 1 ? [%] : ischanvoice($nick $chan) ? [+] : []};
-};
-
-alias scan.echo (chan, nicks) {
-	@ :line = [];
-	fe ($nicks) ii {
-		if (ii) {
-			@ :cf = chanflag($ii $chan);
-			@ :line #= [%K\[%P${cf == [@] ? [%C@] : cf == [%] ? [%Gh] : cf == [+] ? [%Pv] : [ ]}%${ii == servernick() ? [W] : isfriend($ii $chan) ? [Y] : [B]}$[9]ii %K\]%n ];
-		};
-	};
-	
-	echo $cparse($line);
-};
-
-alias scan (chan default "$C")
-{
-	@ :header = [$G %K[%GUsers%K\(%g$chan%K:%g$#channel($chan)%K\/%g$#channel($chan)%K\)]];
-
-	@ :chops = pattern(@* $channel($chan));
-	@ :hops = pattern(\\%* $channel($chan));
-	@ :voices = pattern(.+* $channel($chan));
-	@ :other = pattern(..* $channel($chan));
-
-	@ :nicks = chops ## [ ] ## hops ## [ ] ## voices ## [ ] ## other;
-
-	@ :footer = [Total: $#nicks [Ops: $#chops | Halfops: $#hops | Voices: $#voices | Other: $#other]];
-
-	echo $cparse($header);
-        fe ($strip(%@+?. $nicks)) n1 n2 n3 n4 n5 n6 {
-        	scan.echo $chan $n1 $n2 $n3 $n4 $n5 $n6;
-        };
-};
-
-alias color (net, nick, color, void) {
-	if (!@net || !@nick || !@color) {
-		xecho -b Usage: /color <net> <nick> <color>;
+	if (chanflags == [off]) {
 		return;
-	};
+	} else {
+		return ${ischanop($nick $chan) ? [@] : ishalfop($nick $chan) == 1 ? [%] : ischanvoice($nick $chan) ? [+] : []};
+	}
+};
 
+alias getcode (color, void) {
 	switch ($color) {
 		(brightblack) { @ :code = [%K]; }
 		(brightred) { @ :code = [%R]; }
@@ -88,348 +110,640 @@ alias color (net, nick, color, void) {
 		(white) { @ :code = [%w]; }
 
 		## 256 color support, use %X00 - %XFF
-		(%X*) { @ :code = color; }
+		## also background %1..%7 change
+		(%*) { @ :code = color; }
 
 		(*) {
-			xecho -b Unknown color;
-			return;
+			return -1;
 		}
 	};
 
-	@ ::nickcolors[$net][$nick] = code;
-	xecho -b Assigned$cparse($code color) to $nick on $net;
+	return $code;
 };
 
-set -status_user;
-set banner $cparse(%G>%g>%K>%n);
-set input_prompt [$$T] ;
-set output_rewrite  $$Z $$1-;
-set status_channel  10[15$$winnum():$$serverctl(get $servernum() 005 NETWORK)/%C;
-set status_chanop 15@;
-set status_clock 10[15%T10] ;
-set status_does_expando on;
-set status_format 10,02 %T[%*%@%=%N%#%A]%M%C%+%Q%U%{1}F%{1}H%H%B %W%> ;
-set status_format1 10,02 %T[%*%@%=%N%#%A]%M [%C%+%W] %Q %H%B%{1}F %>;
-set status_format2 10,02 %1%2 %>%3;
-set status_hold  15-- more --10;
-set status_hold_lines  10\(15%B10\);
-set status_holdmode  10(15Hold mode10);
-set status_mail  [15Mail: 15%M10];
-set status_mode 15\(10+15%+15\)$${encodingctl(MATCH $servernum() $servernick() $T) == encodingctl(GET 2 ENCODING) ? [] : [/$tolower($encodingctl(MATCH $servernum() $servernick() $T))]}10];
-set status_nick 15%N10;
-set status_notify  [15Act: 15%F10];
-set status_query  [15$$winnum():$$serverctl(get $servernum() 005 NETWORK)/%Q$${encodingctl(MATCH $servernum() $servernick() $T) == encodingctl(GET 2 ENCODING) ? [] : [/$tolower($encodingctl(MATCH $servernum() $servernick() $T))]}10];
-set status_umode 15\(10+15%#15\)10;
-set status_voice 15+;
-set status_window  10(15Active10) ;
+alias color (net, nick, color, void) {
+	if (!@net || !@nick || !@color) {
+		foreach nickcolors ii {
+			foreach nickcolors.${ii} nn {
+				@ :net_dec = tolower($decode($ii));
+				@ :nick_dec = tolower($decode($nn));
+				xecho Coloring $cparse($nickcolors[$ii][$nn]$tolower($nick_dec)%n) on ${net_dec == [*] ? [all networks] : [$net_dec]};
+			};
+		};
+		return;
+	};
 
-on ^ctcp * {
-	echo $cparse("%K>%n>%W> %G$$0 %K[%g$$userhost()%K]%g requested $$2- from $$1" $*);
+	@ :code = getcode($color);
+	if (code == -1) {
+		xecho -b Unknown color $color;
+		return;
+	};
+
+	@ :net_enc = encode($tolower($net));
+	@ :nick_enc = encode($tolower($nick));
+	@ ::nickcolors[$net_enc][$nick_enc] = code;
+	xecho -b Assigned $cparse(${code}color) to $tolower($nick) nick on ${net == [*] ? [all networks] : [$net]};
 };
+
+alias hilight (net, pattern qwords 1, color, void) {
+	if (!@net || !@pattern || !@color) {
+		foreach hilighting ii {
+			foreach hilighting.${ii} nn {
+				@ :net = tolower($decode($ii));
+				xecho Coloring $cparse($hilighting[$ii][$nn]$tolower($decode($nn))%n) pattern on ${net == [*] ? [all networks] : [$net]};
+			};
+		};
+		return;
+	};
+
+	@ :code = getcode($color);
+	if (code == -1) {
+		xecho -b Unknown color $color;
+		return;
+	};
+
+	@ :net_enc = encode($tolower($net));
+	@ :pattern_enc = encode($pattern);
+	@ ::hilighting[$net_enc][$pattern_enc] = code;
+	xecho -b Assigned $cparse(${code}color) to $pattern pattern on ${net == [*] ? [all networks] : [$net]};
+};
+
 on ^public * {
-	@ :net = serverctl(get $servernum() 005 NETWORK);
+	@ :net = tolower($serverctl(get $servernum() 005 NETWORK));
+	@ :net_enc = encode($net);
+	@ :nick_enc = encode($tolower($0));
+	@ :hl = 0;
 
-	if (:color = nickcolors[$net][$0]) {
-		echo $cparse("%B<%C$$chanflag($0 $1)$color$$0%B>%n $$2-" $*);
+	if (@nickcolors[$net_enc][$nick_enc]) {
+		@ :color = nickcolors[$net_enc][$nick_enc];
+	} else if (@nickcolors[CK][$nick_enc]) {
+		## CK is being asterisk '*' encoded
+		@ :color = nickcolors[CK][$nick_enc];
+	};
+
+	## CK is being asterisk '*' encoded
+	foreach hilighting.CK pp {
+		@ :pat = decode($pp);
+		if (pattern($pat $2-)) {
+			@ :color = hilighting[CK][$pp];
+			@ :hl = 1;
+		};
+	};
+
+	foreach hilighting ii {
+		foreach hilighting.${ii} pp {
+			@ :pat = decode($pp);
+			if (net_enc == ii && pattern($pat $2-)) {
+				@ :color = hilighting[$net_enc][$pp];
+				@ :hl = 1;
+			};
+		};
+	};
+
+	if (hl && hilight_log == [on]) {
+		@ :fd = open($hilight_log_file W);
+		if (fd == -1 || fd == []) {
+			if (hilight_log_file == []) {
+				xecho -b /SET HILIGHT_LOG_FILE is empty;
+			} else {
+				xecho -b Can't open $hilight_log_file for hilight logging;
+			}
+		}
+		@ write($fd $strftime(%H:%M:%S %d-%b %Y) <$0:$1> $2-);
+		@ close($fd);
+	};
+
+	if (hl && hilight_beep == [on]) {
+		beep;
+	};
+
+	if (@color) {
+		if (hilight == [on] && colors == [on]) {
+			echo $cparse("%B<%C$$chanflag($0 $1)%n$color$$0%n%B>%n $$2-" $*);
+		} else if (hilight == [on]) {
+			echo $cparse("<$$chanflag($0 $1)$color$$0%n> $$2-" $*);
+		} else if (colors == [on]) {
+			echo $cparse("%B<%C$$chanflag($0 $1)%n$$0%n%B>%n $$2-" $*);
+		} else {
+			echo $cparse("<$$chanflag($0 $1)$$0> $$2-" $*);
+		};
 	} else {
-		echo $cparse("%B<%C$$chanflag($0 $1)%n$$0%B>%n $$2-" $*);
+		if (colors == [on]) {
+			echo $cparse("%B<%C$$chanflag($0 $1)%n$$0%B>%n $$2-" $*);
+		} else {
+			echo $cparse("<$$chanflag($0 $1)$$0> $$2-" $*);
+		};
 	};
 };
 on ^public_other * {
-	@ :net = serverctl(get $servernum() 005 NETWORK);
+	@ :net = tolower($serverctl(get $servernum() 005 NETWORK));
+	@ :net_enc = encode($net);
+	@ :hl = 0;
 
-	if (:color = nickcolors[$net][$0]) {
-		echo $cparse("%b<%c$$chanflag($0 $1)$color$$0%K:%n$$1%b\>%n $$2-" $*);
+	if (@nickcolors[$net_enc][$0]) {
+		@ :color = nickcolors[$net_enc][$0];
+	} else if (@nickcolors[CK][$0]) {
+		## CK is being asterisk '*' encoded
+		@ :color = nickcolors[CK][$0];
+	};
+
+	## CK is being asterisk '*' encoded
+	foreach hilighting.CK pp {
+		@ :pat = decode($pp);
+		if (pattern($pat $2-)) {
+			@ :color = hilighting[CK][$pp];
+			@ :hl = 1;
+		};
+	};
+
+	foreach hilighting ii {
+		foreach hilighting.${ii} pp {
+			@ :pat = decode($pp);
+			if (net_enc == ii && @pattern($pat $2-)) {
+				@ :color = hilighting[$net_enc][$pp];
+				@ :hl = 1;
+			};
+		};
+	};
+
+	if (hl && hilight_log == [on]) {
+		@ :fd = open($hilight_log_file W);
+		if (fd == -1 || fd == []) {
+			if (hilight_log_file == []) {
+				xecho -b /SET HILIGHT_LOG_FILE is empty;
+			} else {
+				xecho -b Can't open $hilight_log_file for hilight logging;
+			}
+		}
+		@ write($fd $strftime(%H:%M:%S %d-%b %Y) <$0:$1> $2-);
+		@ close($fd);
+	};
+
+	if (hl && hilight_beep == [on]) {
+		beep;
+	};
+
+	if (@color) {
+		if (hilight == [on] && colors == [on]) {
+			echo $cparse("%b<%c$$chanflag($0 $1)%n$color$$0%n%K:%n$$1%b>%n $$2-" $*);
+		} else if (hilight == [on]) {
+			echo $cparse("<$$chanflag($0 $1)$color$$0%n:$$1>%n $$2-" $*);
+		} else if (colors == [on]) {
+			echo $cparse("%B<%C$$chanflag($0 $1)%n$$0%n%K:%n$$1%b>%n $$2-" $*);
+		} else {
+			echo $cparse("<$$chanflag($0 $1)$$0:$$1> $$2-" $*);
+		};
 	} else {
-		echo $cparse("%b<%c$$chanflag($0 $1)%n$$0%K:%n$$1%b\>%n $$2-" $*);
+		if (colors == [on]) {
+			echo $cparse("%b<%c$$chanflag($0 $1)%n$$0%K:%n$$1%b>%n $$2-" $*);
+		} else {
+			echo 3;
+			echo $cparse("<$$chanflag($0 $1)$$0:$$1> $$2-" $*);
+		};
 	};
 };
-on ^channel_signoff * {
-	xecho -b $cparse("SignOff %c$$1%n: $$0 $${*2 ? [%K\(%n$2-%K\)%n] : []}" $*);
-};
-on ^public_notice * {
-	echo $cparse("%K-%P$$0%K:%p$$1%K-%n $$2-" $*);
-};
-on ^public_msg * {
-	if (iscurchan($1)) {
-		echo $cparse("%K<%n$$0%K>%n $$2-" $*);
-	} else {
-		echo $cparse("%K<%n$$0%K:%n$$1%K>%n $$2-" $*);
-	};
-};
-on ^join * {
-	xecho -b $cparse("%C$$0%n %K[%c$$2%K]%n has joined $$1" $*);
-};
-on ^part * {
-	xecho -b $cparse("$$0 %K[%n$$2%K]%n has left $$1$${*3 ? [ %K\(%n$3-%K\)%n] : []}" $*);
-};
-on ^nickname * {
-	echo $cparse("%W$$0%n is now known as %c$$1%n" $*);
-};
-on ^nickname '% $$servernick()' {
-	echo $cparse("%K>%n>%W> %WYou%K\\\(%n$0%K\\\)%n are now known as %c$$1%n" $*);
-};
-on ^send_public * {
-	echo $cparse("%P<%C$$chanflag($servernick() $0)%n$$servernick()%P>%n $$1-" $*);
-};
-on ^send_action * {
-	echo $cparse("%W$$servernick()%n $$1-" $*);
-};
-on ^action * {
-	echo $cparse("%Y$$0/$$1%n $$2-" $*);
-};
-on ^mode * {
-	xecho -b $cparse("$${match(*.* $0) ? [%RServerMode] : [mode]}%K/%c$$1 %K[%W$$2$${*3 ? [ $3-] : []}%K]%n by %W$$0%n" $*);
-};
-on ^mode '$$servernick() $$servernick() *' {
-	xecho -b $cparse("Mode change %K[%W$$2-%K]%n for user %c$$1%n" $*);
-};
-on ^mode '% $$servernick() *' {
-	xecho -b $cparse("Mode change %K[%W$$2-%K]%n for user %c$$1%n by %W$$0%n" $*);
-};
-on ^channel_sync * {
-	xecho -b $cparse("%WEPIC5%n: Join to $$0 was synched in $$trunc(2 $1)%n secs!!" $*);
-};
-on ^kick * {
-	xecho -b $cparse("$$0 was kicked off $$2 by %c$$1%n %K\\\(%n$3-%K\\\)%n" $*);
-};
-on ^kick '$$servernick() *' {
-	xecho -b $cparse("%K>%n>%W> %WYou%n have been kicked off $$2 by %c$$1 %K\\\(%n$$3-%K\\\)%n" $*);
-};
-on ^topic * {
-	xecho -b $cparse("Topic %K\\\(%c$$1%K\\\):%n changed by %c$$0%K:%n $$2-" $*);
-};
-## chan modes on join
-on ^324 * { };
-on ^328 * {
-	xecho -b $cparse("URL %K\\\(%c$$1%K\\\):%n $$2-" $*);
-};
-on ^329 * {
-	xecho -b $cparse("Channel $$1 was created at $$strftime($2 %%H:%%M:%%S %%d-%%b %%Y) %K[%n$$tdiff2(${time() - *2}) ago%K]%n" $*);
-};
-on ^332 * {
-	xecho -b $cparse("Topic %K\\\(%c$$1%K\\\):%n $$2-" $*);
-};
-on ^333 * {
-	xecho -b $cparse("Topic %K\\\(%c$$1%K\\\):%n set by %c$$2%n at %c$$strftime($3 %%H:%%M:%%S %%d-%%b %%Y) %K[%n$$tdiff2(${time() - *3}) ago%K]%n" $*);
-};
-on ^msg * {
-	echo $cparse("%K[%P$$0%K\\\(%p$$userhost()%K\\\)]%n $$1-" $*);
-};
-on ^notice * {
-	echo $cparse("%K-%P$$0%K\\\(%p$$userhost()1%K\\\)-%n $$1-" $*);
-};
-on ^server_notice * {
-	echo $cparse("%G[$$0]%n $$1-" $*);
-};
-on ^send_msg * {
-	echo $cparse("%K[%rmsg%K\\\(%R$$0%K\\\)] %n$$1-" $*);
-};
-on ^send_notice * {
-	echo $cparse("%K[%rnotice%K\\\(%R$$0%K\\\)] %n$$1-" $*);
-};
+alias theme.default.install (void) {
+	set -status_user;
+	set banner $cparse(%G>%g>%K>%n);
+	set input_prompt [$$T] ;
+	set output_rewrite  $$Z $$1-;
+	set status_channel  10[15$$winnum():$$serverctl(get $servernum() 005 NETWORK)/$$C;
+	set status_chanop 15@;
+	set status_clock 10[15%T10] ;
+	set status_does_expando on;
+	set status_format 10,02 %T[%*%@%=%N%#%A]%M%C%+%Q%U%{1}F%{1}H%H%B %W%> ;
+	set status_format1 10,02 %T[%*%@%=%N%#%A]%M [%C%+%W] %Q %H%B%{1}F %>;
+	set status_format2 10,02 %1%2 %>%3;
+	set status_hold  15-- more --10;
+	set status_hold_lines  10\(15%B10\);
+	set status_holdmode  10(15Hold mode10);
+	set status_mail  [15Mail: 15%M10];
+	set status_mode 15\(10+15%+15\)$${encodingctl(MATCH $servernum() $^\servernick() $T) == encodingctl(GET 2 ENCODING) ? [] : [/$tolower($encodingctl(MATCH $^\servernum() $servernick() $T))]}10];
+	set status_nick 15$$servernick()10;
+	set status_notify  [15Act: 15%F10];
+	set status_query  [15$$winnum():$$serverctl(get $servernum() 005 NETWORK)/%Q$${encodingctl(MATCH $servernum() $servernick() $T) == encodingctl(GET 2 ENCODING) ? [] : [/$tolower($encodingctl(MATCH $servernum() $servernick() $T))]}10];
+	set status_umode 15\(10+15%#15\)10;
+	set status_voice 15+;
+	set status_window  10(15Active10) ;
 
-^on ^366 * {
-	@ :list = colors.chan[$encode($1)];
+	alias scan.echo (chan, nicks) {
+		@ :line = [];
+		fe ($nicks) ii {
+			if (ii) {
+				@ :cf = chanflag($ii $chan);
+				@ :line #= [%K\[%P${cf == [@] ? [%C@] : cf == [%] ? [%Gh] : cf == [+] ? [%Pv] : [ ]}%${ii == servernick() ? [W] : isfriend($ii $chan) ? [Y] : [B]}$[9]ii %K\]%n ];
+			};
+		};
 
-	@ :chops = sort($pattern(@* $list));
-	@ :hops = sort($pattern(\\%* $list));
-	@ :voices = sort($pattern(+* $list));
-	@ :other = sort($filter(@* $filter(+* $list)));
-
-	@ :nicks = chops ## [ ] ## hops ## [ ] ## voices ## [ ] ## other;
-
-	fe ($uniq($strip(%@+?. $nicks))) n1 n2 n3 n4 n5 n6 {
-		scan.echo $1 $n1 $n2 $n3 $n4 $n5 $n6;
+		echo $cparse($line);
 	};
 
-	assign -colors.chan[$encode($1)];
-};
+	alias scan (chan default "$C")
+	{
+		@ :header = [$G %K[%GUsers%K\(%g$chan%K:%g$#channel($chan)%K\/%g$#channel($chan)%K\)]];
 
-## Lusers formating
-on ^251 * {
-	@ ::colors.serv[$encode($0)][users] = *3;
-	@ ::colors.serv[$encode($0)][invusers] = *6;
-	@ ::colors.serv[$encode($0)][servers] = *9;
-};
-on ^252 * {
-	@ ::colors.serv[$encode($0)][ircops] = *1;
-};
-on ^253 * {
-	@ ::colors.serv[$encode($0)][unknown] = *1;
-};
-on ^254 * {
-	@ ::colors.serv[$encode($0)][chans] = *1;
-};
-on ^255 * {
-};
-on ^265 * {
-	@ ::colors.serv[$encode($0)][local] = *1;
-	@ ::colors.serv[$encode($0)][localmax] = *2;
-};
-on ^266 * {
-	@ ::colors.serv[$encode($0)][global] = *1;
-	@ ::colors.serv[$encode($0)][globalmax] = *2;
-};
-on ^250 * {
-	@ ::colors.serv[$encode($0)][highest] = *4;
+		@ :chops = pattern(@* $channel($chan));
+		@ :hops = pattern(\\%* $channel($chan));
+		@ :voices = pattern(.+* $channel($chan));
+		@ :other = pattern(..* $channel($chan));
 
-	xecho -b $cparse("%K[%nlocal users on irc%K\\\(%W$colors.serv[$encode($0)][local]%K\\\)]%n $trunc(0 ${colors.serv[$encode($0)][local] / colors.serv[$encode($0)][global] * 100})%" $*);
-	xecho -b $cparse("%K[%nglobal users on irc%K\\\(%W$colors.serv[$encode($0)][users]%K\\\)]%n $trunc(0 ${colors.serv[$encode($0)][users] / colors.serv[$encode($0)][global] * 100})%" $*);
-	xecho -b $cparse("%K[%ninvisible users on irc%K\\\(%W$colors.serv[$encode($0)][invusers]%K\\\)]%n $trunc(0 ${colors.serv[$encode($0)][invusers] / colors.serv[$encode($0)][global] * 100})%" $*);
-	xecho -b $cparse("%K[%nircops on irc%K\\\(%W$colors.serv[$encode($0)][ircops]%K\\\)]%n $trunc(0 ${colors.serv[$encode($0)][ircops] / colors.serv[$encode($0)][global] * 100})%" $*);
-	xecho -b $cparse("%K[%ntotal users on irc%K\\\(%W$colors.serv[$encode($0)][global]%K\\\)]%n" $*);
-	if (colors.serv[$encode($0)][unknown]) {
-		xecho -b $cparse("%K[%nunknown connections %K\\\(%W$colors.serv[$encode($0)][unknown]%K\\\)]%n" $*);
+		@ :nicks = chops ## [ ] ## hops ## [ ] ## voices ## [ ] ## other;
+
+		@ :footer = [Total: $#nicks [Ops: $#chops | Halfops: $#hops | Voices: $#voices | Other: $#other]];
+
+		echo $cparse($header);
+		fe ($strip(%@+?. $nicks)) n1 n2 n3 n4 n5 n6 {
+			scan.echo $chan $n1 $n2 $n3 $n4 $n5 $n6;
+		};
 	};
-	xecho -b $cparse("%K[%ntotal servers on irc%K\\\(%W$colors.serv[$encode($0)][servers]%K\\\)] \\\(%navg. $trunc(0 ${colors.serv[$encode($0)][global] / colors.serv[$encode($0)][servers]}) users per server%K\\\)" $*);
-	xecho -b $cparse("%K[%ntotal channels created%K\\\(%W$colors.serv[$encode($0)][chans]%K\\\)] \\\(%navg. $trunc(0 ${colors.serv[$encode($0)][global] / colors.serv[$encode($0)][chans]}) users per channel%K\\\)" $*);
-	xecho -b $cparse("%K[%nHighest client connection count%K\\\(%W$colors.serv[$encode($0)][highest]%K\\\)]%n" $*);
 
-	foreach colors.serv[$encode($0)] ff {
-		^assign -colors.serv[$encode($0)].${ff};
+	on ^ctcp * {
+		echo $cparse("%K>%n>%W> %G$$0 %K[%g$$userhost()%K]%g requested $$2- from $$1" $*);
 	};
-	^assign -colors.serv[$encode($0)];
-};
+	on ^channel_signoff * {
+		xecho -b $cparse("SignOff %c$$1%n: $$0 $${*2 ? [%K\(%n$2-%K\)%n] : []}" $*);
+	};
+	on ^public_notice * {
+		echo $cparse("%K-%P$$0%K:%p$$1%K-%n $$2-" $*);
+	};
+	on ^public_msg * {
+		if (iscurchan($1)) {
+			echo $cparse("%K<%n$$0%K>%n $$2-" $*);
+		} else {
+			echo $cparse("%K<%n$$0%K:%n$$1%K>%n $$2-" $*);
+		};
+	};
+	on ^join * {
+		xecho -b $cparse("%C$$0%n %K[%c$$2%K]%n has joined $$1" $*);
+	};
+	on ^part * {
+		xecho -b $cparse("$$0 %K[%n$$2%K]%n has left $$1$${*3 ? [ %K\(%n$3-%K\)%n] : []}" $*);
+	};
+	on ^nickname * {
+		echo $cparse("%W$$0%n is now known as %c$$1%n" $*);
+	};
+	on ^nickname '% $$servernick()' {
+		echo $cparse(%K>%n>%W> %WYou%K\(%n)$0$cparse(%K\)%n are now known as %c$1%n);
+	};
+	on ^send_public * {
+		echo $cparse("%P<%C$$chanflag($servernick() $0)%n$$servernick()%P>%n $$1-" $*);
+	};
+	on ^send_action * {
+		echo $cparse("%W$$servernick()%n $$1-" $*);
+	};
+	on ^action * {
+		echo $cparse("%Y$$0/$$1%n $$2-" $*);
+	};
+	on ^mode * {
+		xecho -b $cparse("$${match(*.* $0) ? [%RServerMode] : [mode]}%K/%c$$1 %K[%W$$2$${*3 ? [ $3-] : []}%K]%n by %W$$0%n" $*);
+	};
+	on ^mode '$$servernick() $$servernick() *' {
+		xecho -b $cparse("Mode change %K[%W$$2-%K]%n for user %c$$1%n" $*);
+	};
+	on ^mode '% $$servernick() *' {
+		xecho -b $cparse("Mode change %K[%W$$2-%K]%n for user %c$$1%n by %W$$0%n" $*);
+	};
+	on ^channel_sync * {
+		xecho -b $cparse("%WEPIC5%n: Join to $$0 was synched in $$trunc(2 $1)%n secs!!" $*);
+	};
+	on ^kick * {
+		xecho -b $cparse("$$0 was kicked off $$2 by %c$$1%n %K\\\(%n$3-%K\\\)%n" $*);
+	};
+	on ^kick '$$servernick() *' {
+		xecho -b $cparse("%K>%n>%W> %WYou%n have been kicked off $$2 by %c$$1 %K\\\(%n$$3-%K\\\)%n" $*);
+	};
+	on ^topic * {
+		xecho -b $cparse("Topic %K\\\(%c$$1%K\\\):%n changed by %c$$0%K:%n $$2-" $*);
+	};
+	## chan modes on join
+	on ^324 * { };
+	on ^328 * {
+		xecho -b $cparse("URL %K\\\(%c$$1%K\\\):%n $$2-" $*);
+	};
+	on ^329 * {
+		xecho -b $cparse("Channel $$1 was created at $$strftime($2 %%H:%%M:%%S %%d-%%b %%Y) %K[%n$$tdiff2(${time() - *2}) ago%K]%n" $*);
+	};
+	on ^332 * {
+		xecho -b $cparse("Topic %K\\\(%c$$1%K\\\):%n $$2-" $*);
+	};
+	on ^333 * {
+		xecho -b $cparse("Topic %K\\\(%c$$1%K\\\):%n set by %c$$2%n at %c$$strftime($3 %%H:%%M:%%S %%d-%%b %%Y) %K[%n$$tdiff2(${time() - *3}) ago%K]%n" $*);
+	};
+	on ^msg * {
+		echo $cparse("%K[%P$$0%K\\\(%p$$userhost()%K\\\)]%n $$1-" $*);
+	};
+	on ^notice * {
+		echo $cparse("%K-%P$$0%K\\\(%p$$userhost()1%K\\\)-%n $$1-" $*);
+	};
+	on ^server_notice * {
+		echo $cparse("%G[$$0]%n $$1-" $*);
+	};
+	on ^send_msg * {
+		echo $cparse("%K[%rmsg%K\\\(%R$$0%K\\\)] %n$$1-" $*);
+	};
+	on ^send_notice * {
+		echo $cparse("%K[%rnotice%K\\\(%R$$0%K\\\)] %n$$1-" $*);
+	};
 
-## whois format
+	^on ^366 * {
+		@ :list = colors.chan[$encode($1)];
 
-on ^311 * {
-	@ whois = 1;
-	echo $cparse("%G┌─────---%g─%G--%g──%G-%g──────---%K─%g--%K──%g-%K─────────--- --  -");
-	echo $cparse("%G| %W$$1 %K\\\(%n$2@$3%K\\\)" $*);
-	echo $cparse("%G│ %Wi%nrcname  : $$5-" $*);
-};
+		@ :chops = sort($pattern(@* $list));
+		@ :hops = sort($pattern(\\%* $list));
+		@ :voices = sort($pattern(+* $list));
+		@ :other = sort($filter(@* $filter(+* $list)));
 
-on ^314 * {
-	echo $cparse("%G┌─────---%g─%G--%g──%G-%g──────---%K─%g--%K──%g-%K─────────--- --  -");
-	echo $cparse("%G| %W$$1 %K\\\(%n$2@$3%K\\\)" $*);
-	echo $cparse("%G│ %Wi%nrcname  : $$5-" $*);
-};
+		@ :nicks = chops ## [ ] ## hops ## [ ] ## voices ## [ ] ## other;
 
-on ^319 * {
-	echo $cparse("%g| %Wc%nhannels : $$2-" $*);
-};
+		fe ($uniq($strip(%@+?. $nicks))) n1 n2 n3 n4 n5 n6 {
+			scan.echo $1 $n1 $n2 $n3 $n4 $n5 $n6;
+		};
 
-on ^312 * {
-	echo $cparse("%K│ %Ws%nerver   : $$2 \\\($$3-\\\)" $*);
-};
+		assign -colors.chan[$encode($1)];
+	};
 
-on ^671 * {
-	echo $cparse("%K│ %Ws%necure   : $$1-" $*);
-};
+	## Lusers formating
+	on ^251 * {
+		@ ::colors.serv[$encode($0)][users] = *3;
+		@ ::colors.serv[$encode($0)][invusers] = *6;
+		@ ::colors.serv[$encode($0)][servers] = *9;
+	};
+	on ^252 * {
+		@ ::colors.serv[$encode($0)][ircops] = *1;
+	};
+	on ^253 * {
+		@ ::colors.serv[$encode($0)][unknown] = *1;
+	};
+	on ^254 * {
+		@ ::colors.serv[$encode($0)][chans] = *1;
+	};
+	on ^255 * {
+	};
+	on ^265 * {
+		@ ::colors.serv[$encode($0)][local] = *1;
+		@ ::colors.serv[$encode($0)][localmax] = *2;
+	};
+	on ^266 * {
+		@ ::colors.serv[$encode($0)][global] = *1;
+		@ ::colors.serv[$encode($0)][globalmax] = *2;
+	};
+	on ^250 * {
+		@ ::colors.serv[$encode($0)][highest] = *4;
 
-on ^378 * {
-	echo $cparse("%K│ %Wc%nonnect  : $$5 $$6" $*);
-};
+		xecho -b $cparse("%K[%nlocal users on irc%K\\\(%W$colors.serv[$encode($0)][local]%K\\\)]%n $trunc(0 ${colors.serv[$encode($0)][local] / colors.serv[$encode($0)][global] * 100})%" $*);
+		xecho -b $cparse("%K[%nglobal users on irc%K\\\(%W$colors.serv[$encode($0)][users]%K\\\)]%n $trunc(0 ${colors.serv[$encode($0)][users] / colors.serv[$encode($0)][global] * 100})%" $*);
+		xecho -b $cparse("%K[%ninvisible users on irc%K\\\(%W$colors.serv[$encode($0)][invusers]%K\\\)]%n $trunc(0 ${colors.serv[$encode($0)][invusers] / colors.serv[$encode($0)][global] * 100})%" $*);
+		xecho -b $cparse("%K[%nircops on irc%K\\\(%W$colors.serv[$encode($0)][ircops]%K\\\)]%n $trunc(0 ${colors.serv[$encode($0)][ircops] / colors.serv[$encode($0)][global] * 100})%" $*);
+		xecho -b $cparse("%K[%ntotal users on irc%K\\\(%W$colors.serv[$encode($0)][global]%K\\\)]%n" $*);
+		if (colors.serv[$encode($0)][unknown]) {
+			xecho -b $cparse("%K[%nunknown connections %K\\\(%W$colors.serv[$encode($0)][unknown]%K\\\)]%n" $*);
+		};
+		xecho -b $cparse("%K[%ntotal servers on irc%K\\\(%W$colors.serv[$encode($0)][servers]%K\\\)] \\\(%navg. $trunc(0 ${colors.serv[$encode($0)][global] / colors.serv[$encode($0)][servers]}) users per server%K\\\)" $*);
+		xecho -b $cparse("%K[%ntotal channels created%K\\\(%W$colors.serv[$encode($0)][chans]%K\\\)] \\\(%navg. $trunc(0 ${colors.serv[$encode($0)][global] / colors.serv[$encode($0)][chans]}) users per channel%K\\\)" $*);
+		xecho -b $cparse("%K[%nHighest client connection count%K\\\(%W$colors.serv[$encode($0)][highest]%K\\\)]%n" $*);
 
-on ^338 * {
-	echo $cparse("%K│ %Wa%nctually : $$2-" $*);
-};
+		foreach colors.serv[$encode($0)] ff {
+			^assign -colors.serv[$encode($0)].${ff};
+		};
+		^assign -colors.serv[$encode($0)];
+	};
 
-on ^716 * {
-	echo $cparse("%K│ %Wi%ngnore   : $$2-" $*);
-};
+	## whois format
 
-# OFTC
-on ^307 '% % user has identified to services' {
-	echo $cparse("%K| %Ws%nervice  : $$1-");
-};
+	on ^311 * {
+		@ whois = 1;
+		echo $cparse("%G┌─────---%g─%G--%g──%G-%g──────---%K─%g--%K──%g-%K─────────--- --  -");
+		echo $cparse("%G| %W$$1 %K\\\(%n$2@$3%K\\\)" $*);
+		echo $cparse("%G│ %Wi%nrcname  : $$5-" $*);
+	};
 
-# Freenode
-on ^320 '% % is identified to services*' {
-	echo $cparse("%K| %Ws%nervice  : $$1-");
-};
-on ^320 '% % is signed on as account %' {
-	echo $cparse("%K| %Ws%nervice  : $$1-");
-};
+	on ^314 * {
+		echo $cparse("%G┌─────---%g─%G--%g──%G-%g──────---%K─%g--%K──%g-%K─────────--- --  -");
+		echo $cparse("%G| %W$$1 %K\\\(%n$2@$3%K\\\)" $*);
+		echo $cparse("%G│ %Wi%nrcname  : $$5-" $*);
+	};
 
-# IRCnet
-on ^320 '% % is a Secure Connection*' {
-	echo $cparse("%K│ %Ws%necure   : $$4-" $*);
-};
+	on ^319 * {
+		echo $cparse("%g| %Wc%nhannels : $$2-" $*);
+	};
 
-on ^313 * {
-	echo $cparse("%K| %Wo%nperator : $1  (is %WNOT%n an IRC warrior)" $*);
-};
+	on ^312 * {
+		echo $cparse("%K│ %Ws%nerver   : $$2 \\\($$3-\\\)" $*);
+	};
 
-on ^301 * {
-	echo $cparse("%K| %Wa%nway     : $$1-" $*);
-};
+	on ^671 * {
+		echo $cparse("%K│ %Ws%necure   : $$1-" $*);
+	};
 
-on ^317 * {
-	echo $cparse("%K: %Wi%ndle     : $$tdiff($2)" $*);
-	echo $cparse("%K: %Ws%nignon   : $$stime($3)%n %K\[%n%n$$tdiff(${time() - *3}) ago%K\]%n" $*);
-};
+	on ^378 * {
+		echo $cparse("%K│ %Wc%nonnect  : $$5 $$6" $*);
+	};
 
-# Freenode
-on ^330 * {
-	echo $cparse("%K: %Wl%nogin    : $$2" $*);
-};
+	on ^338 * {
+		echo $cparse("%K│ %Wa%nctually : $$2-" $*);
+	};
 
-on ^318 * {
-};
+	on ^716 * {
+		echo $cparse("%K│ %Wi%ngnore   : $$2-" $*);
+	};
 
-# RusNet
+	# OFTC
+	on ^307 '% % user has identified to services' {
+		echo $cparse("%K| %Ws%nervice  : $$1-");
+	};
 
-on ^223 * {
-	echo $cparse("%K: %Wc%nharset  : $$4" $*);
-};
+	# Freenode
+	on ^320 '% % is identified to services*' {
+		echo $cparse("%K| %Ws%nervice  : $$1-");
+	};
+	on ^320 '% % is signed on as account %' {
+		echo $cparse("%K| %Ws%nervice  : $$1-");
+	};
 
-on ^264 * {
-	echo $cparse("%K: %Ws%nsl      : $$1-" $*);
-};
+	# IRCnet
+	on ^320 '% % is a Secure Connection*' {
+		echo $cparse("%K│ %Ws%necure   : $$4-" $*);
+	};
 
-## bans
-on ^367 * {
-	xecho -b $cparse("$$1: ban $$[50]2 $${*3 ? [%K\[%nby %W$3%n $tdiff2(${time() - *4}) ago%K\]%n] : []}" $*);
-};
+	on ^313 * {
+		echo $cparse("%K| %Wo%nperator : $1  (is %WNOT%n an IRC warrior)" $*);
+	};
 
-## Scan on join
-on ^353 * {
-	push colors.chan[$encode($2)] $3-;
-};
-## Other hooks
+	on ^301 * {
+		echo $cparse("%K| %Wa%nway     : $$1-" $*);
+	};
 
-on ^381 * xecho $$cparse(%K>%n>%W> You are now an %GIRC%n whore);
-on ^471 * xecho -b [$$1] Channel is full;
-on ^473 * xecho -b [$$1] Invite only channel;
-on ^474 * xecho -b [$$1] Banned from channel;
-on ^475 * xecho -b [$$1] Bad channel key;
-on ^476 * xecho -b [$$1] You are not opped;
-on ^482 * xecho -b [$$1] You are not opped;
+	on ^317 * {
+		echo $cparse("%K: %Wi%ndle     : $$tdiff($2)" $*);
+		echo $cparse("%K: %Ws%nignon   : $$stime($3)%n %K\[%n%n$$tdiff(${time() - *3}) ago%K\]%n" $*);
+	};
+
+	# Freenode
+	on ^330 * {
+		echo $cparse("%K: %Wl%nogin    : $$2" $*);
+	};
+
+	on ^318 * {
+	};
+
+	# RusNet
+
+	on ^223 * {
+		echo $cparse("%K: %Wc%nharset  : $$4" $*);
+	};
+
+	on ^264 * {
+		echo $cparse("%K: %Ws%nsl      : $$1-" $*);
+	};
+
+	## bans
+	on ^367 * {
+		xecho -b $cparse("$$1: ban $$[50]2 $${*3 ? [%K\[%nby %W$3%n $tdiff2(${time() - *4}) ago%K\]%n] : []}" $*);
+	};
+
+	## Scan on join
+	on ^353 * {
+		push colors.chan[$encode($2)] $3-;
+	};
+	## Other hooks
+
+	on ^381 * xecho $$cparse(%K>%n>%W> You are now an %GIRC%n whore);
+	on ^471 * xecho -b [$$1] Channel is full;
+	on ^473 * xecho -b [$$1] Invite only channel;
+	on ^474 * xecho -b [$$1] Banned from channel;
+	on ^475 * xecho -b [$$1] Bad channel key;
+	on ^476 * xecho -b [$$1] You are not opped;
+	on ^482 * xecho -b [$$1] You are not opped;
 
 
-## Set handling
+	## Set handling
 
-alias set {
-	if (@0) {
-		if (strlen($1) == 0 && *0 !~ [-*]) {
-			if (getsets($0) == *0) {
-				xecho -s $cparse(%g$pad(-31 . $toupper($0))) $getset($0);
-			} else if (getsets($0*)) {
-				fe ($getsets($0*)) ss {
-					xecho -s $cparse(%g$pad(-31 . $toupper($ss))) $getset($ss);
+	alias set {
+		if (@0) {
+			if (strlen($1) == 0 && *0 !~ [-*]) {
+				if (getsets($0) == *0) {
+					xecho -s $cparse(%g$pad(-31 . $toupper($0))) $getset($0);
+				} else if (getsets($0*)) {
+					fe ($getsets($0*)) ss {
+						xecho -s $cparse(%g$pad(-31 . $toupper($ss))) $getset($ss);
+					};
+				} else {
+					xecho -b No such variable "$toupper($0)";
 				};
 			} else {
-				xecho -b No such variable "$toupper($0)";
+				//set $*;
 			};
 		} else {
-			//set $*;
+			fe ($getsets(*)) ss {
+				xecho -s $cparse(%g$pad(-31 . $toupper($ss)) %w$getset($ss));
+			};
 		};
-	} else {
-		fe ($getsets(*)) ss {
-			xecho -s $cparse(%g$pad(-31 . $toupper($ss)) %w$getset($ss));
+	};
+
+	on ^set 'set-error % is ambiguous' {
+		fe ($getsets($1*)) ss {
+			echo $cparse(%g$pad(-31 . $toupper($ss)) %w$getset($ss));
 		};
+	};
+
+	on ^set 'set-error No such variable *' {
+		xecho -b No such variable "$4";
 	};
 };
 
-on ^set 'set-error % is ambiguous' {
-	fe ($getsets($1*)) ss {
-		echo $cparse(%g$pad(-31 . $toupper($ss)) %w$getset($ss));
-	};
+alias theme.default.clean (void) {
+	set banner ***;
+	set input_prompt $$T> ;
+	set output_rewrite  $$Z $$1-;
+	set status_channel %C;
+	set status_chanop @;
+	set status_clock  %T;
+	set status_does_expando off;
+	set status_format %T [%R] %*%=%@%N%#%S%{1}H%H%B%Q%A%C%+%I%O%M%F%L %D %U %W;
+	set status_hold  Held:;
+	set status_hold_lines %B;
+	set status_holdmode  (Hold);
+	set status_mail (Mail: %M);
+	set status_mode  (+%+);
+	set status_nick %N;
+	set status_notify  (W: %F);
+	set status_query  (Query: %Q);
+	set status_umode  (+%#);
+	set status_voice +;
+	set status_window ^^^^^^^^;
+
+	alias -scan.echo;
+	alias -scan;
+
+	on ^ctcp -*;
+	on ^channel_signoff -*;
+	on ^public_notice -*;
+	on ^public_msg -*;
+	on ^join -*;
+	on ^part -*;
+	on ^nickname -*;
+	on ^nickname '% $$servernick()';
+	on ^send_public -*;
+	on ^send_action -*;
+	on ^action -*;
+	on ^mode -*;
+	on ^mode '$$servernick() $$servernick() -*';
+	on ^mode '% $$servernick() -*';
+	on ^channel_sync -*;
+	on ^kick -*;
+	on ^kick '$$servernick() -*';
+	on ^topic -*;
+	on ^324 -*;;
+	on ^328 -*;
+	on ^329 -*;
+	on ^332 -*;
+	on ^333 -*;
+	on ^msg -*;
+	on ^notice -*;
+	on ^server_notice -*;
+	on ^send_msg -*;
+	on ^send_notice -*;
+	^on ^366 -*;
+	on ^251 -*;
+	on ^252 -*;
+	on ^253 -*;
+	on ^254 -*;
+	on ^255 -*;
+	on ^265 -*;
+	on ^266 -*;
+	on ^250 -*;
+	on ^311 -*;
+	on ^314 -*;
+	on ^319 -*;
+	on ^312 -*;
+	on ^671 -*;
+	on ^378 -*;
+	on ^338 -*;
+	on ^716 -*;
+	on ^307 -'% % user has identified to services';
+	on ^320 -'% % is identified to services*';
+	on ^320 -'% % is signed on as account %';
+	on ^320 -'% % is a Secure Connection*';
+	on ^313 -*;
+	on ^301 -*;
+	on ^317 -*;
+	on ^330 -*;
+	on ^318 -*;
+	on ^223 -*;
+	on ^264 -*;
+	on ^367 -*;
+	on ^353 -*;
+	on ^381 -*;
+	on ^471 -*;
+	on ^473 -*;
+	on ^474 -*;
+	on ^475 -*;
+	on ^476 -*;
+	on ^482 -*;
+	alias -set;
+	on ^set -'set-error % is ambiguous';
+	on ^set -'set-error No such variable *';
 };
 
-on ^set 'set-error No such variable *' {
-	xecho -b No such variable "$4";
-};
+set colors on;
+set hilight on;
