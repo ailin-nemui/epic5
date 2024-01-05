@@ -7,7 +7,7 @@ dnl
 
 AC_INIT([epic5],[2])
 AC_CONFIG_SRCDIR([source/irc.c])
-AC_CONFIG_HEADER([include/defs.h])
+AC_CONFIG_HEADERS([include/defs.h])
 AC_LANG(C)
 
 dnl ----------------------------------------------------------
@@ -334,6 +334,7 @@ fi
 
 AC_CHECK_FUNC(arc4random, AC_DEFINE([HAVE_ARC4RANDOM], 1, [Define this if you have arc4random()]),)
 AC_CHECK_FUNC(clock_gettime, AC_DEFINE([HAVE_CLOCK_GETTIME], 1, [Define if you have clock_gettime()]),)
+AC_CHECK_FUNC(crypt, AC_DEFINE([HAVE_CRYPT], 1, [Define if you have crypt()]),)
 AC_CHECK_FUNC(fchdir, AC_DEFINE([HAVE_FCHDIR], 1, [Define if you have fchdir()]),)
 AC_CHECK_FUNC(fpathconf, AC_DEFINE([HAVE_FPATHCONF], 1, [Define if you have fpathconf()] ),)
 AC_CHECK_FUNC(getlogin, AC_DEFINE([HAVE_GETLOGIN], 1, [Define if you have getlogin()]),)
@@ -447,7 +448,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
   	  [ AC_MSG_RESULT(no, ugh)
   	    AC_DEFINE([DONT_USE_TERM_H], 1, [Define if <term.h> should be avoided]) ], :), ] :)
 
-AC_HEADER_TIME
+dnl -- oh autoconf, never change -- AC_HEADER_TIME
 AC_HEADER_DIRENT
 AC_TYPE_MODE_T
 AC_TYPE_OFF_T

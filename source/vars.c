@@ -94,7 +94,7 @@
 
 /*
  * This bucket contains ONLY THE HARDCODED /SETs
- * This is duplicative of the master /SET list maintained by the symbol table.
+ * This is duplicative of the user-facing /SET list maintained by the symbol table.
  * The routines that do O(1) mapping of /set's to (IrcVariable) objects
  * will use this bucket for their lookups.
  */

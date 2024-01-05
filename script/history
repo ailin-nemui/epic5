@@ -130,7 +130,7 @@ alias history.add (...) {
 
 alias history.erase (void) {
 	@ history.index = '';
-	parsekey reset_line;
+	parsekey erase_line;
 };
 
 alias history.get (direction, void) {

@@ -253,7 +253,7 @@ static int 	term_init (void)
 	tcgetattr(tty_des, &oldb);
 
 	newb = oldb;
-	newb.c_lflag &= ~(ICANON | ECHO); /* set equ. of CBREAK, no ECHO */
+	newb.c_lflag &= ~(unsigned int)(ICANON | ECHO); /* set equ. of CBREAK, no ECHO */
 	newb.c_cc[VMIN] = 1;	          /* read() satified after 1 char */
 	newb.c_cc[VTIME] = 0;	          /* No timer */
 
@@ -273,7 +273,7 @@ static int 	term_init (void)
 		newb.c_cc[VSUSP] = _POSIX_VDISABLE;
 #	endif
 
-	newb.c_iflag &= ~IXON;	/* No XON/XOFF */
+	newb.c_iflag &= ~(unsigned long)(IXON | IXOFF); /* No XON/XOFF */
 	tcsetattr(tty_des, TCSADRAIN, &newb);
 	return 0;
 }

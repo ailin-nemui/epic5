@@ -7368,7 +7368,7 @@ int	get_signal_by_name (const char *signame)
 }
 
 /*
- * This is from https://github.com/rxi/uuid4/blob/master/src/uuid4.c
+ * This is from https://github.com/rxi/uuid4/blob/<redacted>/src/uuid4.c
  */
 /**
  * Copyright (c) 2018 rxi
@@ -7434,7 +7434,7 @@ char *	uuid4_generate_no_dashes (void)
 	return uuid4_generate_internal(0);
 }
 
-/* End of stuff from from https://github.com/rxi/uuid4/blob/master/src/uuid4.c */
+/* End of stuff from from https://github.com/rxi/uuid4/blob/<redacted>/src/uuid4.c */
 
 /*
  * I sourced this from https://en.wikipedia.org/wiki/Code_page_437

@@ -2232,7 +2232,7 @@ const	char	*cont_ptr;
 
 			/*
 			 * If we are approaching the number of lines that
-			 * we have space for, then resize the master line
+			 * we have space for, then resize the line
 			 * buffer so we dont run out.
 			 */
 			if (line >= output_size - 3)
@@ -2348,7 +2348,7 @@ const	char	*cont_ptr;
 
 			/*
 			 * Now we break off the line at the last space or
-			 * last char and copy it off to the master buffer.
+			 * last char and copy it off to the result buffer.
 			 */
 			c = buffer[word_break];
 			buffer[word_break] = 0;
@@ -4760,7 +4760,7 @@ void		set_screen_control		(int screen_, int value)
 	Screen *s = get_screen_by_refnum(screen_);
 	if (!s)
 		return;
-	s->fdout = value;
+	s->control = value;
 }
 
 void		set_screen_last_key		(int screen_, void *value)

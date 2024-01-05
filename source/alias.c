@@ -153,7 +153,7 @@ typedef struct RuntimeStackStru
 }	RuntimeStack;
 
 /*
- * This is the master stack frame.  Its size is saved in ``max_wind''
+ * This is the foundational stack frame.  Its size is saved in ``max_wind''
  * and the current frame being used is stored in ``wind_index''.
  */
 static 	RuntimeStack *call_stack = NULL;

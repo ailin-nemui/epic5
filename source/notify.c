@@ -309,9 +309,8 @@ static void	ison_notify (int refnum, char *AskedFor, char *AreOn)
 }
 
 /*
- * do_notify:  This goes through the master notify list and collects it
- * into groups of 500 character sets.  Then it sends this out to each 
- * connected server.  It repeats this until the whole list has been parsed.
+ * do_notify:  This goes through every server and does an ISON on its notify list.
+ * 		isonbase() is responsible for the chunking now.
  */
 void 	do_notify (void)
 {

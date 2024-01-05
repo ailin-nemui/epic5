@@ -1310,3 +1310,9 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /on ping (rb skered)
 * Fix the addition of 'git_commit' to handle releases (rb zlonix)
 * Update to 'colors' script (zlonix)
+* Fix /window create (rb fusion); fix ub in wserv.c
+* Have configure check for crypt()
+* Adapt and regenerate configure to use autoconf-2.71 (sigh)
+* Make $crypt() return empty if no crypt() [rb Tilt]
+* In /load history, ^U should use erase_line not reset_line. (rb fusion)
+

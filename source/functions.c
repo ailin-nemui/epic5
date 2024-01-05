@@ -4151,6 +4151,7 @@ BUILT_IN_FUNCTION(function_fsize, words)
  */
 BUILT_IN_FUNCTION(function_crypt, words)
 {
+#ifdef HAVE_CRYPT
 	char *pass, *salt;
 	char *ret;
 
@@ -4158,6 +4159,9 @@ BUILT_IN_FUNCTION(function_crypt, words)
 	GET_DWORD_ARG(salt, words)
 	ret = crypt(pass, salt);
 	RETURN_STR(ret);		/* Dont call function in macro! */
+#else
+	RETURN_EMPTY;
+#endif
 }
 
 BUILT_IN_FUNCTION(function_info, words)

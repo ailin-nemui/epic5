@@ -147,7 +147,7 @@ typedef struct InputLine
 
 /*
  * This is a UTF8 C string containing the input line.
- * Although ultimately this is the master reference copy of the input line,
+ * Although ultimately this is the official reference copy of the input line,
  * any time you change stuff in it, you need to call retokenize_input_line()
  * to refresh the metadata and update_input() to refresh the screen.
  */
