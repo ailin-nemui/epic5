@@ -24,6 +24,7 @@ int	ACCEPT_INVALID_SSL_CERT_VAR,
 	BANNER_VAR,
 	BANNER_EXPAND_VAR,
 	BEEP_VAR,
+	BLANK_LINE_INDICATOR_VAR,
 	BROKEN_AIXTERM_VAR,
 	CHANNEL_NAME_WIDTH_VAR,
 	CLIENT_INFORMATION_VAR,
@@ -224,6 +225,7 @@ typedef struct
 {
         int             type;           /* variable types, see below */
         VARIABLE *      data;           /* The value of the variable */
+        VARIABLE *      orig_data;      /* The original value of the variable */
         void    (*func) (void *); 	/* func called when var is set */
 	char *		script;		/* script called when var is set */
         unsigned short  pending;        /* set when it is being changed (prevents recursion) */
@@ -249,6 +251,7 @@ const	char *	get_string_var 		(int);
 	int	parse_mangle		(const char *, int, char **);
 	char	*get_set		(const char *);
 	char *	make_string_var_bydata	(const void *);
+	char *	make_string_var_by_orig_data	(const void *);
 	int	set_variable		(const char *, IrcVariable *, const char *, int);
 	IrcVariable *   clone_biv	(IrcVariable *);
 	void	unclone_biv		(const char *, IrcVariable *);

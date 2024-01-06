@@ -243,7 +243,10 @@ void	flush_all_symbols (void)
 		if (s->builtin_variable)
 		{
 			if (s->builtin_variable->type == STR_VAR)
+			{
 				new_free(&s->builtin_variable->data->string);
+				new_free(&s->builtin_variable->orig_data->string);
+			}
 			new_free(&s->builtin_variable->data);
 			new_free(&s->builtin_variable->script);
 			new_free(&s->builtin_variable);
@@ -3349,6 +3352,7 @@ int	stack_list_builtin_var_alias (const char *name)
  * $symbolctl(GET <symbol> <level> BUILTIN_VARIABLE BUILTIN)
  * $symbolctl(GET <symbol> <level> BUILTIN_VARIABLE SCRIPT)
  * $symbolctl(GET <symbol> <level> BUILTIN_VARIABLE FLAGS)
+ * $symbolctl(GET <symbol> <level> BUILTIN_VARIABLE ORIG_DATA)
  *	Retrieve information about a /SET.  
  *	The "TYPE" is one of "STR", "INT", "BOOL", or "CHAR"
  *	Generally, either "BUILTIN" or "SCRIPT" is set, but not both.
@@ -3476,8 +3480,12 @@ char    *symbolctl      (char *input)
 		    if (s->builtin_variable) {
 			new_free(&s->builtin_variable->script);
 			if (s->builtin_variable->type == STR_VAR)
+			{
 				new_free(&s->builtin_variable->data->string);
+				new_free(&s->builtin_variable->orig_data->string);
+			}
 			new_free(&s->builtin_variable->data);
+			new_free(&s->builtin_variable->orig_data);
 			new_free(&s->builtin_variable);
 		    }
 		}
@@ -3581,6 +3589,8 @@ char    *symbolctl      (char *input)
 		    }
 		} else if (!my_stricmp(attr, "DATA"))
 		    RETURN_MSTR(make_string_var_bydata(s->builtin_variable));
+		else if (!my_stricmp(attr, "ORIG_DATA"))
+		    RETURN_MSTR(make_string_var_by_orig_data(s->builtin_variable));
 		else if (!my_stricmp(attr, "FUNC"))
 		    RETURN_INT((long)s->builtin_variable->func);
 		else if (!my_stricmp(attr, "SCRIPT"))
@@ -3680,6 +3690,8 @@ char    *symbolctl      (char *input)
 		    v->type = BOOL_VAR;
 		    v->data = new_malloc(sizeof(union builtin_variable));
 		    v->data->integer = 0;
+		    v->orig_data = new_malloc(sizeof(union builtin_variable));
+		    v->orig_data->integer = 0;
 		    v->pending = 0;
 		    v->func = NULL;
 		    v->script = NULL;
@@ -3701,9 +3713,15 @@ char    *symbolctl      (char *input)
 			RETURN_EMPTY;
 
 		    if (v->type == STR_VAR)
+		    {
 			new_free(&v->data->string);
+			new_free(&v->orig_data->string);
+		    }
 		    if (newval == STR_VAR)
+		    {
+			v->orig_data->string = NULL;
 			v->data->string = NULL;
+		    }
 		    else
 			v->data->integer = 0;
 

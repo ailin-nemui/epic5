@@ -106,8 +106,10 @@ static	void	set_mangle_outbound 	(void *);
 static	void	set_mangle_logfiles 	(void *);
 static	void	set_mangle_display	(void *);
 static	void	update_all_status_wrapper (void *);
+static	void	update_all_windows_wrapper (void *);
 static	void	set_wserv_type		(void *);
 static	void	set_indent		(void *);
+char *	make_string_var_bydata_internal (int type, const VARIABLE *data);
 
 
 /*
@@ -152,6 +154,7 @@ static int	add_biv (const char *name, int bucket, int type, void (*func) (void *
 	var->func = func;
 
 	var->data = new_malloc(sizeof(union builtin_variable));
+	var->orig_data = new_malloc(sizeof(union builtin_variable));
 	var->pending = 0;
 
 	va_start(va, script);
@@ -161,13 +164,20 @@ static int	add_biv (const char *name, int bucket, int type, void (*func) (void *
 	    case INT_VAR:
 		numval = va_arg(va, int);
 		var->data->integer = numval;
+		var->orig_data->integer = numval;
 		break;
 	    case STR_VAR:
 		strval = va_arg(va, char *);
 		if (strval)
+		{
 			var->data->string = malloc_strdup(strval);
+			var->orig_data->string = malloc_strdup(strval);
+		}
 		else
+		{
 			var->data->string = NULL;
+			var->orig_data->string = NULL;
+		}
 		break;
 	}
 	va_end(va);
@@ -213,6 +223,7 @@ IrcVariable *	clone_biv (IrcVariable *old)
 	var->func = old->func;
 
 	var->data = new_malloc(sizeof(union builtin_variable));
+	var->orig_data = new_malloc(sizeof(union builtin_variable));
 	var->pending = 0;
 
 	switch (old->type) {
@@ -220,12 +231,19 @@ IrcVariable *	clone_biv (IrcVariable *old)
 	    case CHAR_VAR:
 	    case INT_VAR:
 		var->data->integer = old->data->integer;
+		var->orig_data->integer = old->orig_data->integer;
 		break;
 	    case STR_VAR:
 		if (old->data->string)
+		{
 			var->data->string = malloc_strdup(old->data->string);
+			var->orig_data->string = malloc_strdup(old->orig_data->string);
+		}
 		else
+		{
 			var->data->string = NULL;
+			var->orig_data->string = NULL;
+		}
 		break;
 	}
 
@@ -275,13 +293,19 @@ void	unclone_biv (const char *name, IrcVariable *clone)
 		    case CHAR_VAR:
 		    case INT_VAR:
 			var->data->integer = clone->data->integer;
+			var->orig_data->integer = clone->orig_data->integer;
 			break;
 		    case STR_VAR:
 			if (clone->data->string)
 			    malloc_strcpy(&var->data->string, clone->data->string);
 			else
 			    new_free(&var->data->string);
+			if (clone->orig_data->string)
+			    malloc_strcpy(&var->orig_data->string, clone->orig_data->string);
+			else
+			    new_free(&var->orig_data->string);
 			new_free(&clone->data->string);
+			new_free(&clone->orig_data->string);
 			break;
 		}
 
@@ -310,6 +334,7 @@ void	unclone_biv (const char *name, IrcVariable *clone)
 
 
 		new_free(&clone->data);
+		new_free(&clone->orig_data);
 		new_free(&clone);
 		return;
 	     }
@@ -370,6 +395,7 @@ void 	init_variables_stage1 (void)
 	VAR(BANNER, 			STR,  NULL)
 	VAR(BANNER_EXPAND, 		BOOL, NULL)
 	VAR(BEEP, 			BOOL, NULL)
+	VAR(BLANK_LINE_INDICATOR,	STR,  update_all_windows_wrapper)
 	VAR(BROKEN_AIXTERM,		BOOL, NULL)
 	VAR(CHANNEL_NAME_WIDTH, 	INT,  update_all_status_wrapper)
 #define DEFAULT_CLIENT_INFORMATION IRCII_COMMENT
@@ -589,6 +615,8 @@ void 	init_variables_stage2 (void)
 			if (var->func == build_status)
 				continue;
 			if (var->func == update_all_status_wrapper)
+				continue;
+			if (var->func == update_all_windows_wrapper)
 				continue;
 
 			var->pending++;
@@ -1126,6 +1154,33 @@ const 	VARIABLE *data;
 
 	type = ((const IrcVariable *)irc_variable)->type;
 	data = (const VARIABLE *)(((const IrcVariable *)irc_variable)->data);
+	ret = make_string_var_bydata_internal(type, data);
+	return ret;
+}
+
+char *	make_string_var_by_orig_data (const void *irc_variable)
+{
+	int	type;
+const 	VARIABLE *data;
+	char	*ret = (char *) 0;
+
+	/* XXX Not sure what better to do here */
+	if (!irc_variable)
+		return malloc_strdup(empty_string);
+
+	type = ((const IrcVariable *)irc_variable)->type;
+	data = (const VARIABLE *)(((const IrcVariable *)irc_variable)->orig_data);
+	ret = make_string_var_bydata_internal(type, data);
+	return ret;
+}
+
+char *	make_string_var_bydata_internal (int type, const VARIABLE *data)
+{
+	char	*ret = (char *) 0;
+
+	/* XXX Not sure what better to do here */
+	if (!data)
+		return malloc_strdup(empty_string);
 
 	switch (type)
 	{
@@ -1151,7 +1206,7 @@ const 	VARIABLE *data;
 			break;
 		}
 		default:
-			panic(1, "make_string_var_bydata: unrecognized type [%d]", type);
+			panic(1, "make_string_var_bydata_internal: unrecognized type [%d]", type);
 	}
 	return (ret);
 
@@ -1237,6 +1292,15 @@ static void	update_all_status_wrapper (void *stuff)
 {
 	update_all_status();
 }
+
+/*
+ * update_all_windows_wrapper - call update_all_windows() from a /SET callback
+ */
+static void	update_all_windows_wrapper (void *stuff)
+{
+	need_redraw = 1;
+}
+
 
 /*
  * set_wserv_type -- callback for /SET WSERV_TYPE

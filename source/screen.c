@@ -3195,10 +3195,16 @@ void 	repaint_window_body (int window_)
 		 */
 		if (curr_line == get_window_display_ip(window_))
 		{
+			const char *x;
+
+			x = get_string_var(BLANK_LINE_INDICATOR_VAR);
+
 			set_window_cursor_decr(window_);		/* Bumped by rite */
 			for (; count < get_window_display_lines(window_); count++)
 			{
 				term_clear_to_eol();
+				if (x)
+					putchar_x(x[0]);
 				term_newline();
 			}
 			break;
