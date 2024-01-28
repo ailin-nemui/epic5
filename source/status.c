@@ -1065,8 +1065,9 @@ int     permit_status_update (int flag)
  */
 #define STATUS_VARS \
 	static char *	my_bufferx = NULL; \
-	static int 	my_bufferxsize = 64; \
-	       int	actual_size;
+	static size_t 	my_bufferxsize = 64; \
+	       ssize_t	actual_size; \
+		char *	expanded_arg = NULL;
 
 /* After you change 'my_bufferxspace', call this to update 'my_bufferx' */
 #define CHECK \
@@ -1080,7 +1081,7 @@ int     permit_status_update (int flag)
 #define RECHECK \
 	if (actual_size < 0) 	/* Die Die Die */ \
 		my_bufferxsize += 16;	\
-	else if (actual_size < my_bufferxsize) \
+	else if (actual_size < (ssize_t)my_bufferxsize) \
 		break; \
 	else					\
 		my_bufferxsize = actual_size + 1; \
@@ -1094,11 +1095,20 @@ int     permit_status_update (int flag)
  */
 #define PRESS(fmt, arg) \
 	if (! fmt ) return empty_string; \
+\
+	if (get_int_var(STATUS_DOES_EXPANDOS_VAR)) { \
+		expanded_arg = alloca((int)strlen(my_bufferx) * 2 + 6); \
+		*expanded_arg = 0; \
+		double_quote(arg, "*", expanded_arg); \
+	} else { \
+		expanded_arg = LOCAL_COPY(arg); \
+	} \
+\
 	CHECK \
 	do { \
-		actual_size = snprintf(my_bufferx, my_bufferxsize, fmt, arg); \
+		actual_size = (ssize_t)snprintf(my_bufferx, my_bufferxsize, fmt, expanded_arg); \
 		RECHECK \
-	} while (1);
+	} while (1);  \
 
 /*
  * Return the return buffer.  The reason this is not part of 'PRESS' is 
@@ -1692,7 +1702,7 @@ STATUS_FUNCTION(status_refnum_real)
 {
 	STATUS_VARS
 
-	PRESS("%d", get_window_user_refnum(window_));
+	PRESS("%s", ltoa(get_window_user_refnum(window_)));
 	RETURN
 }
 

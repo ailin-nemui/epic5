@@ -25,6 +25,15 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   (ie, restore_window_positions() goofs), unconditionally reset the hold point to the
   bottom of the screen (rb zlonix)
 * Learn how mouse support in xterm works for fusion
+* [ 2:13PM] ERROR: error:1C80006B:Provider routines::wrong final block length
+   when you do /eval echo $xform("+AESSHA +B64" test 1)   [rb zlonix]
+   This is because we're explicitly turning off padding, but I don't know why 
+* $windowctl(GET x CURRENT_CHANNEL) should be a thing that exists 
+* Add a ripcord failsafe for /disconnect (ie, /disconnect -force) (re CE)
+* Harz wants some way to /echo that defeats /set indent
+* Figure out Harz's problem with /stack push set indent
+* Support the idiotic proliferation of chanmodes for users on unrealirc
+	PREFIX=(qaohv)~&@%+
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1315,4 +1324,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * In /load history, ^U should use erase_line not reset_line. (rb fusion)
 * Add /set blank_line_indicator (rb harz) -- see UPDATES
 * Add $symbolctl(GET <varname> 0 BUILTIN_VARIABLE ORIG_DATA) (very much WIP!)
+* Don't have configure check for <sys/fcntl.h> (sigh)
+* Don't use inline expandos ($L) in /load history -- use $builtin_expand()
+* When /set status_does_expandos, double-quote the injected text (rb fudd, lw)
+* Fix bogus use of * in on send_public in builtins (rb lw)
+* Fix antiquated/bogus use of dword in /load country
+* Add make uninstall, which does its best  (rb skered)
 

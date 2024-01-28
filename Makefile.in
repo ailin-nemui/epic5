@@ -96,6 +96,8 @@ all everything:
 install installeverything: all installbin installscript installman
 installbin: installepic5 @WSERV_INSTALL@
 
+uninstall uninstalleverything: uninstallbin uninstallscript uninstallman uninstalldirs
+uninstallbin: uninstallepic5 uninstallwserv4 uninstalloldbins
 
 VPATH=@srcdir@
 
@@ -112,6 +114,11 @@ installepic5 installirc: epic5 installdirs
 	$(INSTALL_PROGRAM) source/epic5 $(IP)$(DESTDIR)$(EPIC);	\
 	$(RM) $(IP)$(DESTDIR)$(EPIC_LINK); \
 	ln -s $(epic5)-$(VERSION) $(IP)$(DESTDIR)$(EPIC_LINK); 
+uninstallepic5 uninstallirc: 
+	$(RM) $(IP)$(DESTDIR)$(EPIC)
+	$(RM) $(IP)$(DESTDIR)$(EPIC_LINK)
+uninstalloldbins:
+	$(RM) $(IP)$(DESTDIR)$(epic5_exe)-*
 
 #
 # wserv
@@ -122,6 +129,8 @@ wserv4:
 WSERV	 = $(wserv_exe)
 installwserv4: wserv4 installdirs 
 	$(INSTALL_PROGRAM) source/wserv4 $(IP)$(DESTDIR)$(WSERV)
+uninstallwserv4:
+	$(RM) $(IP)$(DESTDIR)$(WSERV)
 
 #
 # Script library
@@ -133,9 +142,13 @@ installscript: installdirs
 		target=$(IP)$(DESTDIR)$(scriptdir)/`basename $$i`; \
 		$(INSTALL_DATA) $$i $$target; \
 	done
+uninstallscript:
+	$(RM) -r $(IP)$(DESTDIR)$(scriptdir)/*
 
 installman: installdirs
 	$(INSTALL_DATA) @srcdir@/doc/epic5.1 $(IP)$(DESTDIR)$(mandir)/man1/$(epic5).1
+uninstallman: 
+	$(RM) $(IP)$(DESTDIR)$(mandir)/man1/$(epic5).1
 
 installdirs:
 	umask 022; \
@@ -145,6 +158,11 @@ installdirs:
 		 $(IP)$(DESTDIR)$(libexecdir) \
 		 $(IP)$(DESTDIR)$(mandir)/man1 ; do \
 	    if ! test -d $$i ; then mkdir -p $$i ; fi \
+	done
+uninstalldirs:
+	for i in $(IP)$(DESTDIR)$(scriptdir) \
+		 $(IP)$(DESTDIR)$(epic5dir) ; do \
+	    if test -d $$i ; then rmdir $$i || true ; fi \
 	done
 
 clean:

@@ -136,7 +136,7 @@ alias history.erase (void) {
 alias history.get (direction, void) {
 	if (direction == 1) {
 		if (@L && @history.index == 0) {
-			history.add $L;
+			history.add $builtin_expando(L);
 		};
 		if ((history.index == (:numitems = numitems(array.history) - 1) || @history.index == 0)) {
 			if (getset(history_circleq) == 'on') {
@@ -149,7 +149,7 @@ alias history.get (direction, void) {
 		};
 	} else if (direction == -1) {
 		if (@L && @history.index == 0) {
-			history.add $L;
+			history.add $builtin_expando(L);
 			@ history.index = numitems(array.history) - 1;
 		};
 		if ((history.index == 0 && getset(history_circleq) == 'on') || @history.index == 0) {
@@ -161,7 +161,7 @@ alias history.get (direction, void) {
 };
 
 alias history.shove (void) {
-	history.add $L;
+	history.add $builtin_expando(L);
 	parsekey reset_line;
 };
 
@@ -196,7 +196,7 @@ alias historyctl (action, ...) {
 			return 0;
 		};
 		(read) {
-			if ((:fd = open("${*0 ? *0 : getset(history_save_file)}" R)) > -1) {
+			if ((:fd = open("${*0 ?? getset(history_save_file)}" R)) > -1) {
 				while (:line = read($fd)) {
 					if (numitems(array.history) == history) {
 						@ delitem(array.history 0);
@@ -212,7 +212,7 @@ alias historyctl (action, ...) {
 			@ delarray(array.history);
 		};
 		(save) {
-			if ((:fd = open("${*0 ? *0 : getset(history_save_file)}" W)) > -1) {
+			if ((:fd = open("${*0 ?? getset(history_save_file)}" W)) > -1) {
 				fe ($jot(0 ${numitems(array.history) - 1} 1)) hh {
 					@ write($fd $getitem(array.history $hh));
 				};

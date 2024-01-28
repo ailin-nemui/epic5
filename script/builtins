@@ -307,7 +307,7 @@ alias winvisible (winnum default 0, void) {
 # HOOKS #
 
 ^on ^send_public "*" {
-	echo ${!iscurchan($0) ? (*) : ''}> $1-;
+	echo ${!iscurchan($0) ? (*0) : ''}> $1-;
 };
 
 # SETS #

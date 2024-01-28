@@ -5002,12 +5002,6 @@ then :
   printf "%s\n" "#define HAVE_SYS_CDEFS_H 1" >>confdefs.h
 
 fi
-ac_fn_c_check_header_compile "$LINENO" "sys/fcntl.h" "ac_cv_header_sys_fcntl_h" "$ac_includes_default"
-if test "x$ac_cv_header_sys_fcntl_h" = xyes
-then :
-  printf "%s\n" "#define HAVE_SYS_FCNTL_H 1" >>confdefs.h
-
-fi
 ac_fn_c_check_header_compile "$LINENO" "sys/file.h" "ac_cv_header_sys_file_h" "$ac_includes_default"
 if test "x$ac_cv_header_sys_file_h" = xyes
 then :

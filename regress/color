@@ -93,4 +93,16 @@ echo  7 $chr(27)[7\;37m Reverse White foreground
 }
 
 
+alias testcolor3 {
+	fe (0 1 2 3 4 5 6 7 8 9 A B C D E F) i {
+		@ str = []
+		fe (0 1 2 3 4 5 6 7 8 9 A B C D E F) j {
+			@c = [$i$j]
+			@ str #= cparse(%X$c $c)
+		}
+		echo $str
+	}
+}
+
+
 testcolor
