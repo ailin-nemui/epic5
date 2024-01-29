@@ -2308,7 +2308,7 @@ int 	connect_to_server (int new_server)
 		say("Network connection to server %d at %s:%d is already open (state [%s])",
 				new_server, s->info->host, s->info->port,
 				server_states[s->state]);
-		say("Use /RECONNECT if this connection is stuck");
+		say("Use /RECONNECT -FORCE if this connection is stuck");
 		from_server = new_server;
 		return -1;		/* Server is already connected */
 	}
@@ -2983,66 +2983,100 @@ int	is_server_valid (int refnum)
 
 
 /*
- * Despite its name, this is the handler for both /DISCONNECT and /RECONNECT.
- * The "recon" variable controls which one we're doing.
+ * DISCONNECT/RECONNECT - Change a server's state
+ *
+ * Arguments:
+ *    By default, the current server will be used.
+ *	<server refnum>		Disconnect or reconnect from a specific server
+ *	-FORCE			Don't argue with me, just do it.
+ *	-SAFE			For services: "Don't do anything that makes no sense"
+ *
+ * First, the server will be put into the CLOSED state
+ * Then, if you did /RECONNECT the server will be put into the RECONNECT state
  */
 BUILT_IN_COMMAND(disconnectcmd)
 {
-	char	*server;
+	char *	arg;
 	const char *message;
-	int	i;
-	int	discon = !strcmp(command, "DISCONNECT");
-	int	recon = strcmp(command, "DISCONNECT");
+	int	i = get_window_server(0);
+	int	reconnect_ = strcmp(command, "DISCONNECT");
+	int	force = 1;
 
-	if (!(server = next_arg(args, &args)))
+	while (args && *args) 
 	{
-		if ((i = from_server) == NOSERV)
-			i = get_window_server(0);
-	}
-	else
-	{
-		if ((i = str_to_servref(server)) == NOSERV)
+		arg = next_arg(args, &args);
+		if (arg == NULL)
 		{
-			say("No such server!");
-			return;
+			if ((i = from_server) == NOSERV)
+				i = get_window_server(0);
+			break;
+		}
+		else if (my_strnicmp(arg, "-FORCE", 1))
+			force = 1;
+		else if (my_strnicmp(arg, "-SAFE", 1))
+			force = 0;
+		else
+		{
+			i = str_to_servref(arg);
+			if (i == NOSERV)
+			{
+				say("No such server!");
+				return;
+			}
+			break;
 		}
 	}
 
-	if (recon && is_server_registered(i))
+	if (!get_server(i))
 	{
-		say("You cannot /RECONNECT to a server you are actively on (%s)", get_server_itsname(i));
+		if (!connected_to_server)
+			goto throw_on_disconnect;
+
+		say("%s: Unknown server %d", command, i);
+		return;
+	}
+
+	if (force == 0 && reconnect_ && is_server_registered(i))
+	{
+		say("You cannot /RECONNECT -SAFE to a server you are actively on (%s)", get_server_itsname(i));
 		say("Use /DISCONNECT first.  This is a safety valve");
 		return;
 	}
 
-	if (get_server(i))
+	if (args && *args)
+		message = args;
+	else if (reconnect_)
+		message = "Reconnecting";
+	else
+		message = "Disconnecting";
+
+	say("Disconnecting from server %s", get_server_itsname(i));
+	close_server(i, message);
+	update_all_status();
+
+	if (reconnect_)
 	{
-		if (is_server_open(i))
-		{
-		    if (args && *args)
-			message = args;
-		    else if (recon)
-			message = "Reconnecting";
-		    else
-			message = "Disconnecting";
-
-		    say("Disconnecting from server %s", get_server_itsname(i));
-		    close_server(i, message);
-		    update_all_status();
-		}
-		else if (discon)
-		    say("You are already disconnected from server %s",
-						get_server_itsname(i));
-	}
-
-	if (discon && !connected_to_server)
-                if (do_hook(DISCONNECT_LIST, "Disconnected by user request"))
-			say("You are not connected to a server, use /SERVER to connect.");
-
-	if (recon && connect_to_server(i) < 0)
-	{
-		set_server_state(i, SERVER_RECONNECT);
 		say("Reconnecting to server %s", get_server_itsname(i));
+
+		/* 
+		 * Now, why do we call "connect_to_server()" instead of 
+		 * setting the server state to SERVER_RECONNECT?
+		 * connect_to_server() is the entry point for after we have
+		 * done DNS lookups.  This shortcut here is how we iterate
+		 * through all the DNS lookups.  However, if that fails
+		 * (maybe becuase we ran out of address), then we do go
+		 * ahead and reset to SERVER_RECONNECT which does a dns 
+		 * lookup and restarts the process.
+		 */
+		if (connect_to_server(i) < 0)
+			set_server_state(i, SERVER_RECONNECT);
+	}
+	else
+	{
+throw_on_disconnect:
+		if (!connected_to_server)
+			if (do_hook(DISCONNECT_LIST, "Disconnected by user request"))
+				say("You are not connected to a server, use /SERVER to connect.");
 	}
 } 
 

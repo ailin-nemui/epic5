@@ -29,7 +29,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
    when you do /eval echo $xform("+AESSHA +B64" test 1)   [rb zlonix]
    This is because we're explicitly turning off padding, but I don't know why 
 * $windowctl(GET x CURRENT_CHANNEL) should be a thing that exists 
-* Add a ripcord failsafe for /disconnect (ie, /disconnect -force) (re CE)
 * Harz wants some way to /echo that defeats /set indent
 * Figure out Harz's problem with /stack push set indent
 * Support the idiotic proliferation of chanmodes for users on unrealirc
@@ -1330,4 +1329,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix bogus use of * in on send_public in builtins (rb lw)
 * Fix antiquated/bogus use of dword in /load country
 * Add make uninstall, which does its best  (rb skered)
-
+* Rewrite /disconnect|reconnect so it behaves more reasonably (i hope) (rb CE)
