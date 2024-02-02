@@ -981,7 +981,6 @@ BUILT_IN_FUNCTION(function_ctcpctl, input)
 		/* Boostrap a new built-in CTCP if necessary */
 		if (i == -1)
 		{
-			yell("Added a new CTCP named %s", ctcp_name);
 			add_ctcp(ctcp_name, CTCP_ORDINARY, ctcp_name, NULL, NULL, NULL, NULL);
 			i = lookup_ctcp(ctcp_name);
 		}

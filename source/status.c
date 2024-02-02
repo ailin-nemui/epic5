@@ -1097,7 +1097,7 @@ int     permit_status_update (int flag)
 	if (! fmt ) return empty_string; \
 \
 	if (get_int_var(STATUS_DOES_EXPANDOS_VAR)) { \
-		expanded_arg = alloca((int)strlen(my_bufferx) * 2 + 6); \
+		expanded_arg = alloca((int)strlen(arg) * 2 + 6); \
 		*expanded_arg = 0; \
 		double_quote(arg, "*", expanded_arg); \
 	} else { \

@@ -670,7 +670,7 @@ static void	p_error (const char *from, const char *comm, const char **ArgList)
 		say("%s %s", from, the_error);
 }
 
-static void	p_channel (const char *from, const char *comm, const char **ArgList)
+static void	p_join (const char *from, const char *comm, const char **ArgList)
 {
 	const char	*channel;
 	char 	*c;
@@ -963,8 +963,7 @@ static void	p_mode (const char *from, const char *comm, const char **ArgList)
 		type = "for user";
 	}
 
-	if (check_ignore_channel(from, FromUserHost, 
-					target, LEVEL_MODE) == IGNORED)
+	if (check_ignore_channel(from, FromUserHost, target, LEVEL_MODE) == IGNORED)
 		goto do_update_mode;
 
 	if (new_check_flooding(from, FromUserHost, target, changes, LEVEL_MODE))
@@ -972,8 +971,7 @@ static void	p_mode (const char *from, const char *comm, const char **ArgList)
 
 	l = message_from(m_target, LEVEL_MODE);
 	if (do_hook(MODE_LIST, "%s %s %s", from, target, changes))
-	    say("Mode change \"%s\" %s %s by %s",
-					changes, type, target, from);
+	    say("Mode change \"%s\" %s %s by %s", changes, type, target, from);
 	pop_message_from(l);
 
 do_update_mode:
@@ -1495,7 +1493,7 @@ static protocol_command rfc1459[] = {
 {	"INFO",		NULL,		0		},
 {	"INVITE",	p_invite,	0		},
 {	"ISON",		NULL,		PROTO_QUOTEBAD	},
-{	"JOIN",		p_channel,	0		},
+{	"JOIN",		p_join,		0		},
 {	"KICK",		p_kick,		0		},
 {	"KILL",		p_kill,		0		},
 {	"LINKS",	NULL,		0		},

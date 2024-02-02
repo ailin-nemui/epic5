@@ -19,8 +19,9 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * If you /set automargin_override ON and back OFF, toplines keep using the last column
   (rb fusion)
 * [ 7:02PM] <skered> hop: $cparse(%c...) where ... is a long string that epic inserts returns that first
-+character on the next line isn't %c howevever everthing after until the next line's first character. 
-[ 7:03PM] <skered> A long string without spaces. 
+   +character on the next line isn't %c howevever everthing after until the next line's first character. 
+  [ 7:03PM] <skered> A long string without spaces.  
+      *** do /eval echo $chr(3)53$repeat(500 .); then observe the first . on each line is not colored
 * If a window is holding before a resize/rebuild; and it is not holding afterwards
   (ie, restore_window_positions() goofs), unconditionally reset the hold point to the
   bottom of the screen (rb zlonix)
@@ -29,10 +30,11 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
    when you do /eval echo $xform("+AESSHA +B64" test 1)   [rb zlonix]
    This is because we're explicitly turning off padding, but I don't know why 
 * $windowctl(GET x CURRENT_CHANNEL) should be a thing that exists 
-* Harz wants some way to /echo that defeats /set indent
-* Figure out Harz's problem with /stack push set indent
 * Support the idiotic proliferation of chanmodes for users on unrealirc
 	PREFIX=(qaohv)~&@%+
+* [ 9:30PM] -> (#epic) so what i would want to do is have a --with-openssl-pc /path/to/openssl.pc
+* Allow /echo to defeat word wrap (ie, don't split on words) (rb Harz)
+
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1330,3 +1332,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix antiquated/bogus use of dword in /load country
 * Add make uninstall, which does its best  (rb skered)
 * Rewrite /disconnect|reconnect so it behaves more reasonably (i hope) (rb CE)
+* Fix a bogon with new STATUS_DOES_EXPANDOS stuff (rb wcarson)

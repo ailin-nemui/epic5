@@ -634,11 +634,9 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 			 * completed and we know that its not truncated. --esl
 			 */
 			if (!line || !*line)
-				add_to_channel(channel, nick, from_server, 
-								1, 0, 0, 0);
+				add_to_channel(channel, nick, from_server, 1, 0, 0, 0);
 			else
-				add_to_channel(channel, nick, from_server, 
-								0, 0, 0, 0);
+				add_to_channel(channel, nick, from_server, 0, 0, 0, 0);
 		    }
 
 		    break;
