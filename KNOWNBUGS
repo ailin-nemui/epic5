@@ -9,15 +9,9 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Allow /ignore for a nick!user@host but only on a channel
 * Add /set server_default_type, irc or irc-ssl (rb nick_)
 * Typing 😂😂😂 to the input line doesn't work right
+   -- This is a screen problem; it doesn't support 3 byte unicodes
 * I don't think /msg @L1 is implemented correctly
     - check out files.c:file_write for type == 2
-* [10:32AM] <Harzilein> 104:#emacs is already current window of 10
-  [10:32AM] *** Mode Change for #epic by morty1: +o Harzilein
-  [10:32AM] <Harzilein> was epic always so chatty?
-  [10:32AM] <zlonix> yes
-  [10:32AM] <Harzilein> it still says *** You are now talking to channel #emacs
-* If you /set automargin_override ON and back OFF, toplines keep using the last column
-  (rb fusion)
 * If a window is holding before a resize/rebuild; and it is not holding afterwards
   (ie, restore_window_positions() goofs), unconditionally reset the hold point to the
   bottom of the screen (rb zlonix)
@@ -1331,4 +1325,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add $windowctl(GET x CURRENT_CHANNEL) returns a window's current channel
 * Fix where first char of continued lines didn't have attributes (rb skered)
    /eval echo $chr(3)53$repeat(500 .) for example
-
+* Remove a debug statement harz found with /window channel
+* Make window toplines honor /set automargin_override.

@@ -1430,7 +1430,7 @@ void 	set_channel_window (const char *channel, int server, int window_, int as_c
 		 */
 		if (is_current_now && tmp->window == window && as_current)
 		{
-			yell("%d:%s is already current window of %d", server, channel, get_window_user_refnum(window));
+			debuglog("%d:%s is already current window of %d", server, channel, get_window_user_refnum(window));
 			return;
 		}
 
