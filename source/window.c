@@ -9763,6 +9763,8 @@ char 	*windowctl 	(char *input)
 		RETURN_INT(-1);
 	    } else if (!my_strnicmp(listc, "CHANNELS", len)) {
 		RETURN_MSTR(window_all_channels(w->refnum, w->server));
+	    } else if (!my_strnicmp(listc, "CURRENT_CHANNEL", len)) {
+		RETURN_STR(window_current_channel(w->refnum, w->server));
 	    } else if (!my_strnicmp(listc, "WAITING_CHANNEL", len)) {
 		RETURN_STR(get_waiting_channels_by_window(w->refnum));
 	    } else if (!my_strnicmp(listc, "BIND_CHANNEL", len)) {

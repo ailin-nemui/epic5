@@ -2383,9 +2383,11 @@ const	char	*cont_ptr;
 			buffer[pos] = 0;
 			pos_copy = LOCAL_COPY(buffer + word_break);
 			strlcpy(buffer, cont, sizeof(buffer) / 2);
-			display_attributes(buffer + strlen(buffer), &olda, &saved_a);
-			strlcat(buffer, pos_copy, sizeof(buffer) / 2);
+			/* -- I'm not sure if this is necessary */
+			/* display_attributes(buffer + strlen(buffer), &olda, &saved_a); */
+			/* -- and I think this should be before we copy pos_copy back */
 			display_attributes(buffer + strlen(buffer), &olda, &a);
+			strlcat(buffer, pos_copy, sizeof(buffer) / 2);
 
 			pos = strlen(buffer);
 			/* Watch this -- ugh. how expensive! :( */

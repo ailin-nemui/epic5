@@ -18,10 +18,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   [10:32AM] <Harzilein> it still says *** You are now talking to channel #emacs
 * If you /set automargin_override ON and back OFF, toplines keep using the last column
   (rb fusion)
-* [ 7:02PM] <skered> hop: $cparse(%c...) where ... is a long string that epic inserts returns that first
-   +character on the next line isn't %c howevever everthing after until the next line's first character. 
-  [ 7:03PM] <skered> A long string without spaces.  
-      *** do /eval echo $chr(3)53$repeat(500 .); then observe the first . on each line is not colored
 * If a window is holding before a resize/rebuild; and it is not holding afterwards
   (ie, restore_window_positions() goofs), unconditionally reset the hold point to the
   bottom of the screen (rb zlonix)
@@ -29,7 +25,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * [ 2:13PM] ERROR: error:1C80006B:Provider routines::wrong final block length
    when you do /eval echo $xform("+AESSHA +B64" test 1)   [rb zlonix]
    This is because we're explicitly turning off padding, but I don't know why 
-* $windowctl(GET x CURRENT_CHANNEL) should be a thing that exists 
 * Support the idiotic proliferation of chanmodes for users on unrealirc
 	PREFIX=(qaohv)~&@%+
 * [ 9:30PM] -> (#epic) so what i would want to do is have a --with-openssl-pc /path/to/openssl.pc
@@ -1333,3 +1328,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add make uninstall, which does its best  (rb skered)
 * Rewrite /disconnect|reconnect so it behaves more reasonably (i hope) (rb CE)
 * Fix a bogon with new STATUS_DOES_EXPANDOS stuff (rb wcarson)
+* Add $windowctl(GET x CURRENT_CHANNEL) returns a window's current channel
+* Fix where first char of continued lines didn't have attributes (rb skered)
+   /eval echo $chr(3)53$repeat(500 .) for example
+
