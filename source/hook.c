@@ -1875,7 +1875,7 @@ char *hookctl (char *input)
 	int sernum;
 	int halt = 0;
 	int id;
-	size_t retlen;
+	size_t retlen = 0;
 	char *nam;
 	char *str;
 	char *hookname;

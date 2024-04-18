@@ -2970,13 +2970,22 @@ char *	get_window_status_line (int refnum, int line)
 
 
 /* * * */
+/* 
+ * TODO
+ * XXX Ideally this should return something other than -1 if 'refnum' is invalid,
+ * because -1 means the window is invisible.  But I need to sweep the callers of
+ * this to ensure they don't just blindly assume <= 0 means "valid but invisible"
+ */
 int	get_window_screennum (int refnum)
 {
 	Window *tmp;
 
 	if (!(tmp = get_window_by_refnum_direct(refnum)))
 		tmp = get_window_by_refnum_direct(current_window_);
-	return tmp->screen_;
+	if (tmp)
+		return tmp->screen_;
+	else
+		return -1;
 }
 
 int	set_window_screennum (int refnum, int screennum)
@@ -6139,6 +6148,62 @@ WINDOWCMD(level)
 }
 
 /*
+ * /WINDOW LISTER "refnum[s]"
+ * This lists all of the windows in the refnum(s) provided
+ */
+WINDOWCMD(lister)
+{
+	int	len = 6;
+	int	cnw = get_int_var(CHANNEL_NAME_WIDTH_VAR);
+	char *	arg;
+	char *	copy;
+	char *	arg_refnum;
+	int	arg_refnum_count = 0;
+
+	if (!args)
+		return refnum;
+
+	if (cnw == 0)
+		cnw = 12;	/* Whatever */
+
+	if (!(arg = new_next_arg(*args, args)))
+		return refnum;
+
+	copy = LOCAL_COPY(arg);
+	while ((arg_refnum = next_arg(copy, &copy)))
+	{
+		int	window_ = get_window_by_desc(arg_refnum);
+		Window *tmp = get_window_by_refnum_direct(window_);
+
+		if (tmp && tmp->name && (strlen(tmp->name) > (size_t)len))
+			len = strlen(tmp->name);
+		arg_refnum_count++;
+	}
+
+	if (arg_refnum_count > 1)
+	{
+		say(WIN_FORM,      	"Ref",
+			      12, 12,	"Nick",	
+			      len, len, "Name",
+			      cnw, cnw, "Channel",
+					"Query",
+					"Server",
+					"Level",
+					empty_string);
+	}
+
+	copy = LOCAL_COPY(arg);
+	while ((arg_refnum = next_arg(copy, &copy)))
+	{
+		int window_ = get_window_by_desc(arg_refnum);
+		list_a_window(window_, len);
+	}
+
+	return refnum;
+}
+
+
+/*
  * /WINDOW LIST
  * This lists all of the windows known to the client, and a breif summary
  * of their current state.
@@ -8260,6 +8325,7 @@ static const window_ops options [] = {
 	{ "LASTLOG_LEVEL",	windowcmd_lastlog_mask 		},
 	{ "LEVEL",		windowcmd_level			},
 	{ "LIST",		windowcmd_list 			},
+	{ "LISTER",		windowcmd_lister 		},
 	{ "LOG",		windowcmd_log 			},
 	{ "LOGFILE",		windowcmd_logfile 		},
 	{ "LOG_MANGLE",		windowcmd_log_mangle		},
@@ -10109,6 +10175,9 @@ int	get_window_prev			(int window)
 	Window *w = get_window_by_refnum_direct(window);
 	int	sp;
 
+	if (!w)
+		return -1;
+
 	if (w->screen_ >= 0)
 	{
 	    if (list_check)
@@ -10125,6 +10194,9 @@ int	get_window_next			(int window)
 {
 	Window *w = get_window_by_refnum_direct(window);
 	int	sp;
+
+	if (!w)
+		return -1;
 
 	if (w->screen_ >= 0)
 	{

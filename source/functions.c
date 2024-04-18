@@ -2898,6 +2898,9 @@ char *function_unshift (char *word)
 	char    *var    = (char *) 0;
 	char	*booya  = (char *) 0;
 
+	/* XXX Is this right? */
+	RETURN_IF_EMPTY(word);
+
 	var = word;
 	word = after_expando(word, 1, NULL);
 
@@ -2909,7 +2912,7 @@ char *function_unshift (char *word)
 
 	upper(var);
 	value = get_variable(var);
-	if (!word || !*word)
+	if (!*word)
 		return value;
 
 	malloc_strcat_word(&booya, space, word, DWORD_DWORDS);
@@ -2933,6 +2936,9 @@ char *function_push (char *word)
 	char    *value = (char *) 0;
 	char    *var    = (char *) 0;
 
+	/* XXX Is this right? */
+	RETURN_IF_EMPTY(word);
+
 	var = word;
 	word = after_expando(word, 1, NULL);
 
@@ -2944,7 +2950,7 @@ char *function_push (char *word)
 
 	upper(var);
 	value = get_variable(var);
-	if (!word || !*word)
+	if (!*word)
 		RETURN_MSTR(value);
 
 	malloc_strcat_word(&value, space, word, DWORD_DWORDS);
@@ -4991,7 +4997,7 @@ BUILT_IN_FUNCTION(function_currchans, input)
 	int	win = 0;
 	char *retval = NULL;
 	const char *chan;
-	size_t	clue;
+	size_t	clue = 0;
 
 	if (input && *input)
 		GET_INT_ARG(server, input)

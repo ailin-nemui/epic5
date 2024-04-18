@@ -279,10 +279,13 @@ void *	really_new_realloc (void **ptr, size_t size, const char *fn, int line)
 {
 	void *newptr = NULL;
 
+	if (ptr == NULL)
+		return NULL;
+
 	if (!size) 
 		return *ptr;	/* Don't change anything */
 		/* *ptr = really_new_free(ptr, fn, line); */
-	else if (!*ptr)
+	else if (*ptr == NULL)
 		*ptr = really_new_malloc(size, fn, line);
 	else 
 	{
@@ -300,14 +303,11 @@ void *	really_new_realloc (void **ptr, size_t size, const char *fn, int line)
 		/* Copy everything, including the MO buffer */
 		VALGRIND_MEMPOOL_FREE(mo_ptr(*ptr), *ptr);
 		VALGRIND_DESTROY_MEMPOOL(mo_ptr(*ptr));
-		if ((newptr = realloc(mo_ptr(*ptr), size + sizeof(MO))))
-			*ptr = newptr;
-		else {
+		if (!(newptr = realloc(mo_ptr(*ptr), size + sizeof(MO))))
 			panic(1, "realloc() failed from [%s/%d], giving up!", fn, line);
-		}
 
 		/* Re-initalize the MO buffer; magic(*ptr) is already set. */
-		*ptr = (void *)((char *)*ptr + sizeof(MO));
+		*ptr = (void *)((char *)newptr + sizeof(MO));
 		alloc_size(*ptr) = size;
 #ifdef ALLOC_DEBUG
 		alloc_table.entries[mo_ptr(*ptr)->entry] = *ptr;
@@ -2201,7 +2201,9 @@ int 	opento(const char *filename, int flags, off_t position)
 {
 	int file;
 
-	file = open(filename, flags, 777);
+	if ((file = open(filename, flags, 777)) < 0)
+		return file;
+
 	lseek(file, position, SEEK_SET);
 	return file;
 }
@@ -3670,6 +3672,7 @@ static	int		random_fd = -1;
 
 	if (read(random_fd, (void *)&value, sizeof(value)) <= 0)
 	{
+		close(random_fd);
 		random_fd = -2;
 		return randm(l);	/* Fall back to randm */
 	}
@@ -4169,10 +4172,10 @@ char *	malloc_strdup3 (const char *str1, const char *str2, const char *str3)
  *  You must deallocate the space later by passing (ptr) to the new_free() 
  *	function.
  */
-char *	malloc_strcat2_c (char **ptr, const char *str1, const char *str2, size_t *clue)
+char *	malloc_strcat2_c (char ** ptr, const char *str1, const char *str2, size_t * clue)
 {
 	size_t	csize;
-	int 	msize;
+	size_t	msize;
 
 	csize = clue ? *clue : 0;
 	msize = csize;
@@ -4188,6 +4191,13 @@ char *	malloc_strcat2_c (char **ptr, const char *str1, const char *str2, size_t 
 	if (str2)
 		msize += strlen(str2);
 
+	/* 
+	 * XXX It's dumb to put this here, but gcc13's memory leak detector
+	 * false-positives if this is lower than here.
+	 */
+	if (clue)
+		*clue = msize;
+
 	if (!*ptr)
 	{
 		*ptr = new_malloc(msize + 1);
@@ -4200,8 +4210,6 @@ char *	malloc_strcat2_c (char **ptr, const char *str1, const char *str2, size_t 
 		strlcat(csize + *ptr, str1, msize + 1 - csize);
 	if (str2)
 		strlcat(csize + *ptr, str2, msize + 1 - csize);
-	if (clue) 
-		*clue = msize;
 
 	return *ptr;
 }
@@ -4297,6 +4305,10 @@ char *	malloc_strcat3_c (char **ptr, const char *str1, const char *str2, const c
  */
 char *	malloc_strcat_wordlist_c (char **ptr, const char *word_delim, const char *wordlist, size_t *clue)
 {
+	/* XXX is this right? */
+	if (!ptr)
+		return NULL;
+
 	if (wordlist && *wordlist)
 	{
 	    if (*ptr && **ptr)
@@ -4432,27 +4444,33 @@ char *	malloc_vsprintf (char **ptr, const char *format, va_list args)
  *  'bytes' - How many bytes of 'src' to copy 
  *
  * Return value:
- *  If 'src' is NULL, an invalid heap pointer.
- *  If 'src' is not NULL, a valid heap pointer that contains a copy of 'src'.
- *  (*ptr) is set to the return value.
- *  This function will not return (panic) if (*ptr) is not NULL and is 
- *	not a valid heap pointer.
+ *  The number of strings put into 'ptr'.
+ *    0  -  Nothing was copied
  *
  * Notes:
+ *  This function will not return (panic) if (*ptr) is not NULL and is 
+ *	not a valid heap pointer.
  *  If (*ptr) is not big enough to hold 'src' then the original value (*ptr) 
  * 	will be invalidated and must not be used after this function returns.
  *  You must deallocate the space later by passing (ptr) to the new_free() 
  *	function.
  */
-char *	malloc_strcpy_partial (char **ptr, const char *src, size_t bytes)
+size_t	malloc_strcpy_partial (char **ptr, const char *src, size_t bytes)
 {
 	size_t	size;
 	size_t	x;
 
 	if (!src)
-		return new_free(ptr);	/* shrug */
+	{
+		new_free(ptr);	/* shrug */
+		return 0;
+	}
+	if (!ptr)
+		return 0;
 
-	if (*ptr)
+	if (!*ptr)
+		*ptr = (char *)new_malloc(bytes + 1);
+	else
 	{
 		size = alloc_size(*ptr);
 		if (size == (size_t) FREED_VAL)
@@ -4461,8 +4479,6 @@ char *	malloc_strcpy_partial (char **ptr, const char *src, size_t bytes)
 		if (size < bytes + 1)
 			new_realloc((void **)ptr, bytes + 1);
 	}
-	else
-		*ptr = (char *)new_malloc(bytes + 1);
 
 	for (x = 0; x < bytes; x++)
 	{
@@ -4471,7 +4487,7 @@ char *	malloc_strcpy_partial (char **ptr, const char *src, size_t bytes)
 			break;
 	}
 	(*ptr)[x] = 0;
-	return *ptr;
+	return x;
 }
 
 /*
@@ -7674,6 +7690,9 @@ static const char hexnum[] = "0123456789ABCDEF";
 	return 2;
 }
 
+/* This is all very defective for the moment. */
+#if 0
+
 static size_t	next_message_size (const char *orig_message);
 
 /*
@@ -7702,22 +7721,18 @@ static size_t	next_message_size (const char *orig_message);
 int	split_message (char **dest, int dest_size, const char *orig_message)
 {
 	int		i;
-	char *		ptr;
 	size_t		message_len;
 
 	for (i = 0; i < dest_size; i++)
 	{
 		if ((message_len = next_message_size(orig_message)) <= 0)
 			break;
-		ptr = dest[i];
-		malloc_strcpy_partial(&ptr, orig_message, message_len);
-		dest[i] = ptr;
+		/* GCC13 objects to what I did previously */
+		malloc_strcpy_partial(&(dest[i]), orig_message, message_len);
 		orig_message += message_len;
 	}
 
-	ptr = dest[i];
-	new_free(&ptr);
-	dest[i] = ptr;
+	new_free(&(dest[i]));
 	return i;
 }
 
@@ -7740,4 +7755,5 @@ static size_t	next_message_size (const char *orig_message)
 
 	return orig_message_len;
 }
+#endif
 

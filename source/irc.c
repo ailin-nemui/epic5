@@ -52,7 +52,7 @@ const char internal_version[] = "20220615";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 2110;
+const unsigned long	commit_id = 2111;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -1020,9 +1020,13 @@ void    load_ircrc (void)
 	if (startup_file || quick_startup)
 		return;
 
-	if (access(epicrc_file, R_OK) == 0)
+	/* 
+	 * epicrc_file and ircrc_file can't be NULL here, but try 
+	 * telling clang's static analyzer that... bleh
+	 */
+	if (epicrc_file && access(epicrc_file, R_OK) == 0)
 		startup_file = malloc_strdup(epicrc_file);
-	else if (access(ircrc_file, R_OK) == 0)
+	else if (ircrc_file && access(ircrc_file, R_OK) == 0)
 		startup_file = malloc_strdup(ircrc_file);
 	else
 		startup_file = malloc_strdup("global");

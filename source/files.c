@@ -474,8 +474,13 @@ int	file_rewind (int fd)
 		return -1;
 	else
 	{
-		rewind(ptr->elf->fp);
-		return ferror(ptr->elf->fp);
+		/* 
+		 * The dumb things i do to satisfy static analyzers...
+		 */
+		if (fseek(ptr->elf->fp, 0L, SEEK_SET))
+			return ferror(ptr->elf->fp);
+		else
+			return ferror(ptr->elf->fp);
 	}
 }
 

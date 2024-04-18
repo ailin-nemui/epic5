@@ -4684,9 +4684,9 @@ char 	*serverctl 	(char *input)
 			retval = get_server_005s(refnum, input);
 			RETURN_MSTR(retval);
 		} else if (!my_strnicmp(listc, "STATE", len)) {
-			RETURN_STR(server_states[get_server_state(refnum)]);
+			RETURN_STR(get_server_state_str(refnum));
 		} else if (!my_strnicmp(listc, "STATUS", len)) {
-			RETURN_STR(server_states[get_server_state(refnum)]);
+			RETURN_STR(get_server_state_str(refnum));
 		} else if (!my_strnicmp(listc, "ALTNAME", len)) {
 			retval = get_server_altnames(refnum);
 			RETURN_MSTR(retval);

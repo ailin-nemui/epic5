@@ -291,8 +291,15 @@ static RecodeRule *	create_recoding_rule (const char *target, const char *encodi
 		else if (strchr(target_copy, '/'))
 		{
 			r->server_part = target_copy;
+			/* XXX GCC13 is very concerned this might return NULL */
 			r->target_part = strchr(target_copy, '/');
-			*r->target_part++ = 0;
+			if (r->target_part)
+				*r->target_part++ = 0;
+			else
+			{
+				r->server_part = NULL;
+				r->target_part = target_copy;
+			}
 		}
 
 		/*

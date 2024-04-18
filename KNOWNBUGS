@@ -9,7 +9,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * Allow /ignore for a nick!user@host but only on a channel
 * Add /set server_default_type, irc or irc-ssl (rb nick_)
 * Typing 😂😂😂 to the input line doesn't work right
-   -- This is a screen problem; it doesn't support 3 byte unicodes
+   -- This is a screen problem; it doesn't support multi-column unicodes
 * I don't think /msg @L1 is implemented correctly
     - check out files.c:file_write for type == 2
 * If a window is holding before a resize/rebuild; and it is not holding afterwards
@@ -21,9 +21,10 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
    This is because we're explicitly turning off padding, but I don't know why 
 * Support the idiotic proliferation of chanmodes for users on unrealirc
 	PREFIX=(qaohv)~&@%+
-* [ 9:30PM] -> (#epic) so what i would want to do is have a --with-openssl-pc /path/to/openssl.pc
 * Allow /echo to defeat word wrap (ie, don't split on words) (rb Harz)
-
+* Why does    /exec -line {#} ls -l     still output something?
+* get_server_nickname() should be customizable
+* Add some way to get the "next notified(activity) window"
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1327,3 +1328,19 @@ THE CHANGELOG SINCE THE LAST RELEASE:
    /eval echo $chr(3)53$repeat(500 .) for example
 * Remove a debug statement harz found with /window channel
 * Make window toplines honor /set automargin_override.
+* Use gcc13 -fanalyzer and clang-devel scan-build (static analyzers)
+* The following changes were directed by the static analyzer
+* Check/use -fno-delete-null-pointer-checks in configure
+* Fix pop_integer() to return correct type
+* Use fseek() instead of rewind() so clang doesn't complain about errno
+* Don't check a pointer after using it so as to not offend gcc13
+* If you pass no args to $unshift() or $push(), get nothing back
+* Fix uninitialized clue in $currchans() [this was an actual bug]
+* Strip down $globi() so I can fix static analysis complaints
+* Fix uninitialized variable in $hookctl() [this was an actual bug]
+* Don't just assume open() doesn't fail in opento() [actual bug]
+* ifdef out split_message() and friends because i don't understand
+    what gcc13 is complaining about there and I don't use it
+* Oh, you get the idea.  more of the same as above
+* Add /window lister "refnums" (see UPDATES)
+

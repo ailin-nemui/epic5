@@ -1974,7 +1974,9 @@ const	char	*cont_ptr;
 	char	*cont = NULL;
 	const char 	*words;
 	Attribute	a, olda;
+#if 0
 	Attribute	saved_a;
+#endif
 	char	*cont_free = NULL;
 	int		codepoint;
 	char	utf8str[16];
@@ -1989,10 +1991,17 @@ const	char	*cont_ptr;
         a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
         a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
 	a.italic = 0;
+
+        olda.bold = olda.underline = olda.reverse = 0;
+	olda.blink = olda.altchar = 0;
+        olda.color_fg = olda.color_bg = olda.fg_color = 0;
+	olda.bg_color = olda.italic = 0;
+#if 0
         saved_a.bold = saved_a.underline = saved_a.reverse = 0;
 	saved_a.blink = saved_a.altchar = 0;
         saved_a.color_fg = saved_a.color_bg = saved_a.fg_color = 0;
 	saved_a.bg_color = saved_a.italic = 0;
+#endif
 
 	if (window < 0)
 		do_indent = get_int_var(INDENT_VAR);
@@ -2058,6 +2067,7 @@ const	char	*cont_ptr;
 			else
 				abort();
 
+#if 0
 			/*
 			 * XXX This isn't a hack, but it _is_ ugly!
 			 * Because I'm too lazy to find a better place
@@ -2072,6 +2082,7 @@ const	char	*cont_ptr;
 			 */
 			if (word_break == 0)
 				saved_a = a;
+#endif
 
 			continue;          /* Skip the column check */
 		    }
@@ -2139,7 +2150,9 @@ const	char	*cont_ptr;
 				firstwb = pos;
 			}
 
+#if 0
 			saved_a = a;
+#endif
 
 			/* XXX Sigh -- exactly the same as above. */
 			cols = codepoint_numcolumns(codepoint);
@@ -2338,7 +2351,9 @@ const	char	*cont_ptr;
 				 */
 				if (lhs_count <= continued_count) {
 					word_break = pos;
+#if 0
 					saved_a = a;
+#endif
 				}
 
 				/*
@@ -2383,8 +2398,10 @@ const	char	*cont_ptr;
 			buffer[pos] = 0;
 			pos_copy = LOCAL_COPY(buffer + word_break);
 			strlcpy(buffer, cont, sizeof(buffer) / 2);
+#if 0
 			/* -- I'm not sure if this is necessary */
 			/* display_attributes(buffer + strlen(buffer), &olda, &saved_a); */
+#endif
 			/* -- and I think this should be before we copy pos_copy back */
 			display_attributes(buffer + strlen(buffer), &olda, &a);
 			strlcat(buffer, pos_copy, sizeof(buffer) / 2);
@@ -3549,18 +3566,30 @@ int	create_additional_screen (void)
 	    {
 		if (get_screen_fdin(new_s) == 0) 
 		{
-			set_screen_fdin(new_s, accept(new_cmd, &new_socket.sa, &new_sock_size));
-			set_screen_fdout(new_s, get_screen_fdin(new_s));
-			if (get_screen_fdout(new_s) < 0)
+			int	fd;	/* Hurt me harder, clang... */
+			FILE *	f;
+
+			if ((fd = accept(new_cmd, &new_socket.sa, &new_sock_size)) < 0)
 			{
 				close(new_cmd);
 				kill_screen(new_s);
 				yell("Couldn't establish data connection to new screen");
 				return -1;
 			}
-			new_open(get_screen_fdin(new_s), do_screens, NEWIO_RECV, 1, -1);
-			set_screen_fpin(new_s, fdopen(get_screen_fdin(new_s), "r+"));
-			set_screen_fpout(new_s, get_screen_fpin(new_s));
+
+			set_screen_fdin(new_s, fd);
+			set_screen_fdout(new_s, fd);
+			new_open(fd, do_screens, NEWIO_RECV, 1, -1);
+
+			if (!(f = fdopen(fd, "r+")))
+			{
+				close(new_cmd);
+				kill_screen(new_s);
+				yell("Couldn't establish data connection to new screen");
+				return -1;
+			}
+			set_screen_fpin(new_s, f);
+			set_screen_fpout(new_s, f);
 			continue;
 		}
 		else
@@ -3978,7 +4007,8 @@ void	fire_wait_prompt (uint32_t key)
 	WaitPrompt *	oldprompt;
         char   utf8str[8];
 
-	oldprompt = get_screen_prompt_list(last_input_screen);
+	if (!(oldprompt = get_screen_prompt_list(last_input_screen)))
+		return;		/* Oh well.... */
 	set_screen_prompt_list(last_input_screen, oldprompt->next);
 	set_screen_input_line(last_input_screen, oldprompt->saved_input_line);
 	update_input(last_input_screen, UPDATE_ALL);
@@ -3993,7 +4023,8 @@ void	fire_normal_prompt (const char *utf8str)
 {
 	WaitPrompt *	oldprompt;
 
-	oldprompt = get_screen_prompt_list(last_input_screen);
+	if (!(oldprompt = get_screen_prompt_list(last_input_screen)))
+		return;		/* Oh well... */
 	set_screen_prompt_list(last_input_screen, oldprompt->next);
 	set_screen_input_line(last_input_screen, oldprompt->saved_input_line);
 	update_input(last_input_screen, UPDATE_ALL);

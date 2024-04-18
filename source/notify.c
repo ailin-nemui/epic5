@@ -80,7 +80,7 @@ static void	show_notify_list (int all)
 	Server *s;
 	int	i;
 	char	*list = (char *) 0;
-	size_t	clue;
+	size_t	clue = 0;
 
 	if (!(s = get_server(from_server)))
 		return;

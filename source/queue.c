@@ -85,7 +85,7 @@ BUILT_IN_COMMAND(queuecmd)
 		runone		= 0,
 		number          = -1;
 
-	if (!*args) {
+	if (!args || !*args) {
 		list_all_queues(&queue_list);
 		return;
 	}

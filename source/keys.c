@@ -1949,6 +1949,8 @@ char *	bindctl (char *input)
 	    RETURN_STR(retval);
 	} else if (!my_strnicmp(listc, "MATCH", 1)) {
 	    int len;
+	    if (!func || !*func)
+		RETURN_EMPTY;
 	    len = strlen(func);
 	    for (bp = binding_list;bp;bp = bp->next) {
 		if (!my_strnicmp(bp->name, func, len))

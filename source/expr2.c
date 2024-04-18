@@ -941,7 +941,7 @@ __inline static	TOKEN	pop_token (expr_info *c)
 		return c->stack[c->sp--];
 }
 
-__inline static	double		pop_integer (expr_info *c)
+__inline static	intmax_t		pop_integer (expr_info *c)
 {
 	return get_token_integer(c, pop_token(c));
 }

@@ -1757,7 +1757,7 @@ int	window_claims_channel (int window, int winserv, const char *channel)
 		 * exactly which channel is claimable at this moment: i just want to 
 		 * make sure you are claiming what you think you are claiming.
 		 */
-		if (tmp->claimable)
+		if (tmp->claimable == 1)
 		{
 			/* Make sure you think you're claiming the correct channel */
 			if (my_stricmp(tmp->channel, channel))
