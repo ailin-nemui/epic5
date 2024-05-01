@@ -23,8 +23,12 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 	PREFIX=(qaohv)~&@%+
 * Allow /echo to defeat word wrap (ie, don't split on words) (rb Harz)
 * Why does    /exec -line {#} ls -l     still output something?
-* get_server_nickname() should be customizable
+	because pipes are block-buffered, and ls -l output will get 
+	broken in the middle of a line, and that ends up being a -linepart {}
+	We need to have a way to handle this.
+	- Line buffering needs a way to "hold" incomplete lines for a moment
 * Add some way to get the "next notified(activity) window"
+* Do 24 bit color first
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1343,4 +1347,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
     what gcc13 is complaining about there and I don't use it
 * Oh, you get the idea.  more of the same as above
 * Add /window lister "refnums" (see UPDATES)
-
+* Explore writing output using fd's rather than (FILE *)s
+* Add /set auto_reconnect_delay to reconnect (skered)

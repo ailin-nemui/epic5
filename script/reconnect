@@ -76,6 +76,12 @@ package reconnect;
 addset auto_reconnect_delay int;
 set auto_reconnect_delay 75;
 
+addset auto_reconnect_join_delay int;
+set auto_reconnect_join_delay 5;
+
+addset auto_reconnect_delay_method bool;
+set auto_reconnect_delay_method off;
+
 addset auto_reconnect_retries int;
 set auto_reconnect_retries 5;
 
@@ -113,7 +119,15 @@ addset auto_reconnect bool {
 			@ :keys = auto_reconnect[$group_enc][keys];
 
 			if (@chans) {
-				quote join $sar(g/ /,/$chans) $sar(g/ /,/$keys);
+				if (auto_reconnect_delay_method == [on]) {
+					@i = auto_reconnect_join_delay;
+					fe chans chan {
+						timer $i quote join $chan;
+						@i++;
+					};
+				} else {
+					quote join $sar(g/ /,/$chans) $sar(g/ /,/$keys);
+				};
 			};
 
 		};
