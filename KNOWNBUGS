@@ -16,6 +16,8 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
   (ie, restore_window_positions() goofs), unconditionally reset the hold point to the
   bottom of the screen (rb zlonix)
 * Learn how mouse support in xterm works for fusion
+  [ 8:20PM] <fusion> in mouse mode the scroll wheel sends ^[[M`<two position bytes> and ^[[Ma<the same> 
+  [ 8:20PM] <fusion> since i can't bind values i don't know, they need to go away :) 
 * [ 2:13PM] ERROR: error:1C80006B:Provider routines::wrong final block length
    when you do /eval echo $xform("+AESSHA +B64" test 1)   [rb zlonix]
    This is because we're explicitly turning off padding, but I don't know why 
@@ -29,6 +31,9 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 	- Line buffering needs a way to "hold" incomplete lines for a moment
 * Add some way to get the "next notified(activity) window"
 * Do 24 bit color first
+* [ 1:41PM] <Harzilein> hop: remember i wanted to asynchronously _add_ translation lines when i was in the
++cantonese channel. would adding placeholder lines and later adding content to them be in scope for that
++project? i.e. the reverse of what you want to do? 
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1349,3 +1354,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add /window lister "refnums" (see UPDATES)
 * Explore writing output using fd's rather than (FILE *)s
 * Add /set auto_reconnect_delay to reconnect (skered)
+* Update cJSON to a more recent version (upstream)
