@@ -28,6 +28,8 @@
 	void		kill_screen			(int);
 
 const	char *		all_off				(void);
+	int     	copy_internal_attribute 	(const char *, char *, size_t, size_t *);
+
 	char *		new_normalize_string		(const char *, int, int);
 	char *		denormalize_string		(const char *);
 	char *		normalized_string_to_plain_text (const char *str);
@@ -35,7 +37,7 @@ const	char *		all_off				(void);
 	size_t		output_with_count		(const char *, int, int);
 	void    	add_to_window_scrollback 	(int, const char *, intmax_t);
 
-	char *		prepare_display2		(const char *, int, int, char, int);
+	char *		prepare_display_fixed_size	(const char *, int, int, char, int);
 
 	void		chop_columns 			(char **, size_t);
 	void		chop_final_columns 		(char **, size_t);

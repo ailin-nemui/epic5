@@ -281,6 +281,7 @@ static	char
 #if 0
 	*function_help_topics	(char *),
 #endif
+	*function_hex		(char *),
 	*function_hookctl	(char *),
 	*function_iconvctl	(char *),
 	*function_idle		(char *),
@@ -582,6 +583,7 @@ static BuiltInFunctions	built_in_functions[] =
 #if 0
 	{ "HELP_TOPICS",	function_help_topics	},
 #endif
+	{ "HEX",		function_hex		},
 	{ "HOOKCTL",		function_hookctl	},
 	{ "ICONVCTL",		function_iconvctl	},
 	{ "IDLE",		function_idle		},
@@ -4953,7 +4955,7 @@ BUILT_IN_FUNCTION(function_nohighlight, input)
 			case ALL_OFF:
 			case ALT_TOG:
 			case COLOR_TAG:
-			case COLOR256_TAG:
+			case COLOR_EXTENDED_TAG:
 			case '\033':	/* \033 is ESCape */
 			{
 				*ptr++ = REV_TOG;
@@ -5577,7 +5579,7 @@ char *	function_cparse (char *input)
 				output[j++] = ALL_OFF;
 				break;
 			case 'X':
-				output[j++] = COLOR256_TAG;
+				output[j++] = COLOR_EXTENDED_TAG;
 				break;
 
 			case 'N':
@@ -8427,8 +8429,10 @@ BUILT_IN_FUNCTION(function_rgb, input)
 {
 	intmax_t	r = 0, g = 0, b = 0;
 	int	attr = 1;
+#if 0
 	int	color;
-	char	retval_str[4];
+#endif
+	char	retval_str[9];
 
 	RETURN_IF_EMPTY(input);
 
@@ -8471,12 +8475,14 @@ BUILT_IN_FUNCTION(function_rgb, input)
 		GET_INT_ARG(b, input);
 	}
 
+#if 0
 	color = rgb_to_256(r, g, b);
+#endif
 
 	if (attr)
-		snprintf(retval_str, 4, COLOR256_TAG_STR "%X", color);
+		snprintf(retval_str, 9, COLOR_EXTENDED_TAG_STR "#%2.2jX%2.2jX%2.2jX", r, g, b);
 	else
-		snprintf(retval_str, 3, "%X", color);
+		snprintf(retval_str, 9, "#%2.2jX%2.2jX%2.2jX", r, g, b);
 
 	RETURN_FSTR(retval_str);
 }
@@ -8654,3 +8660,35 @@ BUILT_IN_FUNCTION(function_tags, input)
 {
 	RETURN_STR(Tags);
 }
+
+BUILT_IN_FUNCTION(function_hex, input)
+{
+	int		digits = 0;
+	intmax_t	value = 0;
+	char *		retval = NULL;
+
+	if (*input == '{')
+	{
+		struct kwargs kwargs[] = {
+			{ "digits", KWARG_TYPE_INTEGER, &digits, 1 },
+			{ "value", KWARG_TYPE_INTEGER, &value, 1 },
+			{ NULL, KWARG_TYPE_SENTINAL, NULL, 0 }
+		};
+
+		parse_kwargs(kwargs, input);
+	}
+	else
+	{
+		GET_INT_ARG(digits, input);
+		GET_INT_ARG(value, input);
+	}
+
+	if (digits == 0)
+		RETURN_EMPTY;
+
+	retval = new_malloc(digits + 1);
+	snprintf(retval, digits + 1, "%*.*jX", digits, digits, value);
+	RETURN_MSTR(retval);
+}
+
+

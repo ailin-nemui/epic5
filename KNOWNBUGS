@@ -34,6 +34,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 * [ 1:41PM] <Harzilein> hop: remember i wanted to asynchronously _add_ translation lines when i was in the
 +cantonese channel. would adding placeholder lines and later adding content to them be in scope for that
 +project? i.e. the reverse of what you want to do? 
+* The way /set output_rewrite requires a fixed size buffer is unspeakably bogus.
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1355,3 +1356,21 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Explore writing output using fd's rather than (FILE *)s
 * Add /set auto_reconnect_delay to reconnect (skered)
 * Update cJSON to a more recent version (upstream)
+* Everything below is part of the RGB project.
+* Change name of "256 colors" to "extended colors" to encompass RGB
+* Stop hardcoding the value of internal Attribute, so it can grow later.
+* Introduce the concept of "Unified Color Values" which will grow later.
+  - The idea is to unify all the different number system into one 32 bit int
+* Extend attributes to support 32 bit fg and bg ints
+* Change the name "display attributes" to "internal attributes" for clarity
+* Make sure to match up internal attributes reader and writer
+* Change the name "logical attributes" to "ircii attributes", reader, writer
+* Modify term_attribute() to hardcode how colors are output (for now)
+* Change 'prepare_display2' to 'prepare_display_fixed_size' which is clearer
+* Add $hex(<digits> <number>) which converts <number> to <digits> hex digits
+* Support ^X#rrggbb,rrggbb to take RGB codes (yay! \o/)
+* Change the ^[[38;2;r;g;b grokker to output RGB codes instead of 256 colors
+* Change $rgb() to output RGB codes now (yay! \o/)
+* Lots of internal changes to support larger Attributes, color spaces
+* The above is the RGB project's first pass.  Here goes nothing!
+

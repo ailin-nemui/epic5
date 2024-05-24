@@ -177,6 +177,7 @@ static	void		edit_codepoint		(uint32_t);
 static	ssize_t		read_esc_seq		(const char *, void *, int *);
 static	ssize_t		read_color_seq		(const char *, void *, int);
 static	ssize_t		read_color256_seq	(const char *, void *);
+static	ssize_t		read_rgb_seq		(const char *, void *);
 
 static 	WaitPrompt *	get_screen_prompt_list	(int);
 static  void		set_screen_prompt_list	(int, WaitPrompt *);
@@ -190,7 +191,49 @@ static	void		destroy_prompt		(int, WaitPrompt **);
 static	Screen *	screen_list = NULL;
 static	Screen *	get_screen_by_refnum	(int);
 
+
 /********************/
+/* A list of the supported color spaces */
+#define COLORSPACE_NONE	0x00U
+#define COLORSPACE_ANSI	0x01U
+#define COLORSPACE_C	0x02U
+#define COLORSPACE_X	0x03U
+#define COLORSPACE_RGB	0x04U
+
+/* Extract the color space from a unified color value */
+#define GET_COLORSPACE(x)	(((uint32_t)x & 0xFF000000U) >> 24)
+#define GET_VALUE(x)		((uint32_t)x & 0x00FFFFFF)
+
+/* Convert a color space into a unified color value (just add value!) */
+#define SET_COLORSPACE(x)	((x & 0xFFU) << 24)
+
+/* Convert a color number to a unified color value */
+#define COLOR_NONE		(SET_COLORSPACE(COLORSPACE_NONE) | 0x000000)
+#define COLOR_ANSI(x)		(SET_COLORSPACE(COLORSPACE_ANSI) | (x & 0xFF))
+#define COLOR_C(x)		(SET_COLORSPACE(COLORSPACE_C) | (x & 0x7F))
+#define COLOR_X(x)		(SET_COLORSPACE(COLORSPACE_X) | (x & 0xFF))
+#define COLOR_RGB(r,g,b)	(SET_COLORSPACE(COLORSPACE_RGB) | ((r & 0xFF) << 16)  	\
+								| ((g & 0xFF) << 8) 	\
+							        | ((b & 0xFF)) )
+
+/* Extract the color number from a unified color value */
+#define GET_NONE_COLOR			0x00U
+#define GET_ANSI_COLOR(x)		(x & 0x0000000FU)
+#define GET_C_COLOR(x)			(x & 0x0000007FU)
+#define GET_X_COLOR(x)			(x & 0x000000FFU)
+#define GET_RGB_COLOR(x, r, g, b)	( (r = ((x & 0x00FF0000U) >> 16)),	\
+					  (g = ((x & 0x0000FF00U) >> 8)),	\
+					  (b = ((x & 0x000000FFU) )) )
+
+/* Determine if a unified color value is of a certain type or another */
+#define IS_COLOR_NONE(x)	(GET_COLORSPACE(x) == COLORSPACE_NONE)
+#define IS_COLOR_ANSI(x)	(GET_COLORSPACE(x) == COLORSPACE_ANSI)
+#define IS_COLOR_C(x)		(GET_COLORSPACE(x) == COLORSPACE_C)
+#define IS_COLOR_X(x)		(GET_COLORSPACE(x) == COLORSPACE_X)
+#define IS_COLOR_RGB(x)		(GET_COLORSPACE(x) == COLORSPACE_RGB)
+
+/************************/
+
 /*
  * "Attributes" were an invention for epic5, and the general idea was
  * to handle all character markups (bold/color/reverse/etc) not as toggle
@@ -207,8 +250,8 @@ static	Screen *	get_screen_by_refnum	(int);
  * can be stored in a C string.
  *
  * An unmarshalled attribute can be injected into a C string using the 
- * display_attributes() function.  A marshalled attribute can be extracted
- * from a C string using read_attributes().
+ * write_internal_attribute() function.  A marshalled attribute can be extracted
+ * from a C string using read_internal_attribute().
  *
  * The logical_attributes() function will marshall an attribute into the
  * logical (un-normalized) equivalents.   The ignore_attributes() function
@@ -220,35 +263,36 @@ struct 	attributes {
 	unsigned char	blink;
 	unsigned char	underline;
 	unsigned char	altchar;
-	unsigned char	color_fg;
-	unsigned char	color_bg;
-	unsigned char	fg_color;
-	unsigned char	bg_color;
 	unsigned char	italic;
+	uint32_t	fg;	/* Unified color value */
+	uint32_t	bg;	/* Unified color value */
 };
 typedef struct attributes Attribute;
 
-const char *all_off (void)
-{
-#ifdef NO_CHEATING
-	Attribute 	old_a, a;
-	static	unsigned char	retval[6];
+static size_t	write_internal_attribute (char *output_, size_t, Attribute *old_a, Attribute *a);
+static int	read_internal_attribute (const char *input_, Attribute *a, size_t *numbytes);
+static size_t	write_ircii_attributes (char *output, size_t output_size, Attribute *old_a, Attribute *a);
 
-	a.reverse = a.bold = a.blink = a.underline = a.altchar = 0;
-	a.color_fg = a.fg_color = a.color_bg = a.bg_color = 0;
-	a.italic = 0;
-	old_a = a;
-	display_attributes(retval, &old_a, &a);
-	return (char *)retval;
-#else
-	static	unsigned char	retval[6];
-	retval[0] = '\006';
-	retval[1] = retval[2] = retval[3] = retval[4] = 0x80U;
-	retval[5] = 0;
-	return (char *)retval;
-#endif
+
+void	zero_attribute (Attribute *a)
+{
+        /* Reset all attributes to zero */
+	a->reverse = a->bold = a->blink = a->underline = a->altchar = a->italic = 0;
+	a->fg = a->bg = COLOR_NONE;
 }
 
+const char *all_off (void)
+{
+	Attribute 	old_a, a;
+static	unsigned char	retval[16];
+
+	zero_attribute(&a);
+	zero_attribute(&old_a);
+	write_internal_attribute((char *)retval, sizeof(retval), &old_a, &a);
+	return (char *)retval;
+}
+
+/* * * * * * * * * * * */
 /*
  * These are "attribute changer" functions.  They work like this:
  *	output		An output (string) buffer to write the change to
@@ -259,22 +303,52 @@ const char *all_off (void)
  * before returning.  The special case is when "old_a" is NULL, which 
  * should be treated as an explicit "all off" before handling "a".
  */
-static size_t	display_attributes (char *output_, Attribute *old_a, Attribute *a)
+
+
+/*
+ * write_internal_attribute - serialize an attribute to the internal format (that read_internal_attribute() wants)
+ *
+ * Arguments: 
+ *	output_		- OUTPUT - Where to write the attribute to 
+ *			  - This is expected to be a casted (unsigned char *).
+ *	output_size	- INPUT - How many bytes i can write to output_
+ *			  - This had better be at least 13.
+ *	old_a		- INPUT/OUTPUT - The state of the Attribute most recently written to output_
+ *			  - The value of 'a' is written to 'old_a"
+ *	a		- INPUT - The state of the Attribute you want written to output_
+ *
+ * Return value:
+ *	The number of bytes that was written to output_. 
+ *	This function always returns 13.
+ *
+ * Side effects:
+ *	The attribute 'a' is written to output_ as a C-string friendly binary blob.
+ *	The value 'a' is written to 'old_a'
+ *
+ * Errors:
+ *	This function always succeeds
+ *
+ * Bugs:
+ *	It should check 'output_', 'old_a', and 'a' for NULL-ness before dereffing them
+ *	It should check not to overrun (output_ + output_size).
+ */
+static size_t	write_internal_attribute (char *output_, size_t output_size, Attribute *old_a, Attribute *a)
 {
 	unsigned char *output = (unsigned char *)output_;
-	unsigned char	val1 = 0x80U;
-	unsigned char	val2 = 0x80U;
-	unsigned char	val3 = 0x80U;
-	unsigned char	val4 = 0x80U;
+
+	/* XXX Should do something more meaningful here */
+	if (output_size < 13)
+		return 0;
 
 	/*
-	 * A "Display attribute" is a \006 followed by four bytes.
-	 * Each of the four bytes have the high bit set (to avoid nuls)
-	 * Each of the four bytes thus contain 7 bits of information
+	 * A "Display attribute" is a \006 followed by 11 bytes (plus a nul).
+	 * Each of the 11 bytes have the high bit set (to avoid nuls)
+	 * Each of the 11 bytes thus contain 7 bits of information
 	 */
+        *output++ = '\006';
 
 	/* 
-	 * Byte 1 uses its 7 bits for 7 attribute toggles
+	 * Byte 0 uses its 7 bits for 7 attribute toggles
 	 *	1	Reverse
 	 *	2	Bold
 	 *	3	Blink
@@ -283,48 +357,168 @@ static size_t	display_attributes (char *output_, Attribute *old_a, Attribute *a)
 	 *	6	Italics
 	 *	7 	[Reserved for future expansion]
 	 */
-	if (a->reverse)		val1 |= 0x01U;
-	if (a->bold)		val1 |= 0x02U;
-	if (a->blink)		val1 |= 0x04U;
-	if (a->underline)	val1 |= 0x08U;
-	if (a->altchar)		val1 |= 0x10U;
-	if (a->italic)		val1 |= 0x20U;
+	output[0] = 0x80U;
+	if (a->reverse)		output[0] |= 0x01U;
+	if (a->bold)		output[0] |= 0x02U;
+	if (a->blink)		output[0] |= 0x04U;
+	if (a->underline)	output[0] |= 0x08U;
+	if (a->altchar)		output[0] |= 0x10U;
+	if (a->italic)		output[0] |= 0x20U;
 
 	/*
-	 * Byte 2 holds color information
-	 *	1	Foreground Color turned on
-	 *	2	Background Color turned on
-	 *	3	The foreground color has high bit set (see below)
-	 *	4	The background color has high bit set (see below)
-	 *	5	[Reserved for future expansion]
-	 *	6	[Reserved for future expansion]
-	 *	7	[Reserved for future expansion]
+	 * Byte 1-5 holds fg color information
+	 *	We pack a 32 bit int to 5 7-bit ints
 	 *
-	 * Byte 3 holds the low 7 bits of the foreground color.
-	 *	The high bit is stored in Byte 2, bit 3
+	 * Byte 6-10 holds bg color information
+	 *	We pack a 32 bit int to 5 7-bit ints
 	 *
-	 * Byte 4 holds the low 7 bits of the background color.
-	 *	The high bit is stored in Byte 2, bit 3.
+	 * Byte 11 is a nul.
+	 *
+	 * (I do confess I asked Bard for hints here.)
 	 */
+	output[1] = 0x80 | ((a->fg >> 28) & 0x7f);
+	output[2] = 0x80 | ((a->fg >> 21) & 0x7f);
+	output[3] = 0x80 | ((a->fg >> 14) & 0x7f);
+	output[4] = 0x80 | ((a->fg >>  7) & 0x7f);
+	output[5] = 0x80 | ((a->fg)       & 0x7f);
 
-	if (a->color_fg) {	val2 |= 0x01U; val3 |= (a->fg_color & 0x7FU); }
-	if (a->color_bg) {	val2 |= 0x02U; val4 |= (a->bg_color & 0x7FU); }
-	if (a->color_fg && a->fg_color >= 0x80U) { val2 |= 0x04U; }
-	if (a->color_bg && a->bg_color >= 0x80U) { val2 |= 0x08U; }
+	output[6] = 0x80 | ((a->bg >> 28) & 0x7f);
+	output[7] = 0x80 | ((a->bg >> 21) & 0x7f);
+	output[8] = 0x80 | ((a->bg >> 14) & 0x7f);
+	output[9] = 0x80 | ((a->bg >>  7) & 0x7f);
+	output[10] = 0x80 | ((a->bg)       & 0x7f);
 
-	output[0] = '\006';
-	output[1] = val1;
-	output[2] = val2;
-	output[3] = val3;
-	output[4] = val4;
-	output[5] = 0;
+	output[11] = 0;
 
 	*old_a = *a;
-	return 5;
+	return 12;
 }
+
+/*
+ * read_internal_attribute - Recover an attribute written by write_internal_attribute() into a C string
+ *
+ * Arguments: 
+ *	input_		- INPUT - A string containing an attribute written by write_internal_attribute()
+ *				- input_ may point at the leading \006 or the byte after the \006.
+ *	a		- OUTPUT - The recovered attribute stored at 'input_'
+ *	numbytes	- OUTPUT - The number of bytes consumed from 'input_'
+ *			   - The number of bytes consumed may be > 0 even in case of error!
+ *
+ * Return value:
+ *	 0	- The attribute was successfully recovered
+ *		  - The number of bytes consumed is stored in '*numbytes'
+ *	-1	- Something went wrong
+ *		    - 'input_' was NULL
+ *		    - 'input_' does not point at something written by write_internal_attribute()
+ *		  - '*numbytes' is always written to
+ *
+ * Side effects:
+ *	'*numbytes' is always written to,  It will be >= 0, even in case of error!
+ *
+ * Errors:
+ *	If 'input_' is NULL, return -1
+ *	If 'input_' does ont point at something written by write_internal_attributes, return -1.
+ *	This function always succeeds
+ *
+ * Bugs:
+ *	It should check 'a' and 'numbytes' for NULL-ness before derefing them
+ *	The number of bytes should be the return value, and an error should be
+ *		an output parameter
+ */
+static int	read_internal_attribute (const char *input_, Attribute *a, size_t *numbytes)
+{
+	const unsigned char *input = (const unsigned char *)input_;
+	int	i;
+
+	*numbytes = 0;
+
+	if (!input)
+		return -1;
+
+	/* 
+	 * This used to check for *input != '\006' but it was inconvenient
+	 * to enforce that, so now it's just an optional check.
+	 */
+	if (*input == '\006')
+		(*numbytes)++, input++;
+
+	/* Bytes 0 through 10 after the indicator contain the data */
+	for (i = 0; i <= 10; i++)
+	{
+		if (!input[i] || ((input[i] & 0x80U) != 0x80U))
+			return -1;
+	}
+	(*numbytes) += 11;
+
+	zero_attribute(a);
+
+	if ((unsigned char)input[0] & 0x01U)	a->reverse = 1;
+	if ((unsigned char)input[0] & 0x02U)	a->bold = 1;
+	if ((unsigned char)input[0] & 0x04U)	a->blink = 1;
+	if ((unsigned char)input[0] & 0x08U)	a->underline = 1;
+	if ((unsigned char)input[0] & 0x10U)	a->altchar = 1;
+	if ((unsigned char)input[0] & 0x20U)	a->italic = 1;
+
+	/* I confess bard gave me suggestions here */
+	a->fg = ((input[1] & 0x7F) << 28) |
+		((input[2] & 0x7F) << 21) |
+		((input[3] & 0x7F) << 14) |
+		((input[4] & 0x7F) << 7)  |
+		((input[5] & 0x7F));
+	a->bg = ((input[6] & 0x7F) << 28) |
+		((input[7] & 0x7F) << 21) |
+		((input[8] & 0x7F) << 14) |
+		((input[9] & 0x7F) << 7)  |
+		((input[10] & 0x7F));
+
+	return 0;
+}
+
+int	copy_internal_attribute (const char *input_, char *output_, size_t output_size, size_t *numbytes)
+{
+	Attribute 	a;
+	size_t		i;
+
+	/* First, read the attribute to get the number of bytes */
+	*numbytes = 0;
+	if (read_internal_attribute(input_, &a, numbytes) < 0)
+		return -1;
+
+	/* Then, copy that number of bytes */
+	/* XXX Do i care if it needs a nul at the end? */
+	for (i = 0; (i < *numbytes && i < output_size); i++)
+		output_[i] = input_[i];
+	return 0;
+}
+
+
+
+
  
-/* Put into 'output', logical characters so end result is 'a' */
-static size_t	logic_attributes (char *output, Attribute *old_a, Attribute *a)
+/* * * * * * * * * */
+/*
+ * write_ircii_attributes - serialize an attribute to the ircii format (that new_normalize_string() wants)
+ *
+ * Arguments: 
+ *	output_		- OUTPUT - Where to write the attribute to 
+ *	output_size	- INPUT - How many bytes i can write to output_
+ *	old_a		- INPUT/OUTPUT - The state of the Attribute most recently written to output_
+ *			  - The value of 'a' is written to 'old_a"
+ *	a		- INPUT - The state of the Attribute you want written to output_
+ *
+ * Return value:
+ *	The number of bytes that was written to output_, which will be >= 0
+ *
+ * Side effects:
+ *	The differences between 'old_a' and 'a' are written to 'output_' as a valid C string.
+ *	If 'old_a' and 'a' are identical, nothing will be written.
+ *	The differences are rendered as ircII highlights (^V, ^B, ^C, ^X, etc)
+ *	The value 'a' is written to 'old_a'
+ *
+ * Errors:
+ *	This function always succeeds
+ */
+static size_t	write_ircii_attributes (char *output, size_t output_size, Attribute *old_a, Attribute *a)
 {
 	char	*str = output;
 	size_t	count = 0;
@@ -332,59 +526,85 @@ static size_t	logic_attributes (char *output, Attribute *old_a, Attribute *a)
 
 	if (old_a == NULL)
 	{
+		zero_attribute(&dummy);
 		old_a = &dummy;
-		old_a->reverse = old_a->bold = old_a->blink = 0;
-		old_a->underline = old_a->altchar = 0;
-		old_a->italic = 0;
-		old_a->color_fg = old_a->fg_color = 0;
-		old_a->color_bg = old_a->bg_color = 0;
 		*str++ = ALL_OFF, count++;
 	}
 
-	if (a->reverse == 0 && a->bold == 0 && a->blink == 0 &&
-	    a->underline == 0 && a->altchar == 0 && a->italic == 0 &&
-	    a->fg_color == 0 && a->bg_color == 0 && 
-	    a->color_bg == 0 && a->color_fg == 0)
+	/* If the new attribute is ALL_OFF... */
+	if (a->reverse == 0 && a->bold == 0 && a->blink == 0 
+	    && a->underline == 0 && a->altchar == 0 && a->italic == 0 
+	    && a->fg == COLOR_NONE && a->bg == COLOR_NONE
+		)
 	{
-	    if (old_a->reverse != 0 || old_a->bold != 0 || old_a->blink != 0 ||
-		old_a->underline != 0 || old_a->altchar != 0 || old_a->italic ||
-		old_a->fg_color != 0 || old_a->bg_color != 0 || 
-		old_a->color_bg != 0 || old_a->color_fg != 0)
+	    /* ... and the old attribute was not ... */
+	    if (old_a->reverse != 0 || old_a->bold != 0 || old_a->blink != 0 
+		|| old_a->underline != 0 || old_a->altchar != 0 || old_a->italic 
+		|| old_a->fg != COLOR_NONE || old_a->bg != COLOR_NONE
+		)
 	    {
+		/* ... Collapse it to an ALL_OFF, and we're done here */
 		*str++ = ALL_OFF;
 		*old_a = *a;
 		return 1;
 	    }
 	}
 
-	/* Colors need to be set first, always */
-	if (a->color_fg != old_a->color_fg || a->fg_color != old_a->fg_color ||
-	    a->color_bg != old_a->color_bg || a->bg_color != old_a->bg_color)
+	if (a->fg != old_a->fg || a->bg != old_a->bg)
 	{
-		*str++ = '\030', count++;
+		if (IS_COLOR_NONE(a->fg)) {
+			*str++ = '\030', count++;
+			*str++ = '-', count++;
+			*str++ = '1', count++;
+		} else if (IS_COLOR_ANSI(a->fg)) {
+			*str++ = '\030', count++;
+			count += hex256(GET_ANSI_COLOR(a->fg), &str);
+		} else if (IS_COLOR_C(a->fg)) {
+			*str++ = '\003', count++;
+			*str++ = GET_C_COLOR(a->fg) / 10 + '0', count++;
+			*str++ = GET_C_COLOR(a->fg) % 10 + '0', count++;
+		} else if (IS_COLOR_X(a->fg)) {
+			*str++ = '\030', count++;
+			count += hex256(GET_X_COLOR(a->fg), &str);
+		} else if (IS_COLOR_RGB(a->fg)) {
+			int	r, g, b;
 
-		if (a->color_fg != old_a->color_fg || a->fg_color != old_a->fg_color)
-		{
-			if (a->color_fg)
-				count += hex256(a->fg_color, &str);
-			else
-			{
-				*str++ = '-', count++;
-				*str++ = '1', count++;
-			}
-		}
-		if (a->color_bg != old_a->color_bg || a->bg_color != old_a->bg_color)
-		{
+			*str++ = '\030', count++;
+			*str++ = '#', count++;
+			GET_RGB_COLOR(a->fg, r, g, b);
+			count += hex256(r & 0xFFU, &str);
+			count += hex256(g & 0xFFU, &str);
+			count += hex256(b & 0xFFU, &str);
+		} 
+
+		if (IS_COLOR_NONE(a->bg)) {
+			/* */ (void) 0;
+		} else if (IS_COLOR_ANSI(a->bg)) {
+			*str++ = '\030', count++;
 			*str++ = ',', count++;
-			if (a->color_bg)
-				count += hex256(a->bg_color, &str);
-			else
-			{
-				*str++ = '-', count++;
-				*str++ = '1', count++;
-			}
-		}
+			count += hex256(GET_ANSI_COLOR(a->bg), &str);
+		} else if (IS_COLOR_C(a->bg)) {
+			*str++ = '\003', count++;
+			*str++ = ',', count++;
+			*str++ = GET_C_COLOR(a->bg) / 10 + '0', count++;
+			*str++ = GET_C_COLOR(a->bg) % 10 + '0', count++;
+		} else if (IS_COLOR_X(a->bg)) {
+			*str++ = '\030', count++;
+			*str++ = ',', count++;
+			count += hex256(GET_X_COLOR(a->bg), &str);
+		} else if (IS_COLOR_RGB(a->bg)) {
+			int	r, g, b;
+
+			*str++ = '\030', count++;
+			*str++ = '#', count++;
+			*str++ = ',', count++;
+			GET_RGB_COLOR(a->bg, r, g, b);
+			count += hex256(r & 0xFFU, &str);
+			count += hex256(g & 0xFFU, &str);
+			count += hex256(b & 0xFFU, &str);
+		} 
 	}
+
 	if (old_a->bold != a->bold)
 		*str++ = BOLD_TOG, count++;
 	if (old_a->blink != a->blink)
@@ -402,58 +622,32 @@ static size_t	logic_attributes (char *output, Attribute *old_a, Attribute *a)
 	return count;
 }
 
-/* Suppress any attribute changes in the output */
-static size_t	ignore_attributes (char *output, Attribute *old_a, Attribute *a)
+/*
+ * ignore_attributes - Don't output attribute changes (so they are stripped out)
+ *
+ * Arguments: 
+ *	output_		- IGNORED - Where to write the attribute to 
+ *	output_size	- IGNORED - How many bytes i can write to output_
+ *	old_a		- IGNORED - The state of the Attribute most recently written to output_
+ *			  - The value of 'a' is written to 'old_a"
+ *	a		- IGNORED - The state of the Attribute you want written to output_
+ *
+ * Return value:
+ *	Always returns 0
+ *
+ * Side effects:
+ *	This function does not write 'a' to 'old_a', but maybe it should!
+ *
+ * Errors:
+ *	This function always succeeds
+ */
+static size_t	ignore_attributes (char *output, size_t output_size, Attribute *old_a, Attribute *a)
 {
+	/* XXX Should 'a' be written to 'old_a' ? */
 	return 0;
 }
 
 
-/* Read an attribute marker from 'input', put results in 'a'. */
-static int	read_attributes (const char *input_, Attribute *a)
-{
-	const unsigned char *input = (const unsigned char *)input_;
-
-	if (!input)
-		return -1;
-
-	/* 
-	 * This used to check for *input != '\006' but it was inconvenient
-	 * to enforce that, so now it's just an optional check.
-	 */
-	if (*input == '\006')
-		input++;
-
-	if (!input[0] || !input[1] || !input[2] || !input[3])
-		return -1;
-
-	a->reverse = a->bold = a->blink = a->underline = a->altchar = 0;
-	a->italic = 0;
-	a->color_fg = a->fg_color = a->color_bg = a->bg_color = 0;
-
-	if ((unsigned char)*input & 0x01U)	a->reverse = 1;
-	if ((unsigned char)*input & 0x02U)	a->bold = 1;
-	if ((unsigned char)*input & 0x04U)	a->blink = 1;
-	if ((unsigned char)*input & 0x08U)	a->underline = 1;
-	if ((unsigned char)*input & 0x10U)	a->altchar = 1;
-	if ((unsigned char)*input & 0x20U)	a->italic = 1;
-
-	input++;
-	if (*input & 0x01U) {	
-		a->color_fg = 1; 
-		a->fg_color = input[1] & 0x7fU;
-		if (*input & 0x04U)
-			a->fg_color += 0x80U;
-	}
-	if (*input & 0x02U) {	
-		a->color_bg = 1; 
-		a->bg_color = input[2] & 0x7fU;
-		if (*input & 0x08U)
-			a->bg_color += 0x80U;
-	}
-
-	return 0;
-}
 
 /* Invoke all of the neccesary functions so output attributes reflect 'a'. */
 static void	term_attribute (Attribute *a)
@@ -466,22 +660,58 @@ static void	term_attribute (Attribute *a)
 	if (a->altchar)		term_altcharset_on();
 	if (a->italic)		term_italics_on();
 
-	/* XXXX This is where you'd put in a shim to globally defeat colors */
-	if (!(x_debug & DEBUG_NO_COLOR))
-	{
-		if (a->color_fg) { 
-			if (a->bold && get_int_var(BROKEN_AIXTERM_VAR))
-				term_set_bold_foreground(a->fg_color);
-			else
-				term_set_foreground(a->fg_color); 
-		}
-		if (a->color_bg) { 
-			if (a->bold && get_int_var(BROKEN_AIXTERM_VAR))
-				term_set_bold_background(a->bg_color);
-			else
-				term_set_background(a->bg_color); 
-		}
-	}
+	/* Globally defeat colors */
+	if (x_debug & DEBUG_NO_COLOR)
+		return;
+
+	if (IS_COLOR_NONE(a->fg)) {
+		/* */ (void) 0;
+	} else if (IS_COLOR_ANSI(a->fg)) {
+		if (a->bold && get_int_var(BROKEN_AIXTERM_VAR))
+			term_set_bold_foreground(GET_ANSI_COLOR(a->fg));
+		else
+			term_set_foreground(GET_ANSI_COLOR(a->fg));
+	} else if (IS_COLOR_C(a->fg)) {
+		panic(1, "I don't support ^C colors internally just yet");
+	} else if (IS_COLOR_X(a->fg)) {
+		char 	buffer[BIG_BUFFER_SIZE];
+		int 	value;
+		value = GET_X_COLOR(a->fg);
+
+		snprintf(buffer, sizeof(buffer), "\e[38;5;%dm", value);
+		tputs_x(buffer);
+	} else if (IS_COLOR_RGB(a->fg)) {
+		char buffer[BIG_BUFFER_SIZE];
+		int	r, g, b;
+		GET_RGB_COLOR(a->fg, r, g, b);
+		snprintf(buffer, sizeof(buffer), "\e[38;2;%d;%d;%dm", r, g, b);
+		tputs_x(buffer);
+	} 
+
+	if (IS_COLOR_NONE(a->bg)) {
+		/* */ (void) 0;
+	} else if (IS_COLOR_ANSI(a->bg)) {
+		if (a->blink && get_int_var(BROKEN_AIXTERM_VAR))
+			term_set_bold_background(GET_ANSI_COLOR(a->bg));
+		else
+			term_set_background(GET_ANSI_COLOR(a->bg));
+	} else if (IS_COLOR_C(a->bg)) {
+		panic(1, "I don't support ^C colors internally just yet");
+	} else if (IS_COLOR_X(a->bg)) {
+		char 	buffer[BIG_BUFFER_SIZE];
+		int 	value;
+		value = GET_X_COLOR(a->bg);
+
+		snprintf(buffer, sizeof(buffer), "\e[48;5;%dm", value);
+		tputs_x(buffer);
+	} else if (IS_COLOR_RGB(a->bg)) {
+		char buffer[BIG_BUFFER_SIZE];
+		int	r, g, b;
+		GET_RGB_COLOR(a->bg, r, g, b);
+		snprintf(buffer, sizeof(buffer), "\e[48;2;%d;%d;%dm", r, g, b);
+		tputs_x(buffer);
+	} 
+
 }
 
 /* * * * * * * * * * * * * COLOR SUPPORT * * * * * * * * * * * * * * * * */
@@ -601,9 +831,7 @@ static ssize_t	read_color_seq (const char *start, void *d, int blinkbold)
 		int		noval;
 
         /* Reset all attributes to zero */
-        ad.bold = ad.underline = ad.reverse = ad.blink = ad.altchar = 0;
-        ad.color_fg = ad.color_bg = ad.fg_color = ad.bg_color = 0;
-	ad.italic = 0;
+	zero_attribute(&ad);
 
 	/* Copy the inward attributes, if provided */
 	a = (d) ? (Attribute *)d : &ad;
@@ -630,8 +858,8 @@ static ssize_t	read_color_seq (const char *start, void *d, int blinkbold)
 		if (*ptr == 0)
 		{
 			if (fg)
-				a->color_fg = a->fg_color = 0;
-			a->color_bg = a->bg_color = 0;
+				a->fg = COLOR_NONE;
+			a->bg = COLOR_NONE;
 			a->bold = a->blink = 0;
 			return ptr - start;
 		}
@@ -645,8 +873,8 @@ static ssize_t	read_color_seq (const char *start, void *d, int blinkbold)
 		else if (ptr[0] == '-' && ptr[1] == '1')
 		{
 			if (fg)
-				a->color_fg = a->fg_color = 0;
-			a->color_bg = a->bg_color = 0;
+				a->fg = COLOR_NONE;
+			a->bg = COLOR_NONE;
 			a->bold = a->blink = 0;
 			return (ptr + 2) - start;
 		}
@@ -657,8 +885,8 @@ static ssize_t	read_color_seq (const char *start, void *d, int blinkbold)
 		else if (!isdigit(ptr[0]) && ptr[0] != ',')
 		{
 			if (fg)
-				a->color_fg = a->fg_color = 0;
-			a->color_bg = a->bg_color = 0;
+				a->fg = COLOR_NONE;
+			a->bg = COLOR_NONE;
 			a->bold = a->blink = 0;
 			return ptr - start;
 		}
@@ -768,15 +996,13 @@ static ssize_t	read_color_seq (const char *start, void *d, int blinkbold)
 		{
 			if (fg)
 			{
-				a->color_fg = 1;
 				a->bold = fore_bold_conv[val];
-				a->fg_color = fore_conv[val];
+				a->fg = COLOR_ANSI(fore_conv[val]);
 			}
 			else
 			{
-				a->color_bg = 1;
 				a->blink = back_blinkbold_conv[val];
-				a->bg_color = back_conv[val];
+				a->bg = COLOR_ANSI(back_conv[val]);
 			}
 		}
 
@@ -793,7 +1019,7 @@ static ssize_t	read_color_seq (const char *start, void *d, int blinkbold)
 }
 
 /*
- * read_color256_seq -- Parse out and count the length of a ^X color sequence
+ * read_rgb_seq -- Parse out and count the length of a ^X color sequence
  * Arguments:
  *	start     - A string beginning with ^C that represents a color sequence
  *	d         - An (Attribute *) [or NULL] that shall be modified by the
@@ -805,32 +1031,35 @@ static ssize_t	read_color_seq (const char *start, void *d, int blinkbold)
  *
  * DO NOT USE ANY OTHER FUNCTION TO PARSE ^X CODES.  YOU HAVE BEEN WARNED!
  */
-static ssize_t	read_color256_seq (const char *start, void *d)
+static ssize_t	read_rgb_seq (const char *start, void *d)
 {
 	/* Local variables, of course */
 	const 	char *		ptr = start;
-		int		c1, c2;
 		Attribute *	a;
 		Attribute	ad;
 		int		fg;
-		int		val;
 		int		set;
 
-        /* Reset all attributes to zero */
-        ad.bold = ad.underline = ad.reverse = ad.blink = ad.altchar = 0;
-        ad.color_fg = ad.color_bg = ad.fg_color = ad.bg_color = 0;
-	ad.italic = 0;
-
 	/* Copy the inward attributes, if provided */
-	a = (d) ? (Attribute *)d : &ad;
+	if (d)
+		a = (Attribute *)d;
+	else
+	{
+		zero_attribute(&ad);
+		a = &ad;
+	}
 
 	/*
 	 * Originally this was a check for *ptr == '\030' but it was
 	 * inconvenient to pass in the ^C here for prepare_display, so
 	 * i'm making this check optional.
 	 */
-	if (*ptr == COLOR256_TAG)
+	if (*ptr == COLOR_EXTENDED_TAG)
 		ptr++;
+
+	if (*ptr == '#')
+		ptr++;
+
 
 	/*
 	 * This is a one-or-two-time-through loop.  We find the maximum
@@ -848,8 +1077,8 @@ static ssize_t	read_color256_seq (const char *start, void *d)
 		if (*ptr == 0)
 		{
 			if (fg)
-				a->color_fg = a->fg_color = 0;
-			a->color_bg = a->bg_color = 0;
+				a->fg = COLOR_NONE;
+			a->bg = COLOR_NONE;
 			return ptr - start;
 		}
 
@@ -861,8 +1090,169 @@ static ssize_t	read_color256_seq (const char *start, void *d)
 		else if (ptr[0] == '-' && ptr[1] == '1')
 		{
 			if (fg)
-				a->color_fg = a->fg_color = 0;
-			a->color_bg = a->bg_color = 0;
+				a->fg = COLOR_NONE;
+			a->bg = COLOR_NONE;
+			return (ptr + 2) - start;
+		}
+
+		/*
+		 * Further checks against a lonely old naked ^X#.
+		 * XXX Note -- this is invalid; but we're tolerant 
+		 * (even though it's ambiguous)
+		 */
+		else if (check_xdigit(ptr[0]) == -1 && ptr[0] != ',')
+		{
+			if (fg)
+				a->fg = COLOR_NONE;
+			a->bg = COLOR_NONE;
+			return ptr - start;
+		}
+
+		/*
+		 * If there is a leading comma, then no color here.
+		 */
+		if (fg && *ptr == ',')
+		{
+			ptr++;
+			continue;
+		}
+
+
+		char d1, d2, d3, d4, d5, d6;
+		int	r, g, b;
+
+		/* If the code is too short, stop where we stop. */
+		/* clang complains if i initialize d1. bah */
+		d2 = d3 = d4 = d5 = d6 = 0;
+		if ((d1 = ptr[0]))
+		    if ((d2 = ptr[1]))
+		        if ((d3 = ptr[2]))
+			    if ((d4 = ptr[3]))
+				if ((d5 = ptr[4]))
+				    d6 = ptr[5];
+
+		/*
+		 * Highest priority -- check for six hex digits
+		 */
+		if (check_xdigit(d1) != -1 && check_xdigit(d2) != -1 && 
+		    check_xdigit(d3) != -1 && check_xdigit(d4) != -1 &&
+		    check_xdigit(d5) != -1 && check_xdigit(d5) != -1 )
+		{
+			set = 1;
+			r = check_xdigit(d1) * 16 + check_xdigit(d2);
+			g = check_xdigit(d3) * 16 + check_xdigit(d4);
+			b = check_xdigit(d5) * 16 + check_xdigit(d6);
+			ptr += 6;
+		}
+		/*
+		 * next, check for an explicit "-1"
+		 */
+		else if (d1 == '-' && d2 == '1')
+		{
+			set = 0;
+			ptr += 2;
+		}
+		else
+			set = 0;
+
+
+		if (fg)
+		{
+			if (set)
+				a->fg = COLOR_RGB(r, g, b);
+		}
+		else 
+		{
+			if (set)
+				a->bg = COLOR_RGB(r, g, b);
+		}
+
+		if (fg && *ptr == ',')
+		{
+			ptr++;
+			continue;
+		}
+		else
+			break;
+	}
+
+	return ptr - start;
+}
+
+/*
+ * read_color256_seq -- Parse out and count the length of an ^X color sequence
+ *
+ * Arguments:
+ *	start     - A string beginning with '^X' that represents an RGB color sequence
+ *	d         - An (Attribute *) [or NULL] that shall be modified by the
+ *		    color sequence.
+ *
+ * Return Value:
+ *	The length of the ^X# color sequence, such that (start + retval) is
+ *	the first character that is not part of the ^X# color sequence.
+ *	In no case does the return value pass the string's terminating null.
+ *
+ * DO NOT USE ANY OTHER FUNCTION TO PARSE ^X# CODES.  YOU HAVE BEEN WARNED!
+ */
+static ssize_t	read_color256_seq (const char *start, void *d)
+{
+	/* Local variables, of course */
+	const 	char *		ptr = start;
+		int		c1, c2;
+		Attribute *	a;
+		Attribute	ad;
+		int		fg;
+		int		val;
+		int		set;
+
+	/* Copy the inward attributes, if provided */
+	if (d)
+		a = (Attribute *)d;
+	else
+	{
+		zero_attribute(&ad);
+		a = &ad;
+	}
+
+	/*
+	 * Originally this was a check for *ptr == '\030' but it was
+	 * inconvenient to pass in the ^X here for prepare_display, so
+	 * i'm making this check optional.
+	 */
+	if (*ptr == COLOR_EXTENDED_TAG)
+		ptr++;
+
+	/*
+	 * This is a one-or-two-time-through loop.  We find the maximum
+	 * span that can compose a legit ^C sequence, then if the first
+	 * nonvalid character is a comma, we grab the rhs of the code.
+	 */
+	for (fg = 1; ; fg = 0)
+	{
+		/*
+		 * If its just a lonely old ^X#, then its probably a terminator.
+		 * Just skip over it and go on.
+		 * XXX Note -- this is invalid; but we're tolerant because
+		 * it's unambiguous.
+		 */
+		if (*ptr == 0)
+		{
+			if (fg)
+				a->fg = COLOR_NONE;
+			a->bg = COLOR_NONE;
+			return ptr - start;
+		}
+
+		/*
+		 * Check for the very special case of a definite terminator.
+		 * If the argument to ^X# is -1, then we absolutely know that
+		 * this ends the code without starting a new one
+		 */
+		else if (ptr[0] == '-' && ptr[1] == '1')
+		{
+			if (fg)
+				a->fg = COLOR_NONE;
+			a->bg = COLOR_NONE;
 			return (ptr + 2) - start;
 		}
 
@@ -874,8 +1264,8 @@ static ssize_t	read_color256_seq (const char *start, void *d)
 		else if (check_xdigit(ptr[0]) == -1 && ptr[0] != ',')
 		{
 			if (fg)
-				a->color_fg = a->fg_color = 0;
-			a->color_bg = a->bg_color = 0;
+				a->fg = COLOR_NONE;
+			a->bg = COLOR_NONE;
 			return ptr - start;
 		}
 
@@ -932,13 +1322,13 @@ static ssize_t	read_color256_seq (const char *start, void *d)
 
 		if (fg)
 		{
-			a->color_fg = set;
-			a->fg_color = val;
+			if (set)
+				a->fg = COLOR_X(val);
 		}
-		else
+		else 
 		{
-			a->color_bg = set;
-			a->bg_color = val;
+			if (set)
+				a->bg = COLOR_X(val);
 		}
 
 		if (fg && *ptr == ',')
@@ -987,7 +1377,11 @@ static ssize_t	read_esc_seq (const char *start, void *ptr_a, int *nd_spaces)
 	ssize_t		len;
 
 	if (ptr_a == NULL)
+	{
+		/* Always start from zero */
+		zero_attribute(&safe_a);
 		a = &safe_a;
+	}
 	else
 		a = (Attribute *)ptr_a;
 
@@ -1151,11 +1545,7 @@ start_over:
 		    {
 			case 0:		/* Reset to default */
 			{
-				a->reverse = a->bold = 0;
-				a->blink = a->underline = 0;
-				a->altchar = a->italic = 0;
-				a->color_fg = a->color_bg = 0;
-				a->fg_color = a->bg_color = 0;
+				zero_attribute(a);
 				break;
 			}
 			case 1:		/* bold on */
@@ -1191,11 +1581,14 @@ start_over:
 			case 27:	/* Reverse off */
 				a->reverse = 0;
 				break;
+
 			case 30: case 31: case 32: case 33: case 34: case 35:
 			case 36: case 37:	/* Set foreground color */
 			{
-				a->color_fg = 1;
-				a->fg_color = args[i] - 30;
+				if (a->bold)
+					a->bg = COLOR_ANSI(args[i] - 30 + 8);
+				else
+					a->bg = COLOR_ANSI(args[i] - 30);
 				break;
 			}
 			case 38:	/* Set 256 fg color */
@@ -1210,15 +1603,13 @@ start_over:
 				{
 					if (i == nargs)
 					    break;	/* Invalid */
-					i++;
 
-					a->color_fg = 1;
-					a->fg_color = args[i];
-					break;		/* Invalid */
+					a->fg = COLOR_X(args[++i]);
+					break;		
 				}
 				else if (args[i] == 2)
 				{
-					int	r, g, b, c;
+					int	r, g, b;
 
 					if (i + 3 >= nargs)
 					    break;	/* Invalid */
@@ -1226,9 +1617,11 @@ start_over:
 					r = args[++i];
 					g = args[++i];
 					b = args[++i];
+					a->fg = COLOR_RGB(r, g, b);
+#if 0
 					c = rgb_to_256(r, g, b);
-					a->color_fg = 1;
-					a->fg_color = c;
+					a->fg = COLOR_X(c);
+#endif
 					break;
 				}
 
@@ -1236,15 +1629,17 @@ start_over:
 			}
 			case 39:	/* Reset foreground color to default */
 			{
-				a->color_fg = 0;
-				a->fg_color = 0;
+				a->fg = COLOR_NONE;
 				break;
 			}
+
 			case 40: case 41: case 42: case 43: case 44: case 45:
 			case 46: case 47:	/* Set background color */
 			{
-				a->color_bg = 1;
-				a->bg_color = args[i] - 40;
+				if (a->blink)
+					a->bg = COLOR_ANSI(args[i] - 40 + 8);
+				else
+					a->bg = COLOR_ANSI(args[i] - 40);
 				break;
 			}
 			case 48:	/* Set 256 bg color */
@@ -1260,13 +1655,12 @@ start_over:
 					if (i == nargs)
 					    break;	/* Invalid */
 
-					a->color_bg = 1;
-					a->bg_color = args[++i];
-					break;		/* Invalid */
+					a->bg = COLOR_X(args[++i]);
+					break;	
 				}
 				else if (args[i] == 2)
 				{
-					int	r, g, b, c;
+					int	r, g, b;
 
 					if (i + 3 >= nargs)
 					    break;	/* Invalid */
@@ -1274,9 +1668,11 @@ start_over:
 					r = args[++i];
 					g = args[++i];
 					b = args[++i];
+					a->bg = COLOR_RGB(r, g, b);
+#if 0
 					c = rgb_to_256(r, g, b);
-					a->color_bg = 1;
-					a->bg_color = c;
+					a->bg = COLOR_X(c);
+#endif
 					break;
 				}
 
@@ -1284,30 +1680,25 @@ start_over:
 			}
 			case 49:	/* Reset background color to default */
 			{
-				a->color_bg = 0;
-				a->bg_color = 0;
+				a->bg = COLOR_NONE;
 				break;
 			}
 
 			/* 
-			 * Some emulators are incapable of supporting 
-			 * bold/blink+colors and require you to use these 
-			 * irregular/non-standard numbers.
+			 * To accommodate irregular emulators, we store
+			 * "bold" or "bright" colors in spots 8-15.
+			 * So we subtract 82 to convert it to a 8-15 number
 			 */
 			case 90: case 91: case 92: case 93: case 94: case 95:
 			case 96: case 97:	/* Set bright foreground color */
 			{
-				a->bold = 1;
-				a->color_fg = 1;
-				a->fg_color = args[i] - 90;
+				a->fg = COLOR_ANSI(args[i] - 82);
 				break;
 			}
 			case 100: case 101: case 102: case 103: case 104: case 105:
 			case 106: case 107:	/* Set bright (blink) background color */
 			{
-				a->blink = 1;
-				a->color_bg = 1;
-				a->bg_color = args[i] - 100;
+				a->bg = COLOR_ANSI(args[i] - 92);
 				break;
 			}
 
@@ -1344,7 +1735,7 @@ start_over:
  * State 7 is a "beep"
  * State 8 is a "tab"
  * State 9 is a "non-destructive space"
- * State 10 is a "256 color code character" (\030 aka COLOR256_TAG)
+ * State 10 is a "extended color code character" (\030 aka COLOR_EXTENDED_TAG)
  */
 static	unsigned char	ansi_state[128] = {
 /*	^@	^A	^B	^C	^D	^E	^F	^G(\a) */
@@ -1395,10 +1786,10 @@ STRIP_OTHER		X    -    -    -    -    -    -    -    X    X   -
  * Arguments:
  *   str	An untrusted input string
  *   logical	How attribute changes should look in the output:
- *		0	Marshalled form, suitable for displaying
- *		1	Un-normalized form, suitable for the user (ie, ^B/^V)
+ *		0	internal attributes (suitable for output_with_count())
+ *		1	ircii attributes (^B/^V/^C, etc)
  *		2	Stripped out entirely
- *		3	Marshalled form, especially for the status bar.
+ *		3	internal attributes, used especially by make_status()
  *   mangler	How we want the string to be transformed
  *		The above chart shows how the different types of characters
  *		are transformed by the different mangler types.  There are
@@ -1441,7 +1832,7 @@ char *	new_normalize_string (const char *str, int logical, int mangle)
 	int		strip_unprintable, strip_other, strip_c1, strip_italic;
 	int		codepoint, state, cols;
 	char 		utf8str[16], *x;
-	size_t		(*attrout) (char *, Attribute *, Attribute *) = NULL;
+	size_t		(*attrout) (char *, size_t, Attribute *, Attribute *) = NULL;
 	ptrdiff_t	offset;
 
 	mangle_escapes 	= ((mangle & MANGLE_ESCAPES) != 0);
@@ -1463,21 +1854,18 @@ char *	new_normalize_string (const char *str, int logical, int mangle)
 	boldback	= get_int_var(TERM_DOES_BRIGHT_BLINK_VAR);
 
 	if (logical == 0)
-		attrout = display_attributes;	/* prep for screen output */
+		attrout = write_internal_attribute;	/* prep for screen output */
 	else if (logical == 1)
-		attrout = logic_attributes;	/* non-screen handlers */
+		attrout = write_ircii_attributes;	/* non-screen handlers */
 	else if (logical == 2)
 		attrout = ignore_attributes;	/* $stripansi() function */
 	else if (logical == 3)
-		attrout = display_attributes;	/* The status line */
+		attrout = write_internal_attribute;	/* The status line */
 	else
 		panic(1, "'logical == %d' is not valid.", logical);
 
-	/* Reset all attributes to zero */
-	a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
-	a.italic = 0;
-	a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
-	olda = a;
+	zero_attribute(&a);
+	zero_attribute(&olda);
 
 	/* 
 	 * The output string has a few extra chars on the end just 
@@ -1491,7 +1879,7 @@ char *	new_normalize_string (const char *str, int logical, int mangle)
 	{
 	    str += offset;
 
-	    if (pos > maxpos - 8)
+	    if (pos > maxpos - 16)
 	    {
 		maxpos += 192; /* Extend 192 chars at a time */
 		RESIZE(output, char, maxpos + 192);
@@ -1525,10 +1913,10 @@ char *	new_normalize_string (const char *str, int logical, int mangle)
 				codepoint = (codepoint | 0x60U) & 0x7FU;
 abnormal_char:
 				a.reverse = !a.reverse;
-				pos += attrout(output + pos, &olda, &a);
+				pos += attrout(output + pos, maxpos - pos, &olda, &a);
 				output[pos++] = (char)(codepoint);
 				a.reverse = !a.reverse;
-				pos += attrout(output + pos, &olda, &a);
+				pos += attrout(output + pos, maxpos - pos, &olda, &a);
 				pc += 1;
 				break;
 			}
@@ -1629,12 +2017,9 @@ normal_char:
 			if (a.underline && strip_underline)	a.underline = 0;
 			if (a.altchar && strip_altchar)		a.altchar = 0;
 			if (a.italic && strip_italic)		a.italic = 0;
-			if (strip_color)
-			{
-				a.color_fg = a.color_bg = 0;
-				a.fg_color = a.bg_color = 0;
-			}
-			pos += attrout(output + pos, &olda, &a);
+			if (strip_color)			a.fg = a.bg = COLOR_NONE;
+
+			pos += attrout(output + pos, maxpos - pos, &olda, &a);
 			str += esclen;
 			break;
 		    }
@@ -1660,7 +2045,9 @@ normal_char:
 
 			if (state == 3)
 				len = read_color_seq(str, (void *)&a, boldback);
-			else 
+			else if (*str == '#')
+				len = read_rgb_seq(str, (void *)&a);
+			else
 				len = read_color256_seq(str, (void *)&a);
 
 			str += len;
@@ -1668,14 +2055,10 @@ normal_char:
 			/* Suppress the color if no color is permitted */
 			if (a.bold && strip_bold)		a.bold = 0;
 			if (a.blink && strip_blink)		a.blink = 0;
-			if (strip_color)
-			{
-				a.color_fg = a.color_bg = 0;
-				a.fg_color = a.bg_color = 0;
-			}
+			if (strip_color)			a.fg = a.bg = COLOR_NONE;
 
 			/* Output the new attributes */
-			pos += attrout(output + pos, &olda, &a);
+			pos += attrout(output + pos, maxpos - pos, &olda, &a);
 			break;
 		    }
 
@@ -1719,12 +2102,8 @@ normal_char:
 			case ALL_OFF:
 				if (!strip_all_off)
 				{
-				    a.reverse = a.bold = a.blink = 0;
-				    a.underline = a.altchar = 0;
-				    a.italic = 0;
-				    a.color_fg = a.color_bg = 0;
-				    a.bg_color = a.fg_color = 0;
-				    pos += attrout(output + pos, &olda, &a);
+				    zero_attribute(&a);
+				    pos += attrout(output + pos, maxpos - pos, &olda, &a);
 				    olda = a;
 				}
 				break;
@@ -1733,7 +2112,7 @@ normal_char:
 		    }
 
 		    /* After ALL_OFF, this is a harmless no-op */
-		    pos += attrout(output + pos, &olda, &a);
+		    pos += attrout(output + pos, maxpos - pos, &olda, &a);
 		    break;
 		}
 
@@ -1783,10 +2162,8 @@ normal_char:
 	/* Terminate the output and return it. */
 	if (logical == 0)
 	{
-		a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
-		a.italic = 0;
-		a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
-		pos += attrout(output + pos, &olda, &a);
+		zero_attribute(&a);
+		pos += attrout(output + pos, maxpos - pos, &olda, &a);
 	}
 	output[pos] = output[pos + 1] = 0;
 	return output;
@@ -1816,11 +2193,8 @@ char *	denormalize_string (const char *str_)
 	size_t		span;
 	size_t		pos;
 
-        /* Reset all attributes to zero */
-        a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
-        a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
-	a.italic = 0;
-	olda = a;
+	zero_attribute(&a);
+	zero_attribute(&olda);
 
 	/* 
 	 * The output string has a few extra chars on the end just 
@@ -1844,11 +2218,12 @@ char *	denormalize_string (const char *str_)
 		{
 		    case '\006':
 		    {
-			if (read_attributes(str, &a))
+			size_t	numbytes = 0;
+			if (read_internal_attribute(str, &a, &numbytes))
 				continue;		/* Mangled */
-			str += 5;
+			str += numbytes;
 
-			span = logic_attributes(output + pos, &olda, &a);
+			span = write_ircii_attributes(output + pos, maxpos - pos, &olda, &a);
 			pos += span;
 			break;
 		    }
@@ -1884,10 +2259,7 @@ char *	normalized_string_to_plain_text (const char *str_)
 	Attribute 	a;
 	size_t		pos;
 
-        /* Reset all attributes to zero */
-        a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
-        a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
-	a.italic = 0;
+	zero_attribute(&a);
 
 	/* 
 	 * The output string has a few extra chars on the end just 
@@ -1909,11 +2281,13 @@ char *	normalized_string_to_plain_text (const char *str_)
 		}
 		switch (*str)
 		{
+		    /* Attribute changes -- read them but ignore them */
 		    case '\006':
 		    {
-			if (read_attributes(str, &a))
+			size_t	numbytes = 0;
+			if (read_internal_attribute(str, &a, &numbytes))
 				continue;		/* Mangled */
-			str += 5;
+			str += numbytes;
 			break;
 		    }
 		    default:
@@ -1972,35 +2346,25 @@ const 	char	*ptr;
 const	char	*first_ptr;
 const	char	*cont_ptr;
 	char	*cont = NULL;
-	const char 	*words;
+const 	char 	*words;
 	Attribute	a, olda;
 #if 0
 	Attribute	saved_a;
 #endif
 	char	*cont_free = NULL;
-	int		codepoint;
+	int	codepoint;
 	char	utf8str[16];
 	char *	x;
-	int		cols;
+	int	cols;
 
 	if (recursion)
 		panic(1, "prepare_display() called recursively");
 	recursion++;
 
-        /* Reset all attributes to zero */
-        a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
-        a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
-	a.italic = 0;
-
-        olda.bold = olda.underline = olda.reverse = 0;
-	olda.blink = olda.altchar = 0;
-        olda.color_fg = olda.color_bg = olda.fg_color = 0;
-	olda.bg_color = olda.italic = 0;
+	zero_attribute(&a);
+	zero_attribute(&olda);
 #if 0
-        saved_a.bold = saved_a.underline = saved_a.reverse = 0;
-	saved_a.blink = saved_a.altchar = 0;
-        saved_a.color_fg = saved_a.color_bg = saved_a.fg_color = 0;
-	saved_a.bg_color = saved_a.italic = 0;
+	zero_attribute(&saved_a);
 #endif
 
 	if (window < 0)
@@ -2056,34 +2420,15 @@ const	char	*cont_ptr;
 		    /* Attribute changes -- copy them unmodified. */
 		    case '\006':
 		    {
-			if (read_attributes(ptr, &a) == 0)
-			{
-				buffer[pos++] = 6;
-				buffer[pos++] = *ptr++;
-				buffer[pos++] = *ptr++;
-				buffer[pos++] = *ptr++;
-				buffer[pos++] = *ptr++;
-			}
-			else
-				abort();
+			size_t	numbytes = 0;
 
-#if 0
-			/*
-			 * XXX This isn't a hack, but it _is_ ugly!
-			 * Because I'm too lazy to find a better place
-			 * to put this (down among the line wrapping
-			 * logic would be a good place), I take the
-			 * cheap way out by "saving" any attribute
-			 * changes that occur prior to the first space
-			 * in a line.  If there are no spaces for the
-			 * rest of the line, then this *is* the saved
-			 * attributes we will need to start the next
-			 * line.  This fixes an abort().
-			 */
-			if (word_break == 0)
-				saved_a = a;
-#endif
+			/* We need to both READ and COPY the attribute here. */
+			read_internal_attribute(ptr, &a, &numbytes);
 
+			buffer[pos++] = '\006';
+			copy_internal_attribute(ptr, buffer + pos, BIG_BUFFER_SIZE - pos, &numbytes);
+			pos += numbytes;
+			ptr += numbytes;
 			continue;          /* Skip the column check */
 		    }
 
@@ -2307,7 +2652,7 @@ const	char	*cont_ptr;
 				{
 				    char *fixedstr;
 
-				    fixedstr = prepare_display2(cont_ptr, indent, 0, ' ', 1);
+				    fixedstr = prepare_display_fixed_size(cont_ptr, indent, 0, ' ', 1);
 				    cont = LOCAL_COPY(fixedstr);
 				    new_free(&fixedstr);
 				}
@@ -2400,10 +2745,10 @@ const	char	*cont_ptr;
 			strlcpy(buffer, cont, sizeof(buffer) / 2);
 #if 0
 			/* -- I'm not sure if this is necessary */
-			/* display_attributes(buffer + strlen(buffer), &olda, &saved_a); */
+			/* write_internal_attribute(buffer + strlen(buffer), &olda, &saved_a); */
 #endif
 			/* -- and I think this should be before we copy pos_copy back */
-			display_attributes(buffer + strlen(buffer), &olda, &a);
+			write_internal_attribute(buffer + strlen(buffer), BIG_BUFFER_SIZE - strlen(buffer), &olda, &a);
 			strlcat(buffer, pos_copy, sizeof(buffer) / 2);
 
 			pos = strlen(buffer);
@@ -2427,10 +2772,8 @@ const	char	*cont_ptr;
 	} /* End of (ptr = str; *ptr && (pos < BIG_BUFFER_SIZE - 8); ptr++) */
 
         /* Reset all attributes to zero */
-        a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
-	a.italic = 0;
-        a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
-	pos += display_attributes(buffer + pos, &olda, &a);
+	zero_attribute(&a);
+	pos += write_internal_attribute(buffer + pos, BIG_BUFFER_SIZE - pos, &olda, &a);
 	buffer[pos] = '\0';
 	if (*buffer)
 		malloc_strcpy((char **)&(output[line++]),buffer);
@@ -2460,28 +2803,22 @@ const	char	*cont_ptr;
  *	1. Toplines
  *	2. Continuation line markers
  */
-char *prepare_display2 (const char *orig_str, int max_cols, int allow_truncate, char fillchar, int denormalize)
+char *prepare_display_fixed_size (const char *orig_str, int max_cols, int allow_truncate, char fillchar, int denormalize)
 {
 	int 	pos = 0,            /* Current position in "buffer" */
 		col = 0,            /* Current column in display    */
 		my_newline = 0;        /* Number of newlines           */
 	char 	*str = NULL;
 	char	*retval = NULL;
-	size_t		clue = 0;
+	size_t	clue = 0;
 const 	char	*ptr;
 	char 	buffer[BIG_BUFFER_SIZE + 1];
-	Attribute	a;
 	char *	real_retval;
-	int		codepoint;
+	int	codepoint;
 	char 	utf8str[16];
-	char *		x;
-	int		cols;
+	char *	x;
+	int	cols;
 	ptrdiff_t	offset;
-
-        /* Reset all attributes to zero */
-        a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
-        a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
-	a.italic = 0;
 
         str = new_normalize_string((const char *)orig_str, 3, NORMALIZE);
 	buffer[0] = 0;
@@ -2507,17 +2844,10 @@ const 	char	*ptr;
 		/* Attribute changes -- copy them unmodified. */
 		case 6:
 		{
-			if (read_attributes(ptr, &a) == 0)
-			{
-				buffer[pos++] = '\006';
-				buffer[pos++] = *ptr++;
-				buffer[pos++] = *ptr++;
-				buffer[pos++] = *ptr++;
-				buffer[pos++] = *ptr++;
-			}
-			else
-				abort();
-
+			size_t 	numbytes = 0;
+			copy_internal_attribute(ptr, buffer + pos, BIG_BUFFER_SIZE - pos, &numbytes);
+			pos += numbytes;
+			ptr += numbytes;
 			continue;          /* Skip the column check */
 		}
 
@@ -2614,19 +2944,45 @@ static int 	rite (int window_, const char *str)
 }
 
 /*
- * This is the main physical output routine.  In its most obvious
- * use, 'cleareol' and 'output' is 1, and it outputs 'str' to the main
- * display (controlled by output_screen), outputting any attribute markers
- * that it finds along the way.  The return value is the number of physical
- * printable characters output.  However, if 'output' is 0, then no actual
- * output is performed, but the counting still takes place.  If 'clreol'
- * is 0, then the rest of the line is not cleared after 'str' has been
- * completely output.  If 'output' is 0, then clreol is ignored.
+ * output_with_count - Actually output to the terminal! (or do a dry run)
  *
- * In some cases, you may want to output in multiple calls, and "all_off"
- * should be set to 1 when you're all done with the end of the 
- * If 'output' is 1 and 'all_off' is 1, do a term_all_off() when the output
- * is done.  If 'all_off' is 0, then don't do an all_off, because
+ * Arguments:
+ *	str1	 - A string in "internal attribute format".
+ *		     You probably got it from prepare_display(),
+ *		     prepare_display_fixed_size() or new_normalize_string()
+ *	cleareol - Clear the line before outputting 
+ *	output	 - 0 = this is a dry run  1 = actually output it!
+ *
+ * Return value:
+ *	The number of columns that 'str1' would take up on the screen
+ *
+ * Errors:
+ *	This function always succeeds
+ *
+ * Side effects:
+ *	- When not a dry run (when output == 0)
+ *	  - If 'str1' contains a beep, then it will beep
+ *	  - If 'clreol' == 1, then it will clear the line on the screen
+ *	    - This means you need to have already positioned the cursor,
+ *	      eg, by having called scroll_window() or term_move_cursor().
+ *
+ * Unhappy things:
+ *	"outputting" and "counting" are usually mutually exclusive.
+ *	If you're outputting, you don't care about the count,
+ *	and if you're counting, you're never wanting to output.
+ *
+ *	And besides, prepare_display() and prepare_display_fixed_size() ALSO 
+ * 	do column counting...
+ *	Is this really the best way to handle that?
+ *
+ *	OUTPUTTERS:
+ *	 - rite() for normal window display (see above)
+ *	 - repaint_window_body() for screen redraws (^L)
+ *	 - the input line
+ *	 - the status bar
+ *	COUNTERS:
+ *	 - TBD XXX
+ *
  */
 size_t 	output_with_count (const char *str1, int clreol, int output)
 {
@@ -2635,19 +2991,16 @@ size_t 	output_with_count (const char *str1, int clreol, int output)
 	Attribute	a;
 	const char *	str;
 	int		codepoint;
-	char	utf8str[16];
+	char		utf8str[16];
 	char *		x;
 	int		cols;
 	ptrdiff_t	offset;
 
-        /* Reset all attributes to zero */
-        a.bold = a.underline = a.reverse = a.blink = a.altchar = 0;
-        a.color_fg = a.color_bg = a.fg_color = a.bg_color = 0;
-	a.italic = 0;
+	zero_attribute(&a);
 
-	if (output)
-		if (clreol)
-			term_clear_to_eol();
+	/* This flag is used by the input line and status bars. */
+	if (output && clreol)
+		term_clear_to_eol();
 
 	for (str = (const char *)str1; str && *str; )
 	{
@@ -2661,11 +3014,12 @@ size_t 	output_with_count (const char *str1, int clreol, int output)
 		/* Attribute marker */
 		case 6:
 		{
-			if (read_attributes(str, &a))
+			size_t	numbytes = 0;
+			if (read_internal_attribute(str, &a, &numbytes))
 				break;
 			if (output)
 				term_attribute(&a);
-			str += 4;
+			str += numbytes;
 			break;
 		}
 
@@ -2946,10 +3300,10 @@ static void 	add_to_window (int window_, const char *str)
 	    recursion++;
 	    if (recursion < 5 && (pend = get_string_var(OUTPUT_REWRITE_VAR)))
 	    {
-		char	argstuff[10240];
+		char	argstuff[102400];
 
 		/* Create $* and then expand with it */
-		snprintf(argstuff, 10240, "%u %s", get_window_user_refnum(window_), str);
+		snprintf(argstuff, 102400, "%u %s", get_window_user_refnum(window_), str);
 		str = free_me = expand_alias(pend, argstuff);
 	    }
 	    recursion--;
@@ -3198,7 +3552,7 @@ void 	repaint_window_body (int window_)
 		term_move_cursor(0, get_window_top(window_) - get_window_toplines_showing(window_) + count);
 		term_clear_to_eol();
 
-		widthstr = prepare_display2(str, get_window_my_columns(window_) - 1, 1, ' ', 0);
+		widthstr = prepare_display_fixed_size(str, get_window_my_columns(window_) - 1, 1, ' ', 0);
 		output_with_count(widthstr, 1, foreground);
 		new_free(&widthstr);
 	   }
@@ -4162,16 +4516,16 @@ void	chop_columns (char **str, size_t num)
 		 */
 		if (codepoint == 6)
 		{
-			int	i;
+			size_t		numbytes = 0;
+			Attribute	a;
 
-			for (i = 0; i < 4; i++)
-			{
-				x++;
-				if (!*x)
-					break;
-			}
+			zero_attribute(&a);
+			if (read_internal_attribute(x, &a, &numbytes))
+				break;
+			x += numbytes;
 			continue;
 		}
+
 		/* \007 is the beep -- and we don't care. */
 		else if (codepoint == 7)
 			continue;
@@ -4249,7 +4603,12 @@ void	chop_final_columns (char **str, size_t num)
 		 */
 		if (codepoint == 6)
 		{
-			x += 4;
+			size_t		numbytes = 0;
+			Attribute	a;
+
+			if (read_internal_attribute(x, &a, &numbytes))
+				break;
+			x += numbytes;
 			continue;
 		}
 		/* \007 is the beep -- and we don't care. */

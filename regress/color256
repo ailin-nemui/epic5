@@ -80,4 +80,36 @@ alias testcolor8 {
 	}
 }
 
+alias testcolor9 {
+	fe ($jot(0 31)) r
+	{
+		@str=[]
+		fe ($jot(0 31)) g
+		{
+			fe ($jot(0 31)) b
+			{
+				@str #= [\[38\;2\;${r*8}\;${g*8}\;${b*8}m.]
+			}
+		}
+		echo $str
+	}
+}
+
+
+alias testcolor10 {
+	fe ($jot(0 31)) r
+	{
+		@str=[]
+		fe ($jot(0 31)) g
+		{
+			fe ($jot(0 31)) b
+			{
+				@str #= [\[48\;2\;${r*8+7}\;${g*8+7}\;${b*8+7}m.]
+			}
+			@str #= [ ]
+		}
+		echo >$str
+	}
+}
+
 

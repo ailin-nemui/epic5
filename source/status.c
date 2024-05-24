@@ -526,10 +526,10 @@ int	make_status (int window_, Status *status)
 
 	for (status_line = 0; status_line < status->number; status_line++)
 	{
-	int		fillchar;
-	char	*lhp = lhs_buffer,
+		int	fillchar;
+		char	*lhp = lhs_buffer,
 			*rhp = rhs_buffer;
-	char 	*cp,
+		char 	*cp,
 			*str = NULL;
 	const char *	start_rhs = 0;
 		int	pr_lhs = 0,
@@ -679,12 +679,14 @@ int	make_status (int window_, Status *status)
                          */
                         else if (code_point == 6)
                         {
-                                /* Copy the next 5 values */
-                                *cp++ = 6;
-                                *cp++ = *s++;
-                                *cp++ = *s++;
-                                *cp++ = *s++;
-                                *cp++ = *s++;
+				size_t numbytes = 0;
+
+				*cp++ = 6;
+
+				/* XXX BIG_BUFFER_SIZE here is wrong. */
+				copy_internal_attribute(s, cp, BIG_BUFFER_SIZE, &numbytes);
+				s += numbytes;
+				cp += numbytes;
                         }
 
 			/*
