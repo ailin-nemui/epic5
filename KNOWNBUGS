@@ -1373,4 +1373,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Change $rgb() to output RGB codes now (yay! \o/)
 * Lots of internal changes to support larger Attributes, color spaces
 * The above is the RGB project's first pass.  Here goes nothing!
-
+* Fix colors not showing on topline in p_d_f_s() (rb fusion)

@@ -2845,6 +2845,7 @@ const 	char	*ptr;
 		case 6:
 		{
 			size_t 	numbytes = 0;
+			buffer[pos++] = '\006';
 			copy_internal_attribute(ptr, buffer + pos, BIG_BUFFER_SIZE - pos, &numbytes);
 			pos += numbytes;
 			ptr += numbytes;
