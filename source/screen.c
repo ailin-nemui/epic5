@@ -175,7 +175,7 @@ static	void		add_to_window		(int, const char *);
 static	int		ok_to_output		(int);
 static	void		edit_codepoint		(uint32_t);
 static	ssize_t		read_esc_seq		(const char *, void *, int *);
-static	ssize_t		read_color_seq		(const char *, void *, int);
+static	ssize_t		read_color_seq_new	(const char *, void *);
 static	ssize_t		read_color256_seq	(const char *, void *);
 static	ssize_t		read_rgb_seq		(const char *, void *);
 
@@ -716,12 +716,11 @@ static void	term_attribute (Attribute *a)
 
 /* * * * * * * * * * * * * COLOR SUPPORT * * * * * * * * * * * * * * * * */
 /*
- * read_color_seq -- Parse out and count the length of a ^C color sequence
+ * read_c_color_new -- Parse out and count the length of a ^C color sequence
  * Arguments:
  *	start     - A string beginning with ^C that represents a color sequence
  *	d         - An (Attribute *) [or NULL] that shall be modified by the
- *		    color sequence.
- *	blinkbold - The value of /set bold_does_bright_blink
+ *		    color sequence.  It will be converted to an X-color.
  * Return Value:
  *	The length of the ^C color sequence, such that (start + retval) is
  *	the first character that is not part of the ^C color sequence.
@@ -737,89 +736,33 @@ static void	term_attribute (Attribute *a)
  *
  * DO NOT USE ANY OTHER FUNCTION TO PARSE ^C CODES.  YOU HAVE BEEN WARNED!
  */
-static ssize_t	read_color_seq (const char *start, void *d, int blinkbold)
+static ssize_t	read_color_seq_new (const char *start, void *d)
 {
 	/* 
-	 * The proper "attribute" color mapping is for each ^C lvalue.
+	 * We map C-colors to X-colors here
 	 * If the value is -1, then that is an illegal ^C lvalue.
 	 */
-	static	int	fore_conv[] = {
-		 7,  0,  4,  2,  1,  1,  5,  3,		/*  0-7  */
-		 3,  2,  6,  6,  4,  5,  0,  7,		/*  8-15 */
-		 7, -1, -1, -1, -1, -1, -1, -1, 	/* 16-23 */
-		-1, -1, -1, -1, -1, -1,  0,  1, 	/* 24-31 */
-		 2,  3,  4,  5,  6,  7, -1, -1,		/* 32-39 */
-		-1, -1, -1, -1, -1, -1, -1, -1,		/* 40-47 */
-		-1, -1,  0,  1,  2,  3,  4,  5, 	/* 48-55 */
-		 6,  7,	-1, -1, -1			/* 56-60 */
+	static	int	fg_x_color_conv[] = {
+		 231,  16,  18,  28, 196,  88,  90, 208,	/*  0-7  */
+		 226,  46,  30,  51,  21, 201, 244, 252,	/*  8-15 */
+		  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1, 	/* 16-23 */
+		  -1,  -1,  -1,  -1,  -1,  -1,   0,   1, 	/* 24-31 */
+		   2,   3,   4,   5,   6,   7,  -1,  -1,	/* 32-39 */
+		  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,	/* 40-47 */
+		  -1,  -1,   8,   9,  10,  11,  12,  13, 	/* 48-55 */
+		  14,  15,  -1,  -1,  -1			/* 56-60 */
 	};
-	/* 
-	 * The proper "attribute" color mapping is for each ^C rvalue.
-	 * If the value is -1, then that is an illegal ^C rvalue.
-	 */
-	static	int	back_conv[] = {
-		 7,  0,  4,  2,  1,  1,  5,  3,
-		 3,  2,  6,  6,  4,  5,  0,  7,
-		 7, -1, -1, -1, -1, -1, -1, -1,
-		-1, -1, -1, -1, -1, -1, -1, -1,
-		-1, -1, -1, -1, -1, -1, -1, -1,
-		 0,  1,  2,  3,  4,  5,  6,  7, 
-		-1, -1,  0,  1,  2,  3,  4,  5,
-		 6,  7, -1, -1, -1
+	static	int	bg_x_color_conv[] = {
+		 231,  16,  18,  28, 196,  88,  90, 208,	/*  0-7  */
+		 226,  46,  30,  51,  21, 201, 244, 252,	/*  8-15 */
+		  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1, 	/* 16-23 */
+		  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1, 	/* 24-31 */
+		  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,	/* 32-39 */
+		   0,   1,   2,   3,   4,   5,   6,   7,	/* 40-47 */
+		  -1,  -1,   8,   9,  10,  11,  12,  13, 	/* 48-55 */
+		  14,  15,  -1,  -1,  -1			/* 56-60 */
 	};
 
-	/*
-	 * Some lval codes represent "bold" colors.  That actually reduces
-	 * to ^C<non bold> + ^B, so that if you do ^B later, you get the
-	 * <non bold> color.  This table indicates whether a ^C code 
-	 * turns bold ON or OFF.  (Every color does one or the other)
-	 */
-	static	int	fore_bold_conv[] =  {
-		1,  0,  0,  0,  1,  0,  0,  0,
-		1,  1,  0,  1,  1,  1,  1,  0,
-		1,  0,  0,  0,  0,  0,  0,  0,
-		0,  0,  0,  0,  0,  0,  0,  0,
-		0,  0,  0,  0,  0,  0,  0,  0,
-		0,  0,  0,  0,  0,  0,  0,  0,
-		0,  0,  1,  1,  1,  1,  1,  1,
-		1,  1,  0,  0,  0
-	};
-	/*
-	 * Some rval codes represent "blink" colors.  That actually reduces
-	 * to ^C<non blink> + ^F, so that if you do ^F later, you get the
-	 * <non blink> color.  This table indicates whether a ^C code 
-	 * turns blink ON or OFF.  (Every color does one or the other)
-	 */
-	static	int	back_blink_conv[] = {
-		0,  0,  0,  0,  0,  0,  0,  0,
-		0,  0,  0,  0,  0,  0,  0,  0,
-		0,  0,  0,  0,  0,  0,  0,  0,
-		0,  0,  0,  0,  0,  0,  0,  0,
-		0,  0,  0,  0,  0,  0,  0,  0,
-		0,  0,  0,  0,  0,  0,  0,  0,
-		0,  0,  1,  1,  1,  1,  1,  1,
-		1,  1,  0,  0,  0
-	};
-	/*
-	 * If /set term_does_bright_blink is on, this will be used instead
-	 * of back_blink_conv.  On an xterm, this will cause the background
-	 * to be bold.
-	 */
-	static	int	back_bold_conv[] = {
-		1,  0,  0,  0,  1,  0,  0,  0,
-		1,  1,  0,  1,  1,  1,  1,  0,
-		1,  0,  0,  0,  0,  0,  0,  0,
-		0,  0,  0,  0,  0,  0,  0,  0,
-		0,  0,  0,  0,  0,  0,  0,  0,
-		0,  0,  0,  0,  0,  0,  0,  0,
-		0,  0,  1,  1,  1,  1,  1,  1,
-		1,  1,  0,  0,  0
-	};
-	/*
-	 * And switch between the two.
-	 */
-	int *	back_blinkbold_conv = blinkbold ? back_bold_conv : 
-						  back_blink_conv;
 
 	/* Local variables, of course */
 	const 	char *		ptr = start;
@@ -924,14 +867,14 @@ static ssize_t	read_color_seq (const char *start, void *d, int blinkbold)
 
 				if (fg)
 				{
-					if (fore_conv[val2] == -1)
+					if (fg_x_color_conv[val2] == -1)
 						val = val1;
 					else
 						val = val2, ptr++;
 				}
 				else
 				{
-					if (back_conv[val2] == -1)
+					if (bg_x_color_conv[val2] == -1)
 						val = val1;
 					else
 						val = val2, ptr++;
@@ -995,15 +938,9 @@ static ssize_t	read_color_seq (const char *start, void *d, int blinkbold)
 		if (noval == 0)
 		{
 			if (fg)
-			{
-				a->bold = fore_bold_conv[val];
-				a->fg = COLOR_ANSI(fore_conv[val]);
-			}
+				a->fg = COLOR_X(fg_x_color_conv[val]);
 			else
-			{
-				a->blink = back_blinkbold_conv[val];
-				a->bg = COLOR_ANSI(back_conv[val]);
-			}
+				a->bg = COLOR_X(bg_x_color_conv[val]);
 		}
 
 		if (fg && *ptr == ',')
@@ -1618,10 +1555,6 @@ start_over:
 					g = args[++i];
 					b = args[++i];
 					a->fg = COLOR_RGB(r, g, b);
-#if 0
-					c = rgb_to_256(r, g, b);
-					a->fg = COLOR_X(c);
-#endif
 					break;
 				}
 
@@ -1669,10 +1602,6 @@ start_over:
 					g = args[++i];
 					b = args[++i];
 					a->bg = COLOR_RGB(r, g, b);
-#if 0
-					c = rgb_to_256(r, g, b);
-					a->bg = COLOR_X(c);
-#endif
 					break;
 				}
 
@@ -1828,7 +1757,7 @@ char *	new_normalize_string (const char *str, int logical, int mangle)
 	int		mangle_escapes, normalize;
 	int		strip_reverse, strip_bold, strip_blink, 
 			strip_underline, strip_altchar, strip_color, 
-			strip_all_off, strip_nd_space, boldback;
+			strip_all_off, strip_nd_space;
 	int		strip_unprintable, strip_other, strip_c1, strip_italic;
 	int		codepoint, state, cols;
 	char 		utf8str[16], *x;
@@ -1851,7 +1780,6 @@ char *	new_normalize_string (const char *str, int logical, int mangle)
 	strip_italic	= ((mangle & STRIP_ITALIC) != 0);
 
 	strip_c1	= !get_int_var(ALLOW_C1_CHARS_VAR);
-	boldback	= get_int_var(TERM_DOES_BRIGHT_BLINK_VAR);
 
 	if (logical == 0)
 		attrout = write_internal_attribute;	/* prep for screen output */
@@ -2044,7 +1972,7 @@ normal_char:
 			ssize_t	len = 0;
 
 			if (state == 3)
-				len = read_color_seq(str, (void *)&a, boldback);
+				len = read_color_seq_new(str, (void *)&a);
 			else if (*str == '#')
 				len = read_rgb_seq(str, (void *)&a);
 			else

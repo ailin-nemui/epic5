@@ -30,7 +30,6 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 	We need to have a way to handle this.
 	- Line buffering needs a way to "hold" incomplete lines for a moment
 * Add some way to get the "next notified(activity) window"
-* Do 24 bit color first
 * [ 1:41PM] <Harzilein> hop: remember i wanted to asynchronously _add_ translation lines when i was in the
 +cantonese channel. would adding placeholder lines and later adding content to them be in scope for that
 +project? i.e. the reverse of what you want to do? 
@@ -1374,3 +1373,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Lots of internal changes to support larger Attributes, color spaces
 * The above is the RGB project's first pass.  Here goes nothing!
 * Fix colors not showing on topline in p_d_f_s() (rb fusion)
+* Revamp ^C handling to use 256 x-colors. (yay! \o/)
+
