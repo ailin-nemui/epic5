@@ -1374,4 +1374,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * The above is the RGB project's first pass.  Here goes nothing!
 * Fix colors not showing on topline in p_d_f_s() (rb fusion)
 * Revamp ^C handling to use 256 x-colors. (yay! \o/)
-
+* Some compilers like it when you put parens around macro params (rb fusion)

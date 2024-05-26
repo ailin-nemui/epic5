@@ -201,29 +201,29 @@ static	Screen *	get_screen_by_refnum	(int);
 #define COLORSPACE_RGB	0x04U
 
 /* Extract the color space from a unified color value */
-#define GET_COLORSPACE(x)	(((uint32_t)x & 0xFF000000U) >> 24)
-#define GET_VALUE(x)		((uint32_t)x & 0x00FFFFFF)
+#define GET_COLORSPACE(x)	(((uint32_t)( x ) & 0xFF000000U) >> 24)
+#define GET_VALUE(x)		((uint32_t)( x ) & 0x00FFFFFF)
 
 /* Convert a color space into a unified color value (just add value!) */
-#define SET_COLORSPACE(x)	((x & 0xFFU) << 24)
+#define SET_COLORSPACE(x)	((( x ) & 0xFFU) << 24)
 
 /* Convert a color number to a unified color value */
 #define COLOR_NONE		(SET_COLORSPACE(COLORSPACE_NONE) | 0x000000)
-#define COLOR_ANSI(x)		(SET_COLORSPACE(COLORSPACE_ANSI) | (x & 0xFF))
-#define COLOR_C(x)		(SET_COLORSPACE(COLORSPACE_C) | (x & 0x7F))
-#define COLOR_X(x)		(SET_COLORSPACE(COLORSPACE_X) | (x & 0xFF))
-#define COLOR_RGB(r,g,b)	(SET_COLORSPACE(COLORSPACE_RGB) | ((r & 0xFF) << 16)  	\
-								| ((g & 0xFF) << 8) 	\
-							        | ((b & 0xFF)) )
+#define COLOR_ANSI(x)		(SET_COLORSPACE(COLORSPACE_ANSI) | (( x ) & 0xFF))
+#define COLOR_C(x)		(SET_COLORSPACE(COLORSPACE_C) | (( x ) & 0x7F))
+#define COLOR_X(x)		(SET_COLORSPACE(COLORSPACE_X) | (( x ) & 0xFF))
+#define COLOR_RGB(r,g,b)	(SET_COLORSPACE(COLORSPACE_RGB) | ((( r ) & 0xFF) << 16)  	\
+								| ((( g ) & 0xFF) << 8) 	\
+							        | ((( b ) & 0xFF)) )
 
 /* Extract the color number from a unified color value */
 #define GET_NONE_COLOR			0x00U
-#define GET_ANSI_COLOR(x)		(x & 0x0000000FU)
-#define GET_C_COLOR(x)			(x & 0x0000007FU)
-#define GET_X_COLOR(x)			(x & 0x000000FFU)
-#define GET_RGB_COLOR(x, r, g, b)	( (r = ((x & 0x00FF0000U) >> 16)),	\
-					  (g = ((x & 0x0000FF00U) >> 8)),	\
-					  (b = ((x & 0x000000FFU) )) )
+#define GET_ANSI_COLOR(x)		(( x ) & 0x0000000FU)
+#define GET_C_COLOR(x)			(( x ) & 0x0000007FU)
+#define GET_X_COLOR(x)			(( x ) & 0x000000FFU)
+#define GET_RGB_COLOR(x, r, g, b)	( (r = ((( x ) & 0x00FF0000U) >> 16)),	\
+					  (g = ((( x ) & 0x0000FF00U) >> 8)),	\
+					  (b = ((( x ) & 0x000000FFU) )) )
 
 /* Determine if a unified color value is of a certain type or another */
 #define IS_COLOR_NONE(x)	(GET_COLORSPACE(x) == COLORSPACE_NONE)
