@@ -1376,3 +1376,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Revamp ^C handling to use 256 x-colors. (yay! \o/)
 * Some compilers like it when you put parens around macro params (rb fusion)
 * Make the ^C color xlate table absolute (so we can use RGB later)
+* Fix brain-o (rb fro)

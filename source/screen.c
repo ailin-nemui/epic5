@@ -1537,9 +1537,9 @@ start_over:
 			case 36: case 37:	/* Set foreground color */
 			{
 				if (a->bold)
-					a->bg = COLOR_ANSI(args[i] - 30 + 8);
+					a->fg = COLOR_ANSI(args[i] - 30 + 8);
 				else
-					a->bg = COLOR_ANSI(args[i] - 30);
+					a->fg = COLOR_ANSI(args[i] - 30);
 				break;
 			}
 			case 38:	/* Set 256 fg color */
