@@ -2269,19 +2269,19 @@ char **prepare_display (int window,
 			 int *lused,
 			 int flags)
 {
-static 	int 	recursion = 0, 
-		output_size = 0;
-	int 	pos = 0,            /* Current position in "buffer" */
-		col = 0,            /* Current column in display    */
-		word_break = 0,     /* Last end of word             */
-		indent = 0,         /* Start of second word         */
-		firstwb = 0,	    /* Buffer position of second word */
-		line = 0,           /* Current pos in "output"      */
-		do_indent,          /* Use indent or continued line? */
-		my_newline = 0;        /* Number of newlines           */
+static 	int 	recursion = 0;
+static  size_t	output_size = 0;
+	size_t	pos = 0;            /* Current position in "buffer" */
+	int     col = 0;            /* Current column in display    */
+	size_t	word_break = 0;     /* Last end of word             */
+	int	indent = 0;         /* Start of second word         */
+	size_t	firstwb = 0;	    /* Buffer position of second word */
+	size_t	line = 0;           /* Current pos in "output"      */
+	int	do_indent;          /* Use indent or continued line? */
+	size_t	my_newline = 0;        /* Number of newlines           */
 static	char 	**output = (char **) 0;
 const 	char	*ptr;
-	char 	buffer[BIG_BUFFER_SIZE + 1],
+	char 	buffer[BIG_BUFFER_SIZE * 100 + 1],
 		c,
 		*pos_copy;
 	char 	*str_free = NULL;
@@ -2322,7 +2322,7 @@ const 	char 	*words;
 
 	if (!output_size)
 	{
-		int 	new_i = SPLIT_EXTENT;
+		size_t 	new_i = SPLIT_EXTENT;
 		RESIZE(output, char *, new_i);
 		while (output_size < new_i)
 			output[output_size++] = 0;
@@ -2337,7 +2337,7 @@ const 	char 	*words;
 	/*
 	 * Start walking through the entire string.
 	 */
-	for (ptr = str; *ptr && (pos < BIG_BUFFER_SIZE - 8); )
+	for (ptr = str; *ptr && (pos < sizeof(buffer) - 8); )
 	{
 		ptrdiff_t	offset;
 
@@ -2368,7 +2368,7 @@ const 	char 	*words;
 			read_internal_attribute(ptr, &a, &numbytes);
 
 			buffer[pos++] = '\006';
-			copy_internal_attribute(ptr, buffer + pos, BIG_BUFFER_SIZE - pos, &numbytes);
+			copy_internal_attribute(ptr, buffer + pos, sizeof(buffer) - pos, &numbytes);
 			pos += numbytes;
 			ptr += numbytes;
 			continue;          /* Skip the column check */
@@ -2537,7 +2537,7 @@ const 	char 	*words;
 			 */
 			if (line >= output_size - 3)
 			{
-				int new_i = output_size + SPLIT_EXTENT;
+				size_t new_i = output_size + SPLIT_EXTENT;
 				RESIZE(output, char *, new_i);
 				while (output_size < new_i)
 					output[output_size++] = 0;
@@ -2690,7 +2690,7 @@ const 	char 	*words;
 			/* write_internal_attribute(buffer + strlen(buffer), &olda, &saved_a); */
 #endif
 			/* -- and I think this should be before we copy pos_copy back */
-			write_internal_attribute(buffer + strlen(buffer), BIG_BUFFER_SIZE - strlen(buffer), &olda, &a);
+			write_internal_attribute(buffer + strlen(buffer), sizeof(buffer) - strlen(buffer), &olda, &a);
 			strlcat(buffer, pos_copy, sizeof(buffer) / 2);
 
 			pos = strlen(buffer);
@@ -2705,17 +2705,17 @@ const 	char 	*words;
 			 * for the $leftpc() function, which sets a logical
 			 * screen width and asks us to "output" one line.
 			 */
-			if (*lused && line >= *lused)
+			if (*lused && *lused > 0 && line >= (size_t) *lused)
 			{
 				*buffer = 0;
 				break;
 			}
 		} /* End of new line handling */
-	} /* End of (ptr = str; *ptr && (pos < BIG_BUFFER_SIZE - 8); ptr++) */
+	} /* End of (ptr = str; *ptr && (pos < sizeof(buffer) - 8); ptr++) */
 
         /* Reset all attributes to zero */
 	zero_attribute(&a);
-	pos += write_internal_attribute(buffer + pos, BIG_BUFFER_SIZE - pos, &olda, &a);
+	pos += write_internal_attribute(buffer + pos, sizeof(buffer) - pos, &olda, &a);
 	buffer[pos] = '\0';
 	if (*buffer)
 		malloc_strcpy((char **)&(output[line++]),buffer);

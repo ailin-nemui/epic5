@@ -34,6 +34,7 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
 +cantonese channel. would adding placeholder lines and later adding content to them be in scope for that
 +project? i.e. the reverse of what you want to do? 
 * The way /set output_rewrite requires a fixed size buffer is unspeakably bogus.
+* Prepare_display() has hardcoded line limits, and that is unspeakably bogus.
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1377,3 +1378,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Some compilers like it when you put parens around macro params (rb fusion)
 * Make the ^C color xlate table absolute (so we can use RGB later)
 * Fix brain-o (rb fro)
+* Make prepare_display() tolerate longer lines without going haywire.
