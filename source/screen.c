@@ -742,25 +742,39 @@ static ssize_t	read_color_seq_new (const char *start, void *d)
 	 * We map C-colors to X-colors here
 	 * If the value is -1, then that is an illegal ^C lvalue.
 	 */
-	static	int	fg_x_color_conv[] = {
-		 231,  16,  18,  28, 196,  88,  90, 208,	/*  0-7  */
-		 226,  46,  30,  51,  21, 201, 244, 252,	/*  8-15 */
-		  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1, 	/* 16-23 */
-		  -1,  -1,  -1,  -1,  -1,  -1,   0,   1, 	/* 24-31 */
-		   2,   3,   4,   5,   6,   7,  -1,  -1,	/* 32-39 */
-		  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,	/* 40-47 */
-		  -1,  -1,   8,   9,  10,  11,  12,  13, 	/* 48-55 */
-		  14,  15,  -1,  -1,  -1			/* 56-60 */
+	static	uint32_t	fg_x_color_conv[] = {
+		 COLOR_X(231),  COLOR_X(16),  COLOR_X(18),  COLOR_X(28), 
+		 COLOR_X(196),  COLOR_X(88),  COLOR_X(90), COLOR_X(208),	/*  0-7  */
+		 COLOR_X(226),  COLOR_X(46),  COLOR_X(30),  COLOR_X(51),  
+		 COLOR_X(21),   COLOR_X(201), COLOR_X(244), COLOR_X(252),	/*  8-15 */
+		 COLOR_NONE,    COLOR_NONE,   COLOR_NONE,  COLOR_NONE,  
+		 COLOR_NONE,    COLOR_NONE,   COLOR_NONE,  COLOR_NONE, 		/* 16-23 */
+		 COLOR_NONE,    COLOR_NONE,   COLOR_NONE,  COLOR_NONE,  
+		 COLOR_NONE,    COLOR_NONE,   COLOR_X(0), COLOR_X(1), 	/* 24-31 */
+		 COLOR_X(2), COLOR_X(3), COLOR_X(4), COLOR_X(5), 
+		 COLOR_X(6), COLOR_X(7), COLOR_NONE,  COLOR_NONE,		/* 32-39 */
+		 COLOR_NONE,    COLOR_NONE,   COLOR_NONE,  COLOR_NONE,  
+		 COLOR_NONE,    COLOR_NONE,   COLOR_NONE,  COLOR_NONE, 		/* 40-47 */
+		 COLOR_NONE,    COLOR_NONE,   COLOR_X(8), COLOR_X(9), 
+		 COLOR_X(10), COLOR_X(11), COLOR_X(12), COLOR_X(13), 	/* 48-55 */
+		 COLOR_X(14), COLOR_X(15), COLOR_NONE, COLOR_NONE, COLOR_NONE	/* 56-60 */
 	};
-	static	int	bg_x_color_conv[] = {
-		 231,  16,  18,  28, 196,  88,  90, 208,	/*  0-7  */
-		 226,  46,  30,  51,  21, 201, 244, 252,	/*  8-15 */
-		  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1, 	/* 16-23 */
-		  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1, 	/* 24-31 */
-		  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,	/* 32-39 */
-		   0,   1,   2,   3,   4,   5,   6,   7,	/* 40-47 */
-		  -1,  -1,   8,   9,  10,  11,  12,  13, 	/* 48-55 */
-		  14,  15,  -1,  -1,  -1			/* 56-60 */
+	static	uint32_t	bg_x_color_conv[] = {
+		 COLOR_X(231),  COLOR_X(16),  COLOR_X(18),  COLOR_X(28), 
+		 COLOR_X(196),  COLOR_X(88),  COLOR_X(90), COLOR_X(208),	/*  0-7  */
+		 COLOR_X(226),  COLOR_X(46),  COLOR_X(30),  COLOR_X(51),  
+		 COLOR_X(21), COLOR_X(201), COLOR_X(244), COLOR_X(252),		/*  8-15 */
+		 COLOR_NONE,  COLOR_NONE,  COLOR_NONE,  COLOR_NONE,  
+		 COLOR_NONE,  COLOR_NONE,  COLOR_NONE,  COLOR_NONE, 		/* 16-23 */
+		 COLOR_NONE,  COLOR_NONE,  COLOR_NONE,  COLOR_NONE,  
+		 COLOR_NONE,  COLOR_NONE,  COLOR_NONE,  COLOR_NONE, 		/* 24-31 */
+		 COLOR_NONE,  COLOR_NONE,  COLOR_NONE,  COLOR_NONE,  
+		 COLOR_NONE,  COLOR_NONE,  COLOR_NONE,  COLOR_NONE, 		/* 32-39 */
+		 COLOR_X(0), COLOR_X(1),  COLOR_X(2), COLOR_X(3),
+		 COLOR_X(4), COLOR_X(5), COLOR_X(6), COLOR_X(7),	/* 40-47 */
+		 COLOR_NONE,  COLOR_NONE,   COLOR_X(8), COLOR_X(9),
+		 COLOR_X(10), COLOR_X(11), COLOR_X(12), COLOR_X(13), 	/* 48-55 */
+		 COLOR_X(14), COLOR_X(15), COLOR_NONE, COLOR_NONE, COLOR_NONE	/* 56-60 */
 	};
 
 
@@ -867,14 +881,14 @@ static ssize_t	read_color_seq_new (const char *start, void *d)
 
 				if (fg)
 				{
-					if (fg_x_color_conv[val2] == -1)
+					if (fg_x_color_conv[val2] == COLOR_NONE)
 						val = val1;
 					else
 						val = val2, ptr++;
 				}
 				else
 				{
-					if (bg_x_color_conv[val2] == -1)
+					if (bg_x_color_conv[val2] == COLOR_NONE)
 						val = val1;
 					else
 						val = val2, ptr++;
@@ -938,9 +952,9 @@ static ssize_t	read_color_seq_new (const char *start, void *d)
 		if (noval == 0)
 		{
 			if (fg)
-				a->fg = COLOR_X(fg_x_color_conv[val]);
+				a->fg = fg_x_color_conv[val];
 			else
-				a->bg = COLOR_X(bg_x_color_conv[val]);
+				a->bg = bg_x_color_conv[val];
 		}
 
 		if (fg && *ptr == ',')
