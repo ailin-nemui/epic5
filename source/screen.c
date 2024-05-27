@@ -3243,11 +3243,20 @@ static void 	add_to_window (int window_, const char *str)
 	    recursion++;
 	    if (recursion < 5 && (pend = get_string_var(OUTPUT_REWRITE_VAR)))
 	    {
+#if 0
 		char	argstuff[102400];
 
 		/* Create $* and then expand with it */
 		snprintf(argstuff, 102400, "%u %s", get_window_user_refnum(window_), str);
+#else
+		char *argstuff = NULL;
+		malloc_sprintf(&argstuff, "%u %s", get_window_user_refnum(window_), str);
+#endif
+
 		str = free_me = expand_alias(pend, argstuff);
+#if 1
+		new_free(&argstuff);
+#endif
 	    }
 	    recursion--;
 	}
