@@ -2270,34 +2270,33 @@ char **prepare_display (int window,
 			 int flags)
 {
 static 	int 	recursion = 0;
-static  size_t	output_size = 0;
-	size_t	pos = 0;            /* Current position in "buffer" */
-	int     col = 0;            /* Current column in display    */
-	size_t	word_break = 0;     /* Last end of word             */
-	int	indent = 0;         /* Start of second word         */
-	size_t	firstwb = 0;	    /* Buffer position of second word */
-	size_t	line = 0;           /* Current pos in "output"      */
-	int	do_indent;          /* Use indent or continued line? */
-	size_t	my_newline = 0;        /* Number of newlines           */
 static	char 	**output = (char **) 0;
+static  size_t	output_size = 0;
+	size_t	line = 0;           /* Current pos in "output"      */
+
+	int     col = 0;            /* Current column in display    */
+	int	cols;
+	int	indent = 0;         /* Start of second word         */
+	size_t	word_break = 0;     /* Last end of word             */
+	size_t	firstwb = 0;	    /* Buffer position of second word */
+	size_t	my_newline = 0;        /* Number of newlines           */
+	int	do_indent;          /* Use indent or continued line? */
 const 	char	*ptr;
-	char 	buffer[BIG_BUFFER_SIZE * 100 + 1],
-		c,
+	char	c,
 		*pos_copy;
-	char 	*str_free = NULL;
 const	char	*first_ptr;
 const	char	*cont_ptr;
-	char	*cont = NULL;
 const 	char 	*words;
+	char *	str_free = NULL;
+	char *	cont = NULL;
+	char *	cont_free = NULL;
+	char *	x;
 	Attribute	a, olda;
-#if 0
-	Attribute	saved_a;
-#endif
-	char	*cont_free = NULL;
 	int	codepoint;
 	char	utf8str[16];
-	char *	x;
-	int	cols;
+	char *	buffer = NULL;
+	size_t	bufsiz;
+	size_t	pos = 0;            /* Current position in "buffer" */
 
 	if (recursion)
 		panic(1, "prepare_display() called recursively");
@@ -2305,9 +2304,6 @@ const 	char 	*words;
 
 	zero_attribute(&a);
 	zero_attribute(&olda);
-#if 0
-	zero_attribute(&saved_a);
-#endif
 
 	if (window < 0)
 		do_indent = get_int_var(INDENT_VAR);
@@ -2318,7 +2314,9 @@ const 	char 	*words;
 	if (!(cont_ptr = get_string_var(CONTINUED_LINE_VAR)))
 		cont_ptr = empty_string;
 
-	buffer[0] = 0;
+	bufsiz = BIG_BUFFER_SIZE * 10 + 1;
+	buffer = new_malloc(bufsiz);
+	*buffer = 0;
 
 	if (!output_size)
 	{
@@ -2337,8 +2335,18 @@ const 	char 	*words;
 	/*
 	 * Start walking through the entire string.
 	 */
-	for (ptr = str; *ptr && (pos < sizeof(buffer) - 8); )
+	for (pos = 0, ptr = str; *ptr; )
 	{
+		if (pos >= bufsiz - 64)
+		{
+			char *	newbuf;
+			bufsiz += BIG_BUFFER_SIZE;
+			newbuf = new_malloc(bufsiz);
+			memmove(newbuf, buffer, pos);
+			new_free(&buffer);
+			buffer = newbuf;
+		}
+
 		ptrdiff_t	offset;
 
 		codepoint = next_code_point2(ptr, &offset, 1);
@@ -2368,7 +2376,7 @@ const 	char 	*words;
 			read_internal_attribute(ptr, &a, &numbytes);
 
 			buffer[pos++] = '\006';
-			copy_internal_attribute(ptr, buffer + pos, sizeof(buffer) - pos, &numbytes);
+			copy_internal_attribute(ptr, buffer + pos, bufsiz - pos, &numbytes);
 			pos += numbytes;
 			ptr += numbytes;
 			continue;          /* Skip the column check */
@@ -2684,14 +2692,14 @@ const 	char 	*words;
 			/* 'pos' has already been incremented... */
 			buffer[pos] = 0;
 			pos_copy = LOCAL_COPY(buffer + word_break);
-			strlcpy(buffer, cont, sizeof(buffer) / 2);
+			strlcpy(buffer, cont, bufsiz / 2);
 #if 0
 			/* -- I'm not sure if this is necessary */
 			/* write_internal_attribute(buffer + strlen(buffer), &olda, &saved_a); */
 #endif
 			/* -- and I think this should be before we copy pos_copy back */
-			write_internal_attribute(buffer + strlen(buffer), sizeof(buffer) - strlen(buffer), &olda, &a);
-			strlcat(buffer, pos_copy, sizeof(buffer) / 2);
+			write_internal_attribute(buffer + strlen(buffer), bufsiz - strlen(buffer), &olda, &a);
+			strlcat(buffer, pos_copy, bufsiz / 2);
 
 			pos = strlen(buffer);
 			/* Watch this -- ugh. how expensive! :( */
@@ -2715,7 +2723,7 @@ const 	char 	*words;
 
         /* Reset all attributes to zero */
 	zero_attribute(&a);
-	pos += write_internal_attribute(buffer + pos, sizeof(buffer) - pos, &olda, &a);
+	pos += write_internal_attribute(buffer + pos, bufsiz - pos, &olda, &a);
 	buffer[pos] = '\0';
 	if (*buffer)
 		malloc_strcpy((char **)&(output[line++]),buffer);
