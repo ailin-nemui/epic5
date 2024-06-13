@@ -1008,10 +1008,6 @@ static ssize_t	read_rgb_seq (const char *start, void *d)
 	if (*ptr == COLOR_EXTENDED_TAG)
 		ptr++;
 
-	if (*ptr == '#')
-		ptr++;
-
-
 	/*
 	 * This is a one-or-two-time-through loop.  We find the maximum
 	 * span that can compose a legit ^C sequence, then if the first
@@ -1019,6 +1015,15 @@ static ssize_t	read_rgb_seq (const char *start, void *d)
 	 */
 	for (fg = 1; ; fg = 0)
 	{
+		/*
+		 * The first color (fg) is always prefixed with a #.
+		 * As a UX accomoodation, if you prefix the bg color
+		 * with a #, we will ignore it.  The # is not necessary
+		 * before the bg color.
+		 */
+		if (*ptr == '#')
+			ptr++;
+
 		/*
 		 * If its just a lonely old ^X, then its probably a terminator.
 		 * Just skip over it and go on.

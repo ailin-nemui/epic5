@@ -59,7 +59,7 @@ extern	int	need_delayed_free;
 
 	ssize_t	findchar_quoted		(const char *, int);
 	int	path_search 		(const char *, const char *, Filename);
-	char *	double_quote 		(const char *, const char *, char *);
+	size_t	double_quote 		(const char *, const char *, char *, size_t);
 	char *	malloc_strcat_c		(char **, const char *, size_t *);
 	void	wait_new_free 		(char **);
 	char *	malloc_sprintf 		(char **, const char *, ...) __A(2);

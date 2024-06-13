@@ -1900,8 +1900,10 @@ static	void	TruncateAndQuote (char **buff, const char *add, ssize_t length, cons
 	if (quote_em && add)	/* add shouldnt ever be NULL, though! */
 	{
 		/* Don't pass retval from "alloca" as func arg, use local. */
-		buffer = alloca(strlen(add) * 2 + 2);
-		add = double_quote(add, quote_em, buffer);
+		size_t	bufsiz = strlen(add) * 2 + 2;
+		buffer = alloca(bufsiz);
+		double_quote(add, quote_em, buffer, bufsiz);
+		add = buffer;
 	}
 
 	if (buff)

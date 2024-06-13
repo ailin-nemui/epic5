@@ -1570,49 +1570,114 @@ int	path_search (const char *name, const char *xpath, Filename result)
 }
 
 /*
- * double_quote: Given a str of text, this will quote any character in the
- * set stuff with the QUOTE_CHAR.  You have to pass in a buffer thats at 
- * least twice the size of 'str' (in case every character is quoted.)
- * "output" is returned for your convenience.
+ * double_quote:  Copy a string, protecting some characters meant to be treated literally
+ *
+ * Arguments:
+ *	str	- Input string.  It contains some characters which are literal characters,
+ *			and not meant to be interpreted by the ircII syntax
+ *		  - (error) If NULL, returns 0
+ *	stuff	- A string containing every character to be treated literally
+ *		  - If first character is "*", it does the reverse of expand_alias():
+ *		    Everything inside (), [], {} is already "protected" and everything
+ *		    outside will be protected (x -> \x and $ -> $$)
+ *		  - Otherwise, a string containing 7 bit characters to protect.
+ *		  - (error) If NULL, defaults to empty string
+ *	buffer	- Output string.  The input string 'str' will be copied to 'buffer',
+ *		  byte for byte, except:
+ *		    - Any protected $ is doubled:  "$" -> "$$"
+ *		    - Any other protected character (see stuff) is backslashed
+ *			"x" -> "\x"
+ *		  - (error) If NULL, returns 0
+ *	bufsiz	- Size of 'buffer'.  If you know what's good for you, it will be
+ *		  at least (strlen(str) * 2 + 2).
+ *		  - (error) If 0, reeturns 0
+ *
+ * Return value:
+ *	The number of bytes that would have been written to 'buffer'.
+ *	(not including the nul byte)
+ *	  0 indicates some kind of error
+ *		'output' is not guaranteed to be nul terminated.
+ *		it's not guaranteed to not be null terminated, either!
+ *	  If the return value is < strlen(buffer) the result was truncated.
  */
-char *	double_quote (const char *str, const char *stuff, char *buffer)
+size_t	double_quote (const char *input, const char *stuff, char *output, size_t output_size)
 {
-	char	c;
-	int	pos;
 	int	everything = 0;
+	size_t	input_offset = 0;
+	size_t	output_offset = 0;
+	size_t	output_fullsize = 0;
 
-	*buffer = 0;		/* Whatever */
+	if (input == NULL || output == NULL || output_size == 0)
+		return 0; 		/* XXX is this right? */
 
-	if (!stuff)
-		return buffer;	/* Whatever */
-	if (*stuff == '*')		/* QUOTE ALL THE THINGS! */
+	*output = 0;		/* Whatever */
+
+	if (!stuff)			/* quote nothing */
+		stuff = empty_string;	
+	else if (*stuff == '*')		/* QUOTE ALL THE THINGS! */
 		everything = 1;
 
-	/* For every character... */
-	for (pos = 0; (c = *str); str++)
+	/* For every input byte... */
+	for (input_offset = 0; input[input_offset]; input_offset++)
 	{
+		if (everything && strchr("{[(", (int) input[input_offset]) != NULL)
+		{
+			ssize_t	span;
+
+			/* MatchingBracket() doesn't actually use the closing char for the above */
+			if ((span = MatchingBracket(input + input_offset + 1, input[input_offset], 0)) > 0)
+			{
+				int	i;
+
+				for (i = 0; i <= span && input[input_offset + i]; i++)
+				{
+				    if (output_offset < output_size - 1)
+					output[output_offset++] = input[input_offset + span];
+				}
+				input_offset += i;
+				continue;
+			}
+			/* FALLTHROUGH */
+		}
+
 		/* Only 7 bit characters need quoting */
-		if ((c & 0x80) == 0x00)
+		if ((input[input_offset] & 0x80) == 0x00)
 		{
 			/* 
 			 * If it's not a letter or digit, and 'everything',
 			 * or if it's explicitly included in the list...
 			 * quote it.
 			 */
-			if ((everything && !isalpha(c) && !isdigit(c))
+			if ((everything && !isalpha(input[input_offset]) && !isdigit(input[input_offset]))
 				||
-			    (strchr(stuff, c)))
+			    (strchr(stuff, input[input_offset])))
 			{
-				if (c == '$')
-					buffer[pos++] = '$';
+				if (input[input_offset] == '$')
+				{
+					if (output_offset < output_size - 2)
+						output[output_offset++] = '$';
+					output_fullsize++;
+				}
 				else
-					buffer[pos++] = '\\';
+				{
+					if (output_offset < output_size - 2)
+						output[output_offset++] = '\\';
+					output_fullsize++;
+				}
 			}
 		}
-		buffer[pos++] = c;
+
+		if (output_offset < output_size - 1)
+			output[output_offset++] = input[input_offset];
+		output_fullsize++;
 	}
-	buffer[pos] = '\0';
-	return buffer;
+
+	if (output_offset >= output_size)
+		output[output_size - 1] = 0;
+	else
+		output[output_offset] = 0;
+
+	return output_fullsize;
 }
 
 void	panic (int quitmsg, const char *format, ...)
@@ -4338,9 +4403,12 @@ char *	malloc_strcat_word_c (char **ptr, const char *word_delim, const char *wor
 		/* Remember, any double quotes therein need to be quoted! */
 		if (strpbrk(word, word_delim))
 		{
-			char *oofda = NULL;
-			oofda = alloca(strlen(word) * 2 + 1);
-			double_quote(word, "\"", oofda);
+			char *	oofda = NULL;
+			size_t	oofda_siz;
+
+			oofda_siz = strlen(word) * 2 + 2;
+			oofda = alloca(oofda_siz);
+			double_quote(word, "\"", oofda, oofda_siz);
 
 			malloc_strcat3_c(ptr, "\"", oofda, "\"", clue);
 		}

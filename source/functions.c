@@ -5286,14 +5286,18 @@ BUILT_IN_FUNCTION(function_randread, input)
 	offset = random_number(0) % filesize - 1;
 	fseeko(fp, offset, SEEK_SET);
 	if (!fgets(buffer, BIG_BUFFER_SIZE, fp))
-		(void) 0;
-	if (!fgets(buffer, BIG_BUFFER_SIZE, fp))
-		(void) 0;
-	if (feof(fp))
 	{
-		fseeko(fp, (off_t)0, SEEK_SET);
-		if (!fgets(buffer, BIG_BUFFER_SIZE, fp))
-			yell("I'm having some difficulty in $randread().");
+		if (feof(fp))
+			fseeko(fp, (off_t)0, SEEK_SET);
+	}
+	if (!fgets(buffer, BIG_BUFFER_SIZE, fp))
+	{
+		if (feof(fp))
+		{
+			fseeko(fp, (off_t)0, SEEK_SET);
+			if (!fgets(buffer, BIG_BUFFER_SIZE, fp))
+				yell("I'm having some difficulty in $randread().");
+		}
 	}
 	chomp(buffer);
 	fclose(fp);
@@ -8421,18 +8425,79 @@ BUILT_IN_FUNCTION(function_jsontest, input)
 	RETURN_EMPTY;
 }
 
+
+/* XXX I never wanted this to get out of control.... */
+/*
+ * $rgb() - Convert various 24-bit color representations to ircii codes
+ * 
+ * Arguments:
+ *	All of the following things are supported.
+ *	Nothing else is guaranteed, either forwards or backwards compatability.
+ *
+ *	There are two arguments, a fg color, and a bg color.
+ *	Each of these colors may be represented in the following ways:
+ *	   (1) A hyphen, representing an ommited value
+ *	   (2) Three space-separated base-10 numbers
+ *	   (3) Three comma-separated base-10 numbers
+ *	   (4) A Hash followed by 6 hex-digits 
+ *	The colors are always separated by a space.
+ *	You can mix and match the two colors however you want.
+ *
+ * Return value:
+ *	A ^X sequence that sets the 24-bit fg and bg colors
+ *	If you really don't want the ^X (why?) use the json flags.
+ */
+
 #define HEX2NUM(x)   ( (x) >= '0' && (x) <= '9' ? (x) - '0'   \
 					        : (x) >= 'A' && (x) <= 'F' ? (x) - 'A' + 10  \
                                                                            : 0 )
 
 BUILT_IN_FUNCTION(function_rgb, input)
 {
-	intmax_t	r = 0, g = 0, b = 0;
-	int	attr = 1;
-#if 0
-	int	color;
-#endif
-	char	retval_str[9];
+	/*
+	 * If you look at the comments above, I make a lot of promises about
+	 * how you're allowed to specify, and mix and match, your arguments.
+	 * The arguments could be 1 word, it could be 3, 4, or even 6 words.
+	 * One way to go about this is to permute the 2^4 choices, and figure
+	 * out how to make sense of them.
+ 	 *
+	 *	Type	fg	bg
+	 *	1	-	- (or omitted)
+	 *	2	-	1 2 3
+	 *	3	-	1,2,3
+	 *	4	-	#aabbcc
+	 *	5	1 2 3	- (or omitted)
+	 *	6	1 2 3	1 2 3
+	 *	7	1 2 3	1,2,3
+	 *	8	1 2 3	#aabbcc
+	 *	9	1,2,3	- (or omitted)
+	 *	10	1,2,3	1 2 3
+	 *	11	1,2,3	1,2,3
+	 *	12	1,2,3	#aabbcc
+	 *	13	#aabbcc	- (or omitted)
+	 *	14	#aabbcc	1 2 3
+	 *	15	#aabbcc	1,2,3
+	 *	16	#aabbcc #aabbcc
+	 *
+	 * One syntax rule that we firmly establish is that
+ 	 *	FG colors are separated by a space from BG colors
+	 * that is,
+	 *	Commas are only used to seperate parts of a color
+	 * So...
+	 *	- If we see a hyphen (-) we know that is a color
+	 *	- If the word leads with #, we know that is a color
+	 *	- If the word contains two commas, we know that is a color
+	 *	- Otherwise, we know it is a three-word color.
+	 * The bg color is always optional
+	 */
+	intmax_t	fg_r = -1, fg_g = -1, fg_b = -1;
+	intmax_t	bg_r = -1, bg_g = -1, bg_b = -1;
+	intmax_t	work_r, work_g, work_b;
+	int		attr = 1;
+	char		retval_str[25];
+	char		fg_color_str[10];
+	char		bg_color_str[10];
+	int		parsing_fg;
 
 	RETURN_IF_EMPTY(input);
 
@@ -8442,49 +8507,133 @@ BUILT_IN_FUNCTION(function_rgb, input)
 	if (*input == '{')
 	{
 		struct kwargs kwargs[] = {
-			{ "r", KWARG_TYPE_INTEGER, &r, 1 },
-			{ "g", KWARG_TYPE_INTEGER, &g, 1 },
-			{ "b", KWARG_TYPE_INTEGER, &b, 1 },
+			{ "r",    KWARG_TYPE_INTEGER, &fg_r, 1 },
+			{ "bg_r", KWARG_TYPE_INTEGER, &bg_r, 1 },
+			{ "g",    KWARG_TYPE_INTEGER, &fg_g, 1 },
+			{ "bg_g", KWARG_TYPE_INTEGER, &bg_g, 1 },
+			{ "b",    KWARG_TYPE_INTEGER, &fg_b, 1 },
+			{ "bg_b", KWARG_TYPE_INTEGER, &bg_b, 1 },
 			{ "attr", KWARG_TYPE_BOOL, &attr, 0 },
 			{ NULL, KWARG_TYPE_SENTINAL, NULL, 0 }
 		};
 
 		parse_kwargs(kwargs, input);
 	}
-	else if (*input == '#') 
+	else
 	{
-		char r1 = 0, r2 = 0, g1 = 0, g2 = 0, b1 = 0, b2 = 0;
+		for (parsing_fg = 1; parsing_fg >= 0; parsing_fg--)
+		{
+			char *	work_arg;
 
-		input++;
-#define next_byte_or_fail(src, var)   if (* src ) var = * src ++; else RETURN_EMPTY;
-		next_byte_or_fail(input, r1)
-		next_byte_or_fail(input, r2)
-		next_byte_or_fail(input, g1)
-		next_byte_or_fail(input, g2)
-		next_byte_or_fail(input, b1)
-		next_byte_or_fail(input, b2)
-
-		r = HEX2NUM(r1) * 16 + HEX2NUM(r2);
-		g = HEX2NUM(g1) * 16 + HEX2NUM(g2);
-		b = HEX2NUM(b1) * 16 + HEX2NUM(b2);
-	}
-	else 
-	{
-		GET_INT_ARG(r, input);
-		GET_INT_ARG(g, input);
-		GET_INT_ARG(b, input);
-	}
-
+			/* I would want to initialize work_r|g|b, but clang objects to that */
 #if 0
-	color = rgb_to_256(r, g, b);
+			work_r = work_g = work_b = -1;
 #endif
 
-	if (attr)
-		snprintf(retval_str, 9, COLOR_EXTENDED_TAG_STR "#%2.2jX%2.2jX%2.2jX", r, g, b);
+			/* The caller is not required to specify a bg color */
+			if (parsing_fg == 0 && (!input || !*input))
+				continue;
+
+			GET_FUNC_ARG(work_arg, input);
+
+			/* A hyphen means we're skipping this color */
+			if (*work_arg == '-')
+				continue;
+
+			else if (*work_arg == '#')
+			{
+				char r1 = 0, r2 = 0, g1 = 0, g2 = 0, b1 = 0, b2 = 0;
+
+				work_arg++;
+#define next_byte_or_fail(src, var)   if (* src ) var = * src ++; else RETURN_EMPTY;
+#define must_be_hex_digit(var) if (strchr("0123456789ABCDEFabcdef", (int) var) == NULL) RETURN_EMPTY;
+
+				next_byte_or_fail(input, r1)
+				must_be_hex_digit(r1)
+				next_byte_or_fail(input, r2)
+				must_be_hex_digit(r2)
+				next_byte_or_fail(input, g1)
+				must_be_hex_digit(g1)
+				next_byte_or_fail(input, g2)
+				must_be_hex_digit(g2)
+				next_byte_or_fail(input, b1)
+				must_be_hex_digit(b1)
+				next_byte_or_fail(input, b2)
+				must_be_hex_digit(b2)
+
+				work_r = HEX2NUM(r1) * 16 + HEX2NUM(r2);
+				work_g = HEX2NUM(g1) * 16 + HEX2NUM(g2);
+				work_b = HEX2NUM(b1) * 16 + HEX2NUM(b2);
+			}
+
+			else if (charcount(work_arg, ',') == 2)
+			{
+				char *rstr, *gstr, *bstr;
+				rstr = work_arg;
+				if ((gstr = strchr(rstr, ',')) == NULL)
+					RETURN_EMPTY;
+				*gstr++ = 0;
+				if ((bstr = strchr(gstr, ',')) == NULL)
+					RETURN_EMPTY;
+				*bstr++ = 0;
+
+				work_r = strtoimax(rstr, NULL, 10);
+				work_g = strtoimax(gstr, NULL, 10);
+				work_b = strtoimax(bstr, NULL, 10);
+			}
+
+			else
+			{
+				GET_INT_ARG(work_r, work_arg);		/* <- NOTICE! */
+				GET_INT_ARG(work_g, input);
+				GET_INT_ARG(work_b, input);
+			}
+
+			/* All values must be reasonable */
+			if (work_r < 0 || work_r > 255)
+				continue;
+			if (work_g < 0 || work_g > 255)
+				continue;
+			if (work_b < 0 || work_b > 255)
+				continue;
+
+			if (parsing_fg == 1)
+			{
+				fg_r = work_r;
+				fg_g = work_g;
+				fg_b = work_b;
+			}
+			else if (parsing_fg == 0)
+			{
+				bg_r = work_r;
+				bg_g = work_g;
+				bg_b = work_b;
+			}
+			else
+				break;		/* Something has gone very wrong */
+		}
+	}
+
+	/* Then finally format the results */
+	if (fg_r != -1 && fg_g != -1 && fg_b != -1)
+		snprintf(fg_color_str, 9, "%2.2jX%2.2jX%2.2jX", fg_r, fg_g, fg_b);
 	else
-		snprintf(retval_str, 9, "#%2.2jX%2.2jX%2.2jX", r, g, b);
+		*fg_color_str = 0;
+	if (bg_r != -1 && bg_g != -1 && bg_b != -1)
+		snprintf(bg_color_str, 9, "%2.2jX%2.2jX%2.2jX", bg_r, bg_g, bg_b);
+	else
+		*bg_color_str = 0;
+
+	if (attr)
+		snprintf(retval_str, 25, COLOR_EXTENDED_TAG_STR "#%s,%s", fg_color_str, bg_color_str);
+	else
+		snprintf(retval_str, 25, "%s,%s", fg_color_str, bg_color_str);
 
 	RETURN_FSTR(retval_str);
+
+#if 0
+	color = rgb_to_256(r_fg, g_fg, b_fg);
+#endif
 }
 
 
@@ -8602,7 +8751,7 @@ BUILT_IN_FUNCTION(function_unveil, input)
 {
 	const char *	path = NULL;
 	const char *	permissions = NULL;
-	int		test = 0;
+	intmax_t	test = 0;
 	int		close = 0;
 
 	if (!input)
@@ -8663,7 +8812,7 @@ BUILT_IN_FUNCTION(function_tags, input)
 
 BUILT_IN_FUNCTION(function_hex, input)
 {
-	int		digits = 0;
+	intmax_t	digits = 0;
 	intmax_t	value = 0;
 	char *		retval = NULL;
 
@@ -8687,7 +8836,7 @@ BUILT_IN_FUNCTION(function_hex, input)
 		RETURN_EMPTY;
 
 	retval = new_malloc(digits + 1);
-	snprintf(retval, digits + 1, "%*.*jX", digits, digits, value);
+	snprintf(retval, digits + 1, "%*.*jX", (int)digits, (int)digits, value);
 	RETURN_MSTR(retval);
 }
 

@@ -113,3 +113,127 @@ alias testcolor10 {
 }
 
 
+alias testrgb9 {
+	fe ($jot(0 31)) r
+	{
+		@str=[]
+		fe ($jot(0 31)) g
+		{
+			fe ($jot(0 31)) b
+			{
+				@str #= rgb(${r*8+7} ${g*8+7} ${b*8+7}) ## [.]
+			}
+			@str #= [ ]
+		}
+		echo >$str
+	}
+}
+
+alias testrgb9b {
+	fe ($jot(0 31)) r
+	{
+		@str=[]
+		fe ($jot(0 31)) g
+		{
+			fe ($jot(0 31)) b
+			{
+				@str #= rgb(${r*8+7},${g*8+7},${b*8+7}) ## [.]
+			}
+			@str #= [ ]
+		}
+		echo >$str
+	}
+}
+
+alias testrgb9c {
+	fe ($jot(0 31)) r
+	{
+		@str=[]
+		fe ($jot(0 31)) g
+		{
+			fe ($jot(0 31)) b
+			{
+				@str #= rgb(${r*8+7},${g*8+7},${b*8+7} -) ## [.]
+			}
+			@str #= [ ]
+		}
+		echo >$str
+	}
+}
+alias testrgb10 {
+	fe ($jot(0 31)) r
+	{
+		@str=[]
+		fe ($jot(0 31)) g
+		{
+			fe ($jot(0 31)) b
+			{
+				@str #= rgb(- ${r*8+7} ${g*8+7} ${b*8+7}) ## [.]
+			}
+			@str #= [ ]
+		}
+		echo >$str
+	}
+}
+
+alias testrgb10b {
+	fe ($jot(0 31)) r
+	{
+		@str=[]
+		fe ($jot(0 31)) g
+		{
+			fe ($jot(0 31)) b
+			{
+				@str #= rgb(- ${r*8+7},${g*8+7},${b*8+7}) ## [.]
+			}
+			@str #= [ ]
+		}
+		echo >$str
+	}
+}
+
+alias testrgb11 {
+	fe ($jot(0 31)) r
+	{
+		@str=[]
+		fe ($jot(0 31)) g
+		{
+			fe ($jot(0 31)) b
+			{
+				@rr1 = r*8+7
+				@rg1 = g*8+7
+				@rb1 = b*8+7
+				@rr2 = rg1
+				@rg2 = rb1
+				@rb2 = rr1
+				@str #= rgb($rr1 $rg1 $rb1 $rr2 $rg2 $rb2) ## [.]
+			}
+			@str #= [ ]
+		}
+		echo >$str
+	}
+}
+
+alias testrgb11b {
+	fe ($jot(0 31)) r
+	{
+		@str=[]
+		fe ($jot(0 31)) g
+		{
+			fe ($jot(0 31)) b
+			{
+				@rr1 = r*8+7
+				@rg1 = g*8+7
+				@rb1 = b*8+7
+				@rr2 = rg1
+				@rg2 = rb1
+				@rb2 = rr1
+				@str #= rgb($rr1,$rg1,$rb1 $rr2,$rg2,$rb2) ## [.]
+			}
+			@str #= [ ]
+		}
+		echo >$str
+	}
+}
+
+

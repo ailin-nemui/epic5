@@ -1,5 +1,131 @@
 EPIC5-2.2
 
+*** News 06/12/2024 -- I didn't document stuff for a long time
+	You'll notice a lot of things documented on this date.  That's my fault.
+	I've been making changes but not updating this file with the docs.
+	These changes were not all made on this day, but in the past year. ;-) 
+	I included the commit id in case that is useful.
+
+*** News 06/12/2024 -- Restatement of $rgb() behavior  (commit 2123)
+	Whatever it was I said about $rgb(), i take it back, now that proper
+	RGB/24-bit color is now supported.  This is how it works now:
+
+	$rgb() takes two, space-seperated colors -- a fg color, and bg color.
+	A color can be one of these:
+		- 		The color is omitted (it won't be changed)
+		1,2,3		The color as three decimal numbers (0-255)
+		1 2 3		The color as three space-separated decimal 
+				numbers (0-255)
+		#AABBCC		The color as a hash and 6 hex digits 
+
+	The return value is a full properly formatted ^X code that you can 
+	/echo or whatever to set the color.
+
+	The fg and bg colors can be in any of the above formats, and you can
+	mix and match them.
+
+	If you pass it a syntax error, it will return an empty string.
+
+	The JSON arguments are now:
+		current:	r	g	b	attr
+		added:		bg_r	bg_g	bg_b
+
+	You can see some useful examples in the 'regress/color256' script.
+
+*** News 06/12/2024 -- RGB/24 bit color support (rb everybody) (commit 2123)
+	EPIC now supports RGB/24-bit colors natively.
+	Specify a RGB color with ^X#, as in:
+		^X#AABBCC		set the fg only
+		^X#AABBCC,		you can use comma, bg is optional
+		^X#AABBCC,DDEEFF	you can specify both at the same time
+		^X#,DDEEFF		set the bg only (note the leading comma)
+	EPIC will also parse ^[[28m and ^[[38m RGB codes and convert them to
+	the above formats.
+
+	EPIC no longer approximates RGB colors into the 256-color space.  
+	RGB colors are output as RGB colors.  So your terminal emulator needs
+	to support that, or you'll have a bad time.  Let me know if this is a
+	problem for you.
+
+	None of this supplants 256 colors, which are still supported exactly as 
+	they have always been.  However, because every terminal emulator supports
+	256 colors, and because colors 0-15 are the same between "basic" colors
+	and 256 colors, "basic" colors map to 256 colors now.  Let me know if your
+	terminal emulator doesn't support 256 colors!
+
+*** News 06/12/2024 -- status sub-expandos now protect from expansion (2106,2123)
+	Some status bar expandos use "sub-expandos".  The primary expando
+	is controlled by (eg) /set status_mode, which is used by %+.
+	Usually this is set to " +%+ ", so the sub-expando value (the
+	channel's mode) is substituted in the %+.  But what happens if
+	you have /set status_does_expandos on, and someone does something
+	that causes your status bar to include rogue data?
+
+	Example:
+		/mode #chan +k $exec(rm -rf ~)
+	You wouldn't want that expanded!  So all subexpandos now get 
+	"quoted" so that doesn't happen.  
+
+	The above is a bad example, because /set status_mode has always
+	done this protection.  I was asked to extend this protection to
+	every status subexpando.
+
+*** News 06/12/2024 -- Add $hex(<digits> <number>) (commit 2114)
+	Convert a decimal number into a hex number without fuss.
+	Also ensures correct zero-padding.  Useful for converting
+	decimal numbers to RGB portions!
+
+	Example:
+		$hex(255 2)	returns "FF"
+		$hex(10 2)	returns "0A"
+		$hex({"value": 10, "digits": 2}) 	returns "0A"
+
+*** News 06/12/2024 -- Improvements to 'reconnect' script (commit 2112)
+	The 'reconnect' script now supports these new /set's:
+	  * /set auto_reconnect_delay_method [ON|OFF]
+	  * /set auto_reconnect_join_delay <seconds>
+
+	When /set auto_reconnect_delay_method OFF (default behavior)
+	- All chnanels are rejoined at once as soon as you are connected.
+
+	When /set auto_reconnect_delay_method ON 
+	- Channels will be joined one-at-a-time, one-per-second,
+	  starting after /set auto_reconnect_join_delay seconds, 
+
+*** News 06/12/2024 -- Add /WINDOW LISTER "refnum [refnum]" (commit 2111)
+	Given a double-quoted space-separated list of words, do what 
+	/WINDOW LIST would do, but only for those windows.  This allows 
+	you to sort the window listing order.
+
+*** News 06/12/2024 -- Add $windowctl(GET x CURRENT_CHANNEL) (commit 2109)
+	This tells you what the current channel is for a window.
+	How did it take so long for me to add this?
+
+*** News 06/12/2024 -- autoconf, make uninstall (commit 2106)
+	EPIC's configure script now works with autoconf-2.71, and the
+	Makefile now includes 'make uninstall' which does its best.
+
+*** News 06/12/2024 -- /set blank_line_indicator (rb harzelien) (commit 2105)
+	The default value of this is "unset" which is the historical behavior.
+	Traditionally, a window starts off its life empty, and from time to 
+	time parts of it might be empty (ie, after a clear).  If you want to see
+	that a line is explicitly "missing" rather than blank, this set will be
+	used for each blank line
+
+	Example:
+	  /set blank_line_indicator ~
+	       makes missing lines ~, like vi does
+
+*** News 06/12/2024 -- Add $symbolctl(GET <var> 0 BUILTIN_VARIABLE ORIG_DATA) (commit 2105)
+	Builtin variables (ie, /SET) are initialized when the client starts.
+	You can later change the value.  But if you want to reset the value
+	to the "initial" value, you can fetch that value here.
+	
+	Example:
+	  /set banner $symbolctl(GET banner 0 BUILTIN_VARIABLE ORIG_DATA)
+
+
+
 *** News 07/17/2023 -- New /ON, /ON PING (rb skered)
        The /ON PING will be thrown when the server sends you a PING
        after you've been idle for some time.   Yes, you can suppress
