@@ -1383,4 +1383,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Refactor double_quote() so I can fix rogue \s on the status bar
 * Add support for bg colors in $rgb(), see UPDATES
 * Fix more suggestions from the nitpickers in gcc and clang
-
+* Fix $rgb() [rb wcarson, fusion]

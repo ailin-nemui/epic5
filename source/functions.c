@@ -8450,6 +8450,7 @@ BUILT_IN_FUNCTION(function_jsontest, input)
 
 #define HEX2NUM(x)   ( (x) >= '0' && (x) <= '9' ? (x) - '0'   \
 					        : (x) >= 'A' && (x) <= 'F' ? (x) - 'A' + 10  \
+					                                   : (x) >= 'a' && (x) <= 'f' ? (x) - 'a' + 10  \
                                                                            : 0 )
 
 BUILT_IN_FUNCTION(function_rgb, input)
@@ -8548,17 +8549,17 @@ BUILT_IN_FUNCTION(function_rgb, input)
 #define next_byte_or_fail(src, var)   if (* src ) var = * src ++; else RETURN_EMPTY;
 #define must_be_hex_digit(var) if (strchr("0123456789ABCDEFabcdef", (int) var) == NULL) RETURN_EMPTY;
 
-				next_byte_or_fail(input, r1)
+				next_byte_or_fail(work_arg, r1)
 				must_be_hex_digit(r1)
-				next_byte_or_fail(input, r2)
+				next_byte_or_fail(work_arg, r2)
 				must_be_hex_digit(r2)
-				next_byte_or_fail(input, g1)
+				next_byte_or_fail(work_arg, g1)
 				must_be_hex_digit(g1)
-				next_byte_or_fail(input, g2)
+				next_byte_or_fail(work_arg, g2)
 				must_be_hex_digit(g2)
-				next_byte_or_fail(input, b1)
+				next_byte_or_fail(work_arg, b1)
 				must_be_hex_digit(b1)
-				next_byte_or_fail(input, b2)
+				next_byte_or_fail(work_arg, b2)
 				must_be_hex_digit(b2)
 
 				work_r = HEX2NUM(r1) * 16 + HEX2NUM(r2);
