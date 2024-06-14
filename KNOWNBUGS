@@ -2,8 +2,18 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-* Need a $shuffle() operator.
+Harz's list
+===========
 * /on dcc_raw handling should set message_from() (rb Harz)
+* Allow /echo to defeat word wrap (ie, don't split on words) (rb Harz)
+* [ 1:41PM] <Harzilein> hop: remember i wanted to asynchronously _add_ translation lines when i was in the
++cantonese channel. would adding placeholder lines and later adding content to them be in scope for that
++project? i.e. the reverse of what you want to do? 
+* Harz wants a way to be able to veto /join moving channels between windows
+
+Other items
+===========
+* Need a $shuffle() operator.
 * The way we handle "screen is not tall enough" underflow needs work
 * Unify window query and channels in the target list.
 * Allow /ignore for a nick!user@host but only on a channel
@@ -23,17 +33,13 @@ KNOWN ERRATA (eg, bugs, or unresolved requests):
    This is because we're explicitly turning off padding, but I don't know why 
 * Support the idiotic proliferation of chanmodes for users on unrealirc
 	PREFIX=(qaohv)~&@%+
-* Allow /echo to defeat word wrap (ie, don't split on words) (rb Harz)
 * Why does    /exec -line {#} ls -l     still output something?
 	because pipes are block-buffered, and ls -l output will get 
 	broken in the middle of a line, and that ends up being a -linepart {}
 	We need to have a way to handle this.
 	- Line buffering needs a way to "hold" incomplete lines for a moment
 * Add some way to get the "next notified(activity) window"
-* [ 1:41PM] <Harzilein> hop: remember i wanted to asynchronously _add_ translation lines when i was in the
-+cantonese channel. would adding placeholder lines and later adding content to them be in scope for that
-+project? i.e. the reverse of what you want to do? 
-* Harz wants a way to be able to veto /join moving channels between windows
+* What about supporting znc's timestamp thingee as a simulated time?
 
 EPIC5-3.0 MAJOR PROJECTS
 ------------------------
@@ -1384,3 +1390,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add support for bg colors in $rgb(), see UPDATES
 * Fix more suggestions from the nitpickers in gcc and clang
 * Fix $rgb() [rb wcarson, fusion]
+* EPIC5-2.1.13 (2025 - Sockdolager) released here
