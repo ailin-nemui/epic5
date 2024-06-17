@@ -744,13 +744,13 @@ static ssize_t	read_color_seq_new (const char *start, void *d)
 	 */
 	static	uint32_t	fg_x_color_conv[] = {
 		 COLOR_X(231),  COLOR_X(16),  COLOR_X(18),  COLOR_X(28), 
-		 COLOR_X(196),  COLOR_X(88),  COLOR_X(90), COLOR_X(208),	/*  0-7  */
+		 COLOR_X(196),  COLOR_X(88),  COLOR_X(90),  COLOR_X(208),	/*  0-7  */
 		 COLOR_X(226),  COLOR_X(46),  COLOR_X(30),  COLOR_X(51),  
 		 COLOR_X(21),   COLOR_X(201), COLOR_X(244), COLOR_X(252),	/*  8-15 */
-		 COLOR_NONE,    COLOR_NONE,   COLOR_NONE,  COLOR_NONE,  
-		 COLOR_NONE,    COLOR_NONE,   COLOR_NONE,  COLOR_NONE, 		/* 16-23 */
-		 COLOR_NONE,    COLOR_NONE,   COLOR_NONE,  COLOR_NONE,  
-		 COLOR_NONE,    COLOR_NONE,   COLOR_X(0), COLOR_X(1), 	/* 24-31 */
+		 COLOR_X(252),  COLOR_NONE,   COLOR_NONE,   COLOR_NONE,  
+		 COLOR_NONE,    COLOR_NONE,   COLOR_NONE,   COLOR_NONE, 	/* 16-23 */
+		 COLOR_NONE,    COLOR_NONE,   COLOR_NONE,   COLOR_NONE,  
+		 COLOR_NONE,    COLOR_NONE,   COLOR_X(0),   COLOR_X(1), 	/* 24-31 */
 		 COLOR_X(2), COLOR_X(3), COLOR_X(4), COLOR_X(5), 
 		 COLOR_X(6), COLOR_X(7), COLOR_NONE,  COLOR_NONE,		/* 32-39 */
 		 COLOR_NONE,    COLOR_NONE,   COLOR_NONE,  COLOR_NONE,  
