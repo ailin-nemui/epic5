@@ -2,78 +2,25 @@ EPIC5 Projects, Bugs, and other Errata:
 
 KNOWN ERRATA (eg, bugs, or unresolved requests):
 ------------------------------------------------
-Harz's list
-===========
-* /on dcc_raw handling should set message_from() (rb Harz)
-* Allow /echo to defeat word wrap (ie, don't split on words) (rb Harz)
-* [ 1:41PM] <Harzilein> hop: remember i wanted to asynchronously _add_ translation lines when i was in the
-+cantonese channel. would adding placeholder lines and later adding content to them be in scope for that
-+project? i.e. the reverse of what you want to do? 
-* Harz wants a way to be able to veto /join moving channels between windows
-
-Other items
-===========
-* Need a $shuffle() operator.
 * The way we handle "screen is not tall enough" underflow needs work
-* Unify window query and channels in the target list.
-* Allow /ignore for a nick!user@host but only on a channel
-* Add /set server_default_type, irc or irc-ssl (rb nick_)
-* Typing 😂😂😂 to the input line doesn't work right
-   -- This is a screen problem; it doesn't support multi-column unicodes
-* I don't think /msg @L1 is implemented correctly
-    - check out files.c:file_write for type == 2
-* If a window is holding before a resize/rebuild; and it is not holding afterwards
-  (ie, restore_window_positions() goofs), unconditionally reset the hold point to the
-  bottom of the screen (rb zlonix)
-* Learn how mouse support in xterm works for fusion
-  [ 8:20PM] <fusion> in mouse mode the scroll wheel sends ^[[M`<two position bytes> and ^[[Ma<the same> 
-  [ 8:20PM] <fusion> since i can't bind values i don't know, they need to go away :) 
-* [ 2:13PM] ERROR: error:1C80006B:Provider routines::wrong final block length
-   when you do /eval echo $xform("+AESSHA +B64" test 1)   [rb zlonix]
-   This is because we're explicitly turning off padding, but I don't know why 
-* Support the idiotic proliferation of chanmodes for users on unrealirc
-	PREFIX=(qaohv)~&@%+
-* Why does    /exec -line {#} ls -l     still output something?
-	because pipes are block-buffered, and ls -l output will get 
-	broken in the middle of a line, and that ends up being a -linepart {}
-	We need to have a way to handle this.
-	- Line buffering needs a way to "hold" incomplete lines for a moment
-* Add some way to get the "next notified(activity) window"
-* What about supporting znc's timestamp thingee as a simulated time?
-
-EPIC5-3.0 MAJOR PROJECTS
-------------------------
-1. Python support that doesn't suck
-2. Saving and restoring client state across restarts
-3. Robust, no compromises, ZNC support
-4. Reboot of /set load_path, /load, and namespaces
-5. SQLite support
-
-MEDIUM-TERM PROJECTS
---------------------
-* Need to have a script that implements per-channel FiSH support
-* There needs to be an /on switch_query for wuf/sjhoran
-* What about scrolling back to some point in time?
-* What about a facility to do auto-off-hold-mode ?
-* wuf says that fred!user@machine.domain.com.au should not be
-	*!*user@*.com.au but instead *!*user@*.domain.com.au
-* There should be a fake level for "channel stuff"
-* Curse would like an outbound protocol queue to avoid flooding the server
-* Larne wants syntactic word extraction like $foo{3} or $foo{1,4}
-* Howl wants to be able to have per-window /input and /input_char
-* Howl would like "advanced scrollback" searches, like hit counts
-* I think maybe i should expose a better scrollback interface?
-* Should be able to change LINE value in windows (for howl)
-* Howl would like to be able to replace any line of scrollback via windowctl
-* Kitambi would like to be able to rewrite lines after they've been displayed.
-* Should any commands be #ifdef'd out at compile time, as opposed to just
-  being replaced with error-generating shims?
-* /Foreach should work with local variables.  It can't right now because
-  of the challenge of indicating which elements are from local variables.
-* Harz would like a way to do /bind -default for just a single binding.
-* /PAUSE does not save/restore context, and it should.
+* Rethink "targets" with channels and queries 
+* Change /ignore to support broader patterns (servers, nicks, etc)
+* Typing 😂😂(multi-column emojis) upsets screen.
 * /window maximize + new status expando when a zero-height window gets output
-* Unlimited input buffer with auto-splitting (rb zlonix)
+* I don't think /msg @L1 is implemented correctly
+	files.c:file_write() for type == 2
+* Mouse support (for fusion)
+* Unlimited size input line with auto-chonking
+* Outbound flood control for irc servers
+* Revisit why we do not use padding for openssl ("wrong final block length")
+	/eval echo $xform("+AESSHA +B64" test 1)   [rb zlonix]
+* Revisit how block buffering and line buffering interact
+	/exec -line {#} ls -l     outputs partial line via -linepart {}
+* Be able to retrieve/cycle through "next notified (activity) window"
+* Support CAPabilities properly
+* Support "virtual timestamps" -- don't fetch the real time
+* Support ZNC's CAP that prefixes timestamp (see above)
+* Properly support 005 PREFIX=(qaohv)~&@%+
 
 [I moved the old list to the file "WISHLIST" to keep this file short]
 
@@ -1392,3 +1339,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix $rgb() [rb wcarson, fusion]
 * EPIC5-2.1.13 (2025 - Sockdolager) released here
 * ^C16 was defined and was used by lice.  sigh. (rb tjh)
+* Toplines were one column too narrow (rb fusion)

@@ -3517,7 +3517,8 @@ void 	repaint_window_body (int window_)
 		term_move_cursor(0, get_window_top(window_) - get_window_toplines_showing(window_) + count);
 		term_clear_to_eol();
 
-		widthstr = prepare_display_fixed_size(str, get_window_my_columns(window_) - 1, 1, ' ', 0);
+		/* Don't -1 get_window_by_columns()! */
+		widthstr = prepare_display_fixed_size(str, get_window_my_columns(window_), 1, ' ', 0);
 		output_with_count(widthstr, 1, foreground);
 		new_free(&widthstr);
 	   }
