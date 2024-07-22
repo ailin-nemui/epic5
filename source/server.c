@@ -2793,6 +2793,7 @@ void	register_server (int refnum, const char *nick)
 	if (usehost == NULL)
 		usehost = hostname;
 
+	send_to_aserver(refnum, "CAP LS 302");
 	send_to_aserver(refnum, "USER %s %s %s :%s", 
 			get_string_var(DEFAULT_USERNAME_VAR),
 			(send_umode && *send_umode) ? send_umode : 

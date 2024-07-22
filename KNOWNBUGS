@@ -1,26 +1,49 @@
 EPIC5 Projects, Bugs, and other Errata:
 
-KNOWN ERRATA (eg, bugs, or unresolved requests):
+THINGS TO WORK ON
 ------------------------------------------------
-* The way we handle "screen is not tall enough" underflow needs work
+Actual bugs
+===========
+* Sending a "Man shrugging medium-light skin tone"
+  https://emojipedia.org/man-shrugging-medium-light-skin-tone
+  is a "ZWJ sequence" which epic may not support correctly
+[ 5:34PM] -> (#epic) https://imgur.com/a/46IUXP0   -- how it originally appeared as received  (expected behavior per github)
+[ 5:34PM] -> (#epic) https://imgur.com/a/P8gEFnG   -- how it appeared after you swapped the window out and in again
+[ 5:35PM] -> (#epic) https://imgur.com/a/lSlLqQE   -- how it appeared in the log (text) file
+
+Creature Comforts
+====================
+* /window maximize + new status expando when a zero-height window gets output
+* Be able to retrieve/cycle through "next notified (activity) window"
+
+Data improvements
+===================
 * Rethink "targets" with channels and queries 
 * Change /ignore to support broader patterns (servers, nicks, etc)
+* Support "virtual timestamps" -- don't fetch the real time
+* Support ZNC's CAP that prefixes timestamp (see above)
+
+Weaknesses
+===========
+* The way we handle "screen is not tall enough" underflow needs work
 * Typing 😂😂(multi-column emojis) upsets screen.
-* /window maximize + new status expando when a zero-height window gets output
 * I don't think /msg @L1 is implemented correctly
 	files.c:file_write() for type == 2
-* Mouse support (for fusion)
-* Unlimited size input line with auto-chonking
-* Outbound flood control for irc servers
 * Revisit why we do not use padding for openssl ("wrong final block length")
 	/eval echo $xform("+AESSHA +B64" test 1)   [rb zlonix]
 * Revisit how block buffering and line buffering interact
 	/exec -line {#} ls -l     outputs partial line via -linepart {}
-* Be able to retrieve/cycle through "next notified (activity) window"
-* Support CAPabilities properly
-* Support "virtual timestamps" -- don't fetch the real time
-* Support ZNC's CAP that prefixes timestamp (see above)
+
+Foundational improvements
+===========================
+* Mouse support (for fusion)
+* Unlimited size input line with auto-chonking
+* Outbound flood control for irc servers
 * Properly support 005 PREFIX=(qaohv)~&@%+
+* Properly support CAP
+	https://datatracker.ietf.org/doc/html/draft-mitchell-irc-capabilities-01
+* Rewrite the RFC1459 message tokenizer ("BreakArgs")
+    - Make CAP tokens (@stupid=value) first class citizens somehow
 
 [I moved the old list to the file "WISHLIST" to keep this file short]
 
@@ -1340,3 +1363,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * EPIC5-2.1.13 (2025 - Sockdolager) released here
 * ^C16 was defined and was used by lice.  sigh. (rb tjh)
 * Toplines were one column too narrow (rb fusion)
+* Very rudimentary support for CAP multi-prefix. more to come!
+* Fix /load files
+* Include new script, /load epiclogo -- a nice easter egg. :)
+

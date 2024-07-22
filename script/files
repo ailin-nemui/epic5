@@ -8,7 +8,7 @@ if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
  * These aliases are not anywhere near as fast as /exec'ing the
  * c programs, but they are here to illustrate the usage of the fns.
  */
-}
+};
 
 # dump a file out to the screen w/o using /exec 
 alias cat {

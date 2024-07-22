@@ -871,6 +871,36 @@ static void	p_silence (const char *from, const char *comm, const char **ArgList)
 	}
 }
 
+static void	p_cap (const char *from, const char *comm, const char **ArgList)
+{
+	const char *disp, *cmd, *args;
+
+	PasteArgs(ArgList, 2);
+	if (!(disp = ArgList[0]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+	if (!(cmd = ArgList[1]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+	if (!(args = ArgList[2]))
+		{ rfc1459_odd(from, comm, ArgList); return; }
+
+	if (!my_stricmp(disp, "*") && !my_stricmp(cmd, "LS"))
+	{
+		char *caps, *one_cap;
+
+		caps = LOCAL_COPY(args);
+		while ((one_cap = next_arg(caps, &caps)))
+		{
+			if (!my_stricmp(one_cap, "multi-prefix"))
+			{
+				say("I requested CAP multi-prefix");
+				send_to_server("CAP REQ :multi-prefix");
+			}
+		}
+		send_to_server("CAP END");
+	}
+	say("I got a CAP >%s< >%s< >%s<", disp, cmd, args);
+}
+
 static void	p_nick (const char *from, const char *comm, const char **ArgList)
 {
 	const char	*new_nick;
@@ -1487,6 +1517,7 @@ typedef struct {
 static protocol_command rfc1459[] = {
 {	"ADMIN",	NULL,		0		},
 {	"AWAY",		NULL,		0		},
+{	"CAP",		p_cap,		0		},
 { 	"CONNECT",	NULL,		0		},
 {	"ERROR",	p_error,	0		},
 {	"ERROR:",	p_error,	0		},
