@@ -13,7 +13,7 @@
  * This hash routine is for case sensitive keys.  Specifically keys that
  * have been prefolded to an apppropriate case.
  */
-static __inline uint32_t  cs_alist_hash (const char *s, uint32_t *mask)
+static uint32_t  cs_alist_hash (const char *s, uint32_t *mask)
 {
 	uint32_t	x = 0;
 
@@ -41,7 +41,7 @@ extern unsigned char *stricmp_tables[2];
  * This hash routine is for case insensitive keys.  Specifically keys that
  * cannot be prefolded to an appropriate case but are still insensitive
  */
-static __inline uint32_t  ci_alist_hash (const char *s, uint32_t *mask)
+static uint32_t  ci_alist_hash (const char *s, uint32_t *mask)
 {
 	uint32_t	x = 0;
 

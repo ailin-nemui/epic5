@@ -83,7 +83,7 @@ typedef struct Mask {
 	unsigned int	__bits[BIT_WORDS];
 } Mask;
 
-__inline static int	mask_setall (Mask *set)
+static int	mask_setall (Mask *set)
 {
 	int i;
 
@@ -92,7 +92,7 @@ __inline static int	mask_setall (Mask *set)
 	return 0;
 }
 
-__inline static int	mask_unsetall (Mask *set)
+static int	mask_unsetall (Mask *set)
 {
 	int i;
 
@@ -101,7 +101,7 @@ __inline static int	mask_unsetall (Mask *set)
 	return 0;
 }
 
-__inline static int	mask_set (Mask *set, int bit)
+static int	mask_set (Mask *set, int bit)
 {
 	if (bit == LEVEL_NONE)
 		return mask_unsetall(set);
@@ -114,7 +114,7 @@ __inline static int	mask_set (Mask *set, int bit)
 	return 0;
 }
 
-__inline static int	mask_unset (Mask *set, int bit)
+static int	mask_unset (Mask *set, int bit)
 {
 	if (bit == LEVEL_NONE)
 		return mask_setall(set);
@@ -127,7 +127,7 @@ __inline static int	mask_unset (Mask *set, int bit)
 	return 0;
 }
 
-__inline static int	mask_isall (const Mask *set)
+static int	mask_isall (const Mask *set)
 {
 	int	i;
 
@@ -137,7 +137,7 @@ __inline static int	mask_isall (const Mask *set)
 	return 1;
 }
 
-__inline static int	mask_isnone (const Mask *set)
+static int	mask_isnone (const Mask *set)
 {
 	int	i;
 
@@ -147,7 +147,7 @@ __inline static int	mask_isnone (const Mask *set)
 	return 1;
 }
 
-__inline static int	mask_isset (const Mask *set, int bit)
+static int	mask_isset (const Mask *set, int bit)
 {
 	unsigned ubit;
 

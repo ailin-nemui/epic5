@@ -1014,7 +1014,6 @@ typedef struct bsd_arc4_stream 	ARC4;
 static int	rs_initialized = 0;
 static ARC4	rs;
 
-__inline__
 static void	bsd_arc4_init (ARC4 *as)
 {
 	int     n;
@@ -1025,7 +1024,6 @@ static void	bsd_arc4_init (ARC4 *as)
 	as->j = 0;
 }
 
-__inline__
 static void	bsd_arc4_addrandom (ARC4 *as, unsigned char *dat, int datlen)
 {
 	int     n;
@@ -1065,7 +1063,6 @@ static void	bsd_arc4_stir (ARC4 *as)
 	bsd_arc4_addrandom(as, (void *) &rdat, sizeof(rdat));
 }
 
-__inline__
 static unsigned char		bsd_arc4_getbyte (ARC4 *as)
 {
 	unsigned char si, sj;
@@ -1079,7 +1076,6 @@ static unsigned char		bsd_arc4_getbyte (ARC4 *as)
 	return (as->s[(si + sj) & 0xff]);
 }
 
-__inline__
 static uint32_t	bsd_arc4_getword (ARC4 *as)
 {
 	uint32_t val;

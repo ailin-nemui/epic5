@@ -7,9 +7,9 @@ Actual bugs
 * Sending a "Man shrugging medium-light skin tone"
   https://emojipedia.org/man-shrugging-medium-light-skin-tone
   is a "ZWJ sequence" which epic may not support correctly
-[ 5:34PM] -> (#epic) https://imgur.com/a/46IUXP0   -- how it originally appeared as received  (expected behavior per github)
-[ 5:34PM] -> (#epic) https://imgur.com/a/P8gEFnG   -- how it appeared after you swapped the window out and in again
-[ 5:35PM] -> (#epic) https://imgur.com/a/lSlLqQE   -- how it appeared in the log (text) file
+   [ 5:34PM] -> (#epic) https://imgur.com/a/46IUXP0   -- how it originally appeared as received  (expected behavior per github)
+   [ 5:34PM] -> (#epic) https://imgur.com/a/P8gEFnG   -- how it appeared after you swapped the window out and in again
+   [ 5:35PM] -> (#epic) https://imgur.com/a/lSlLqQE   -- how it appeared in the log (text) file
 
 Creature Comforts
 ====================
@@ -1366,4 +1366,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Very rudimentary support for CAP multi-prefix. more to come!
 * Fix /load files
 * Include new script, /load epiclogo -- a nice easter egg. :)
-
+* Change /exec so it's fully line buffered.  This fixes /exec cat.
+* Stop using "inline", since the compiler does what it wants anyways.

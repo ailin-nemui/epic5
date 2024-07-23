@@ -290,8 +290,8 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 	const char	*utf8_text;
 	char *extra = NULL;
 
-	/* No buffering! */
-	switch ((len = dgets(*fd, exec_buffer, IO_BUFFER_SIZE, 0))) 
+	/* 1 -> line buffering; used to be 0 -> No buffering */
+	switch ((len = dgets(*fd, exec_buffer, IO_BUFFER_SIZE, 1))) 
 	{
 	    case -1:		/* Something died */
 	    {
@@ -301,6 +301,12 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 		return;				/* PUNT! */
 	    }
 
+#if 1
+	    /* When buffering is 1 (line buffering), case 0 means "incomplete line" */
+	    case 0:
+		return;
+#else
+	    /* When buffering is 0 (no buffering), case 0 means "incomplete line" */
 	    case 0:		/* We didnt get a full line */
 	    {
 		/* 
@@ -329,6 +335,7 @@ static void 	handle_filedesc (Process *proc, int *fd, int hook_nonl, int hook_nl
 		*exec_buffer = 0;
 		FALLTHROUGH
 	    }
+#endif
 
 	    default:		/* We got a full line */
 	    {

@@ -51,8 +51,7 @@
  * PASSING NULL TO parse_line() or parse_arglist() OR SIMILAR FUNCTIONS
  * WILL RETURN IN A PANIC.  DO NOT IGNORE THIS!
  */
-static __inline__
-char *	my_next_expr (char **args, char type, int whine, int wantchar)
+static char *	my_next_expr (char **args, char type, int whine, int wantchar)
 {
 	char	*expr_start,
 		*expr_end;
