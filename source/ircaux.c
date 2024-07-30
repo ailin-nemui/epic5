@@ -68,19 +68,7 @@ typedef struct _mo_money
 {
 	unsigned magic;
 	int size;
-#ifdef ALLOC_DEBUG
-	unsigned entry;
-	char* fn;
-	int line;
-#endif
 } MO;
-
-#ifdef ALLOC_DEBUG
-struct {
-	int size;
-	void** entries;
-} alloc_table = { 0, NULL };
-#endif
 
 #define mo_ptr(ptr) ((MO *)( (char *)(ptr) - sizeof(MO) ))
 #define alloc_size(ptr) ((mo_ptr(ptr))->size)
@@ -105,13 +93,81 @@ static int	malloc_check (void *ptr)
 		return ALLOC_MAGIC_FAILED;
 	if (alloc_size(ptr) == FREED_VAL)
 		return ALREADY_FREED;
-#ifdef ALLOC_DEBUG
-	if (ptr != alloc_table.entries[mo_ptr(ptr)->entry])
-		return ALREADY_FREED;
-#endif
 	return NO_ERROR;
 }
 
+/*
+ * memory_dump - Serialize some memory into text (for output)
+ *
+ * Arguments:
+ *	ptr 	- (INPUT) A memory location (hopefully valid!)
+ *	size	- (INPUT) How many bytes to serialize
+ *			Values > 64 will be treated as 64.
+ *
+ * Return value:
+ *	A string containing a printable representation of the 
+ *	first 'size' bytes starting at 'ptr'.
+ *	YOU DO NOT OWN THIS VALUE.  YOU MUST NOT MODIFY IT
+ *	OR DO ANYTHING ELSE TO IT BUT OUTPUT IT.
+ *
+ * Note:
+ * 	- This is a utility function for diagnosing memory safety errors
+ *	- It will not serialize more than 64 bytes, no matter what 'size' is.
+ */
+static char *	prntdump (const char *ptr, size_t size)
+{
+	size_t 	ptridx, 
+		dumpidx = 0;
+static 	char 	dump[640];
+
+	memset(dump, 0, 640);
+	if (size > 64)
+		size = 64;
+
+	for (ptridx = 0; ptridx < size; ptridx++)
+	{
+		if (isgraph(ptr[ptridx]) || isspace(ptr[ptridx]))
+			dump[dumpidx++] = ptr[ptridx];
+		else
+		{
+			dump[dumpidx++] = '<';
+			snprintf(dump + dumpidx, 3, "%02hhX", (unsigned char)(ptr[ptridx]));
+			dumpidx += 2;
+			dump[dumpidx++] = '>';
+		}
+	}
+
+	if (ptridx == 64)
+		dump[dumpidx++] = '>';
+	dump[dumpidx] = 0;
+	return dump;
+}
+
+
+/*
+ * fatal_malloc_check - verify that 'ptr' still has integrity
+ *	DO NOT CALL DIRECTLY - Use MUST_BE_MALLOCED(ptr, special)
+ *
+ * Arguments:
+ *	ptr	- (INPUT) A value previous returned by new_malloc()
+ *	special	- (INPUT) An explanatory message about why the check was done.
+ *	fn	- (INPUT) The filename of the caller
+ *	line	- (INPUT) The line number of the caller
+ *
+ * Return value:
+ *	The function does not return a value.  But if it returns, then
+ *	it is safe to use 'ptr'.  If anything is wrong with 'ptr', the
+ * 	function does not return.
+ *
+ * Notes:
+ * This function verifies the integrity of the value of 'ptr':
+ *	1. Must have previously be returned by new_malloc()
+ *	2. The buffer underrun sentinal ("magic") must be intact
+ *	3. The value must not have been passed to new_free()
+ * If any of these conditions fail, a diagnostic will be displayed to
+ * the user, telling them something has gone horribly wrong; and panic() 
+ * will be called, which pulls the ripcord to reset the client.  
+ */
 void	fatal_malloc_check (void *ptr, const char *special, const char *fn, int line)
 {
 	static	int	recursion = 0;
@@ -165,90 +221,78 @@ void	fatal_malloc_check (void *ptr, const char *special, const char *fn, int lin
 }
 
 /*
- * really_new_malloc is the general interface to the malloc(3) call.
- * It is only called by way of the ``new_malloc'' #define.
- * It wont ever return NULL.
+ * really_new_malloc - Our memory-defending wrapper for malloc(3) 
+ *			DON'T CALL DIRECTLY - use new_malloc()
+ *
+ * Arguments:
+ *	size	- (INPUT) The number of bytes you wish to malloc().
+ *		  Because (size_t) is unsigned, if you pass a 
+ *		  negative number, size will be huge.  To detect
+ *		  and trap this error, values must be <= INT_MAX
+ *	fn	- (INPUT) The filename of the caller
+ *	line	- (INPUT) The line number of the caller
+ *
+ * Return value:
+ *	- A pointer to a buffer containing at least 'size' bytes.
+ *	- Any error results in a panic/trap and does not return.
+ *
+ * Notes:
+ *	You must pass the return value to new_free() later when you
+ *	are done with the space.  There is no garbage collector --
+ *	you must manage your memory's lifecycle specifically.
  */
 void *	really_new_malloc (size_t size, const char *fn, int line)
 {
 	char	*ptr;
 
+	/* 
+	 * Because we use -fwrapv, any math operation that results in a 
+	 * negative number or integer underflow, will result in a number 
+	 * which is suspiciously large.  Such attempts must be refused.
+	 */
+	if (size > (size_t)INT_MAX)
+		panic(1, "Malloc(%jd) request is too large from [%s/%d], giving up!",
+				(intmax_t)size, fn, line);
+				
 	if (!(ptr = malloc(size + sizeof(MO))))
-		panic(1, "Malloc(%ld) failed from [%s/%d], giving up!", 
-				(long)size, fn, line);
+		panic(1, "Malloc(%jd) failed from [%s/%d], giving up!", 
+				(intmax_t)size, fn, line);
 
 	/* Store the size of the allocation in the buffer. */
 	ptr += sizeof(MO);
 	magic(ptr) = ALLOC_MAGIC;
 	alloc_size(ptr) = size;
-#ifdef ALLOC_DEBUG
-	mo_ptr(ptr)->entry = alloc_table.size;
-	mo_ptr(ptr)->fn = fn;
-	mo_ptr(ptr)->line = line;
-	alloc_table.size++;
-	alloc_table.entries = realloc(alloc_table.entries, (alloc_table.size) * sizeof(void**));
-	alloc_table.entries[alloc_table.size-1] = ptr;
-#endif
 	VALGRIND_CREATE_MEMPOOL(mo_ptr(ptr), 0, 1);
 	VALGRIND_MEMPOOL_ALLOC(mo_ptr(ptr), ptr, size);
 	return ptr;
 }
 
-#ifdef DELAYED_FREES
 /*
- * Instead of calling free() directly in really_new_free(), we instead 
- * delay that until the stack has been unwound completely.  This masks the
- * many bugs in epic where we hold a pointer to some object (such as a DCC
- * item) and then invoke a sequence point.  When that sequence point returns
- * we cannot assume that pointer is still valid.  But regretably we assume
- * that so often that we can't just sweep this problem away.  The rules
- * regarding double and invalid frees stays because that is all done at a 
- * higher level.  The only thing this changes is that we do not release
- * memory until it is impossible that we could be holding a pointer to it.
- * This does not fix those bugs, only mitigates their damaging effect.
- */
-	int	need_delayed_free = 0;
-static	void **	delayed_free_table;
-static	int	delayed_free_table_size = 0;
-static	int	delayed_frees = 0;
-
-void	do_delayed_frees (void)
-{
-	int	i;
-
-	for (i = 0; i < delayed_frees; i++)
-	{
-		free((void *)delayed_free_table[i]);
-		delayed_free_table[i] = NULL;
-	}
-	delayed_frees = 0;
-	need_delayed_free = 0;
-}
-
-static void	delay_free (void *ptr)
-{
-	need_delayed_free = 1;
-	if (delayed_frees >= delayed_free_table_size - 2)
-	{
-		int	i = delayed_free_table_size;
-
-		if (delayed_free_table_size)
-			delayed_free_table_size *= 2;
-		else
-			delayed_free_table_size = 128;
-		RESIZE(delayed_free_table, void *, delayed_free_table_size);
-		for (; i < delayed_free_table_size; i++)
-			delayed_free_table[i] = NULL;
-	}
-	delayed_free_table[delayed_frees++] = ptr;
-}
-#endif
-
-/*
- * really_new_free is the general interface to the free(3) call.
- * It is only called by way of the ``new_free'' #define.
- * You must always use new_free to free anything youve allocated
- * with new_malloc, or all heck will break loose.
+ * really_new_free - Our memory-defending wrapper for free(3)
+ *			DONT' CALL DIRECTLY - use new_free()
+ *
+ * Arguments:
+ *	ptr	 - (INPUT | OUTPUT) A pointer to a pointer containing 
+ *		   a value previously returned by really_new_malloc().
+ *		   THE VALUE BELONGS TO THIS FUNCTION.  YOU MUST NOT
+ *		   ATTEMPT TO USE IT AFTER THIS FUNCTION RETURNS.
+ *		   To assist you, "*ptr" will be set to NULL upon success,
+ *		   so you don't accidentally try to use it.
+ *	fn	- (INPUT) The filename of the caller
+ *	line	- (INPUT) The line number of the caller
+ *
+ * Return value:
+ *	- NULL upon success
+ *	- Any error results in a panic/trap and does not return.
+ *
+ * Note:
+ *	The purpose of passing in a pointer to a pointer is to discourage
+ *	a common anti-pattern with malloc/free where you pass in the address
+ *	to free (by value) but then you don't have a handy idiom to remind
+ *	yourself that value is no longer valid.  By forcing you to keep the
+ *	malloc()ed memory in a variable, and forcing you to pass in a pointer
+ *	to that variable, we can offer a disiciplined approach to managing
+ *	malloc()ed pointers.
  */
 void *	really_new_free (void **ptr, const char *fn, int line)
 {
@@ -258,23 +302,41 @@ void *	really_new_free (void **ptr, const char *fn, int line)
 		VALGRIND_DESTROY_MEMPOOL(mo_ptr(*ptr));
 		fatal_malloc_check(*ptr, NULL, fn, line);
 		alloc_size(*ptr) = FREED_VAL;
-#ifdef ALLOC_DEBUG
-		alloc_table.entries[mo_ptr(*ptr)->entry]
-			= alloc_table.entries[--alloc_table.size];
-		mo_ptr(alloc_table.entries[mo_ptr(*ptr)->entry])->entry = mo_ptr(*ptr)->entry;
-#endif
-#ifdef DELAYED_FREES
-		delay_free((void *)(mo_ptr(*ptr)));
-#else
 		free((void *)(mo_ptr(*ptr)));
-#endif
 	}
 	return ((*ptr = NULL));
 }
 
-#if 1
-
 /* really_new_malloc in disguise */
+/*
+ * really_new_realloc - Our memory-defending wrapper for realloc(3)
+ *			DON'T CALL DIRECTLY - use RESIZE()
+ *
+ * Arguments:
+ *	ptr	 - (INPUT) A pointer to a pointer containing a value 
+ *			   previously returned by really_new_malloc().
+ *		           THE VALUE BELONGS TO THIS FUNCTION.  YOU MUST 
+ *			   NOT ATTEMPT TO USE IT AFTER THIS FUNCTION RETURNS.
+ *		   (OUTPUT) A pointer to a replacement buffer that you 
+ *			   should use instead of the input value.
+ *	fn	- (INPUT) The filename of the caller
+ *	line	- (INPUT) The line number of the caller
+ *
+ * Return value:
+ *	- NULL, if ptr == NULL
+ *	- The new value of *ptr.  You must stop using the input
+ *		value of *ptr and start using the output value of *ptr,
+ *		even if *ptr was not changed.
+ *	- Any error results in a panic/trap and does not return.
+ *
+ * Note:
+ *	The purpose of passing in a pointer to a pointer is to discourage
+ *	a common anti-pattern with malloc/free where you pass in an address
+ * 	and then you suddenly have an invalid pointer after the call returns.
+ *	By forcing you to keep the malloc()ed memory in a variable, and to 
+ *	modify that variable whenever the malloc()ed memory changes, we can
+ *	offer a disciplined approach to managing those pointers.
+ */
 void *	really_new_realloc (void **ptr, size_t size, const char *fn, int line)
 {
 	void *newptr = NULL;
@@ -309,68 +371,642 @@ void *	really_new_realloc (void **ptr, size_t size, const char *fn, int line)
 		/* Re-initalize the MO buffer; magic(*ptr) is already set. */
 		*ptr = (void *)((char *)newptr + sizeof(MO));
 		alloc_size(*ptr) = size;
-#ifdef ALLOC_DEBUG
-		alloc_table.entries[mo_ptr(*ptr)->entry] = *ptr;
-#endif
 		VALGRIND_CREATE_MEMPOOL(mo_ptr(*ptr), 0, 1);
 		VALGRIND_MEMPOOL_ALLOC(mo_ptr(*ptr), *ptr, size);
 	}
 	return *ptr;
 }
 
-#else
-
-void *	new_realloc (void **ptr, size_t size)
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+/*
+ * malloc_sprintf: write a formatted string to heap memory
+ *
+ * Arguments:
+ *  'ptr' 	- (INPUT | OUTPUT) One of these things:
+ *		   1. A NULL pointer
+ *		   2. A pointer to a NULL pointer (will be changed)
+ *			- YOU OWN THE NEW VALUE
+ *		   3. A pointer to a new_malloc()ed string
+ *		        - THIS POINTER BELONGS TO THIS FUNCTION.
+ *			- THE POINTED TO VALUE WILL BE NEW_FREE()D
+ *			   AND A NEW VALUE PUT IN ITS PLACE
+ *			- YOU OWN THE NEW VALUE
+ *  'format' 	- A *printf() format string
+ *  ... - The rest of the arguments map to 'format' in the normal way for
+ *		*printf() functions.
+ *
+ * Return value:
+ *	If 'format' is not NULL:
+ *		A new_malloc()ed C string created by sprintf()ing the format
+ *		with the rest of the arguments.  YOU OWN THIS STRING!
+ *	If 'format' is NULL:
+ *		Returns NULL.
+ *
+ * Notes:
+ *	'ptr' will be set to the return value, if doing so makes sense.
+ *	The input value of what 'ptr' points to must be NULL or something
+ *		that you own.  It _will_ be new_free()d, and ptr
+ *		_will_ be changed.
+ *	The return value belongs to you.  You must new_free() it.
+ */
+char *	malloc_sprintf (char **ptr, const char *format, ...)
 {
-	char *ptr2 = NULL;
-	size_t  foo,bar;
+	char *		retval;
+	va_list		args;
 
-	/* Yes the function is ifdefed out, but this serves as a proof of concept. */
-	for (foo=1, bar=size+sizeof(MO); bar; foo<<=1, bar>>=1) /* Nothing */ ;
-	if (foo) {size=foo;}
+	va_start(args, format);
+	retval = malloc_vsprintf(ptr, format, args);
+	va_end(args);
+	return retval;
+}
+
+char *	malloc_vsprintf (char **ptr, const char *format, va_list args)
+{
+	char *		buffer = NULL;
+	size_t		buffer_size;
+	int		vsn_retval;
+	va_list		orig_args;
+
+	if (format)
+	{
+		/* 
+		 * We cannot know how big the result string should be
+		 * before we call vsnprintf().  We start by making a
+		 * guess it's twice the size of 'format'.  If we guess
+		 * wrong, we can increase the size of our guess and
+		 * try again -- until it does not overflow.
+		 */
+		buffer_size = strlen(format) * 2;
+		buffer = new_malloc(buffer_size + 1);
+
+	        va_copy(orig_args, args);
+		for (;;)
+		{
+			vsn_retval = vsnprintf(buffer, buffer_size, format, args);
+
+			if (vsn_retval < 0)		/* DIE DIE DIE */
+				buffer_size += 16;
+			else if ((size_t)vsn_retval < buffer_size)
+				break;
+			else
+				buffer_size = vsn_retval + 1;
+			RESIZE(buffer, char, buffer_size);
+
+			va_copy(args, orig_args);
+		} 
+
+	}
+
+	if (ptr)
+	{
+		new_free(ptr);
+		*ptr = buffer;
+	}
+	return buffer;
+}
+
+/*
+ * malloc_strcdup: Allocate and return a pointer to valid heap space into
+ *	which a copy of several strings has been placed.
+ *
+ * Arguments:
+ *	args	- The number of strings being passed
+ *	...	- Precisely "args" strings, which may or may not be NULL.
+ *		  If an argument is NULL, it is ignored.
+ *
+ * Return value:
+ *	A catenation of all of the strings passed in.
+ *
+ * Notes:
+ *  You must deallocate the space later by passing a pointer to the return
+ *	value to the new_free() function.
+ */
+char *	malloc_strcdup (int numargs, ...)
+{
+	char *		retval = NULL;
+	va_list		args, orig_args;
+	size_t		retsize = 0;
+	int		i;
+	const char *	this_arg;
+
+	if (numargs < 0 || numargs > 2048)
+		return NULL;
+
+	va_start(args, numargs);
+	va_copy(orig_args, args);
+	for (i = 0; i < numargs; i++)
+	{
+		if ((this_arg = va_arg(args, const char *)) != NULL)
+			retsize += strlen(this_arg);
+	}
+
+	retsize++;
+	retval = new_malloc(retsize);
+	*retval = 0;
+
+	va_copy(args, orig_args);
+	for (i = 0; i < numargs; i++)
+	{
+		if ((this_arg = va_arg(args, const char *)) != NULL)
+			strlcat(retval, this_arg, retsize);
+	}
+	va_end(args);
+
+	return retval;
+}
+
+
+#if 0
+/*
+ * malloc_strdup: Allocate and return a pointer to valid heap space into
+ *	which a copy of 'str' has been placed.
+ *
+ * Arguments:
+ *  'str' - The string to be copied.  If NULL, a zero length string will
+ *		be copied in its place.
+ *
+ * Return value:
+ *  If 'str' is not NULL, then a valid heap pointer containing a copy of 'str'.
+ *  If 'str' is NULL, then a valid heap pointer containing a 0-length string.
+ *
+ * Notes:
+ *  You must deallocate the space later by passing a pointer to the return
+ *	value to the new_free() function.
+ */
+char *	malloc_strdup (const char *str)
+{
+	char *ptr;
+	size_t size;
+
+	if (!str)
+		str = empty_string;
+
+	size = strlen(str) + 1;
+	ptr = new_malloc(size);
+	strlcpy(ptr, str, size);
+	return ptr;
+}
+
+/*
+ * malloc_strdup2: Allocate and return a pointer to valid heap space into
+ *	which a catenation of 'str1' and 'str2' have been placed.
+ *
+ * Arguments:
+ *  'str1' - The first string to be copied.  If NULL, a zero-length string
+ *		will be used in its place.
+ *  'str2' - The second string to be copied.  If NULL, a zero-length string
+ *		will be used in its place.
+ *
+ * Return value:
+ *  A valid heap pointer containing a copy of 'str1' and 'str2' catenated 
+ *	together.  'str1' and 'str2' may be substituted as indicated above.
+ *
+ * Notes:
+ *  You must deallocate the space later by passing a pointer to the return
+ *	value to the new_free() function.
+ */
+char *	malloc_strdup2 (const char *str1, const char *str2)
+{
+	size_t msize;
+	char * buffer;
+
+	/* Prevent a crash. */
+	if (str1 == NULL)
+		str1 = empty_string;
+	if (str2 == NULL)
+		str2 = empty_string;
+
+	msize = strlen(str1) + strlen(str2) + 1;
+	buffer = new_malloc(msize);
+	*buffer = 0;
+	strlopencpy(buffer, msize, str1, str2, NULL);
+	return buffer;
+}
+
+/*
+ * malloc_strdup3: Allocate and return a pointer to valid heap space into
+ *	which a catenation of 'str1', 'str2', and 'str3' have been placed.
+ *
+ * Arguments:
+ *  'str1' - The first string to be copied.  If NULL, a zero-length string
+ *		will be used in its place.
+ *  'str2' - The second string to be copied.  If NULL, a zero-length string
+ *		will be used in its place.
+ *  'str3' - The third string to be copied.  If NULL, a zero-length string
+ *		will be used in its place.
+ *
+ * Return value:
+ *  A valid heap pointer containing a copy of 'str1', 'str2', and 'str3' 
+ *	catenated together.  'str1', 'str2', and 'str3' may be substituted 
+ *	as indicated above.
+ *
+ * Notes:
+ *  You must deallocate the space later by passing a pointer to the return
+ *	value to the new_free() function.
+ */
+char *	malloc_strdup3 (const char *str1, const char *str2, const char *str3)
+{
+	size_t msize;
+	char *buffer;
+
+	if (!str1)
+		str1 = empty_string;
+	if (!str2)
+		str2 = empty_string;
+	if (!str3)
+		str3 = empty_string;
+
+	msize = strlen(str1) + strlen(str2) + strlen(str3) + 1;
+	buffer = new_malloc(msize);
+	*buffer = 0;
+	strlopencpy(buffer, msize, str1, str2, str3, NULL);
+	return buffer;
+}
+#endif
+
+/*
+ * malloc_strcpy: Make a copy of a string into heap space, which may
+ *	optionally be provided
+ *
+ * Arguments:
+ *  'ptr' - A pointer to a variable pointer that is either:
+ *	    1) The value NULL or a valid heap pointer to space which is not
+ *		large enough to hold 'src', in which case heap space will be
+ *		allocated, and the original value of (*ptr) will be invalidated.
+ *	    2) A valid heap pointer to space which is large enough to hold 'src'
+ *		in which case 'src' will be copied to the heap space.
+ *  'src' - The string to be copied.  If NULL, (*ptr) is invalidated (freed).
+ *
+ * Return value:
+ *  If 'src' is NULL, an invalid heap pointer.
+ *  If 'src' is not NULL, a valid heap pointer that contains a copy of 'src'.
+ *  (*ptr) is set to the return value.
+ *  This function will not return (panic) if (*ptr) is not NULL and is 
+ *	not a valid heap pointer.
+ *
+ * Notes:
+ *  If (*ptr) is not big enough to hold 'src' then the original value (*ptr) 
+ * 	will be invalidated and must not be used after this function returns.
+ *  You must deallocate the space later by passing (ptr) to the new_free() 
+ *	function.
+ */
+char *	malloc_strcpy (char **ptr, const char *src)
+{
+	size_t	size, size_src;
+
+	if (!src)
+		return new_free(ptr);	/* shrug */
 
 	if (*ptr)
 	{
-		if (size)
+		size = alloc_size(*ptr);
+		if (size == (size_t) FREED_VAL)
+			panic(1, "free()d pointer passed to malloc_strcpy");
+
+		/* No copy neccesary! */
+		if (*ptr == src)
+			return *ptr;
+
+		size_src = strlen(src);
+		if (size > size_src)
 		{
-			size_t msize = alloc_size(*ptr);
-
-			if (msize >= size)
-			{
-				VALGRIND_MEMPOOL_TRIM(mo_ptr(*ptr), *ptr, size);
-				return *ptr;
-			}
-
-			ptr2 = new_malloc(size);
-			memmove(ptr2, *ptr, msize);
+			strlcpy(*ptr, src, size);
+			return *ptr;
 		}
+
 		new_free(ptr);
 	}
-	else if (size)
-		ptr2 = new_malloc(size);
 
-	return ((*ptr = ptr2));
+	size = strlen(src);
+	*ptr = new_malloc(size + 1);
+	strlcpy(*ptr, src, size + 1);
+	return *ptr;
 }
 
-#endif
+/*
+ * malloc_strcat: Append a copy of 'src' to the end of '*ptr'
+ *
+ * Arguments:
+ *  'ptr' - A pointer to a variable pointer that is either:
+ *	    1) The value NULL or a valid heap pointer to space which is not
+ *		large enough to hold 'src', in which case heap space will be
+ *		allocated, and the original value of (*ptr) will be invalidated.
+ *	    2) A valid heap pointer to space which shall contain a valid
+ *		nul-terminated C string.
+ *  'src' - The string to be copied.  
+ *		May be NULL (treated as zero-length string)
+ *
+ * Return value:
+ *  If 'src' is NULL, the original value of (*ptr) is returned.
+ *  If 'src' is not NULL, a valid heap pointer that contains the catenation 
+ *	of the string originally contained in (*ptr) and 'src'.
+ *  (*ptr) is set to the return value.
+ *  This function will not return (panic) if (*ptr) is not NULL and is 
+ *	not a valid heap pointer.
+ *
+ * Notes:
+ *  If (*ptr) is not big enough to take on the catenated string, then the
+ *	original value (*ptr) will be invalidated and must not be used after
+ *	this function returns.
+ *  You must deallocate the space later by passing (ptr) to the new_free() 
+ *	function.
+ */
+char *	malloc_strcat (char **ptr, const char *src)
+{
+	size_t  msize;
+	size_t  psize;
+	size_t  ssize;
 
-void malloc_dump (const char *file) {
-#ifdef ALLOC_DEBUG
-	int	foo, bar;
-	FILE	*fd;
+	if (*ptr)
+	{
+		if (alloc_size(*ptr) == FREED_VAL)
+			panic(1, "free()d pointer passed to malloc_strcat");
 
-	if (!(file && *file && (fd=fopen(file, "a"))))
-		fd=stdout;
+		if (!src)
+			return *ptr;
 
-	for (foo = alloc_table.size; foo--;) {
-		fprintf(fd, "%s/%d\t%d\t", mo_ptr(alloc_table.entries[foo])->fn, mo_ptr(alloc_table.entries[foo])->line, mo_ptr(alloc_table.entries[foo])->size);
-		for (bar = 0; bar<mo_ptr(alloc_table.entries[foo])->size; bar++)
-			fprintf(fd, " %x", (unsigned char)(((char*)(alloc_table.entries[foo]))[bar]));
-		fprintf(fd, "\n");
+		psize = strlen(*ptr);
+		ssize = strlen(src);
+		msize = psize + ssize + 1;
+
+		RESIZE(*ptr, char, msize);
+		strlcat(psize + *ptr, src, msize - psize);
+		return (*ptr);
 	}
-	fclose(fd);
-#endif
+
+	return (*ptr = malloc_strdup(src));
 }
+
+/*
+ * malloc_strcat_ues:  Just as with malloc_strcat, append 'src' to the end
+ * of '*dest', optionally dequoting (not copying backslashes from) 'src' 
+ * pursuant to the following rules:
+ *
+ * special == empty_string	De-quote all characters (remove all \'s)
+ * special == NULL		De-quote nothing ('src' is literal text)
+ * special is anything else	De-quote only \X where X is one of the
+ *				characters in 'special'.
+ *
+ * Examples where: dest == "one" and src == "t\w\o"
+ *	special == empty_string		result is "one two"
+ *					(remove all \'s)
+ *	special == NULL			result is "one t\w\o"
+ *					(remove no \'s)
+ *	special == "lmnop"		result is "one t\wo"
+ *					(remove the \ before o, but not w,
+ *					 because "o" is in "lmnop")
+ *
+ * "ues" stands for "UnEscape Special" and was written to replace the old
+ * ``strmcat_ue'' which had string length limit problems.  
+ *  The previous name,
+ * 'm_strcat_ues' was changed becuase ISO C does not allow user symbols
+ * to start with ``m_''.
+ *
+ * Just as with 'malloc_strcat', 'src' may be NULL and this function will
+ * no-op (as opposed to crashing)
+ *
+ * The technique we use here is a hack, and it's expensive, but it works.
+ * 1) Copy 'src' into a temporary buffer, removing any \'s as proscribed
+ * 2) Append the temporary buffer to '*dest'
+ *
+ * NOTES: This is the "dequoter", also known as "Quoting Hell".  Everything
+ * that removes \'s uses this function to do it.
+ */
+char *	malloc_strcat_ues (char **dest, const char *src, const char *special)
+{
+	char *workbuf, *p;
+	const char *s;
+
+	/*
+	 * The callers expect (*dest) to be an empty string if
+	 * 'src' is null or empty.
+	 */
+	if (!src || !*src)
+	{
+		malloc_strcat(dest, empty_string);
+		return *dest;
+	}
+
+	/* If we're not dequoting, cut it short and return. */
+	if (special == NULL)
+	{
+		malloc_strcat(dest, src);
+		return *dest;
+	}
+
+	/* 
+	 * Set up a working buffer for our copy.
+	 * Reserve two extra spaces because the algorithm below
+	 * may copy two nuls to 'workbuf', and we need the space
+	 * for the second nul.
+	 */
+	workbuf = alloca(strlen(src) + 2);
+
+	/* Walk 'src' looking for characters to dequote */
+	for (s = src, p = workbuf; ; s++, p++)
+	{
+	    /* 
+	     * If we see a backslash, it is not at the end of the
+	     * string, and the character after it is contained in 
+	     * 'special', then skip the backslash.
+	     */
+	    if (*s == '\\')
+	    {
+		/*
+		 * If we are doing special dequote handling,
+		 * and the \ is not at the end of the string, 
+		 * and the character after it is contained
+		 * within ``special'', skip the \.
+		 */
+		if (special != empty_string)
+		{
+		    /*
+		     * If this character is handled by 'special', then
+		     * copy the next character and either continue to
+		     * the next character or stop if we're done.
+		     */
+		    if (s[1] && strchr(special, s[1]))
+		    {
+			if ((*p = *++s) == 0)
+			    break;
+			else
+			    continue;
+			/* NOTREACHED */
+		    }
+		}
+
+		/*
+		 * BACKWARDS COMPATABILITY:
+		 * In any case where \n, \p, \r, and \0 are not 
+		 * explicitly caught by 'special', we have to 
+		 * convert them to \020 (dle) to maintain backwards
+		 * compatability.
+		 */
+		if (s[1] == 'n' || s[1] == 'p' || 
+		    s[1] == 'r' || s[1] == '0')
+		{
+			s++;			/* Skip the \ */
+			*p = '\020';		/* Copy a \n */
+			continue;
+		}
+
+		/*
+		 * So it is not handled by 'special' and it is not
+		 * a legacy escape.  So we either need to copy or ignore
+		 * this \ based on the value of special.  If "special"
+		 * is empty_string, we remove it.  Otherwise, we keep it.
+		 */
+		if (special == empty_string)
+			s++;
+
+		/*
+		 * Copy this character (or in the above case, the character
+		 * after the \). If we copy a nul, then immediately stop the 
+		 * process here!
+		 */
+		if ((*p = *s) == 0)
+			break;
+	    }
+
+	    /* 
+	     * Always copy any non-slash character.
+	     * Stop when we reach the nul.
+	     */
+	    else
+		if ((*p = *s) == 0)
+			break;
+	}
+
+	/*
+	 * We're done!  Append 'workbuf' to 'dest'.
+	 */
+	malloc_strcat(dest, workbuf);
+	return *dest;
+}
+
+char *	malloc_strcat_word (char **ptr, const char *word_delim, const char *word, int extended)
+{
+	/* You MUST turn on /xdebug dword to get double quoted words */
+	if (extended == DWORD_DWORDS && !(x_debug & DEBUG_DWORD))
+		return malloc_strcat_wordlist(ptr, word_delim, word);
+	if (extended == DWORD_EXTRACTW && !(x_debug & DEBUG_EXTRACTW))
+		return malloc_strcat_wordlist(ptr, word_delim, word);
+	if (extended == DWORD_NO)
+		return malloc_strcat_wordlist(ptr, word_delim, word);
+
+	if (word && *word)
+	{
+		if (*ptr && **ptr)
+			malloc_strcat(ptr, word_delim);
+
+		/* Remember, any double quotes therein need to be quoted! */
+		if (strpbrk(word, word_delim))
+		{
+			char *	oofda = NULL;
+			size_t	oofda_siz;
+
+			oofda_siz = strlen(word) * 2 + 2;
+			oofda = alloca(oofda_siz);
+			escape_chars(word, "\"", oofda, oofda_siz);
+			malloc_sprintf(ptr, "\"%s\"", oofda);
+		}
+		else
+			malloc_strcat(ptr, word);
+	}
+
+	return *ptr;
+}
+
+/*
+ * malloc_strcat_wordlist: Append a word list to another word list using a delimiter
+ *
+ * Arguments:
+ *  'ptr' - A pointer to a variable pointer that is either NULL or a valid
+ *		heap pointer which shall contain a valid C string which 
+ *		represents a word list (words separated by delimiters)
+ *  'word_delim' - The delimiter to use to separate (*ptr) from 'word_list'.
+ *		May be NULL if no delimiter is desired.
+ *  'word_list' - The word list to append to (*ptr).
+ *		May be NULL.
+ *
+ * Return value:
+ *  If "wordlist" is either NULL or a zero-length string, this function
+ *	does nothing, and returns the original value of (*ptr).
+ *  If "wordlist" is not NULL and not a zero-length string, and (*ptr) is
+ *	either NULL or a zero-length string, (*ptr) is set to "wordlist",
+ *	and the new value of (*ptr) is returned.
+ *  If "wordlist" is not NULL and not a zero-length string, and (*ptr) is
+ *	not NULL and not a zero-length string, (*ptr) is set to the 
+ *	catenation of (*ptr), 'word_delim', and 'wordlist' and is the
+ *	return value.  
+ *  This function will not return (panic) if (*ptr) is not NULL and is 
+ *	not a valid heap pointer.
+ *
+ * Notes:
+ *  The idea of this function is given two word lists, either of which 
+ *	may contain zero or more words, paste them together using a
+ *	delimiter, which for word lists, is usually a space, but could
+ *	be any character.
+ *  Unless "wordlist" is NULL or a zero-length string, the original value
+ *	of (*ptr) is invalidated and may not be used after this function
+ *	returns.
+ *  You must deallocate the space later by passing (ptr) to the new_free() 
+ *	function.
+ *  A WORD LIST IS CONSIDERED TO HAVE ONE ELEMENT IF IT HAS ANY CHARACTERS
+ *	EVEN IF THAT CHARACTER IS A DELIMITER (ie, a space).
+ */
+char *	malloc_strcat_wordlist (char **ptr, const char *word_delim, const char *wordlist)
+{
+	/* XXX is this right? */
+	if (!ptr)
+		return NULL;
+
+	if (wordlist && *wordlist)
+	{
+	    if (*ptr && **ptr)
+		malloc_strcat(ptr, nonull(word_delim));
+	    return malloc_strcat(ptr, wordlist);
+	}
+	else
+	    return *ptr;
+}
+
+/*
+ * strext: Make a copy of the initial part of a string
+ *
+ * Arguments:
+ *	str 	 - (INPUT) A string you want to make a copy of
+ *	numbytes - (INPUT) The number of bytes you want to copy
+ *
+ * Return value:
+ *	Non-NULL - A malloc()ed string containing the first 'numbytes' of 'str'.
+ *	           YOU OWN THIS STRING.  YOU MUST NEW_FREE() IT.
+ *	NULL	 - Either 'str' or 'numbytes' is unacceptable.
+ *		   You must be prepared to handle this.
+ */
+char *	malloc_strext (const char *str, ptrdiff_t numbytes)
+{
+	char *	retval;
+	int	i;
+
+	if (numbytes <= 0)
+		return NULL;
+
+	retval = new_malloc(numbytes + 1);
+	memccpy(retval, str, 0, numbytes);
+#if 0
+	for (i = 0; i < numbytes && str[i]; i++)
+		retval[i] = str[i];
+#endif
+	retval[numbytes] = 0;
+	return retval;
+}
+
+
+
+
+
+/*******************************************************************************/
 
 /*
  * Now *technically* there could be a problem if uppercase of a code point
@@ -449,6 +1085,7 @@ ssize_t	stristr (const char *start, const char *srch)
 {
 	const char *p;
 	int	srchlen;
+	size_t	srchsiz;
 	int	d;
 
 	/* There must be both a source string and a search string */
@@ -456,6 +1093,7 @@ ssize_t	stristr (const char *start, const char *srch)
 		return -1;
 
 	srchlen = quick_code_point_count(srch);
+	srchsiz = strlen(srch);
 
 	/* The search string must be shorter than the source string */
 	if (srchlen > quick_code_point_count(start))
@@ -476,7 +1114,8 @@ ssize_t	stristr (const char *start, const char *srch)
 	{
 		ptrdiff_t	offset;
 
-		if (!my_strnicmp(p, srch, srchlen))
+		/* XXX NO! XXX 'srclen' is not bytes! */
+		if (!my_strnicmp(p, srch, srchsiz))
 			return quick_code_point_index(start, p);
 
 		/*
@@ -551,39 +1190,22 @@ ssize_t	rstristr (const char *start, const char *srch)
 }
 
 
-char *	remove_trailing_spaces (char *foo, size_t *cluep)
+char *	remove_trailing_spaces (char *foo, int honor_backslash)
 {
-	char *end;
-	size_t clue = cluep?*cluep:0;
+	char *	end;
+
 	if (!*foo)
 		return foo;
 
-	end = clue + foo + strlen(clue + foo) - 1;
+	end = foo + strlen(foo) - 1;
 	while (end > foo && my_isspace(*end))
 		end--;
+
 	/* If this is a \, then it was a \ before a space.  Go forward */
-	if (end[0] == '\\' && my_isspace(end[1]))
+	if (end[0] == '\\' && honor_backslash && my_isspace(end[1]))
 		end++;
-	end[1] = 0;
-	if (cluep) 
-		*cluep = end - foo;
-	return foo;
-}
 
-char *	forcibly_remove_trailing_spaces (char *foo, size_t *cluep)
-{
-	char *end;
-	size_t clue = cluep?*cluep:0;
-	if (!*foo)
-		return foo;
-
-	end = clue + foo + strlen(clue + foo) - 1;
-	while (end > foo && my_isspace(*end))
-		end--;
-	/* Do not save spaces after \ at end of words! */
 	end[1] = 0;
-	if (cluep)
-		*cluep = end - foo;
 	return foo;
 }
 
@@ -596,7 +1218,6 @@ char *	next_in_comma_list (char *str, char **after)
 int	remove_from_comma_list (char *str, const char *what)
 {
 	char *result = NULL;
-	size_t	clue = 0;
 	size_t	bufsiz;
 	char *s, *p;
 	int	removed = 0;
@@ -612,7 +1233,7 @@ int	remove_from_comma_list (char *str, const char *what)
 			removed = 1;
 			continue;
 		}
-		malloc_strcat_wordlist_c(&result, ",", s, &clue);
+		malloc_strcat_wordlist(&result, ",", s);
 	}
 
 	if (result)
@@ -909,25 +1530,8 @@ char *	chop	(char *stuff, size_t nchar)
 	return stuff;
 }
 
-/*
- * strext: Makes a copy of the string delmited by two char pointers and
- * returns it in malloced memory.  Useful when you dont want to munge up
- * the original string with a null.  end must be one place beyond where
- * you want to copy, ie, its the first character you dont want to copy.
- */
-char *	strext (const char *start, const char *end)
-{
-	char *ptr, *retval;
 
-	ptr = retval = new_malloc(end-start+1);
-	while (start < end)
-		*ptr++ = *start++;
-	*ptr = 0;
-	return retval;
-}
-
-
-char *	strlopencat (char *dest, size_t maxlen, ...)
+char *	strlopencpy (char *dest, size_t maxlen, ...)
 {
 	va_list	args;
 	int 	size;
@@ -966,218 +1570,58 @@ char *	strlopencat (char *dest, size_t maxlen, ...)
 	return dest;
 }
 
-/*
- * malloc_strcat_ues_c:  Just as with malloc_strcat, append 'src' to the end
- * of '*dest', optionally dequoting (not copying backslashes from) 'src' 
- * pursuant to the following rules:
- *
- * special == empty_string	De-quote all characters (remove all \'s)
- * special == NULL		De-quote nothing ('src' is literal text)
- * special is anything else	De-quote only \X where X is one of the
- *				characters in 'special'.
- *
- * Examples where: dest == "one" and src == "t\w\o"
- *	special == empty_string		result is "one two"
- *					(remove all \'s)
- *	special == NULL			result is "one t\w\o"
- *					(remove no \'s)
- *	special == "lmnop"		result is "one t\wo"
- *					(remove the \ before o, but not w,
- *					 because "o" is in "lmnop")
- *
- * "ues" stands for "UnEscape Special" and was written to replace the old
- * ``strmcat_ue'' which had string length limit problems.  "_c" of course
- * means this function takes a string length clue.  The previous name,
- * 'm_strcat_ues_c' was changed becuase ISO C does not allow user symbols
- * to start with ``m_''.
- *
- * Just as with 'malloc_strcat', 'src' may be NULL and this function will
- * no-op (as opposed to crashing)
- *
- * The technique we use here is a hack, and it's expensive, but it works.
- * 1) Copy 'src' into a temporary buffer, removing any \'s as proscribed
- * 2) Append the temporary buffer to '*dest'
- *
- * NOTES: This is the "dequoter", also known as "Quoting Hell".  Everything
- * that removes \'s uses this function to do it.
- */
-char *	malloc_strcat_ues_c (char **dest, const char *src, const char *special, size_t *cluep)
-{
-	char *workbuf, *p;
-	const char *s;
-
-	/*
-	 * The callers expect (*dest) to be an empty string if
-	 * 'src' is null or empty.
-	 */
-	if (!src || !*src)
-	{
-		malloc_strcat_c(dest, empty_string, cluep);
-		return *dest;
-	}
-
-	/* If we're not dequoting, cut it short and return. */
-	if (special == NULL)
-	{
-		malloc_strcat_c(dest, src, cluep);
-		return *dest;
-	}
-
-	/* 
-	 * Set up a working buffer for our copy.
-	 * Reserve two extra spaces because the algorithm below
-	 * may copy two nuls to 'workbuf', and we need the space
-	 * for the second nul.
-	 */
-	workbuf = alloca(strlen(src) + 2);
-
-	/* Walk 'src' looking for characters to dequote */
-	for (s = src, p = workbuf; ; s++, p++)
-	{
-	    /* 
-	     * If we see a backslash, it is not at the end of the
-	     * string, and the character after it is contained in 
-	     * 'special', then skip the backslash.
-	     */
-	    if (*s == '\\')
-	    {
-		/*
-		 * If we are doing special dequote handling,
-		 * and the \ is not at the end of the string, 
-		 * and the character after it is contained
-		 * within ``special'', skip the \.
-		 */
-		if (special != empty_string)
-		{
-		    /*
-		     * If this character is handled by 'special', then
-		     * copy the next character and either continue to
-		     * the next character or stop if we're done.
-		     */
-		    if (s[1] && strchr(special, s[1]))
-		    {
-			if ((*p = *++s) == 0)
-			    break;
-			else
-			    continue;
-			/* NOTREACHED */
-		    }
-		}
-
-		/*
-		 * BACKWARDS COMPATABILITY:
-		 * In any case where \n, \p, \r, and \0 are not 
-		 * explicitly caught by 'special', we have to 
-		 * convert them to \020 (dle) to maintain backwards
-		 * compatability.
-		 */
-		if (s[1] == 'n' || s[1] == 'p' || 
-		    s[1] == 'r' || s[1] == '0')
-		{
-			s++;			/* Skip the \ */
-			*p = '\020';		/* Copy a \n */
-			continue;
-		}
-
-		/*
-		 * So it is not handled by 'special' and it is not
-		 * a legacy escape.  So we either need to copy or ignore
-		 * this \ based on the value of special.  If "special"
-		 * is empty_string, we remove it.  Otherwise, we keep it.
-		 */
-		if (special == empty_string)
-			s++;
-
-		/*
-		 * Copy this character (or in the above case, the character
-		 * after the \). If we copy a nul, then immediately stop the 
-		 * process here!
-		 */
-		if ((*p = *s) == 0)
-			break;
-	    }
-
-	    /* 
-	     * Always copy any non-slash character.
-	     * Stop when we reach the nul.
-	     */
-	    else
-		if ((*p = *s) == 0)
-			break;
-	}
-
-	/*
-	 * We're done!  Append 'workbuf' to 'dest'.
-	 */
-	malloc_strcat_c(dest, workbuf, cluep);
-	return *dest;
-}
 
 /*
  * normalize_filename: replacement for expand_twiddle
  *
- * This is a front end to realpath(), has the same signature, except
- * it expands twiddles for me, and it returns 0 or -1 instead of (char *).
+ * Arguments:
+ *	str	- (INPUT) A filename which may begin with a '~/' or '~user/' segment
+ *			  or symlinks or "." or ".." segments.
+ *	result	- (OUTPUT) The Fully Qualified Canonical Path to 'str', which includes
+ *		  resolving the "~ segment" and any symlinks.
+ * Important!
+ *	- 'str' and 'result' must point to different buffers
+ *
+ * Return value:
+ *	 0 - Success ('result' contains the FWCP of 'str')
+ *	-1 - Failure ('result' was not changed)
+ *	     - 'str' does not resolve to an actual file that exists
+ *
+ * IMPORTANT!
+ *   You must have some sort of fallback plan if this fails!
+ *   Do not just ignore the return value, or use 'result' if it fails!
  */
 int	normalize_filename (const char *str, Filename result)
 {
 	Filename workpath;
-	char *	pathname;
-	char *	rest;
-	struct	passwd *entry;
 
-	if (*str == '~')
-	{
-		/* make a copy of the path we can make changes to */
-		pathname = LOCAL_COPY(str + 1);
-
-		/* Stop the tilde-expansion at the first / (or nul) */
-		if ((rest = strchr(pathname, '/')))
-			*rest++ = 0;
-
-		/* Expand ~ to our homedir, ~user to user's homedir */
-		if (*pathname) {
-			if ((entry = getpwnam(pathname)) == NULL) {
-			    snprintf(result, PATH_MAX + 1, "~%s", pathname);
-			    return -1;
-			}
-			strlcpy(workpath, entry->pw_dir, sizeof(workpath));
-		} else
-			strlcpy(workpath, my_path, sizeof(workpath));
-
-		/* And tack on whatever is after the first / */
-		if (rest)
-		{
-			strlcat(workpath, "/", sizeof(workpath));
-			strlcat(workpath, rest, sizeof(workpath));
-		}
-
-		str = workpath;
-	}
+	if (expand_twiddle(str, workpath))
+		return -1;
 
 	if (realpath(str, result) == NULL)
-	{
-		/* 
-		 * We don't know what is in 'result' 
-		 * if realpath(3) fails, so let's make
-		 * it an empty string so it can't possibly
-		 * be a valid filename
-		 */
-		*result = 0;
 		return -1;
-	}
 
 	return 0;
 }
 
 /* 
- * expand_twiddle: expands ~ in pathnames.
+ * expand_twiddle: expands ~ in pathnames, when the pathname does not 
+ * 		   necessarily refer to a definite file
  *
- * XXX WARNING XXX 
+ * Arguments:
+ *	str	- (INPUT) A filename which may begin with a '~/' or '~user/' segment
+ *	result	- (OUTPUT) The value of 'str' with the "~ portion" replaced with its
+ *		  actual directory name.
+ * Important!
+ *	'str' and 'result' must point to different buffers.
  *
- * It is perfectly valid for (str == *result)!  You must NOT change
- * '*result' until you have first copied 'str' to 'buffer'!  If you
- * do not do this, you will corrupt the result!  You have been warned!
+ * Return value:
+ *	 0 -  Success (result has been modified)
+ *	-1 -  Failure (result has not been modified)
+ *	       - 'str' refers to '~user/' where 'user' doesn't exist.
+ *
+ * Note: It is not required that 'str' refer to a file that actually exists.
+ * If you need to know if 'str' is valid, use normalize_filename() instead.
  */
 int	expand_twiddle (const char *str, Filename result)
 {
@@ -1188,9 +1632,7 @@ int	expand_twiddle (const char *str, Filename result)
 	/* Handle filenames without twiddles to expand */
 	if (*str != '~')
 	{
-		/* Only do the copy if the destination is not the source */
-		if (str != result)
-			strlcpy(result, str, PATH_MAX + 1);
+		strlcpy(result, str, sizeof(Filename));
 		return 0;
 	}
 
@@ -1201,7 +1643,7 @@ int	expand_twiddle (const char *str, Filename result)
 		strlcpy(buffer, my_path, sizeof(buffer));
 		strlcat(buffer, str, sizeof(buffer));
 
-		strlcpy(result, buffer, PATH_MAX + 1);
+		strlcpy(result, buffer, sizeof(Filename));
 		return 0;
 	}
 
@@ -1217,7 +1659,7 @@ int	expand_twiddle (const char *str, Filename result)
 			strlcat(buffer, rest, sizeof(buffer));
 		}
 
-		strlcpy(result, buffer, PATH_MAX + 1);
+		strlcpy(result, buffer, sizeof(Filename));
 		return 0;
 	}
 
@@ -1544,7 +1986,7 @@ int	path_search (const char *name, const char *xpath, Filename result)
 	    {
 		if (file_exists(candidate))
 		{
-			strlcpy(result, candidate, PATH_MAX + 1);
+			strlcpy(result, candidate, sizeof(Filename));
 			return 0;
 		}
 	    }
@@ -1561,7 +2003,7 @@ int	path_search (const char *name, const char *xpath, Filename result)
 			continue;
 
 		if (file_exists(candidate)) {
-			strlcpy(result, candidate, PATH_MAX + 1);
+			strlcpy(result, candidate, sizeof(Filename));
 			return 0;
 		}
 	}
@@ -1570,7 +2012,7 @@ int	path_search (const char *name, const char *xpath, Filename result)
 }
 
 /*
- * double_quote:  Copy a string, protecting some characters meant to be treated literally
+ * escape_chars:  Copy a string, protecting some characters meant to be treated literally
  *
  * Arguments:
  *	str	- Input string.  It contains some characters which are literal characters,
@@ -1600,7 +2042,7 @@ int	path_search (const char *name, const char *xpath, Filename result)
  *		it's not guaranteed to not be null terminated, either!
  *	  If the return value is < strlen(buffer) the result was truncated.
  */
-size_t	double_quote (const char *input, const char *stuff, char *output, size_t output_size)
+size_t	escape_chars (const char *input, const char *stuff, char *output, size_t output_size)
 {
 	int	everything = 0;
 	size_t	input_offset = 0;
@@ -1721,16 +2163,6 @@ static	int recursion = 0;		/* Recursion is bad */
 		irc_exit(1, "Panic: epic5-%lu:%s", commit_id, buffer);
 	else
 		longjmp(panic_jumpseat, 1);
-}
-
-/* beep_em: Not hard to figure this one out */
-void	beep_em (int beeps)
-{
-	int	cnt,
-		i;
-
-	for (cnt = beeps, i = 0; i < cnt; i++)
-		term_beep();
 }
 
 /* Not really complicated, but a handy function to have */
@@ -2224,56 +2656,6 @@ error_cleanup:
 	return NULL;
 }
 
-
-int 	fw_strcmp (comp_len_func *compar, char *v1, char *v2)
-{
-	int len = 0;
-	const char *pos = one;
-
-	while (!my_isspace(*pos))
-		pos++, len++;
-
-	return compar(v1, v2, len);
-}
-
-
-
-/* 
- * Compares the last word in 'one' to the string 'two'.  You must provide
- * the compar function.  my_stricmp is a good default.
- */
-int 	lw_strcmp(comp_func *compar, char *val1, char *val2)
-{
-	char *pos = val1 + strlen(val1) - 1;
-
-	if (pos > val1)			/* cant do pos[-1] if pos == val1 */
-		while (!my_isspace(pos[-1]) && (pos > val1))
-			pos--;
-	else
-		pos = val1;
-
-	if (compar)
-		return compar(pos, val2);
-	else
-		return my_stricmp(pos, val2);
-}
-
-/* 
- * you give it a filename, some flags, and a position, and it gives you an
- * fd with the file pointed at the 'position'th byte.
- */
-int 	opento(const char *filename, int flags, off_t position)
-{
-	int file;
-
-	if ((file = open(filename, flags, 777)) < 0)
-		return file;
-
-	lseek(file, position, SEEK_SET);
-	return file;
-}
-
-
 /* swift and easy -- returns the size of the file */
 off_t 	file_size (const char *filename)
 {
@@ -2461,77 +2843,27 @@ Timeval time_add (const Timeval t1, const Timeval t2)
 }
 
 
-const char *	plural (int number)
-{
-	return (number != 1) ? "s" : empty_string;
-}
-
-char ctime_failure[] = "ctime failed";
 const char *	my_ctime (time_t when)
 {
 	static char 	x[50];
-
-#if 0
-	if (ctime_r(&when, x))
-		chomp(x);
-	else
-		strlcpy(x, ctime_failure, sizeof(x));
-#else
 	struct tm	time_val;
 
 	time_val = *localtime(&when);
 	strftime(x, sizeof(x), "%c", &time_val);
-#endif
-
 	return x;
-}
-
-const char *	my_ltoa (long foo)
-{
-	static char buffer[BIG_BUFFER_SIZE + 1];
-	char *pos = buffer + BIG_BUFFER_SIZE - 1;
-	unsigned long absv;
-	int negative;
-
-	absv = (foo < 0) ? (unsigned long)-foo : (unsigned long)foo;
-	negative = (foo < 0) ? 1 : 0;
-
-	buffer[BIG_BUFFER_SIZE] = 0;
-	for (; absv > 9; absv /= 10)
-		*pos-- = (absv % 10) + '0';
-	*pos = (absv) + '0';
-
-	if (negative)
-		*--pos = '-';
-
-	return pos;
 }
 
 const char *	intmaxtoa (intmax_t foo)
 {
 	static char buffer[BIG_BUFFER_SIZE + 1];
-	char *	    pos = buffer + BIG_BUFFER_SIZE - 1;
-	uintmax_t   absv;
-	int	    negative;
 
-	absv = (foo < 0) ? (uintmax_t)-foo : (uintmax_t)foo;
-	negative = (foo < 0) ? 1 : 0;
-
-	buffer[BIG_BUFFER_SIZE] = 0;
-	for (; absv > 9; absv /= 10)
-		*pos-- = (absv % 10) + '0';
-	*pos = (absv) + '0';
-
-	if (negative)
-		*--pos = '-';
-
-	return pos;
+	snprintf(buffer, sizeof(buffer), "%jd", foo);
+	return buffer;
 }
 
 const char *	ftoa (double foo)
 {
 	static char buffer [BIG_BUFFER_SIZE + 1];
-	extern double fmod (double, double);
 
 	if (get_int_var(FLOATING_POINT_MATH_VAR)) {
 		snprintf(buffer, sizeof buffer, "%.*g", 
@@ -2642,21 +2974,6 @@ int	parse_number (char **str)
 	return (int)ret;
 }
 
-char *	chop_word (char *str)
-{
-	char *end = str + strlen(str) - 1;
-
-	while (my_isspace(*end) && (end > str))
-		end--;
-	while (!my_isspace(*end) && (end > str))
-		end--;
-
-	if (end >= str)
-		*end = 0;
-
-	return str;
-}
-
 char *	skip_spaces (char *str)
 {
 	while (str && *str && isspace(*str))
@@ -2664,6 +2981,31 @@ char *	skip_spaces (char *str)
 	return str;
 }
 
+/*
+ * split_args - Split a string into an array of strings, each sub-string
+ *		being one argument to an ircII command (think argv/argc)
+ *
+ * Arguments:
+ *	str	- (INPUT) A string of command arguments (usually the 'args' param)
+ *		  (OUTPUT) This string will be sliced and diced with nuls.
+ *		    YOU OWN THIS STRING.
+ *	to	- (INPUT) A string array
+ *		  (OUTPUT) Elements of this array will contain pointers to each
+ *			word inside 'str'.  The array will be NULL terminated.
+ *		    YOU OWN THE ARRAY - IT WILL BE POINTING TO 'str'
+ *	maxargs	- (INPUT) How big 'to' is.  If 'to' isn't big enough, too bad.
+ *
+ * Return value:
+ *	How many args were in 'str' that were stored to 'to'.
+ *
+ * Notes:
+ *	Remember, you own everything.  Unlike the other splitters, this does 
+ * 	not malloc() any new memory.
+ *
+ *	Remember - the values in 'to' point to 'str' -- which means they are 
+ *	effectively 'const'.  Do not attempt to change the strings in to[x],
+ *	this will break the other values of to[y]!
+ */
 int	split_args (char *str, char **to, size_t maxargs)
 {
 	size_t	counter;
@@ -2694,11 +3036,30 @@ int	split_args (char *str, char **to, size_t maxargs)
 }
 
 /*
- * Break down a string containing a word list (words defined by 'extended')
- * into an array of those words.  Double quotes, if any, that surround the
- * double quoted words are removed.
+ * split_wordlist - Split a string into an array of strings, each sub-string
+ *		    being one "word" according to 'extended'
+ *
+ * Arguments:
+ *	str	- (INPUT) A string containing a word list
+ *		- (OUTPUT) The string will be sliced and diced with nuls.
+ *		    YOU OWN THIS STRING
+ *	to	- (OUTPUT) *to will contain a new (char **) array that
+ *		    contains each word in 'str'.
+ *		    YOU OWN THIS ARRAY - DON'T FORGET TO NEW_FREE() IT.
+ *		    THE PREVIOUS VALUE IS DISCARDED.  Watch out for 
+ *		    memory leaks!
+ *	extended - (INPUT) 0 - Do not honor double-quoted words
+ *			   1 - Honor double-quoted words
+ *
+ * Return value:
+ *	The number of words in 'to'  (think argv/argc)
+ *
+ * Notes:
+ *	Remember - the values in 'to' point to 'str' -- which means they are 
+ *	effectively 'const'.  Do not attempt to change the strings in to[x],
+ *	this will break the other values of to[y]!
  */
-int 	splitw (char *str, char ***to, int extended)
+int 	split_wordlist (char *str, char ***to, int extended)
 {
 	int numwords = count_words(str, extended, "\"");
 	int counter;
@@ -2724,11 +3085,18 @@ int 	splitw (char *str, char ***to, int extended)
 /*
  * unsplitw implicitly depends on /xdebug dword!
  */
+/*
+ * unsplit - Consolidate an array of strings into a new string.
+ * 	XXX TODO XXX This should take a delimiter
+ *
+ * Arguments:
+ *	container - A pointer to an array of strings 
+ *
+ */
 char *	unsplitw (char ***container, int howmany, int extended)
 {
 	char *retval = NULL;
 	char **str;
-	size_t clue = 0;
 
 	if (!container || !*container || !**container)
 		return NULL;
@@ -2736,46 +3104,12 @@ char *	unsplitw (char ***container, int howmany, int extended)
 	while (howmany)
 	{
 		if (*str && **str)
-			malloc_strcat_word_c(&retval, space, *str, extended, &clue);
+			malloc_strcat_word(&retval, space, *str, extended);
 		str++, howmany--;
 	}
 
 	new_free((char **)container);
 	return retval;
-}
-
-/*
- * Break down a delimited string and return it in a form suitable for passing
- * back to unsplitw().  This function works on delimiters and not on words.
- * The entire point is for stuff like PATH.
- */
-int 	split_string (char *str, char ***to, char delimiter)
-{
-	int	parts;
-	int	counter;
-	char *	x;
-
-	parts = count_char(str, delimiter) + 1;
-	*to = (char **)new_malloc(sizeof(char *) * parts);
-	for (counter = 0; counter < parts; counter++)
-	{
-		if ((x = strchr(str, delimiter)))
-		{
-			/* 
-			 * IF AND ONLY IF 'delimiter' is not null,
-			 * advance past it.  If it is null, then 
-			 * there is already a null here, and we
-			 * definitely do not want to walk off 
-			 * the end! 
-			 */
-			if (delimiter != 0) 
-				*x++ = 0;
-		}
-		(*to)[counter] = str;
-		str = x;
-	}
-
-	return parts;
 }
 
 /*
@@ -2986,51 +3320,6 @@ long	my_atol (const char *str)
 		return 0L;
 }
 
-char *	malloc_dupchar (int i)
-{
-	char 	c = (char) i;	/* blah */
-	char *	ret = new_malloc(2);
-
-	ret[0] = c;
-	ret[1] = 0;
-	return ret;
-}
-
-/*
- * This checks to see if ``root'' is a proper subname for ``var''.
- */
-int 	is_root (const char *root, const char *var, int descend)
-{
-	int rootl, varl;
-
-	/* ``root'' must end in a dot */
-	rootl = strlen(root);
-	if (rootl == 0)
-		return 0;
-	if (root[rootl - 1] != '.')
-		return 0;
-
-	/* ``root'' must be shorter than ``var'' */
-	varl = strlen(var);
-	if (varl <= rootl)
-		return 0;
-
-	/* ``var'' must contain ``root'' as a leading subset */
-	if (my_strnicmp(root, var, rootl))
-		return 0;
-
-	/* 
-	 * ``var'' must not contain any additional dots
-	 * if we are checking for the current level only
-	 */
-	if (!descend && strchr(var + rootl, '.'))
-		return 0;
-
-	/* Looks like its ok */
-	return 1;
-}
-
-
 /* Returns the number of characters they are equal at. */
 size_t 	streq (const char *str1, const char *str2)
 {
@@ -3042,41 +3331,8 @@ size_t 	streq (const char *str1, const char *str2)
 	return cnt;
 }
 
-char *	malloc_strndup (const char *str, size_t len)
-{
-	char *retval = new_malloc(len + 1);
-	strlcpy(retval, str, len + 1);
-	return retval;
-}
-
-char *	prntdump(const char *ptr, size_t size)
-{
-	size_t ptridx, dumpidx = 0;
-static char dump[640];
-
-	memset(dump, 0, 640);
-
-	for (ptridx = 0; ptridx < size && ptridx < 64; ptridx++)
-	{
-	    if (!isgraph(ptr[ptridx]) && !isspace(ptr[ptridx]))
-	    {
-		dump[dumpidx++] = '<';
-		snprintf(dump + dumpidx, 3, "%02hhX", (unsigned char)(ptr[ptridx]));
-		dumpidx += 2;
-		dump[dumpidx++] = '>';
-	    }
-	    else
-		dump[dumpidx++] = ptr[ptridx];
-	}
-
-	if (ptridx == 64)
-		dump[dumpidx++] = '>';
-	dump[dumpidx] = 0;
-	return dump;
-}
-
 /* XXXX this doesnt belong here. im not sure where it goes, though. */
-char *	get_userhost (void)
+char *	get_my_fallback_userhost (void)
 {
 	static char uh[BIG_BUFFER_SIZE];
 
@@ -3108,54 +3364,6 @@ double	time_to_next_interval (int interval)
 }
 
 
-/* Fancy attempt to compensate for broken time_t's */
-double	time_to_next_minute (void)
-{
-static	int 	which = 0;
-	Timeval	right_now, then;
-
-	get_time(&right_now);
-
-	/* 
-	 * The first time called, try to determine if the system clock
-	 * is an exact multiple of 60 at the top of every minute.  If it
-	 * is, then we will use the "60 trick" to optimize calculations.
-	 * If it is not, then we will do it the hard time every time.
-	 */
-	if (which == 0)
-	{
-		time_t	blargh;
-		struct tm *now_tm;
-
-		blargh = right_now.tv_sec;
-		now_tm = gmtime(&blargh);
-
-		if (!which)
-		{
-			if (now_tm->tm_sec == right_now.tv_sec % 60)
-				which = 1;
-			else
-				which = 2;
-		}
-	}
-
-	then.tv_usec = 1000000 - right_now.tv_usec;
-	if (which == 1)
-		then.tv_sec = 60 - (right_now.tv_sec + 1) % 60;
-	else 	/* which == 2 */
-	{
-		time_t	blargh;
-		struct tm *now_tm;
-
-		blargh = right_now.tv_sec;
-		now_tm = gmtime(&blargh);
-
-		then.tv_sec = 60 - (now_tm->tm_sec + 1) % 60;
-	}
-
-	return (double)then.tv_sec + (double)then.tv_usec / 1000000;
-}
-
 /*
  * An strcpy that is guaranteed to be safe for overlaps.
  * Warning: This may _only_ be called when one and two overlap!
@@ -3170,22 +3378,6 @@ char *	ov_strcpy (char *str1, const char *str2)
 	}
 	return str1;
 }
-
-
-/*
- * Its like strcspn, except the second arg is NOT a string.
- */
-size_t 	ccspan (const char *string, int s)
-{
-	size_t count = 0;
-	char c = (char) s;
-
-	while (string && *string && *string != c)
-		string++, count++;
-
-	return count;
-}
-
 
 int 	last_char (const char *string)
 {
@@ -3209,21 +3401,6 @@ int	charcount (const char *string, char what)
 
 	return x;
 }
-
-const char *	strfill (char c, int num)
-{
-	static char buffer[BIG_BUFFER_SIZE / 4 + 1];
-	int i;
-
-	if (num > BIG_BUFFER_SIZE / 4)
-		num = BIG_BUFFER_SIZE / 4;
-
-	for (i = 0; i < num; i++)
-		buffer[i] = c;
-	buffer[i] = 0;
-	return buffer;
-}
-
 
 char *	chomp (char *s)
 {
@@ -3375,176 +3552,6 @@ static 	char 	*mystuff = NULL;
 	return 0;
 }
 
-
-int	figure_out_domain (char *fqdn, char **host, char **domain, int *ip)
-{
-	char 	*firstback, 
-		*secondback, 
-		*thirdback, 
-		*fourthback;
-	char	*endstring;
-	char	*adot;
-	int	number;
-
-	/* determine if we have an IP, use dot to hold this */
-	/* is_number is better than my_atol since floating point
-	 * base 36 numbers are pretty much invalid as IPs.
-	 */
-	if ((adot = strrchr(fqdn, '.')) && is_number(adot + 1))
-		*ip = 1;
-	else
-		*ip = 0;
-
-/*
- * STAGE TWO -- EXTRACT THE HOST AND DOMAIN FROM FQDN
- */
-
-	/*
-	 * At this point, 'fqdn' points what what we think the hostname
-	 * is.  We chop it up into discrete parts and see what we end up with.
-	 */
-	endstring = fqdn + strlen(fqdn);
-	firstback = strnrchr(fqdn, '.', 1);
-	secondback = strnrchr(fqdn, '.', 2);
-	thirdback = strnrchr(fqdn, '.', 3);
-	fourthback = strnrchr(fqdn, '.', 4);
-
-	/* Track foo@bar or some such thing. */
-	if (!firstback)
-	{
-		*host = fqdn;
-		return 0;
-	}
-
-	/*
-	 * IP address (A.B.C.D)
-	 */
-	if (my_atol(firstback + 1))
-	{
-		*domain = fqdn;
-
-		number = my_atol(fqdn);
-		if (number < 128)
-			*host = thirdback;
-		else if (number < 192)
-			*host = secondback;
-		else
-			*host = firstback;
-
-		if (!*host)
-			return -1;		/* Invalid hostname */
-
-		**host = 0;
-		(*host)++;
-	}
-	/*
-	 *	(*).(*.???) 
-	 *			Handles *.com, *.net, *.edu, etc
-	 */
-	else if (secondback && (endstring - firstback == 4))
-	{
-		*host = fqdn;
-		*domain = secondback;
-		**domain = 0;
-		(*domain)++;
-	}
-	/*
-	 *	(*).(*.k12.??.us)
-	 *			Handles host.school.k12.state.us
-	 */
-	else if (fourthback && 
-			(firstback - secondback == 3) &&
-			!strncmp(thirdback, ".k12.", 5) &&
-			!strncmp(firstback, ".us", 3))
-	{
-		*host = fqdn;
-		*domain = fourthback;
-		**domain = 0;
-		(*domain)++;
-	}
-	/*
-	 *	()(*.k12.??.us)
-	 *			Handles school.k12.state.us
-	 */
-	else if (thirdback && !fourthback && 
-			(firstback - secondback == 3) &&
-			!strncmp(thirdback, ".k12.", 5) &&
-			!strncmp(firstback, ".us", 3))
-	{
-		*host = endstr(fqdn);
-		*domain = fqdn;
-	}
-	/*
-	 *	(*).(*.???.??)
-	 *			Handles host.domain.com.au
-	 */
-	else if (thirdback && 
-			(endstring - firstback == 3) &&
-			(firstback - secondback == 4))
-	{
-		*host = fqdn;
-		*domain = thirdback;
-		**domain = 0;
-		(*domain)++;
-	}
-	/*
-	 *	()(*.???.??)
-	 *			Handles domain.com.au
-	 */
-	else if (secondback && !thirdback && 
-			(endstring - firstback == 3) &&
-		 	(firstback - secondback == 4))
-	{
-		*host = endstr(fqdn);
-		*domain = fqdn;
-	}
-	/*
-	 *	(*).(*.??.??)
-	 *			Handles host.domain.co.uk
-	 */
-	else if (thirdback && 
-			(endstring - firstback == 3) &&
-			(firstback - secondback == 3))
-	{
-		*host = fqdn;
-		*domain = thirdback;
-		**domain = 0;
-		(*domain)++;
-	}
-	/*
-	 *	()(*.??.??)
-	 *			Handles domain.co.uk
-	 */
-	else if (secondback && !thirdback &&
-			(endstring - firstback == 3) &&
-			(firstback - secondback == 3))
-	{
-		*host = endstr(fqdn);
-		*domain = fqdn;
-	}
-	/*
-	 *	(*).(*.??)
-	 *			Handles domain.de
-	 */
-	else if (secondback && (endstring - firstback == 3))
-	{
-		*host = fqdn;
-		*domain = secondback;
-		**domain = 0;
-		(*domain)++;
-	}
-	/*
-	 *	Everything else...
-	 */
-	else
-	{
-		*host = endstr(fqdn);
-		*domain = fqdn;
-	}
-
-	return 0;
-}
-
 /*
  * count_char - count the number of instances of a byte in a string.
  *
@@ -3571,51 +3578,25 @@ int 	count_char (const char *src, const char look)
 	return cnt;
 }
 
-char *	strnrchr(char *start, char which, int howmany)
-{
-	char *ends = start + strlen(start);
-
-	while (ends > start && howmany)
-	{
-		if (*--ends == which)
-			howmany--;
-	}
-	if (ends == start)
-		return NULL;
-	else
-		return ends;
-}
-
 /*
- * This replaces some number of numbers (1 or more) with a single asterisk.
+ * strlpcat - Combine a sprintf() and strlcat().
+ *
+ * Arguments:
+ *	source	- A C string to be appended to
+ *	size	- The size of 'source'
+ *	format	- A printf() format
+ *	...	- Arguments matching the 'format'
+ *
+ * Return value:
+ *	'source' is always returned, even on error
+ *
+ * Weakness:
+ *	The string resulting from 'format' may not exceed
+ *	BIG_BUFFER_SIZE (2048 bytes).  Of course, this is heinous.
+ *
+ * 	XXX - I really hate these functions that just combine two 
+ * 	other trivial functions, just to make the caller pretty.
  */
-void	mask_digits (char **host)
-{
-	char	*src_ptr;
-	char 	*retval, *retval_ptr;
-	size_t	size;
-
-	size = strlen(*host) + 1;
-	retval = retval_ptr = alloca(size);
-	src_ptr = *host;
-
-	while (*src_ptr)
-	{
-		if (isdigit(*src_ptr))
-		{
-			while (*src_ptr && isdigit(*src_ptr))
-				src_ptr++;
-
-			*retval_ptr++ = '*';
-		}
-		else
-			*retval_ptr++ = *src_ptr++;
-	}
-
-	*retval_ptr = 0;
-	strlcpy(*host, retval, size);
-}
-
 char *	strlpcat (char *source, size_t size, const char *format, ...)
 {
 	va_list args;
@@ -3892,67 +3873,6 @@ summary:
 	return retval;
 }
 
-
-size_t	strlcpy_c (char *dst, const char *src, size_t size, size_t *cluep)
-{
-	size_t	retval;
-
-	retval = strlcpy(dst, src, size);
-	if (retval > size - 1)
-		*cluep = size - 1;
-	else
-		*cluep = retval;
-	return retval;
-}
-
-size_t	strlcat_c (char *dst, const char *src, size_t size, size_t *cluep)
-{
-	size_t	retval;
-	size_t	real_size;
-	char *	real_dst;
-
-	real_dst = dst + *cluep;
-	real_size = size - *cluep;
-
-	retval = strlcat(real_dst, src, real_size);
-	if (retval + *cluep > size - 1)
-		*cluep = size - 1;
-	else
-		*cluep = retval + *cluep;
-	return retval;
-}
-
-char *	strlopencat_c (char *dest, size_t maxlen, size_t *cluep, ...)
-{
-	va_list	args;
-	char *	this_arg = NULL;
-	size_t	spare_clue;
-
-	if (cluep == NULL)
-	{
-		spare_clue = strlen(dest);
-		cluep = &spare_clue;
-	}
-
-	va_start(args, cluep);
-	for (;;)
-	{
-		/* Grab the next string, stop if no more */
-		if (!(this_arg = va_arg(args, char *)))
-			break;
-
-		/* Add this string to the end, adjusting the clue */
-		strlcat_c(dest, this_arg, maxlen, cluep);
-
-		/* If we reached the end of our space, stop here. */
-		if (*cluep >= maxlen - 1)
-			break;
-	}
-
-	va_end(args);
-	return dest;
-}
-
 int     is_string_empty (const char *str) 
 {
         while (str && *str && isspace(*str))
@@ -3962,600 +3882,6 @@ int     is_string_empty (const char *str)
                 return 0;
  
         return 1;
-}
-
-/*
- * malloc_strcpy_c: Make a copy of a string into heap space, which may
- *	optionally be provided, with an optional clue.
- *
- * Arguments:
- *  'ptr' - A pointer to a variable pointer that is either:
- *	    1) The value NULL or a valid heap pointer to space which is not
- *		large enough to hold 'src', in which case heap space will be
- *		allocated, and the original value of (*ptr) will be invalidated.
- *	    2) A valid heap pointer to space which is large enough to hold 'src'
- *		in which case 'src' will be copied to the heap space.
- *  'src' - The string to be copied.  If NULL, (*ptr) is invalidated (freed).
- *
- * Return value:
- *  If 'src' is NULL, an invalid heap pointer.
- *  If 'src' is not NULL, a valid heap pointer that contains a copy of 'src'.
- *  (*ptr) is set to the return value.
- *  This function will not return (panic) if (*ptr) is not NULL and is 
- *	not a valid heap pointer.
- *
- * Notes:
- *  If (*ptr) is not big enough to hold 'src' then the original value (*ptr) 
- * 	will be invalidated and must not be used after this function returns.
- *  You must deallocate the space later by passing (ptr) to the new_free() 
- *	function.
- */
-char *	malloc_strcpy_c (char **ptr, const char *src, size_t *clue)
-{
-	size_t	size, size_src;
-
-	if (!src)
-	{
-		if (clue)
-			*clue = 0;
-		return new_free(ptr);	/* shrug */
-	}
-
-	if (*ptr)
-	{
-		size = alloc_size(*ptr);
-		if (size == (size_t) FREED_VAL)
-			panic(1, "free()d pointer passed to malloc_strcpy");
-
-		/* No copy neccesary! */
-		if (*ptr == src)
-			return *ptr;
-
-		size_src = strlen(src);
-		if (size > size_src)
-		{
-			strlcpy(*ptr, src, size);
-			if (clue)
-				*clue = size_src;
-			return *ptr;
-		}
-
-		new_free(ptr);
-	}
-
-	size = strlen(src);
-	*ptr = new_malloc(size + 1);
-	strlcpy(*ptr, src, size + 1);
-	if (clue)
-		*clue = size;
-	return *ptr;
-}
-
-/*
- * malloc_strcat_c: Append a copy of 'src' to the end of '*ptr', with an 
- *	optional "clue" (length of (*ptr))
- *
- * Arguments:
- *  'ptr' - A pointer to a variable pointer that is either:
- *	    1) The value NULL or a valid heap pointer to space which is not
- *		large enough to hold 'src', in which case heap space will be
- *		allocated, and the original value of (*ptr) will be invalidated.
- *	    2) A valid heap pointer to space which shall contain a valid
- *		nul-terminated C string.
- *  'src' - The string to be copied.  If NULL, this function is a no-op.
- *  'cluep' - A pointer to an integer holding the string length of (*ptr).
- *		may be NULL.
- *
- * Return value:
- *  If 'src' is NULL, the original value of (*ptr) is returned.
- *  If 'src' is not NULL, a valid heap pointer that contains the catenation 
- *	of the string originally contained in (*ptr) and 'src'.
- *  (*ptr) is set to the return value.
- *  This function will not return (panic) if (*ptr) is not NULL and is 
- *	not a valid heap pointer.
- *  If 'cluep' is not NULL, it will be set to the string length of the 
- *	new value of (*ptr).
- *
- * Notes:
- *  If (*ptr) is not big enough to take on the catenated string, then the
- *	original value (*ptr) will be invalidated and must not be used after
- *	this function returns.
- *  This function needs to determine how long (*ptr) is, and unless you 
- *	provide 'cluep' it will do a strlen(*ptr).  If (*ptr) is quite
- *	large, this could be an expensive operation.  The use of a clue
- *	is an optimization option.
- *  If you don't want to bother with the 'clue', use the malloc_strcat macro.
- *  You must deallocate the space later by passing (ptr) to the new_free() 
- *	function.
- */
-char *	malloc_strcat_c (char **ptr, const char *src, size_t *cluep)
-{
-	size_t  msize;
-	size_t  psize;
-	size_t  ssize;
-	size_t	clue = cluep ? *cluep : 0;
-
-	if (*ptr)
-	{
-		if (alloc_size(*ptr) == FREED_VAL)
-			panic(1, "free()d pointer passed to malloc_strcat");
-
-		if (!src)
-			return *ptr;
-
-		psize = clue + strlen(clue + *ptr);
-		ssize = strlen(src);
-		msize = psize + ssize + 1;
-
-		RESIZE(*ptr, char, msize);
-		if (cluep) 
-			*cluep = psize + ssize;
-		strlcat(psize + *ptr, src, msize - psize);
-		return (*ptr);
-	}
-
-	return (*ptr = malloc_strdup(src));
-}
-
-/*
- * malloc_strdup: Allocate and return a pointer to valid heap space into
- *	which a copy of 'str' has been placed.
- *
- * Arguments:
- *  'str' - The string to be copied.  If NULL, a zero length string will
- *		be copied in its place.
- *
- * Return value:
- *  If 'str' is not NULL, then a valid heap pointer containing a copy of 'str'.
- *  If 'str' is NULL, then a valid heap pointer containing a 0-length string.
- *
- * Notes:
- *  You must deallocate the space later by passing a pointer to the return
- *	value to the new_free() function.
- */
-char *	malloc_strdup (const char *str)
-{
-	char *ptr;
-	size_t size;
-
-	if (!str)
-		str = empty_string;
-
-	size = strlen(str) + 1;
-	ptr = new_malloc(size);
-	strlcpy(ptr, str, size);
-	return ptr;
-}
-
-/*
- * malloc_strdup2: Allocate and return a pointer to valid heap space into
- *	which a catenation of 'str1' and 'str2' have been placed.
- *
- * Arguments:
- *  'str1' - The first string to be copied.  If NULL, a zero-length string
- *		will be used in its place.
- *  'str2' - The second string to be copied.  If NULL, a zero-length string
- *		will be used in its place.
- *
- * Return value:
- *  A valid heap pointer containing a copy of 'str1' and 'str2' catenated 
- *	together.  'str1' and 'str2' may be substituted as indicated above.
- *
- * Notes:
- *  You must deallocate the space later by passing a pointer to the return
- *	value to the new_free() function.
- */
-char *	malloc_strdup2 (const char *str1, const char *str2)
-{
-	size_t msize;
-	char * buffer;
-
-	/* Prevent a crash. */
-	if (str1 == NULL)
-		str1 = empty_string;
-	if (str2 == NULL)
-		str2 = empty_string;
-
-	msize = strlen(str1) + strlen(str2) + 1;
-	buffer = new_malloc(msize);
-	*buffer = 0;
-	strlopencat_c(buffer, msize, NULL, str1, str2, NULL);
-	return buffer;
-}
-
-/*
- * malloc_strdup3: Allocate and return a pointer to valid heap space into
- *	which a catenation of 'str1', 'str2', and 'str3' have been placed.
- *
- * Arguments:
- *  'str1' - The first string to be copied.  If NULL, a zero-length string
- *		will be used in its place.
- *  'str2' - The second string to be copied.  If NULL, a zero-length string
- *		will be used in its place.
- *  'str3' - The third string to be copied.  If NULL, a zero-length string
- *		will be used in its place.
- *
- * Return value:
- *  A valid heap pointer containing a copy of 'str1', 'str2', and 'str3' 
- *	catenated together.  'str1', 'str2', and 'str3' may be substituted 
- *	as indicated above.
- *
- * Notes:
- *  You must deallocate the space later by passing a pointer to the return
- *	value to the new_free() function.
- */
-char *	malloc_strdup3 (const char *str1, const char *str2, const char *str3)
-{
-	size_t msize;
-	char *buffer;
-
-	if (!str1)
-		str1 = empty_string;
-	if (!str2)
-		str2 = empty_string;
-	if (!str3)
-		str3 = empty_string;
-
-	msize = strlen(str1) + strlen(str2) + strlen(str3) + 1;
-	buffer = new_malloc(msize);
-	*buffer = 0;
-	strlopencat_c(buffer, msize, NULL, str1, str2, str3, NULL);
-	return buffer;
-}
-
-/*
- * malloc_strcat2_c: Append a copy of 'str1' and 'str2'' to the end of 
- *	'*ptr', with an optional "clue" (length of (*ptr))
- *
- * Arguments:
- *  'ptr' - A pointer to a variable pointer that is either NULL or a valid
- *		heap pointer which shall contain a valid C string.
- *  'str1' - The first of two strings to be appended to '*ptr'.
- *		May be NULL.
- *  'str2' - The second of two strings to be appended to '*ptr'.
- *		May be NULL.
- *  'cluep' - A pointer to an integer holding the string length of (*ptr).
- *		May be NULL.
- *
- * Return value:
- *  The catenation of the three strings '*ptr', 'str1', and 'str2', except
- *	if either 'str1' or 'str2' are NULL, those values are ignored.
- *  (*ptr) is set to the return value.
- *  This function will not return (panic) if (*ptr) is not NULL and is 
- *	not a valid heap pointer.
- *  If 'cluep' is not NULL, it will be set to the string length of the 
- *	new value of (*ptr).
- *
- * Notes:
- *  The original value of (*ptr) is always invalidated by this function and
- *	may not be used after this function returns.
- *  This function needs to determine how long (*ptr) is, and unless you 
- *	provide 'cluep' it will do a strlen(*ptr).  If (*ptr) is quite
- *	large, this could be an expensive operation.  The use of a clue
- *	is an optimization option.
- *  If you don't want to bother with the 'clue', use the malloc_strcat2 macro.
- *  You must deallocate the space later by passing (ptr) to the new_free() 
- *	function.
- */
-char *	malloc_strcat2_c (char ** ptr, const char *str1, const char *str2, size_t * clue)
-{
-	size_t	csize;
-	size_t	msize;
-
-	csize = clue ? *clue : 0;
-	msize = csize;
-
-	if (*ptr)
-	{
-		if (alloc_size(*ptr) == FREED_VAL)
-			panic(1, "free()d pointer passed to malloc_strcat2");
-		msize += strlen(csize + *ptr);
-	}
-	if (str1)
-		msize += strlen(str1);
-	if (str2)
-		msize += strlen(str2);
-
-	/* 
-	 * XXX It's dumb to put this here, but gcc13's memory leak detector
-	 * false-positives if this is lower than here.
-	 */
-	if (clue)
-		*clue = msize;
-
-	if (!*ptr)
-	{
-		*ptr = new_malloc(msize + 1);
-		**ptr = 0;
-	}
-	else
-		RESIZE(*ptr, char, msize + 1);
-
-	if (str1)
-		strlcat(csize + *ptr, str1, msize + 1 - csize);
-	if (str2)
-		strlcat(csize + *ptr, str2, msize + 1 - csize);
-
-	return *ptr;
-}
-
-char *	malloc_strcat3_c (char **ptr, const char *str1, const char *str2, const char *str3, size_t *clue)
-{
-	size_t	csize;
-	size_t	msize;
-
-	csize = clue ? *clue : 0;
-	msize = csize;
-
-	if (*ptr)
-	{
-		if (alloc_size(*ptr) == FREED_VAL)
-			panic(1, "free()d pointer passed to malloc_strcat2");
-		msize += strlen(csize + *ptr);
-	}
-	if (str1)
-		msize += strlen(str1);
-	if (str2)
-		msize += strlen(str2);
-	if (str3)
-		msize += strlen(str3);
-
-	if (!*ptr)
-	{
-		*ptr = new_malloc(msize + 1);
-		**ptr = 0;
-	}
-	else 
-		RESIZE(*ptr, char, msize + 1);
-
-	if (str1)
-		strlcat(csize + *ptr, str1, msize + 1 - csize);
-	if (str2)
-		strlcat(csize + *ptr, str2, msize + 1 - csize);
-	if (str3)
-		strlcat(csize + *ptr, str3, msize + 1 - csize);
-	if (clue) 
-		*clue = msize;
-
-	return *ptr;
-}
-/*
- * malloc_strcat_wordlist_c: Append a word list to another word list using
- *	a delimiter, with an optional "clue" (length of (*ptr))
- *
- * Arguments:
- *  'ptr' - A pointer to a variable pointer that is either NULL or a valid
- *		heap pointer which shall contain a valid C string which 
- *		represents a word list (words separated by delimiters)
- *  'word_delim' - The delimiter to use to separate (*ptr) from 'word_list'.
- *		May be NULL if no delimiter is desired.
- *  'word_list' - The word list to append to (*ptr).
- *		May be NULL.
- *  'cluep' - A pointer to an integer holding the string length of (*ptr).
- *		May be NULL.
- *
- * Return value:
- *  If "wordlist" is either NULL or a zero-length string, this function
- *	does nothing, and returns the original value of (*ptr).
- *  If "wordlist" is not NULL and not a zero-length string, and (*ptr) is
- *	either NULL or a zero-length string, (*ptr) is set to "wordlist",
- *	and the new value of (*ptr) is returned.
- *  If "wordlist" is not NULL and not a zero-length string, and (*ptr) is
- *	not NULL and not a zero-length string, (*ptr) is set to the 
- *	catenation of (*ptr), 'word_delim', and 'wordlist' and is the
- *	return value.  
- *  This function will not return (panic) if (*ptr) is not NULL and is 
- *	not a valid heap pointer.
- *  If 'cluep' is not NULL, it will be set to the string length of the 
- *	new value of (*ptr).
- *
- * Notes:
- *  The idea of this function is given two word lists, either of which 
- *	may contain zero or more words, paste them together using a
- *	delimiter, which for word lists, is usually a space, but could
- *	be any character.
- *  Unless "wordlist" is NULL or a zero-length string, the original value
- *	of (*ptr) is invalidated and may not be used after this function
- *	returns.
- *  This function needs to determine how long (*ptr) is, and unless you 
- *	provide 'cluep' it will do a strlen(*ptr).  If (*ptr) is quite
- *	large, this could be an expensive operation.  The use of a clue
- *	is an optimization option.
- *  If you don't want to bother with the 'clue', use the 
- *	malloc_strcat_wordlist macro.
- *  You must deallocate the space later by passing (ptr) to the new_free() 
- *	function.
- *  A WORD LIST IS CONSIDERED TO HAVE ONE ELEMENT IF IT HAS ANY CHARACTERS
- *	EVEN IF THAT CHARACTER IS A DELIMITER (ie, a space).
- */
-char *	malloc_strcat_wordlist_c (char **ptr, const char *word_delim, const char *wordlist, size_t *clue)
-{
-	/* XXX is this right? */
-	if (!ptr)
-		return NULL;
-
-	if (wordlist && *wordlist)
-	{
-	    if (*ptr && **ptr)
-		return malloc_strcat2_c(ptr, word_delim, wordlist, clue);
-	    else
-		return malloc_strcpy_c(ptr, wordlist, clue);
-	}
-	else
-	    return *ptr;
-}
-
-char *	malloc_strcat_word_c (char **ptr, const char *word_delim, const char *word, int extended, size_t *clue)
-{
-	/* You MUST turn on /xdebug dword to get double quoted words */
-	if (extended == DWORD_DWORDS && !(x_debug & DEBUG_DWORD))
-		return malloc_strcat_wordlist_c(ptr, word_delim, word, clue);
-	if (extended == DWORD_EXTRACTW && !(x_debug & DEBUG_EXTRACTW))
-		return malloc_strcat_wordlist_c(ptr, word_delim, word, clue);
-	if (extended == DWORD_NO)
-		return malloc_strcat_wordlist_c(ptr, word_delim, word, clue);
-
-	if (word && *word)
-	{
-		if (*ptr && **ptr)
-			malloc_strcat_c(ptr, word_delim, clue);
-
-		/* Remember, any double quotes therein need to be quoted! */
-		if (strpbrk(word, word_delim))
-		{
-			char *	oofda = NULL;
-			size_t	oofda_siz;
-
-			oofda_siz = strlen(word) * 2 + 2;
-			oofda = alloca(oofda_siz);
-			double_quote(word, "\"", oofda, oofda_siz);
-
-			malloc_strcat3_c(ptr, "\"", oofda, "\"", clue);
-		}
-		else
-			malloc_strcat_c(ptr, word, clue);
-	}
-
-	return *ptr;
-}
-
-/*
- * malloc_sprintf: write a formatted string to heap memory
- *
- * Arguments:
- *  'ptr' - A NULL pointer, or a pointer to a variable pointer that is 
- *		either NULL or a valid heap pointer which shall contain 
- *		a valid C string which represents a word list (words 
- *		separated by delimiters)
- *  'format' - A *printf() format string
- *  ... - The rest of the arguments map to 'format' in the normal way for
- *		*printf() functions.
- *
- * Return value:
- *  If 'format' is NULL, The return value will be set to a valid heap pointer 
- *	to a zero-length C string.
- *  If 'format' is not NULL, The return value will be set to a valid heap 
- *	pointer sufficiently large to contain a C string of the form 'format',
- *	filled in with the rest of the arguments in accordance with sprintf().
- *  In either case, if ptr is not NULL, (*ptr) is set to the return value.
- *  This function will not return (panic) if ptr is not NULL, *ptr is not NULL,
- *	and is (*ptr) is not a valid heap pointer.
- *
- * Notes:
- *  If the arguments passed do not match up with 'format', chaos may result.
- *  If ptr is not NULL then the original value of (*ptr) is invalidated and
- *	may not be used after this function returns.
- *  You must deallocate the space later by passing a pointer to the return
- *	value to the new_free() function.
- */
-char *	malloc_sprintf (char **ptr, const char *format, ...)
-{
-	char *retval;
-	va_list	args;
-
-	va_start(args, format);
-	retval = malloc_vsprintf(ptr, format, args);
-	va_end(args);
-	return retval;
-}
-
-char *	malloc_vsprintf (char **ptr, const char *format, va_list args)
-{
-	char *	buffer = NULL;
-	size_t	buffer_size;
-	int	vsn_retval;
-	va_list	orig_args;
-
-	if (format)
-	{
-		/* Our initial hint assumes the result is twice the 
-		 * length of format */
-		buffer_size = strlen(format) * 2;
-		buffer = new_malloc(buffer_size + 1);
-
-	        va_copy(orig_args, args);
-		do {
-		    vsn_retval = vsnprintf(buffer, buffer_size, format, args);
-
-		    if (vsn_retval < 0)		/* DIE DIE DIE */
-			buffer_size += 16;
-		    else if ((size_t)vsn_retval < buffer_size)
-			break;
-		    else
-			buffer_size = vsn_retval + 1;
-		    RESIZE(buffer, char, buffer_size);
-
-	            va_copy(args, orig_args);
-		} while (1);
-
-	}
-
-	if (ptr)
-	{
-		new_free(ptr);
-		*ptr = buffer;
-	}
-	return buffer;
-}
-
-/*
- * malloc_strcpy_partial: Make a copy of part of a string into heap space
- *
- * Arguments:
- *  'ptr' - A pointer to a variable pointer that is either:
- *	    1) The value NULL or a valid heap pointer to space which is not
- *		large enough to hold 'src', in which case heap space will be
- *		allocated, and the original value of (*ptr) will be invalidated.
- *	    2) A valid heap pointer to space which is large enough to hold 'src'
- *		in which case 'src' will be copied to the heap space.
- *  'src' - The string to be copied.  If NULL, (*ptr) is invalidated (freed).
- *  'bytes' - How many bytes of 'src' to copy 
- *
- * Return value:
- *  The number of strings put into 'ptr'.
- *    0  -  Nothing was copied
- *
- * Notes:
- *  This function will not return (panic) if (*ptr) is not NULL and is 
- *	not a valid heap pointer.
- *  If (*ptr) is not big enough to hold 'src' then the original value (*ptr) 
- * 	will be invalidated and must not be used after this function returns.
- *  You must deallocate the space later by passing (ptr) to the new_free() 
- *	function.
- */
-size_t	malloc_strcpy_partial (char **ptr, const char *src, size_t bytes)
-{
-	size_t	size;
-	size_t	x;
-
-	if (!src)
-	{
-		new_free(ptr);	/* shrug */
-		return 0;
-	}
-	if (!ptr)
-		return 0;
-
-	if (!*ptr)
-		*ptr = (char *)new_malloc(bytes + 1);
-	else
-	{
-		size = alloc_size(*ptr);
-		if (size == (size_t) FREED_VAL)
-			panic(1, "free()d pointer passed to malloc_strcpy");
-
-		if (size < bytes + 1)
-			new_realloc((void **)ptr, bytes + 1);
-	}
-
-	for (x = 0; x < bytes; x++)
-	{
-		(*ptr)[x] = src[x];
-		if (src[x] == 0)
-			break;
-	}
-	(*ptr)[x] = 0;
-	return x;
 }
 
 /*
@@ -4633,8 +3959,6 @@ size_t	malloc_strcpy_partial (char **ptr, const char *src, size_t bytes)
  */
 char *	universal_next_arg_count (char *str, char **new_ptr, int count, int extended, int dequote, const char *delims)
 {
-	size_t clue;
-
 	if (!str || !*str)
 		return NULL;
 
@@ -4650,22 +3974,20 @@ char *	universal_next_arg_count (char *str, char **new_ptr, int count, int exten
 	if (**new_ptr && *new_ptr > str)
 	{
 		(*new_ptr)[-1] = 0;
-		clue = (*new_ptr) - str - 1;
 		if (x_debug & DEBUG_EXTRACTW_DEBUG)
-			yell(">>>> universal_next_arg_count: real_move_to_abs_word: str [%s] *new_ptr [%s] strlen [%ld] clue [%ld]", 
-				str, *new_ptr, (long)strlen(*new_ptr), (long)clue);
+			yell(">>>> universal_next_arg_count: real_move_to_abs_word: str [%s] *new_ptr [%s] strlen [%ld]", 
+				str, *new_ptr, (long)strlen(*new_ptr));
 	}
 	else
 	{
 		if (x_debug & DEBUG_EXTRACTW_DEBUG)
-			yell(">>>> universal_next_arg_count: real_move_to_abs_word: not snipping -- clue = 0");
-		clue = 0;	/* XXX Not sure about this */
+			yell(">>>> universal_next_arg_count: real_move_to_abs_word: not snipping");
 	}
 
 	/* XXX Is this really correct? This seems wrong. */
-	remove_trailing_spaces(str, &clue);
+	remove_trailing_spaces(str, 1);
 	if (x_debug & DEBUG_EXTRACTW_DEBUG)
-		yell(">>>> universal_next_arg_count: removed trailing spaces [%s] [%ld]", str, (long)clue);
+		yell(">>>> universal_next_arg_count: removed trailing spaces [%s]", str);
 
 	/* Arf! */
 	if (dequote == -1)
@@ -4690,13 +4012,12 @@ char *	universal_next_arg_count (char *str, char **new_ptr, int count, int exten
 	{
 		if (x_debug & DEBUG_EXTRACTW_DEBUG)
 			yell(">>>> universal_next_arg_count: dequoting - count [%d], extended [%d] delims [%s]", count, extended, delims);
-		dequoter(&str, &clue, count == 1 ? 0 : 1, extended, delims);
+		dequoter(&str, count == 1 ? 0 : 1, extended, delims);
 	}
 
 	if (x_debug & DEBUG_EXTRACTW_DEBUG)
-	{
 		yell("<<<< universal_next_arg_count: End:   [%s] [%s]", str, *new_ptr);
-	}
+
 	return str;
 }
 
@@ -4707,9 +4028,6 @@ char *	universal_next_arg_count (char *str, char **new_ptr, int count, int exten
  *  'str' - A pointer to a string that contains Double Quoted Words.
  *		Double quotes around Double Quoted Words in (*str) will be
  *		removed.
- *  'clue' - A pointer to an integer holding the size of '*str'.  You must
- *		provide this correct value.  If '*str' is shortened, this
- *		value will be changed to reflect the new length of '*str'.
  *  'full' - Assume '*str' contains more than one word and an exhaustive
  *		dequoting is neccessary.  THIS IS VERY EXPENSIVE.  If '*str'
  *		contains one word, this should be 0.
@@ -4717,24 +4035,41 @@ char *	universal_next_arg_count (char *str, char **new_ptr, int count, int exten
  *		usually be DWORD_YES unless you're doing something fancy.
  *
  * Return value:
- *	There is no return value, but '*str' and '*clue' may be modified as
+ *	There is no return value, but '*str' may be modified as
  *	described in the above notes.
  *
  * Notes:
  *	None.
  */
-void	dequoter (char **str, size_t *clue, int full, int extended, const char *delims)
+void	dequoter (char **str, int full, int extended, const char *delims)
 {
 	int	simple;
 	char	what;
 	size_t	orig_size;
-	orig_size = *clue + 1;
+	size_t	c;
+
+	/* For the invalid/missing/empty values, do nothing */
+	if (str == NULL || (*str == NULL) || (c = strlen(*str)) == 0)
+		return;
+
+	/* So now we've established that str is a non-zero-length string */
+	/* (*str)[c] will thus point at "the char before the nul" */
+	orig_size = c;
+	c--;
 
 	/*
 	 * Solve the problem of a string with one word...
 	 */
 	if (full == 0)
 	{
+	    /* 
+	     * If the string contains only one character,
+	     * then it cannot very well contain two delims,
+	     * can it?  Return the string unchanged.
+	     */
+	    if (c == 0)
+		return;
+
 	    if (delims && delims[0] && delims[1] == 0)
 	    {
 		simple = 1;
@@ -4750,8 +4085,8 @@ void	dequoter (char **str, size_t *clue, int full, int extended, const char *del
 			yell("#### dequoter: Dequoting [%s] fully with delims [%s]", *str, delims);
 	    }
 
-	    if (str && *str && ((simple == 1 && **str == what) || 
-				(simple == 0 && strchr(delims, **str))))
+	    if (((simple == 1 && **str == what) || 
+	         (simple == 0 && strchr(delims, **str))))
 	    {
 		if (x_debug & DEBUG_EXTRACTW_DEBUG)
 			yell("#### dequoter: simple string starts with delim...");
@@ -4761,30 +4096,32 @@ void	dequoter (char **str, size_t *clue, int full, int extended, const char *del
 		 * EXCEPT IF IT IS A STRING CONTAINING ONLY A SINGLE DELIM...
 		 * XXX I'm choosing to pass through a single delim instead of
 		 *	chomping it.  I'm not sure if this is the right choice.
+		 * 
+		 * You may be looking askance at (*str)[c], but we checked for 
+		 * c <= 0 above -- so we know **str is a different char than (*str)[c].
 		 */
-		if (*clue > 0 && ((simple == 1 && (*str)[*clue] == what) ||
-				  (simple == 0 && strchr(delims, (*str)[*clue]))))
+		if (((simple == 1 && (*str)[c] == what) ||
+		     (simple == 0 && strchr(delims, (*str)[c]))))
 		{
 			if (x_debug & DEBUG_EXTRACTW_DEBUG)
 				yell("#### dequoter: simple string ends with delim...");
 
 			if (x_debug & DEBUG_EXTRACTW_DEBUG)
-				yell("dequoter: before: *str [%s], *clue [%ld]", *str, *clue);
+				yell("dequoter: before: *str [%s], c [%ld]", *str, c);
 
 			/* Kill the closing quote. */
-			(*str)[*clue] = 0;
-			(*clue)--;
+			(*str)[c] = 0;
+			c--;
 
 			if (x_debug & DEBUG_EXTRACTW_DEBUG)
-				yell("dequoter: middle: *str [%s], *clue [%ld]", *str, *clue);
+				yell("dequoter: middle: *str [%s], c [%ld]", *str, c);
 
 			/* Kill the opening quote. */
 			(*str)++;
-			if (*clue > 0)
-				(*clue)--;
+			/* If we were using 'c' after this, we'd need to do c--; again! */
 
 			if (x_debug & DEBUG_EXTRACTW_DEBUG)
-				yell("dequoter: after: *str [%s], *clue [%ld]", *str, *clue);
+				yell("dequoter: after: *str [%s]", *str);
 		}
 	    }
 	    return;
@@ -4795,16 +4132,14 @@ void	dequoter (char **str, size_t *clue, int full, int extended, const char *del
 	 */
 	else
 	{
-		char *orig_str;		/* Where to start the dest string */
-		char *retval;		/* our temp working buffer */
-		size_t rclue;		/* A working clue for 'retval' */
-		char *this_word;	/* The start of each word */
-		size_t	this_len;	/* How long the word is */
+		char *	orig_str;	/* Where to start the dest string */
+		char *	retval;		/* our temp working buffer */
+		size_t	retval_size;	/* How long retval is */
+		char *	this_word;	/* The start of each word */
 
-		orig_str = *str;	/* Keep this for later use */
-		retval = alloca(orig_size);	/* Reserve space for a full copy */
+		retval_size = orig_size * 2 + 2;
+		retval = alloca(retval_size);
 		*retval = 0;		/* Prep retval for use... */
-		rclue = 0;
 
 		/*
 		 * Solve the problem of dequoting N words iteratively by 
@@ -4812,18 +4147,20 @@ void	dequoter (char **str, size_t *clue, int full, int extended, const char *del
 		 * until we've worked through the entire list.  Then copy
 		 * the results back to the original string.
 		 */
+		orig_str = *str;	/* Keep this for later use */
 		while ((this_word = universal_next_arg_count(*str, str, 1, extended, 0, delims)))
 		{
-			this_len = strlen(this_word) - 1;
-			dequoter(&this_word, &this_len, 0, extended, delims);
-			if (rclue > 0)
-				strlcat_c(retval, space, orig_size, &rclue);
-			strlcat_c(retval, this_word, orig_size, &rclue);
+			dequoter(&this_word, 0, extended, delims);
+			strlcat(retval, space, retval_size);
+			strlcat(retval, this_word, retval_size);
 		}
 
+		/* Now 'retval' begins with a space (see above) if it contains anything */
+		if (*retval == ' ')
+			retval++;
+
 		*orig_str = 0;
-		*clue = 0;
-		strlcpy_c(orig_str, retval, orig_size, clue);
+		strlcpy(orig_str, retval, orig_size);
 		*str = orig_str;
 	}
 }
@@ -4851,54 +4188,26 @@ char *	new_new_next_arg_count (char *str, char **new_ptr, char *type, int count)
 }
 
 /*
- * Note that the old version is now out of sync with epics word philosophy.
- */
-char *	safe_new_next_arg (char *str, char **new_ptr)
-{
-	char * ret;
-
-	if (!(ret = new_next_arg(str, new_ptr)))
-		ret = endstr(str);
-
-	return ret;
-}
-
-char *	safe_next_arg (char *str, char **new_ptr)
-{
-	char * ret;
-
-	if (!(ret = next_arg(str, new_ptr)))
-		ret = endstr(str);
-
-	return ret;
-}
-
-/*
  * yanks off the last word from 'src'
  * kinda the opposite of next_arg
  */
-char *	last_arg (char **src, size_t *cluep, int extended)
+char *	last_arg (char **src, int extended)
 {
-	char *mark, *start, *end;
-	size_t	clue2;
+	char 	*mark, 
+		*start;
 
 	start = *src;
-	end = start + *cluep;
-	mark = end + strlen(end);
+	mark = start + strlen(start);
+
 	/* Always support double-quoted words. */
 	move_word_rel(start, (const char **)&mark, -1, extended, "\"");
-	if (mark > *src)
-		*cluep = (mark - *src - 1);
-	else
-		*cluep = 0;
 
 	if (mark > start)
 		mark[-1] = 0;
 	else
 		*src = NULL;		/* We're done, natch! */
 
-	clue2 = strlen(mark) - 1;
-	dequoter(&mark, &clue2, 0, extended, "\"");
+	dequoter(&mark, 0, extended, "\"");
 	return mark;
 }
 
@@ -5298,8 +4607,6 @@ char *	substitute_string (const char *string, const char *oldstr, const char *ne
 
 	/* 
 	 * Oh, what the hey...
-	 * Remember, malloc_strcat_c() is cheap if the buffer already 
-	 * holds enough space for the result!
 	 */
 	retval = new_malloc(retvalsize);
 	i = 0;
@@ -5468,7 +4775,6 @@ char *	fix_string_width (const char *orig_str, int justify, int fillchar, size_t
 	char *	new_str;
 	char *	retval = NULL;
 	char *	result;
-	size_t	cluep = 0;
 	int	x;
 
 	/* Normalize and count the input string */
@@ -5517,10 +4823,10 @@ char *	fix_string_width (const char *orig_str, int justify, int fillchar, size_t
 
 	/* Assemble the final string */
 	for (x = 0; x < left_add; x++)
-		malloc_strcat_c(&retval, fillstr, &cluep);
-	malloc_strcat_c(&retval, new_str, &cluep);
+		malloc_strcat(&retval, fillstr);
+	malloc_strcat(&retval, new_str);
 	for (x = 0; x < right_add; x++)
-		malloc_strcat_c(&retval, fillstr, &cluep);
+		malloc_strcat(&retval, fillstr);
 
 	result = denormalize_string(retval);
 
@@ -6688,13 +5994,9 @@ char *	valid_transforms (void)
 {
 	int	x = 0;
 	char *	retval = NULL;
-	size_t	cluep;
 
 	for (x = 0; transformers[x].name; x++)
-	{
-		malloc_strcat_word_c(&retval, space, 
-			transformers[x].name, DWORD_NO, &cluep);
-	}
+		malloc_strcat_word(&retval, space, transformers[x].name, DWORD_NO);
 	return retval;
 }
 
@@ -6837,7 +6139,7 @@ int	num_code_points(const char *i)
 	return v + s;
 }
 
-ssize_t	findchar_quoted (const char *source, int delim)
+ssize_t	findchar_honor_escapes (const char *source, int delim)
 {
 	const char *p;
 
@@ -7084,13 +6386,14 @@ int	ucs_to_utf8 (uint32_t key, char *utf8str_, size_t utf8strsiz)
  * strext2 - Remove (and return) the middle part of a buffer
  *
  * Arguments:
- *	cut	- A pointer to new_malloc()ed memory, or a pointer to NULL.
- *		  THIS POINTER WILL BE NEW_FREE()D!
- *		  THE POINTED-TO VALUE WILL BE REPLACED!
- *	buffer	- A C string to be sliced and diced
- *		  XXX I'd prefer if this didn't have to be a C str.
- *	part2	- The first byte in buffer to be removed
- *	part3	- The first byte in buffer NOT to be removed
+ *	cut	- (INPUT-OUTPUT) A pointer to new_malloc()ed memory, or a pointer to NULL.
+ *		  THE INPUT VALUE BELONGS TO THIS FUNCTION - IT WILL BE NEW_FREE()D.
+ *		  THE OUTPUT VALUE BELONGS TO YOU - YOU MUST NEW_FREE() IT.
+ *	buffer	- (INPUT-OUTPUT) A C string to be sliced and diced
+ *		  THE STRING WILL BE MODIFIED BUT STILL BELONGS TO YOU.
+ *		  *** Important! *** It _must_ be a nul-terminated C string.
+ *	part2	- (INPUT) The first byte in buffer to be removed
+ *	part3	- (INPUT) The first byte in buffer NOT to be removed
  *
  * This function will remove the (part2)th through (part3-1)th bytes in 
  * (buffer).  This substring will be malloc_strcpy()d into (*cut).
@@ -7300,14 +6603,6 @@ int	check_xdigit (char digit)
 		return -1;
 }
 
-
-/*
- * Returns the number of seconds between 't' and startup.
- */
-double	time_since_startup (Timeval t)
-{
-	return time_diff(start_time, t);
-}
 
 static  char *          signal_name[NSIG + 1];
 
@@ -7758,70 +7053,11 @@ static const char hexnum[] = "0123456789ABCDEF";
 	return 2;
 }
 
-/* This is all very defective for the moment. */
-#if 0
 
-static size_t	next_message_size (const char *orig_message);
-
-/*
- * split_message - copy and split 'orig_message' into 'dest' in message-sized chunks
- *
- * Arguments:
- *	dest 		- Where the results will go (see below)
- *	dest_size 	- How big 'dest' is (usually 10)
- *	orig_message 	- A message to be split up
- *
- * Return value:
- *	The number of values written into 'dest'
- *
- * Behavior:
- *	'dest' is expected to be a static array of (char *)s.
- *	The 'orig_message' will be split into message-sized chunks (controlled by a /set)
- *	  and then will be stored sequentially in dest[x].
- *	Finally, dest[x+1] = NULL for the largest value of 'x'.
- *
- * Notes:
- *	All string copies are done via malloc_strcpy(), so you don't have to new_free()
- *		you can just keep using the same 'dest' every time and we'll overwrite
- *		the strings
- *	Setting dest[x+1] = NULL is done via new_free(), again for the same reason
- */
-int	split_message (char **dest, int dest_size, const char *orig_message)
+const char *	nonull (const char *x)
 {
-	int		i;
-	size_t		message_len;
-
-	for (i = 0; i < dest_size; i++)
-	{
-		if ((message_len = next_message_size(orig_message)) <= 0)
-			break;
-		/* GCC13 objects to what I did previously */
-		malloc_strcpy_partial(&(dest[i]), orig_message, message_len);
-		orig_message += message_len;
-	}
-
-	new_free(&(dest[i]));
-	return i;
+	if (x != NULL)
+		return x;
+	else
+		return empty_string;
 }
-
-static size_t	next_message_size (const char *orig_message)
-{
-	size_t		orig_message_len;
-
-	if (!orig_message)
-		return 0;
-
-	if ((orig_message_len = strlen(orig_message)) < 480)
-		return orig_message_len;
-
-	orig_message_len = 479;
-	while (orig_message_len > 0 && !isspace(orig_message[orig_message_len]))
-		orig_message_len--;
-
-	if (orig_message_len == 0)
-		return 480;
-
-	return orig_message_len;
-}
-#endif
-

@@ -14,7 +14,7 @@ DEFS	= @DEFS@
 RM	= rm -f
 
 OBJECTS = alias.o alist.o ara.o array.o cJSON.o clock.o commands.o compat.o \
-	crypt.o crypto.o ctcp.o dcc.o debug.o elf.o exec.o files.o flood.o \
+	crypt.o crypto.o ctcp.o dcc.o debug.o elf.o exec.o files.o \
 	functions.o glob.o hook.o if.o ignore.o input.o irc.o \
 	ircaux.o ircsig.o keys.o lastlog.o levels.o list.o log.o logfiles.o \
 	mail.o names.o network.o newio.o notify.o numbers.o output.o parse.o \
@@ -172,7 +172,7 @@ ctcp.o: ctcp.c ../include/irc.h ../include/defs.h ../include/config.h \
   ../include/names.h ../include/output.h ../include/parse.h \
   ../include/server.h ../include/who.h ../include/status.h \
   ../include/vars.h ../include/window.h ../include/ifcmd.h \
-  ../include/flood.h ../include/functions.h
+  ../include/functions.h
 dcc.o: dcc.c ../include/irc.h ../include/defs.h ../include/config.h \
   ../include/irc_std.h ../include/debug.h \
   ../include/sedcrypt.h ../include/ctcp.h ../include/dcc.h \
@@ -214,14 +214,6 @@ files.o: files.c ../include/irc.h ../include/defs.h ../include/config.h \
   ../include/lastlog.h ../include/levels.h ../include/status.h \
   ../include/output.h ../include/elf.h ../include/functions.h \
   ../include/sdbm.h
-flood.o: flood.c ../include/irc.h ../include/defs.h ../include/config.h \
-  ../include/irc_std.h ../include/debug.h \
-  ../include/flood.h ../include/levels.h ../include/hook.h \
-  ../include/ignore.h ../include/ircaux.h ../include/compat.h \
-  ../include/network.h ../include/words.h ../include/output.h \
-  ../include/server.h ../include/who.h ../include/vars.h \
-  ../include/functions.h ../include/lastlog.h ../include/window.h \
-  ../include/status.h ../include/reg.h
 functions.o: functions.c ../include/irc.h ../include/defs.h \
   ../include/config.h ../include/irc_std.h \
   ../include/debug.h ../include/alias.h ../include/ircaux.h \
@@ -229,7 +221,7 @@ functions.o: functions.c ../include/irc.h ../include/defs.h \
   ../include/vars.h ../include/alist.h ../include/array.h \
   ../include/clock.h ../include/keys.h ../include/ctcp.h \
   ../include/dcc.h ../include/commands.h ../include/exec.h \
-  ../include/files.h ../include/flood.h ../include/levels.h \
+  ../include/files.h ../include/levels.h \
   ../include/ignore.h ../include/input.h ../include/log.h \
   ../include/names.h ../include/output.h ../include/parse.h \
   ../include/screen.h ../include/window.h ../include/lastlog.h \
@@ -407,7 +399,7 @@ parse.o: parse.c ../include/irc.h ../include/defs.h ../include/config.h \
   ../include/lastlog.h ../include/ircaux.h ../include/compat.h \
   ../include/network.h ../include/words.h ../include/sedcrypt.h \
   ../include/termx.h ../include/screen.h ../include/window.h \
-  ../include/status.h  ../include/flood.h \
+  ../include/status.h  \
   ../include/output.h ../include/numbers.h ../include/parse.h \
   ../include/notify.h ../include/alist.h ../include/timer.h
 perl.o: perl.c ../include/irc.h \

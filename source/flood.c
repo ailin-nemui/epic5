@@ -305,7 +305,6 @@ char *	function_floodinfo (char *args)
 {
 	char	*arg;
 	char *ret = NULL;
-	size_t	clue = 0;
 	Timeval right_now;
 	int	i;
 	double	idiff;
@@ -364,14 +363,14 @@ char *	function_floodinfo (char *args)
 			} else if (!rless && flood[i].cnt / idiff < rate) {
 			} else if ( rless && flood[i].cnt / idiff > rate) {
 			} else {
-				malloc_strcat_wordlist_c(&ret, space, "\"", &clue);
-				malloc_strcat_wordlist_c(&ret, empty_string, flood[i].nuh, &clue);
-				malloc_strcat_wordlist_c(&ret, space, flood[i].channel ? flood[i].channel : star, &clue);
-				malloc_strcat_wordlist_c(&ret, space, level_to_str(flood[i].level), &clue);
-				malloc_strcat_wordlist_c(&ret, space, ltoa(flood[i].server), &clue);
-				malloc_strcat_wordlist_c(&ret, space, ltoa(flood[i].cnt), &clue);
-				malloc_strcat_wordlist_c(&ret, space, ftoa(time_diff(flood[i].start, right_now)), &clue);
-				malloc_strcat_wordlist_c(&ret, empty_string, "\"", &clue);
+				malloc_strcat_wordlist(&ret, space, "\"");
+				malloc_strcat_wordlist(&ret, empty_string, flood[i].nuh);
+				malloc_strcat_wordlist(&ret, space, flood[i].channel ? flood[i].channel : star);
+				malloc_strcat_wordlist(&ret, space, level_to_str(flood[i].level));
+				malloc_strcat_wordlist(&ret, space, ltoa(flood[i].server));
+				malloc_strcat_wordlist(&ret, space, ltoa(flood[i].cnt));
+				malloc_strcat_wordlist(&ret, space, ftoa(time_diff(flood[i].start, right_now)));
+				malloc_strcat_wordlist(&ret, empty_string, "\"");
 			}
 		}
 

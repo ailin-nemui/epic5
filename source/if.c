@@ -89,7 +89,7 @@ static char *	my_next_expr (char **args, char type, int whine, int wantchar)
 
 	/* Remove any extraneous whitespace in the expression */
 	expr_start = skip_spaces(expr_start + 1);
-	remove_trailing_spaces(expr_start, 0);
+	remove_trailing_spaces(expr_start, 1);
 
 	/*
 	 * It is guaranteed that (ptr2[-1] >= *args) and so it is further
@@ -475,7 +475,6 @@ BUILT_IN_COMMAND(fe)
 	char	*mapvar = NULL;
 	const char	*mapsep = doing_fe ? space : empty_string;
 	char	*map = NULL;
-	size_t	mapclue = 0;
 
 	if (!subargs)
 		subargs = empty_string;
@@ -567,11 +566,14 @@ BUILT_IN_COMMAND(fe)
 		runcmds(todo, subargs);
 
 		if (mapvar)
-			for ( y = 0 ; y < ind ; y++ ) {
-				char *foo = get_variable(var[y]);
-				malloc_strcat_wordlist_c(&map, mapsep, foo, &mapclue);
+		{
+			for (y = 0; y < ind; y++) 
+			{
+				char *	foo = get_variable(var[y]);
+				malloc_strcat_wordlist(&map, mapsep, foo);
 				new_free(&foo);
 			}
+		}
 
 		if (continue_exception)
 		{

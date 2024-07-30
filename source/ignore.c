@@ -340,25 +340,23 @@ static int 	remove_ignore (const char *nick)
 	if (mask_isset(&IGNORE(item)->dont, LEVEL_ ## x))			\
 	{								\
 	    if ((y) == 1)						\
-		strlcat_c(buffer, " DONT-" #x, sizeof buffer, &clue);	\
+		strlcat(buffer, " DONT-" #x, sizeof buffer);	\
 	    else if ((y) == 2)						\
-		strlcat_c(buffer, " ^" #x, sizeof buffer, &clue);	\
+		strlcat(buffer, " ^" #x, sizeof buffer);	\
 	}								\
 	else if (mask_isset(&IGNORE(item)->type, LEVEL_ ## x))			\
 	{								\
 	    if ((y) == 1)						\
-		strlcat_c(buffer, " " #x, sizeof buffer, &clue);	\
+		strlcat(buffer, " " #x, sizeof buffer);	\
 	    else if ((y) == 2)						\
-		strlcat_c(buffer, " /" #x, sizeof buffer, &clue);	\
+		strlcat(buffer, " /" #x, sizeof buffer);	\
 	}								\
 
 static const char *	get_ignore_types (List *item, int output_type)
 {
 static	char 	buffer[BIG_BUFFER_SIZE + 1];
-	size_t	clue;
 	char	*retval;
 
-	clue = 0;
 	*buffer = 0;
 	HANDLE_TYPE(ALL, output_type)
 	else
@@ -871,7 +869,6 @@ char 	*get_ignores_by_pattern (char *patterns, int covered)
 	List	*tmp;
 	char 	*pattern;
 	char 	*retval = NULL;
-	size_t	clue = 0;
 
 	while ((pattern = new_next_arg(patterns, &patterns)))
 	{
@@ -879,7 +876,7 @@ char 	*get_ignores_by_pattern (char *patterns, int covered)
 		{
 			if (covered ? wild_match(tmp->name, pattern)
 				    : wild_match(pattern, tmp->name))
-				malloc_strcat_word_c(&retval, space, tmp->name, DWORD_NO, &clue);
+				malloc_strcat_word(&retval, space, tmp->name, DWORD_NO);
 		}
 	}
 
@@ -933,7 +930,6 @@ char	*get_ignore_patterns_by_type (char *ctype)
 	List	*tmp;
 	Mask	do_mask, dont_mask;
 	char	*result = NULL;
-	size_t	clue = 0;
 
 	mask_unsetall(&do_mask);
 	mask_unsetall(&dont_mask);
@@ -970,7 +966,7 @@ char	*get_ignore_patterns_by_type (char *ctype)
 	    }
 
 	    /* Add it to the fray */
-	    malloc_strcat_word_c(&result, space, tmp->name, DWORD_NO, &clue);
+	    malloc_strcat_word(&result, space, tmp->name, DWORD_NO);
 bail:
 	    continue;
 	}
@@ -1017,11 +1013,9 @@ char *	ignorectl (char *input)
 		RETURN_INT(IGNORE(i)->refnum);
 	} else if (!my_strnicmp(listc, "REFNUMS", len)) {
 		char *	retval = NULL;
-		size_t	clue = 0;
 
 		for (i = ignored_nicks; i; i = i->next)
-			malloc_strcat_word_c(&retval, space, 
-						ltoa(IGNORE(i)->refnum), DWORD_NO, &clue);
+			malloc_strcat_word(&retval, space, ltoa(IGNORE(i)->refnum), DWORD_NO);
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "SUSPEND", len)) {
 		ignores_are_suspended++;

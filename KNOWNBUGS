@@ -31,8 +31,6 @@ Weaknesses
 	files.c:file_write() for type == 2
 * Revisit why we do not use padding for openssl ("wrong final block length")
 	/eval echo $xform("+AESSHA +B64" test 1)   [rb zlonix]
-* Revisit how block buffering and line buffering interact
-	/exec -line {#} ls -l     outputs partial line via -linepart {}
 
 Foundational improvements
 ===========================
@@ -1368,3 +1366,15 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Include new script, /load epiclogo -- a nice easter egg. :)
 * Change /exec so it's fully line buffered.  This fixes /exec cat.
 * Stop using "inline", since the compiler does what it wants anyways.
+* Roll back the CAP support, it inteferes with the SASL script
+* Below is the "Spring Cleaning 2024" project
+* De-orbit flood detection and its attendant features (see UPDATES)
+* De-orbit the "clue" stuff
+* De-orbit the "alloc tracking" stuff
+* De-orbit the "delayed free" stuff
+* Differentiate between "quoting" ("") and "escaping" (\)
+* Below is the "ircaux.c reorg" sub-project
+* Categorize and sort all function decls in ircaux.h
+* Review each function; GC unused functions; collapse dupes
+* Comment functions to force analysis of behavior, fix bogons
+

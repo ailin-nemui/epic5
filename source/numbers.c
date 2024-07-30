@@ -622,8 +622,12 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 
 		    while ((nick = next_arg(line_copy, &line_copy)) != NULL)
 		    {
-			/* XXX Hack to work around space at end of 353 */
-			forcibly_remove_trailing_spaces(nick, NULL);
+			/*
+			 * XXX If the last nickname on the list ends with \  
+			 * and there is a space after it, that would end up
+			 * in 'nick' here -> trim it.  (This actually happens)
+			 */
+			remove_trailing_spaces(nick, 0);
 
 			/*
 			 * 1999 Oct 29 -- This is a hack to compensate for

@@ -1875,7 +1875,6 @@ char *hookctl (char *input)
 	int sernum;
 	int halt = 0;
 	int id;
-	size_t retlen = 0;
 	char *nam;
 	char *str;
 	char *hookname;
@@ -2038,7 +2037,7 @@ char *hookctl (char *input)
 	case HOOKCTL_EMPTY_SLOTS:
 		for (tmp_int = 0; tmp_int < hooklist_size; tmp_int++)
 			if (hooklist[tmp_int] == NULL)
-				malloc_strcat_wordlist_c(&ret, space, ltoa(tmp_int), &retlen);
+				malloc_strcat_wordlist(&ret, space, ltoa(tmp_int));
 
 		RETURN_MSTR(ret);
 		break;
@@ -2078,8 +2077,7 @@ char *hookctl (char *input)
 				if (go == HOOKCTL_COUNT)
 					tmp_int2++;
 				else
-					malloc_strcat_wordlist_c(&ret, space, hook_functions[tmp_int].name,
-						&retlen);
+					malloc_strcat_wordlist(&ret, space, hook_functions[tmp_int].name);
 				continue;
 			}
 			for (tmp_hook = hook_functions[tmp_int].list;
@@ -2089,8 +2087,7 @@ char *hookctl (char *input)
 				if (go == HOOKCTL_COUNT)
 					tmp_int2++;
 				else
-					malloc_strcat_wordlist_c(&ret, space, ltoa(tmp_hook->userial),
-						&retlen);
+					malloc_strcat_wordlist(&ret, space, ltoa(tmp_hook->userial));
 			}
 		}
 		if (go == HOOKCTL_COUNT)
@@ -2129,7 +2126,7 @@ char *hookctl (char *input)
 				if ((is_serial && hooklist[tmp_int]->sernum == serial) ||
 					(!is_serial && hooklist[tmp_int]->filename && !my_stricmp(hooklist[tmp_int]->filename, str)))
 				{
-					malloc_strcat_wordlist_c(&ret, space, ltoa(tmp_int), &retlen);	
+					malloc_strcat_wordlist(&ret, space, ltoa(tmp_int));
 				}
 			}
 		}
@@ -2145,7 +2142,7 @@ char *hookctl (char *input)
 					(!is_serial && hook->filename && !my_stricmp(hook->filename, str))
 				)
 				{
-					malloc_strcat_wordlist_c(&ret, space, ltoa(hook->userial), &retlen);
+					malloc_strcat_wordlist(&ret, space, ltoa(hook->userial));
 				}
 		}
 		RETURN_MSTR(ret);
@@ -2162,7 +2159,7 @@ char *hookctl (char *input)
 		for (tmp_int = 0; tmp_int < noise_level_num; tmp_int++)
 		{
 			if (!nam || wild_match(nam, noise_info[tmp_int]->name))
-				malloc_strcat_wordlist_c(&ret, space, noise_info[tmp_int]->name, &retlen);
+				malloc_strcat_wordlist(&ret, space, noise_info[tmp_int]->name);
 		}
 		RETURN_MSTR(ret);
 		break;
@@ -2174,7 +2171,7 @@ char *hookctl (char *input)
 		for (
 			curhook = current_hook; 
 			curhook != NULL; curhook = curhook->under)
-			malloc_strcat_wordlist_c(&ret, space, ltoa(curhook->userial), &retlen);
+			malloc_strcat_wordlist(&ret, space, ltoa(curhook->userial));
 		RETURN_MSTR(ret);
 		break;
 
@@ -2399,7 +2396,6 @@ char *hookctl (char *input)
 			case HOOKCTL_GET_HOOK_STRING:
 			{
 				char *retval = NULL;
-				size_t	clue = 0;
 				char	blah[10];
 
 				/* Just to start off */
@@ -2408,30 +2404,30 @@ char *hookctl (char *input)
 
 				/* ON <SERIAL-INDICATOR><NOISE><TYPE> <SERIAL-NUMBER>
 						<QUOTE><PATTERN><QUOTE> {<STUFF>} */
-				malloc_strcat_c(&retval, "ON ", &clue);
+				malloc_strcat(&retval, "ON ");
 
 				if (hook->sernum)
-					malloc_strcat_c(&retval, "#", &clue);
+					malloc_strcat(&retval, "#");
 				if (noise_info[hook->noisy]->identifier)
 				{
 					blah[0] = noise_info[hook->noisy]->identifier;
 					blah[1] = 0;
-					malloc_strcat_c(&retval, blah, &clue);
+					malloc_strcat(&retval, blah);
 				}
-				malloc_strcat_c(&retval, hook_functions[hook->type].name, &clue);
+				malloc_strcat(&retval, hook_functions[hook->type].name);
 
 				if (hook->sernum)
 				{
 					snprintf(blah, sizeof blah, " %d", hook->sernum);
-					malloc_strcat_c(&retval, blah, &clue);
+					malloc_strcat(&retval, blah);
 				}
 
-				malloc_strcat_c(&retval, space, &clue);
+				malloc_strcat(&retval, space);
 				if (hook->not)
 				{
 					blah[0] = '^';
 					blah[1] = 0;
-					malloc_strcat_c(&retval, blah, &clue);
+					malloc_strcat(&retval, blah);
 				}
 
 				if (hook->flexible)
@@ -2444,10 +2440,10 @@ char *hookctl (char *input)
 					blah[0] = '"';
 					blah[1] = 0;
 				}
-				malloc_strcat_c(&retval, blah, &clue);
-				malloc_strcat_c(&retval, hook->nick, &clue);
-				malloc_strcat_c(&retval, blah, &clue);
-				malloc_strcat_c(&retval, space, &clue);
+				malloc_strcat(&retval, blah);
+				malloc_strcat(&retval, hook->nick);
+				malloc_strcat(&retval, blah);
+				malloc_strcat(&retval, space);
 
 				if (hook->arglist)
 				{
@@ -2455,11 +2451,11 @@ char *hookctl (char *input)
 
 					blah[0] = '(';
 					blah[1] = 0;
-					malloc_strcat_c(&retval, blah, &clue);
-					malloc_strcat_c(&retval, arglist, &clue);
+					malloc_strcat(&retval, blah);
+					malloc_strcat(&retval, arglist);
 					blah[0] = ')';
-					malloc_strcat_c(&retval, blah, &clue);
-				    malloc_strcat_c(&retval, space, &clue);
+					malloc_strcat(&retval, blah);
+				    malloc_strcat(&retval, space);
 					new_free(&arglist);
 				}
 
@@ -2467,10 +2463,10 @@ char *hookctl (char *input)
 				{
 					blah[0] = '{';
 					blah[1] = 0;
-					malloc_strcat_c(&retval, blah, &clue);
-					malloc_strcat_c(&retval, hook->stuff, &clue);
+					malloc_strcat(&retval, blah);
+					malloc_strcat(&retval, hook->stuff);
 					blah[0] = '}';
-					malloc_strcat_c(&retval, blah, &clue);
+					malloc_strcat(&retval, blah);
 				}
 				RETURN_MSTR(retval);
 			}
@@ -2770,7 +2766,7 @@ char *hookctl (char *input)
 				if (!besthook || besthook->not)
 					break;
 				
-				malloc_strcat_wordlist_c(&ret, space, ltoa(besthook->userial), &retlen);
+				malloc_strcat_wordlist(&ret, space, ltoa(besthook->userial));
 				break;
 			}
 			if (!hook)

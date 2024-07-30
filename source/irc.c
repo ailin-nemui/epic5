@@ -52,7 +52,7 @@ const char internal_version[] = "20240614";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 2129;
+const unsigned long	commit_id = 2130;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -1001,12 +1001,6 @@ static	int		level = 0,
 	/* Release this io() accounting level */
 	caller[level] = NULL;
 	level--;
-
-#ifdef DELAYED_FREES
-	/* Reclaim any malloc()ed space */
-	if (level == 0 && need_delayed_free)
-		do_delayed_frees();
-#endif
 
 	if (level == 0)
 		check_message_from_queue(0);

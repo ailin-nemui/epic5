@@ -282,7 +282,7 @@ int	str_to_serverinfo (char *str, ServerInfo *s)
 		int	ignore_field = 0;
 
 		first_equals = strchr(descstr, '=');
-		if ((span = findchar_quoted(descstr, ':')) >= 0)
+		if ((span = findchar_honor_escapes(descstr, ':')) >= 0)
 			first_colon = descstr + span;
 		else
 			first_colon = NULL;
@@ -409,7 +409,7 @@ int	str_to_serverinfo (char *str, ServerInfo *s)
 			break;
 
 		/* And advance to the next field */
-		if ((span = findchar_quoted(descstr, ':')) >= 0)
+		if ((span = findchar_honor_escapes(descstr, ':')) >= 0)
 		{
 			descstr = descstr + span;
 			*descstr++ = 0;
@@ -434,29 +434,25 @@ int	str_to_serverinfo (char *str, ServerInfo *s)
 static	int	preserve_serverinfo (ServerInfo *si)
 {
 	char *	resultstr = NULL;
-	size_t	clue = 0;
+	char *	host = NULL;
+	char *	vhost = NULL;
 
 	if (si->host && strchr(si->host, ':'))
-	   malloc_strcat_c(&resultstr, "[", &clue);
-	malloc_strcat_c(&resultstr, si->host, &clue);
-	if (si->host && strchr(si->host, ':'))
-	   malloc_strcat_c(&resultstr, "]", &clue);
-	malloc_strcat_c(&resultstr, ":", &clue);
-	malloc_strcat2_c(&resultstr, ltoa(si->port), ":", &clue);
-	malloc_strcat2_c(&resultstr, si->password, ":", &clue);
-	malloc_strcat2_c(&resultstr, si->nick, ":", &clue);
-	malloc_strcat2_c(&resultstr, si->group, ":", &clue);
-	malloc_strcat2_c(&resultstr, si->server_type, ":", &clue);
-	malloc_strcat2_c(&resultstr, si->proto_type, ":", &clue);
+		malloc_sprintf(&host, "[%s]", si->host);
+	else
+		malloc_sprintf(&host, "%s", nonull(si->host));
+
 	if (si->vhost && strchr(si->vhost, ':'))
-	{
-	   malloc_strcat_c(&resultstr, "[", &clue);
-	   malloc_strcat_c(&resultstr, si->vhost, &clue);
-	   malloc_strcat2_c(&resultstr, "]", ":", &clue);
-	}
-        else
-	   malloc_strcat2_c(&resultstr, si->vhost, ":", &clue);
-	malloc_strcat2_c(&resultstr, si->cert, ":", &clue);
+		malloc_sprintf(&vhost, "[%s]", si->vhost);
+	else
+		malloc_sprintf(&vhost, "%s", nonull(si->vhost));
+
+	malloc_sprintf(&resultstr, "%s:%d:%s:%s:%s:%s:%s:%s:%s:",
+			nonull(host),		(int)si->port,	
+			nonull(si->password),	nonull(si->nick),
+			nonull(si->group),	nonull(si->server_type),
+			nonull(si->proto_type),	nonull(vhost),
+			nonull(si->cert));
 
 	new_free(&si->freestr);
 	new_free(&si->fulldesc);
@@ -464,6 +460,9 @@ static	int	preserve_serverinfo (ServerInfo *si)
 	malloc_strcpy(&si->fulldesc, resultstr);
 	si->freestr = resultstr;
 	str_to_serverinfo(si->freestr, si);
+
+	new_free(&host);
+	new_free(&vhost);
 	return 0;
 }
 
@@ -998,7 +997,7 @@ static int 	read_server_file (const char *file_path)
  */
 int 	read_default_server_file (void)
 {
-	char	file_path[PATH_MAX + 1];
+	Filename	file_path;
 	char *	clang_is_hateful;
 
 	if ((clang_is_hateful = getenv("IRC_SERVERS_FILE")))
@@ -1078,7 +1077,6 @@ char *	create_server_list (void)
 	Server	*s;
 	int	i;
 	char	*buffer = NULL;
-	size_t	bufclue = 0;
 
 	for (i = 0; i < number_of_servers; i++)
 	{
@@ -1086,8 +1084,7 @@ char *	create_server_list (void)
 			continue;
 
 		if (s->des != -1)
-		    malloc_strcat_wordlist_c(&buffer, space, 
-					get_server_itsname(i), &bufclue);
+		    malloc_strcat_wordlist(&buffer, space, get_server_itsname(i));
 	}
 
 	RETURN_MSTR(buffer);
@@ -2793,7 +2790,9 @@ void	register_server (int refnum, const char *nick)
 	if (usehost == NULL)
 		usehost = hostname;
 
+#if 0
 	send_to_aserver(refnum, "CAP LS 302");
+#endif
 	send_to_aserver(refnum, "USER %s %s %s :%s", 
 			get_string_var(DEFAULT_USERNAME_VAR),
 			(send_umode && *send_umode) ? send_umode : 
@@ -3242,7 +3241,7 @@ const char	*get_server_userhost (int refnum)
 	Server *s;
 
 	if (!(s = get_server(refnum)) || !s->userhost)
-		return get_userhost();
+		return get_my_fallback_userhost();
 
 	return s->userhost;
 }
@@ -4172,14 +4171,13 @@ static char *	get_server_altnames (int refnum)
 {
 	Server *s;
 	char *	retval = NULL;
-	size_t	clue = 0;
 	int	i;
 
 	if (!(s = get_server(refnum)))
 		return NULL;
 
 	for (i = 0; i < s->altnames->numitems; i++)
-		malloc_strcat_word_c(&retval, space, s->altnames->list[i].name, DWORD_DWORDS, &clue);
+		malloc_strcat_word(&retval, space, s->altnames->list[i].name, DWORD_DWORDS);
 
 	return retval;
 }
@@ -4365,7 +4363,6 @@ static char *	get_server_005s (int refnum, const char *str)
 {
 	int	i;
 	char *	ret = NULL;
-	size_t	rclue = 0;
 	Server *s;
 
 	if (!(s = get_server(refnum)))
@@ -4377,8 +4374,7 @@ static char *	get_server_005s (int refnum, const char *str)
 			continue;	/* Ignore nulls */
 
 		if (!str || !*str || wild_match(str, s->a005.list[i]->name))
-			malloc_strcat_wordlist_c(&ret, space, 
-					s->a005.list[i]->name, &rclue);
+			malloc_strcat_wordlist(&ret, space, s->a005.list[i]->name);
 	}
 	return ret ? ret : malloc_strdup(empty_string);
 }
@@ -4498,7 +4494,6 @@ static char *	get_all_server_groups (void)
 {
 	int	i, j;
 	char *	retval = NULL;
-	size_t	clue = 0;
 
 	for (i = 0; i < number_of_servers; i++)
 	{
@@ -4517,8 +4512,7 @@ static char *	get_all_server_groups (void)
 			goto sorry_wrong_number;
 	    }
 
-	    malloc_strcat_word_c(&retval, space, get_server_group(i), 
-					DWORD_DWORDS, &clue);
+	    malloc_strcat_word(&retval, space, get_server_group(i), DWORD_DWORDS);
 sorry_wrong_number:
 	    ;
 	}
@@ -4570,7 +4564,6 @@ char 	*serverctl 	(char *input)
 	char	*listc, *listc1;
 	const char *ret;
 	char *	retval = NULL;
-	size_t	clue = 0;
 
 	GET_FUNC_ARG(listc, input);
 	len = strlen(listc);
@@ -4887,21 +4880,21 @@ char 	*serverctl 	(char *input)
 
 		for (i = 0; i < number_of_servers; i++)
 			if (get_server(i) && wild_match(input, get_server_name(i)))
-				malloc_strcat_wordlist_c(&retval, space, ltoa(i), &clue);
+				malloc_strcat_wordlist(&retval, space, ltoa(i));
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "IMATCH", len)) {
 		int	i;
 
 		for (i = 0; i < number_of_servers; i++)
 			if (get_server(i) && wild_match(input, get_server_itsname(i)))
-				malloc_strcat_wordlist_c(&retval, space, ltoa(i), &clue);
+				malloc_strcat_wordlist(&retval, space, ltoa(i));
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "GMATCH", len)) {
 		int	i;
 
 		for (i = 0; i < number_of_servers; i++)
 			if (get_server(i) && wild_match(input, get_server_group(i)))
-				malloc_strcat_wordlist_c(&retval, space, ltoa(i), &clue);
+				malloc_strcat_wordlist(&retval, space, ltoa(i));
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "MAX", len)) {
 		RETURN_INT(number_of_servers);

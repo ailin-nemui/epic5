@@ -739,7 +739,6 @@ static char *	all_keys_for_dbm (int refnum)
 	Dbm *	db;
 	Datum 	k;
 	char *	retval = NULL;
-	size_t	clue = 0;
 	char *	x;
 
 	if (!(db = lookup_dbm(refnum)))
@@ -747,7 +746,7 @@ static char *	all_keys_for_dbm (int refnum)
 
 	k = sdbm_firstkey(db->db);
 	x = Datum_to_string(k);
-	malloc_strcat_wordlist_c(&retval, space, x, &clue);
+	malloc_strcat_wordlist(&retval, space, x);
 	new_free(&x);
 
 	for (;;)
@@ -756,7 +755,7 @@ static char *	all_keys_for_dbm (int refnum)
 		if (k.dptr == NULL)
 			break;
 		x = Datum_to_string(k);
-		malloc_strcat_wordlist_c(&retval, space, x, &clue);
+		malloc_strcat_wordlist(&retval, space, x);
 		new_free(&x);
 	}
 

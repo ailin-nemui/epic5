@@ -197,7 +197,6 @@ static	IrcCommand irc_command[] =
         { "ABORT",      abortcmd	},
 	{ "ADMIN",	send_comm	},
 	{ "ALIAS",	aliascmd	}, /* alias.c */
-	{ "ALLOCDUMP",	allocdumpcmd	},
 	{ "ASSIGN",	assigncmd	}, /* alias.c */
 	{ "AWAY",	away		},
 	{ "BEEP",	beepcmd		},
@@ -436,7 +435,7 @@ BUILT_IN_COMMAND(cd)
 	if ((arg = new_next_arg(args, &args)) != NULL)
 	{
 		if (normalize_filename(arg, dir))
-			say("CD: %s contains an invalid directory", dir);
+			say("CD: %s contains an invalid directory", arg);
 		else if (chdir(dir))
 			say("CD: %s", strerror(errno));
 	}
@@ -1151,12 +1150,12 @@ BUILT_IN_COMMAND(xechocmd)
 
 	if (want_banner == 1)
 	{
-		malloc_strcpy(&stuff, banner());
-		if (*stuff)
-		{
-			malloc_strcat2_c(&stuff, space, args, NULL);
-			args = stuff;
-		}
+		const char *b = banner();
+
+		if (b && *b)
+			malloc_sprintf(&stuff, "%s %s", b, args);
+		else
+			malloc_sprintf(&stuff, "%s", args);
 	}
 	else if (want_banner != 0)
 		panic(1, "xecho: want_banner is %d", want_banner);
@@ -3906,11 +3905,6 @@ BUILT_IN_COMMAND(returncmd)
 			add_local_alias("FUNCTION_RETURN", args, 0);
 		return_exception++;
 	}
-}
-
-BUILT_IN_COMMAND(allocdumpcmd)
-{
-	malloc_dump(args);
 }
 
 BUILT_IN_COMMAND(botmodecmd)

@@ -37,7 +37,7 @@
 #include <math.h>
 
 /* Function decls */
-static	void	TruncateAndQuote (char **, const char *, ssize_t, const char *);
+static	void	TruncateAndEscape (char **, const char *, ssize_t, const char *);
 static	char	*alias_special_char(char **, char *, const char *, char *);
 static	void	do_alias_string (char *, const char *);
 
@@ -1362,8 +1362,6 @@ char	*expand_alias	(const char *string, const char *args)
 	char	quote_temp[2];
 	char	ch;
 	int	is_quote = 0;
-	const char *	unescape = empty_string;
-	size_t	buffclue = 0;
 
 	if (!string || !*string)
 		return malloc_strdup(empty_string);
@@ -1389,11 +1387,11 @@ char	*expand_alias	(const char *string, const char *args)
 			*ptr++ = 0;
 			if (!*ptr)
 			{
-				malloc_strcat_c(&buffer, empty_string, &buffclue);
+				malloc_strcat(&buffer, empty_string);
 				break;		/* Hrm. */
 			}
 
-			malloc_strcat_ues_c(&buffer, stuff, unescape, &buffclue);
+			malloc_strcat_ues(&buffer, stuff, empty_string);
 
 			for (; *ptr == '^'; ptr++)
 			{
@@ -1404,7 +1402,7 @@ char	*expand_alias	(const char *string, const char *args)
 				malloc_strcat(&quote_str, quote_temp);
 			}
 			stuff = alias_special_char(&buffer1, ptr, args, quote_str);
-			malloc_strcat_c(&buffer, buffer1, &buffclue);
+			malloc_strcat(&buffer, buffer1);
 			new_free(&buffer1);
 			if (quote_str)		/* Why ``stuff''? */
 				new_free(&quote_str);
@@ -1419,7 +1417,7 @@ char	*expand_alias	(const char *string, const char *args)
 
 			ch = *ptr;
 			*ptr = 0;
-			malloc_strcat_ues_c(&buffer, stuff, unescape, &buffclue);
+			malloc_strcat_ues(&buffer, stuff, empty_string);
 			stuff = ptr;
 
 			if ((span = MatchingBracket(stuff + 1, ch, 
@@ -1439,7 +1437,7 @@ char	*expand_alias	(const char *string, const char *args)
 			*stuff = ch;
 			ch = *ptr;
 			*ptr = 0;
-			malloc_strcat_c(&buffer, stuff, &buffclue);
+			malloc_strcat(&buffer, stuff);
 			stuff = ptr;
 			*ptr = ch;
 			break;
@@ -1459,7 +1457,7 @@ char	*expand_alias	(const char *string, const char *args)
 	}
 
 	if (stuff)
-		malloc_strcat_ues_c(&buffer, stuff, unescape, &buffclue);
+		malloc_strcat_ues(&buffer, stuff, empty_string);
 
 	if (!buffer)
 		buffer = malloc_strdup(empty_string);
@@ -1531,7 +1529,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 		case 0:
 		{
 			tmp = malloc_strdup(empty_string);
-			TruncateAndQuote(buffer, tmp, length, quote_em);
+			TruncateAndEscape(buffer, tmp, length, quote_em);
 			new_free(&tmp);
 			return ptr;
 		}
@@ -1594,7 +1592,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 				sub_buffer = malloc_strdup(empty_string);
 
 			if (!(x_debug & DEBUG_SLASH_HACK))
-				TruncateAndQuote(buffer, sub_buffer, 
+				TruncateAndEscape(buffer, sub_buffer, 
 						length, quote_em);
 
 			new_free(&sub_buffer);
@@ -1627,7 +1625,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 
 			if ((tmp = parse_inline(tmp, args)) != NULL)
 			{
-				TruncateAndQuote(buffer, tmp, length, quote_em);
+				TruncateAndEscape(buffer, tmp, length, quote_em);
 				new_free(&tmp);
 			}
 			return (ptr);
@@ -1662,7 +1660,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			while (!alias_string)
 				io("Input Prompt");
 
-			TruncateAndQuote(buffer, alias_string, length,quote_em);
+			TruncateAndEscape(buffer, alias_string, length,quote_em);
 			new_free(&alias_string);
 			return (ptr);
 		}
@@ -1677,7 +1675,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 		{
 			if (args == NULL)
 				args = LOCAL_COPY(empty_string);
-			TruncateAndQuote(buffer, args, length, quote_em);
+			TruncateAndEscape(buffer, args, length, quote_em);
 			return (ptr + 1);
 		}
 
@@ -1718,7 +1716,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			else
 			    val = malloc_strdup(ltoa(strlen(sub_buffer)));
 
-			TruncateAndQuote(buffer, val, length, quote_em);
+			TruncateAndEscape(buffer, val, length, quote_em);
 			new_free(&val);
 			new_free(&sub_buffer);
 
@@ -1733,7 +1731,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 		 */
 		case '$':
 		{
-			TruncateAndQuote(buffer, "$", length, quote_em);
+			TruncateAndEscape(buffer, "$", length, quote_em);
 			return ptr + 1;
 		}
 
@@ -1813,7 +1811,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			    else
 				tmp2 = extractew2(args, my_lower, my_upper);
 
-			    TruncateAndQuote(buffer, tmp2, length, quote_em);
+			    TruncateAndEscape(buffer, tmp2, length, quote_em);
 			    new_free(&tmp2);
 			    if (!ptr)
 				panic(1, "ptr is NULL after parsing numeric expando");
@@ -1844,7 +1842,7 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 			    if (!tmp)
 				tmp = malloc_strdup(empty_string);
 
-			    TruncateAndQuote(buffer, tmp, length, quote_em);
+			    TruncateAndEscape(buffer, tmp, length, quote_em);
 
 			    if (function_call)
 				MUST_BE_MALLOCED(tmp, "BOGUS RETVAL FROM FUNCTION CALL");
@@ -1865,10 +1863,10 @@ static	char	*alias_special_char (char **buffer, char *ptr, const char *args, cha
 }
 
 /*
- * TruncateAndQuote: This handles string width formatting and quoting for irc 
+ * TruncateAndEscape: This handles string width formatting and \-escaping for irc 
  * variables when [] or ^x is specified.
  */
-static	void	TruncateAndQuote (char **buff, const char *add, ssize_t length, const char *quote_em)
+static	void	TruncateAndEscape (char **buff, const char *add, ssize_t length, const char *quote_em)
 {
 	char *	buffer;
 	char *	free_me = NULL;
@@ -1902,7 +1900,7 @@ static	void	TruncateAndQuote (char **buff, const char *add, ssize_t length, cons
 		/* Don't pass retval from "alloca" as func arg, use local. */
 		size_t	bufsiz = strlen(add) * 2 + 2;
 		buffer = alloca(bufsiz);
-		double_quote(add, quote_em, buffer, bufsiz);
+		escape_chars(add, quote_em, buffer, bufsiz);
 		add = buffer;
 	}
 

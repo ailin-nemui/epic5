@@ -6,6 +6,7 @@
  * See the Copyright file for license information
  */
 
+#error "flood.h is deprecated"
 #ifndef __flood_h__
 #define __flood_h__
 

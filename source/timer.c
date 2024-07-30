@@ -1190,10 +1190,8 @@ char *	timerctl (char *input)
 		RETURN_STR(t->ref);
 	} else if (!my_strnicmp(listc, "REFNUMS", len)) {
 		char *	retval = NULL;
-		size_t	clue = 0;
-
 		for (t = PendingTimers; t; t = t->next)
-			malloc_strcat_word_c(&retval, space, t->ref, DWORD_DWORDS, &clue);
+			malloc_strcat_word(&retval, space, t->ref, DWORD_DWORDS);
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "ADD", len)) {
 		RETURN_EMPTY;		/* XXX - Not implemented yet. */

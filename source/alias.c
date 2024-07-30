@@ -892,11 +892,7 @@ void	prepare_alias_call (void *al, char **stuff)
 
 		/* Do dequoting last so it's useful for ``defaults'' */
 		if (next_val && *next_val && do_dequote_it == 1)
-		{
-			size_t clue;
-			clue = strlen(next_val);
-			dequoter(&next_val, &clue, 1, type, "\"");
-		}
+			dequoter(&next_val, 1, type, "\"");
 
 		/* Add the local variable */
 		add_local_alias(args->vars[i], next_val, 0);
@@ -913,7 +909,6 @@ void	prepare_alias_call (void *al, char **stuff)
 char *	print_arglist (ArgList *args)
 {
 	char *	retval = NULL;
-	size_t	cluep = 0;
 	int	i;
 
 	if (!args)
@@ -922,45 +917,45 @@ char *	print_arglist (ArgList *args)
 	for (i = 0; args->vars[i]; i++)
 	{
 	    if (i > 0)
-		malloc_strcat_c(&retval, ", ", &cluep);
+		malloc_strcat(&retval, ", ");
 
-	    malloc_strcat_c(&retval, args->vars[i], &cluep);
+	    malloc_strcat(&retval, args->vars[i]);
 
 	    switch (args->types[i])
 	    {
 		case WORD:
-		    malloc_strcat_c(&retval, " words ", &cluep);
+		    malloc_strcat(&retval, " words ");
 		    break;
 		case UWORD:
-		    malloc_strcat_c(&retval, " uwords ", &cluep);
+		    malloc_strcat(&retval, " uwords ");
 		    break;
 		case QWORD:
-		    malloc_strcat_c(&retval, " qwords ", &cluep);
+		    malloc_strcat(&retval, " qwords ");
 		    break;
 		case DWORD:
-		    malloc_strcat_c(&retval, " dwords ", &cluep);
+		    malloc_strcat(&retval, " dwords ");
 		    break;
 	    }
-	    malloc_strcat_c(&retval, ltoa(args->words[i]), &cluep);
+	    malloc_strcat(&retval, ltoa(args->words[i]));
 
 	    if (args->defaults[i])
 	    {
-		malloc_strcat_c(&retval, " default ", &cluep);
-		malloc_strcat_c(&retval, args->defaults[i], &cluep);
+		malloc_strcat(&retval, " default ");
+		malloc_strcat(&retval, args->defaults[i]);
 	    }
 	}
 
 	if (args->void_flag)
 	{
 	   if (i > 0)
-	       malloc_strcat_c(&retval, ", ", &cluep);
-	   malloc_strcat_c(&retval, "void", &cluep);
+	       malloc_strcat(&retval, ", ");
+	   malloc_strcat(&retval, "void");
 	}
 	else if (args->dot_flag)
 	{
 	   if (i > 0)
-	       malloc_strcat_c(&retval, ", ", &cluep);
-	    malloc_strcat_c(&retval, "...", &cluep);
+	       malloc_strcat(&retval, ", ");
+	    malloc_strcat(&retval, "...");
 	}
 
 	return retval;
@@ -1500,17 +1495,8 @@ static Symbol *	find_local_alias (const char *orig_name, alist **list)
 				alias = call_stack[c].alias.list[loc]->data;
 
 			/* XXXX - This is bletcherous */
-			/*
-			 * I agree, however, there doesn't seem to be any other
-			 * reasonable way to do it.  I guess launching multiple
-			 * binary searches on relevant portions of name would
-			 * do it, but the overhead could(?) do damage.
-			 *
-			 * Actualy, thinking about it again, seperating the
-			 * implicit variables from the normal ones would
-			 * probably work.
-			 */
 			else if (strchr(name, '.'))
+			{
 			    for (x = 0; x < loc; x++)
 			    {
 				Symbol *item;
@@ -1525,6 +1511,7 @@ static Symbol *	find_local_alias (const char *orig_name, alist **list)
 						break;
 					}
 				}
+			    }
 			}
 
 			if (!alias && implicit >= 0)
@@ -2197,9 +2184,11 @@ char **	get_subarray_elements (const char *orig_root, int *howmany, int type)
 			matches_size = *howmany + 5;
 			RESIZE(matches, char *, matches_size + 1);
 		}
-		matches[*howmany] = malloc_strndup(s->name, cmp + end);
-		last = matches[*howmany];
-		*howmany += 1;
+		if ((matches[*howmany] = malloc_strext(s->name, cmp + end)))
+		{
+			last = matches[*howmany];
+			*howmany += 1;
+		}
 	}
 
 	if (*howmany)
@@ -2740,7 +2729,6 @@ static	int maxret = 0;
 		{
 			char **mlist = NULL;
 			char *mylist = NULL;
-			size_t	mylistclue = 0;
 			int num = 0, ctr;
 
 			if (!my_stricmp(listc, "*"))
@@ -2757,7 +2745,7 @@ static	int maxret = 0;
 
 			for (ctr = 0; ctr < num; ctr++)
 			{
-				malloc_strcat_word_c(&mylist, space, mlist[ctr],DWORD_DWORDS, &mylistclue);
+				malloc_strcat_word(&mylist, space, mlist[ctr],DWORD_DWORDS);
 				new_free((char **)&mlist[ctr]);
 			}
 			new_free((char **)&mlist);
@@ -2769,7 +2757,6 @@ static	int maxret = 0;
 		{
 			char **	mlist = NULL;
 			char *	mylist = NULL;
-			size_t	mylistclue = 0;
 			int	num = 0,
 				ctr;
 
@@ -2781,7 +2768,7 @@ static	int maxret = 0;
 				RETURN_EMPTY;
 
 			for (ctr = 0; ctr < num; ctr++)
-				malloc_strcat_word_c(&mylist, space, mlist[ctr], DWORD_DWORDS, &mylistclue);
+				malloc_strcat_word(&mylist, space, mlist[ctr], DWORD_DWORDS);
 			new_free((char **)&mlist);
 			if (mylist)
 				return mylist;
@@ -3390,7 +3377,6 @@ char    *symbolctl      (char *input)
         int     len;
         char    *listc;
         char    *ret = NULL;
-	size_t	clue = 0;
         Symbol  *s;
 	int	i;
 	int	level;
@@ -3402,7 +3388,7 @@ char    *symbolctl      (char *input)
 
         if (!my_strnicmp(listc, "TYPES", len)) {
 	    for (i = 0; symbol_types[i]; i++)
-		malloc_strcat_word_c(&ret, space, symbol_types[i], DWORD_DWORDS, &clue);
+		malloc_strcat_word(&ret, space, symbol_types[i], DWORD_DWORDS);
 	    RETURN_MSTR(ret);
 
         } else if (!my_strnicmp(listc, "PMATCH", len)) {
@@ -3432,7 +3418,7 @@ char    *symbolctl      (char *input)
 		RETURN_EMPTY;
 
 	    for (i = 0; i < num; i++)
-		malloc_strcat_word_c(&ret, space, names[i], DWORD_DWORDS, &clue);
+		malloc_strcat_word(&ret, space, names[i], DWORD_DWORDS);
 	    new_free((char **)&names);
 	    RETURN_MSTR(ret);
 
@@ -3531,17 +3517,17 @@ char    *symbolctl      (char *input)
 
 	    if (!input || !*input) {
 		if (s->user_variable || s->user_variable_stub)
-		    malloc_strcat_word_c(&ret, space, "ASSIGN", DWORD_NO, &clue);
+		    malloc_strcat_word(&ret, space, "ASSIGN", DWORD_NO);
 		if (s->user_command || s->user_command_stub)
-		    malloc_strcat_word_c(&ret, space, "ALIAS", DWORD_NO, &clue);
+		    malloc_strcat_word(&ret, space, "ALIAS", DWORD_NO);
 		if (s->builtin_command)
-		    malloc_strcat_word_c(&ret, space, "BUILTIN_COMMAND", DWORD_NO, &clue);
+		    malloc_strcat_word(&ret, space, "BUILTIN_COMMAND", DWORD_NO);
 		if (s->builtin_function)
-		    malloc_strcat_word_c(&ret, space, "BUILTIN_FUNCTION", DWORD_NO, &clue);
+		    malloc_strcat_word(&ret, space, "BUILTIN_FUNCTION", DWORD_NO);
 		if (s->builtin_expando)
-		    malloc_strcat_word_c(&ret, space, "BUILTIN_EXPANDO", DWORD_NO, &clue);
+		    malloc_strcat_word(&ret, space, "BUILTIN_EXPANDO", DWORD_NO);
 		if (s->builtin_variable)
-		    malloc_strcat_word_c(&ret, space, "BUILTIN_VARIABLE", DWORD_NO, &clue);
+		    malloc_strcat_word(&ret, space, "BUILTIN_VARIABLE", DWORD_NO);
 		RETURN_MSTR(ret);
 	    }
 

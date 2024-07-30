@@ -392,7 +392,6 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 
 	    if (*arg == '-' || *arg == '/')
 	    {
-		lower(arg);
 		arg++;
 		if ((len = strlen(arg)) == 0)
 		{
@@ -402,24 +401,24 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 			return;
 		}
 
-		else if (!strncmp(arg, "away", MAX(len, 1)))
+		else if (!my_strnicmp(arg, "away", MAX(len, 1)))
 		{
 			new_w->who_mask |= WHO_AWAY;
 			WHO_DEBUG("WHOBASE: Setting WHO_AWAY flag");
 		}
-		else if (!strncmp(arg, "chops", MAX(len, 2)))
+		else if (!my_strnicmp(arg, "chops", MAX(len, 2)))
 		{
 			new_w->who_mask |= WHO_CHOPS;
 			WHO_DEBUG("WHOBASE: Setting WHO_CHOPS flag");
 		}
-		else if (!strncmp(arg, "diagnose", MAX(len, 1)))
+		else if (!my_strnicmp(arg, "diagnose", MAX(len, 1)))
 		{
 			WHO_DEBUG("WHOBASE: Listing the who queue");
 			who_queue_list(refnum);
 			delete_who_item(new_w);
 			return;
 		}
-		else if (!strncmp(arg, "dx", MAX(len, 2)))
+		else if (!my_strnicmp(arg, "dx", MAX(len, 2)))
 		{
 			new_w->dalnet_extended = 1;
 			new_w->dalnet_extended_args = new_next_arg(args, &args);
@@ -427,7 +426,7 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 			WHO_DEBUG("WHOBASE: setting -dx flag [%s]", new_w->dalnet_extended_args, channel);
 			args = NULL;
 		}
-		else if (!strncmp(arg, "end", MAX(len, 3)))
+		else if (!my_strnicmp(arg, "end", MAX(len, 3)))
 		{
 			char *stuff;
 
@@ -437,19 +436,19 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 				say("Need {...} argument for -END argument.");
 			WHO_DEBUG("WHOBASE: setting who_end [%s]", new_w->who_end);
 		}
-		else if (!strncmp(arg, "flush", MAX(len, 1)))
+		else if (!my_strnicmp(arg, "flush", MAX(len, 1)))
 		{
 			WHO_DEBUG("WHOBASE: flushing who queue [%d]", refnum);
 			who_queue_flush(refnum);
 			delete_who_item(new_w);
 			return;
 		}
-	 	else if (!strncmp(arg, "here", MAX(len, 2)))
+	 	else if (!my_strnicmp(arg, "here", MAX(len, 2)))
 		{
 			WHO_DEBUG("WHOBASE: setting WHO_HERE flag");
 			new_w->who_mask |= WHO_HERE;
 		}
-		else if (!strncmp(arg, "hosts", MAX(len, 2)))
+		else if (!my_strnicmp(arg, "hosts", MAX(len, 2)))
 		{
 			if ((arg = next_arg(args, &args)) == NULL)
 			{
@@ -466,7 +465,7 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 					new_w->who_host);
 		}
 
-		else if (!strncmp(arg, "line", MAX(len, 4)))
+		else if (!my_strnicmp(arg, "line", MAX(len, 4)))
 		{
 			char *stuff;
 
@@ -476,7 +475,7 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 				say("Need {...} argument for -LINE argument.");
 			WHO_DEBUG("WHOBASE: setting -line [%s]", new_w->who_end);
 		}
-		else if (!strncmp(arg, "literal", MAX(len, 3)))
+		else if (!my_strnicmp(arg, "literal", MAX(len, 3)))
 		{
 			/* Hope for the best */
 			new_w->who_mask = 0;	/* For safety reasons */
@@ -491,12 +490,12 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 			send_to_aserver(refnum, "WHO %s", args);
 			return;
 		}
-		else if (!strncmp(arg, "lusers", MAX(len, 2)))
+		else if (!my_strnicmp(arg, "lusers", MAX(len, 2)))
 		{
 			new_w->who_mask |= WHO_LUSERS;
 			WHO_DEBUG("WHOBASE: Setting WHO_LUSERS flag", args);
 		}
-		else if (!strncmp(arg, "name", MAX(len, 2)))
+		else if (!my_strnicmp(arg, "name", MAX(len, 2)))
 		{
 			if ((arg = next_arg(args, &args)) == NULL)
 			{
@@ -512,7 +511,7 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 			WHO_DEBUG("WHOBASE: Setting -NAME argument [%s]", 
 					new_w->who_name);
 		}
-		else if (!strncmp(arg, "nick", MAX(len, 2)))
+		else if (!my_strnicmp(arg, "nick", MAX(len, 2)))
 		{
 			if ((arg = next_arg(args, &args)) == NULL)
 			{
@@ -528,22 +527,22 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 			WHO_DEBUG("WHOBASE: Setting -NICK argument [%s]", 
 					new_w->who_nick);
 		}
-		else if (!strncmp(arg, "nochops", MAX(len, 2)))
+		else if (!my_strnicmp(arg, "nochops", MAX(len, 2)))
 		{
 			new_w->who_mask |= WHO_NOCHOPS;
 			WHO_DEBUG("WHOBASE: Setting WHO_NOCHOPS flag");
 		}
-		else if (!strncmp(arg, "oper", MAX(len, 1)))
+		else if (!my_strnicmp(arg, "oper", MAX(len, 1)))
 		{
 			new_w->who_mask |= WHO_OPS;
 			WHO_DEBUG("WHOBASE: Setting WHO_OPS flag");
 		}
-		else if (!strncmp(arg, "operspy", MAX(len, 5)))
+		else if (!my_strnicmp(arg, "operspy", MAX(len, 5)))
 		{
 			new_w->who_mask |= WHO_OPERSPY;
 			WHO_DEBUG("WHOBASE: Setting WHO_OPERSPY flag");
 		}
-		else if (!strncmp(arg, "realname", MAX(len, 1)))
+		else if (!my_strnicmp(arg, "realname", MAX(len, 1)))
 		{
 			if ((arg = next_arg(args, &args)) == NULL)
 			{
@@ -558,7 +557,7 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 			channel = new_w->who_real;
 			WHO_DEBUG("WHOBASE: Setting -REALNAME [%s]", new_w->who_real);
 		}
-		else if (!strncmp(arg, "servers", MAX(len, 1)))
+		else if (!my_strnicmp(arg, "servers", MAX(len, 1)))
 		{
 			if ((arg = next_arg(args, &args)) == NULL)
 			{
@@ -573,12 +572,12 @@ void 	whobase (int refnum, char *args, void (*line) (int, const char *, const ch
 			channel = new_w->who_server;
 			WHO_DEBUG("WHOBASE: Setting -SERVERS [%s]", new_w->who_server);
 		}
-		else if (!strncmp(arg, "u-i", MAX(len, 3)))
+		else if (!my_strnicmp(arg, "u-i", MAX(len, 3)))
 		{
 			new_w->who_mask |= WHO_INVISIBLE;
 			WHO_DEBUG("WHOBASE: Setting WHO_INVISIBLE flag");
 		}
-		else if (!strncmp(arg, "ux", MAX(len, 2)))
+		else if (!my_strnicmp(arg, "ux", MAX(len, 2)))
 		{
 			new_w->undernet_extended = 1;
 			new_w->undernet_extended_args = args;
@@ -1010,14 +1009,13 @@ int	fake_who_end (int refnum, const char *from, const char *comm, const char *wh
 		char *target;
 
 		target = LOCAL_COPY(who_target);
-		while (last_char(target) == ' ')
-			chop(target, 1);
+		remove_trailing_spaces(target, 0);
 
 		/*
 		 * So 'who_target' isn't NULL here.  Make sure it's a 
 		 * legitimate match to our current top of who request.
 		 */
-		if (strncmp(new_w->who_target, target, strlen(target)))
+		if (my_strnicmp(new_w->who_target, target, strlen(target)))
 			return 0;
 
 		/*who_target = target; */
@@ -1434,7 +1432,6 @@ void	ison_returned (int refnum, const char *from, const char *comm, const char *
 {
 	IsonEntry *new_i = ison_queue_top(refnum);
 	char	*do_off = NULL, *this1, *all1, *this2, *all2;
-	size_t	clue = 0;
 
 	if (!ArgList[0])
 		{ rfc1459_odd(from, comm, ArgList); return; }
@@ -1452,8 +1449,8 @@ void	ison_returned (int refnum, const char *from, const char *comm, const char *
 	if (new_i->offcmd)
 		while ((this2 = next_arg(all2, &all2)))
 			while ((this1 = next_arg(all1, &all1)) && my_stricmp(this1, this2))
-				malloc_strcat_wordlist_c(&do_off, space, this1, &clue);
-	malloc_strcat_wordlist_c(&do_off, space, all1, &clue);
+				malloc_strcat_wordlist(&do_off, space, this1);
+	malloc_strcat_wordlist(&do_off, space, all1);
 
 	PasteArgs(ArgList, 0);
 	if (new_i->line) 
@@ -1665,7 +1662,7 @@ void userhostbase (int refnum, char *args, const char *subargs, void (*line) (in
 			server_query_reqd++;
 
 		else if (!my_strnicmp(nick, "-count", 3))
-			count = atol(safe_new_next_arg(args, &args));
+			count = atol(nonull(new_next_arg(args, &args)));
 
 		else if (!my_strnicmp(nick, "-cmd", 2))
 		{
@@ -1947,17 +1944,16 @@ void	userhost_returned (int refnum, const char *from, const char *comm, const ch
 void	userhost_cmd_returned (int refnum, UserhostItem *stuff, const char *nick, const char *text)
 {
 	char	*args = NULL;
-	size_t	clue = 0;
 
 	/* This should be safe, though its playing it fast and loose */
-	malloc_strcat_c(&args, stuff->nick ? stuff->nick : empty_string, &clue);
-	malloc_strcat_c(&args, stuff->oper ? " + " : " - ", &clue);
-	malloc_strcat_c(&args, stuff->away ? "+ " : "- ", &clue);
-	malloc_strcat_c(&args, stuff->user ? stuff->user : empty_string, &clue);
-	malloc_strcat_c(&args, space, &clue);
-	malloc_strcat_c(&args, stuff->host ? stuff->host : empty_string, &clue);
-	malloc_strcat_c(&args, space, &clue);
-	malloc_strcat_c(&args, stuff->extra ? stuff->extra : empty_string, &clue);
+	malloc_strcat(&args, stuff->nick ? stuff->nick : empty_string);
+	malloc_strcat(&args, stuff->oper ? " + " : " - ");
+	malloc_strcat(&args, stuff->away ? "+ " : "- ");
+	malloc_strcat(&args, stuff->user ? stuff->user : empty_string);
+	malloc_strcat(&args, space);
+	malloc_strcat(&args, stuff->host ? stuff->host : empty_string);
+	malloc_strcat(&args, space);
+	malloc_strcat(&args, stuff->extra ? stuff->extra : empty_string);
 	call_lambda_command("USERHOST", text, args);
 
 	new_free(&args);

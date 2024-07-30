@@ -664,13 +664,12 @@ char	*create_nick_list (const char *name, int server)
 	Channel *channel = find_channel(name, server);
 	char 	*str = NULL;
 	int 	i;
-	size_t	clue = 0;
 
 	if (!channel)
 		return NULL;
 
 	for (i = 0; i < channel->nicks.max; i++)
-		malloc_strcat_word_c(&str, space, NICK(channel->nicks, i)->nick, DWORD_NO, &clue);
+		malloc_strcat_word(&str, space, NICK(channel->nicks, i)->nick, DWORD_NO);
 
 	return str;
 }
@@ -680,14 +679,13 @@ char	*create_chops_list (const char *name, int server)
 	Channel *channel = find_channel(name, server);
 	char 	*str = NULL;
 	int 	i;
-	size_t	clue = 0;
 
 	if (!channel)
 		return malloc_strdup(empty_string);
 
 	for (i = 0; i < channel->nicks.max; i++)
 	    if (NICK(channel->nicks, i)->chanop)
-		malloc_strcat_word_c(&str, space, NICK(channel->nicks, i)->nick, DWORD_NO, &clue);
+		malloc_strcat_word(&str, space, NICK(channel->nicks, i)->nick, DWORD_NO);
 
 	if (!str)
 		return malloc_strdup(empty_string);
@@ -699,14 +697,13 @@ char	*create_nochops_list (const char *name, int server)
 	Channel *channel = find_channel(name, server);
 	char 	*str = NULL;
 	int 	i;
-	size_t	clue = 0;
 
 	if (!channel)
 		return malloc_strdup(empty_string);
 
 	for (i = 0; i < channel->nicks.max; i++)
 	    if (!NICK(channel->nicks, i)->chanop)
-		malloc_strcat_word_c(&str, space, NICK(channel->nicks, i)->nick, DWORD_NO, &clue);
+		malloc_strcat_word(&str, space, NICK(channel->nicks, i)->nick, DWORD_NO);
 
 	if (!str)
 		return malloc_strdup(empty_string);
@@ -1093,7 +1090,6 @@ char	*scan_channel (char *cname)
 	char		buffer[NICKNAME_LEN + 5];
 	char		*retval = NULL;
 	int		i;
-	size_t	clue = 0;
 
 	if (!wc)
 		return malloc_strdup(empty_string);
@@ -1115,7 +1111,7 @@ char	*scan_channel (char *cname)
 			buffer[1] = '.';
 
 		strlcpy(buffer + 2, NICK(wc->nicks, i)->nick, sizeof(buffer) - 2);
-		malloc_strcat_word_c(&retval, space, buffer, DWORD_NO, &clue);
+		malloc_strcat_word(&retval, space, buffer, DWORD_NO);
 	}
 
 	if (retval == NULL)
@@ -1252,13 +1248,12 @@ char *	window_all_channels (int window, int server)
 {
 	char *str = NULL;
 	Channel *tmp = NULL;
-	size_t	clue = 0;
 
 	while (traverse_all_channels(&tmp, server, 1))
 	{
 		if (tmp->window != window)
 			continue;
-		malloc_strcat_word_c(&str, space, tmp->channel, DWORD_NO, &clue);
+		malloc_strcat_word(&str, space, tmp->channel, DWORD_NO);
 	}
 	return str;
 }
@@ -1606,12 +1601,11 @@ char *	create_channel_list (int server)
 {
 	Channel	*tmp = NULL;
 	char	*retval = NULL;
-	size_t	clue = 0;
 
 	if (server >= 0)
 	{
 		while (traverse_all_channels(&tmp, server, 1))
-			malloc_strcat_word_c(&retval, space, tmp->channel, DWORD_NO, &clue);
+			malloc_strcat_word(&retval, space, tmp->channel, DWORD_NO);
 	}
 
 	return retval ? retval : malloc_strdup(empty_string);

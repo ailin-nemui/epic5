@@ -589,7 +589,7 @@ static int	move_to_next_word (const char **str, const char *start, int extended,
  * Notes:
  *  'mark' is not used as an input parameter.  Upon return, it is set to 
  *	the return value.
- *  The return value is suitable for passing to 'strext' if you wanted to 
+ *  The return value is suitable for passing to 'malloc_strext' if you wanted to 
  *	extract a string ending with the previous word!
  *  Word numbering always counts from 0.
  */
@@ -779,14 +779,15 @@ char *	real_extract2 (const char *start, int firstword, int lastword, int extend
 	 * copying out of is const.  So we cant just null off
 	 * the trailing character and malloc_strdup it.
 	 */
-	retval = strext(mark, mark2);
+	if (!(retval = malloc_strext(mark, mark2 - mark)))
+		return malloc_strdup(empty_string);
 
 	/* 
 	 * XXX Backwards compatability requires that $<num> not have
 	 * any trailing spaces, even if it is the last word.
 	 */
 	if (firstword == lastword)
-		remove_trailing_spaces(retval, 0);
+		remove_trailing_spaces(retval, 1);
 
 	return retval;
 }
@@ -823,7 +824,7 @@ char *	real_extract (char *start, int firstword, int lastword, int extended)
 	 */
 	while (*start && my_isspace(*start))
 		start++;
-	remove_trailing_spaces(start, 0);
+	remove_trailing_spaces(start, 1);
 
 	if (firstword == EOS)
 	{
@@ -876,6 +877,8 @@ char *	real_extract (char *start, int firstword, int lastword, int extended)
 	if (mark2 < mark)
 		return malloc_strdup(empty_string);
 
-	booya = strext(mark, mark2);
+	if (!(booya = malloc_strext(mark, mark2 - mark)))
+		return malloc_strdup(empty_string);
+
 	return booya;
 }

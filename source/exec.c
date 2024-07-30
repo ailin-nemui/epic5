@@ -1810,7 +1810,6 @@ char *  execctl (char *input)
 	char *	field;
 	Process *proc;
 	char *	retval = NULL;
-	size_t	clue = 0;
 
         GET_FUNC_ARG(listc, input);
         len = strlen(listc);
@@ -1821,7 +1820,7 @@ char *  execctl (char *input)
 
 		for (i = 0; i < process_list_size; i++)
 			if ((proc = process_list[i]))
-				malloc_strcat_word_c(&retval, space, proc->refnum_desc, DWORD_NO, &clue);
+				malloc_strcat_word(&retval, space, proc->refnum_desc, DWORD_NO);
 		RETURN_MSTR(retval);
         } else if (!my_strnicmp(listc, "NEW", len)) {
 		proc = new_process(input);

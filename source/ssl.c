@@ -1143,7 +1143,6 @@ static char *	internal_get_x509_sans (X509 *const cert)
 	GENERAL_NAMES *	names = NULL;
 	int		i, count;
 	char *		retval = NULL;
-	size_t		rvclue = 0;
 
         if (!cert) 
 		return malloc_strdup(empty_string);
@@ -1216,7 +1215,7 @@ static char *	internal_get_x509_sans (X509 *const cert)
 			     * that's an invalid value, and we declare shenanigans.
 			     */
 			    if ((size_t)len1 == strlen((const char *)utf8))
-				malloc_strcat_word_c(&retval, space, (const char *)utf8, DWORD_NO, &rvclue);
+				malloc_strcat_word(&retval, space, (const char *)utf8, DWORD_NO);
 			}
 
 			if (utf8)

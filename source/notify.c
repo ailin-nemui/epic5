@@ -80,15 +80,14 @@ static void	show_notify_list (int all)
 	Server *s;
 	int	i;
 	char	*list = (char *) 0;
-	size_t	clue = 0;
 
 	if (!(s = get_server(from_server)))
 		return;
 
-	for (i = 0, clue = 0; i < NOTIFY_MAX(s); i++)
+	for (i = 0; i < NOTIFY_MAX(s); i++)
 	{
 		if (NOTIFY_ITEM(s, i)->flag)
-		    malloc_strcat_wordlist_c(&list, space, NOTIFY_ITEM(s, i)->nick, &clue);
+		    malloc_strcat_wordlist(&list, space, NOTIFY_ITEM(s, i)->nick);
 	}
 
 	if (list)
@@ -97,10 +96,10 @@ static void	show_notify_list (int all)
 	if (all)
 	{
 		new_free(&list);
-		for (i = 0, clue = 0; i < NOTIFY_MAX(s); i++)
+		for (i = 0; i < NOTIFY_MAX(s); i++)
 		{
 			if (!NOTIFY_ITEM(s, i)->flag)
-			    malloc_strcat_wordlist_c(&list, space, NOTIFY_ITEM(s, i)->nick, &clue);
+			    malloc_strcat_wordlist(&list, space, NOTIFY_ITEM(s, i)->nick);
 		}
 		if (list) 
 			say("Currently absent: %s", list);
@@ -120,7 +119,6 @@ static void	rebuild_notify_ison (int refnum)
 {
 	Server *s;
 	int i;
-	size_t clue = 0;
 
 	if (!(s = get_server(refnum)))
 		return;		/* No server, no go */
@@ -129,7 +127,7 @@ static void	rebuild_notify_ison (int refnum)
 		s->ison[0] = 0;
 
 	for (i = 0; i < NOTIFY_MAX(s); i++)
-		malloc_strcat_wordlist_c(&s->ison, space, NOTIFY_ITEM(s, i)->nick, &clue);
+		malloc_strcat_wordlist(&s->ison, space, NOTIFY_ITEM(s, i)->nick);
 }
 
 
@@ -146,7 +144,6 @@ BUILT_IN_COMMAND(notify)
 	NotifyItem	*new_n;
 	int		refnum, first = 0, last = number_of_servers;
 	int		added = 0;
-	size_t		clue = 0;
 
 	malloc_strcpy(&list, empty_string);
 	while ((nick = next_arg(args, &args)))
@@ -243,7 +240,7 @@ BUILT_IN_COMMAND(notify)
 
 		    if (added)
 		    {
-			malloc_strcat_wordlist_c(&list, space, nick, &clue);
+			malloc_strcat_wordlist(&list, space, nick);
 			do_ison = 1;
 		    }
 
@@ -490,7 +487,6 @@ void 	make_notify_list (int refnum)
 	NotifyItem *tmp;
 	char *list = NULL;
 	int i;
-	size_t clue = 0;
 
 	if (!(s = get_server(refnum)))
 		return;
@@ -516,7 +512,7 @@ void 	make_notify_list (int refnum)
 		tmp->flag = 0;
 
 		add_to_alist (NOTIFY_LIST(s), tmp->nick, tmp);
-		malloc_strcat_wordlist_c(&list, space, tmp->nick, &clue);
+		malloc_strcat_wordlist(&list, space, tmp->nick);
 	}
 
 	if (list && !s->ison_wait)
@@ -550,7 +546,6 @@ char *	get_notify_nicks (int refnum, int showon)
 	Server *s;
 	char *list = NULL;
 	int i;
-	size_t rvclue=0;
 
 	if (!(s = get_server(refnum)))
 		return malloc_strdup(empty_string);
@@ -558,7 +553,7 @@ char *	get_notify_nicks (int refnum, int showon)
 	for (i = 0; i < NOTIFY_MAX(s); i++)
 	{
 		if (showon == -1 || showon == NOTIFY_ITEM(s, i)->flag)
-			malloc_strcat_wordlist_c(&list, space, NOTIFY_ITEM(s, i)->nick, &rvclue);
+			malloc_strcat_wordlist(&list, space, NOTIFY_ITEM(s, i)->nick);
 	}
 
 	return (list ? list : malloc_strdup(empty_string));

@@ -52,7 +52,6 @@
 #include "vars.h"
 #include "window.h"
 #include "ifcmd.h"
-#include "flood.h"
 #include "words.h"
 #include "functions.h"
 
@@ -212,7 +211,7 @@ CTCP_HANDLER(do_crypto)
 {
 	List	*key = NULL;
 	const char	*crypt_who;
-	char 	*tofrom;
+	char 	*tofrom = NULL;
 	char	*ret = NULL;
 	char 	*extra = NULL;
 
@@ -223,8 +222,7 @@ CTCP_HANDLER(do_crypto)
 	else
 		crypt_who = to;
 
-	tofrom = malloc_strdup3(to, ",", from);
-	malloc_strcat2_c(&tofrom, "!", FromUserHost, NULL);
+	malloc_sprintf(&tofrom, "%s,%s!%s", nonull(to), nonull(from), nonull(FromUserHost));
 
 	if ((key = is_crypted(tofrom, from_server, cmd)) ||
 	    (key = is_crypted(crypt_who, from_server, cmd)))
@@ -304,18 +302,15 @@ CTCP_HANDLER(do_crypto)
 CTCP_HANDLER(do_atmosphere)
 {
 	int	l;
-	int	ignore, flood;
+	int	ignore;
 
 	if (!args || !*args)
 		return NULL;
 
 	/* Xavier mentioned that we should allow /ignore #chan action */
 	ignore = check_ignore_channel(from, FromUserHost, to, LEVEL_ACTION);
-	flood = new_check_flooding(from, FromUserHost, 
-					is_channel(to) ? to : NULL,
-					args, LEVEL_ACTION);
 
-	if (ignore == IGNORED || flood)
+	if (ignore == IGNORED)
 		return NULL;
 
 	if (is_channel(to))
@@ -464,7 +459,6 @@ static int split_CTCP (char *raw_message, char *ctcp_dest, char *after_ctcp)
 char *	do_ctcp (int request, const char *from, const char *to, char *str)
 {
 	int 	flag;
-	int	fflag;
 	char 	local_ctcp_buffer [BIG_BUFFER_SIZE + 1],
 		the_ctcp          [IRCD_BUFFER_SIZE + 1],
 		after             [IRCD_BUFFER_SIZE + 1];
@@ -498,15 +492,9 @@ char *	do_ctcp (int request, const char *from, const char *to, char *str)
 	 * of the loop, for each CTCP we see.
 	 */
 	flag = check_ignore_channel(from, FromUserHost, to, LEVEL_CTCP);
-	if (request)
-		fflag = new_check_flooding(from, FromUserHost, 
-						is_channel(to) ? to : NULL, 
-						str, LEVEL_CTCP);
-	else
-		fflag = 0;
 
-	/* /IGNOREd or flooding messages are removed but not processed */
-	if (flag == IGNORED || fflag == 1)
+	/* /IGNOREd messages are removed but not processed */
+	if (flag == IGNORED)
 		dont_process_more = 1;
 
 	/* Messages sent to global targets are removed but not processed */

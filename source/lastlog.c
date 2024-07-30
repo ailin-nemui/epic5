@@ -1471,7 +1471,6 @@ BUILT_IN_FUNCTION(function_line, word)
 	int	do_level = 0;
 	int	do_timestamp = 0;
 	char *	retval = NULL;
-	size_t	clue = 0;
 
 	GET_INT_ARG(line, word);
 
@@ -1517,14 +1516,12 @@ BUILT_IN_FUNCTION(function_line, word)
 	if (!start_pos)
 		RETURN_EMPTY;
 
-	malloc_strcat_c(&retval, start_pos->msg, &clue);
+	malloc_strcat(&retval, start_pos->msg);
 
 	if (do_level)
-		malloc_strcat_wordlist_c(&retval, space, 
-					level_to_str(start_pos->level), &clue);
+		malloc_strcat_wordlist(&retval, space, level_to_str(start_pos->level));
 	if (do_timestamp)
-		malloc_strcat_wordlist_c(&retval, space, 
-					NUMSTR(start_pos->created), &clue);
+		malloc_strcat_wordlist(&retval, space, NUMSTR(start_pos->created));
 
 	RETURN_MSTR(retval);
 }
@@ -1545,7 +1542,6 @@ BUILT_IN_FUNCTION(function_lastlog, word)
 	int	win;
 	Mask	lastlog_levels;
 	int	line = 1;
-	size_t	rvclue = 0;
 	char *	rejects = NULL;
 
 	GET_FUNC_ARG(windesc, word);
@@ -1566,8 +1562,7 @@ BUILT_IN_FUNCTION(function_lastlog, word)
 
 		if (mask_isset(&lastlog_levels, iter->level))
 		    if (wild_match(pattern, iter->msg))
-			malloc_strcat_word_c(&retval, space, 
-					ltoa(line), DWORD_NO, &rvclue);
+			malloc_strcat_word(&retval, space, ltoa(line), DWORD_NO);
 		line++;
 	}
 

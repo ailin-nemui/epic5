@@ -133,7 +133,6 @@ int	add_new_level_alias (int level, const char *name)
 char *	get_all_levels (void)
 {
 	char *buffer = NULL;
-	size_t clue = 0;
 	int	i;
 	int	next = 1;
 
@@ -142,7 +141,7 @@ char *	get_all_levels (void)
 	    /* This is done to skip aliases... */
 	    if (LEVELNUM(i) == next)
 	    {
-	        malloc_strcat_word_c(&buffer, space, LEVELNAME(i), DWORD_NO, &clue);
+	        malloc_strcat_word(&buffer, space, LEVELNAME(i), DWORD_NO);
 		next++;
 	    }
 	}
@@ -232,7 +231,6 @@ int	str_to_mask (Mask *mask, const char *orig, char **rejects)
 		i,
 		neg;
 	char *	str;
-	size_t	cluep = 0;
 
 	mask_unsetall(mask);
 
@@ -278,8 +276,7 @@ int	str_to_mask (Mask *mask, const char *orig, char **rejects)
 			    }
 
 			    if (i == level_bucket->numitems)
-				malloc_strcat_word_c(rejects, space, str, 
-							DWORD_NO, &cluep);
+				malloc_strcat_word(rejects, space, str, DWORD_NO);
 			}
 		}
 		str = ptr;

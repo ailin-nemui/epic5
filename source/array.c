@@ -550,7 +550,6 @@ MATCHITEM(function_gettmatch, input, array->item[idx], {if (match >= 0) RETURN_S
 BUILT_IN_FUNCTION((fn), input)                                               \
 {                                                                            \
 	char    *result = NULL;                                        \
-	size_t	resclue = 0;                                                 \
 	char    *name = NULL;                                          \
 	long    idx;                                                       \
 	an_array *array;                                                     \
@@ -561,7 +560,7 @@ BUILT_IN_FUNCTION((fn), input)                                               \
 	    do pre while (0);                                                \
 	    for (idx = 0; idx < array->size; idx++)                    \
 		if (wild_match((wm1), (wm2)) > 0)                            \
-		    malloc_strcat_wordlist_c(&result, space, ltoa(idx), &resclue);       \
+		    malloc_strcat_wordlist(&result, space, ltoa(idx));       \
 	}                                                                    \
                                                                              \
 	RETURN_MSTR(result);                                                 \
@@ -601,7 +600,6 @@ BUILT_IN_FUNCTION((fn), input)                                               \
 	long item;                                                           \
 	an_array *array;                                                     \
 	char *retval = NULL;                                           \
-	size_t rvclue = 0;                                                   \
                                                                              \
 	if ((name = next_arg(input, &input)) && (array = get_array(name)))   \
 	{                                                                    \
@@ -610,7 +608,7 @@ BUILT_IN_FUNCTION((fn), input)                                               \
 		{                                                            \
 			item = my_atol(itemstr);                             \
 			if (item >= 0 && item < array->size)                 \
-				malloc_strcat_wordlist_c(&retval, space, (ret), &rvclue);  \
+				malloc_strcat_wordlist(&retval, space, (ret)); \
 		}                                                            \
 	}                                                                    \
 	RETURN_MSTR(retval);                                                 \
@@ -665,11 +663,10 @@ BUILT_IN_FUNCTION(function_getarrays, input)
 {
 	long idx;
 	char *result = NULL;
-	size_t	resclue = 0;
 
 	for (idx = 0; idx < array_info.size; idx++)
 		if (!input || !*input || wild_match(input, array_info.item[array_info.index[idx]]))
-			malloc_strcat_wordlist_c(&result, space, array_info.item[array_info.index[idx]], &resclue);
+			malloc_strcat_wordlist(&result, space, array_info.item[array_info.index[idx]]);
 
 	if (!result)
 		RETURN_EMPTY;
@@ -731,7 +728,6 @@ BUILT_IN_FUNCTION((fn), input)                                             \
 	an_array *array;                                                   \
 	long found = -1;                                                   \
 	char *ret = NULL;                                            \
-	size_t clue = 0;                                                   \
                                                                            \
 	if ((name = next_arg(input, &input)) && (array = get_array(name))) \
 	{                                                                  \
@@ -743,7 +739,7 @@ BUILT_IN_FUNCTION((fn), input)                                             \
 			item = my_atol(itemstr);                           \
 			if (item >= 0 && item < array->size)               \
 				idx = (op);                              \
-			malloc_strcat_wordlist_c(&ret, space, ltoa(idx), &clue);       \
+			malloc_strcat_wordlist(&ret, space, ltoa(idx));    \
 		}                                                          \
 	}                                                                  \
 	if (ret)                                                           \
@@ -923,14 +919,13 @@ BUILT_IN_FUNCTION(function_listarray, input)
 	an_array *array;
 	long	idx;
 	char	*result = NULL;
-	size_t	resclue = 0;
 
 	if ((name = next_arg(input, &input)) && (array = get_array(name)))
 	{
 		const char *separator = (input && *input) ? new_next_arg(input, &input) : space;
 
 		for (idx = 0; idx < array->size; idx++)
-			malloc_strcat_wordlist_c(&result, separator, array->item[idx], &resclue);
+			malloc_strcat_wordlist(&result, separator, array->item[idx]);
 	}
 	return result ? result : malloc_strdup(empty_string);
 }

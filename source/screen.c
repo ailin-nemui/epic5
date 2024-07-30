@@ -1056,7 +1056,7 @@ static ssize_t	read_rgb_seq (const char *start, void *d)
 		 * XXX Note -- this is invalid; but we're tolerant 
 		 * (even though it's ambiguous)
 		 */
-		else if (check_xdigit(ptr[0]) == -1 && ptr[0] != ',')
+		else if (!isxdigit(ptr[0]) && ptr[0] != ',')
 		{
 			if (fg)
 				a->fg = COLOR_NONE;
@@ -1090,9 +1090,9 @@ static ssize_t	read_rgb_seq (const char *start, void *d)
 		/*
 		 * Highest priority -- check for six hex digits
 		 */
-		if (check_xdigit(d1) != -1 && check_xdigit(d2) != -1 && 
-		    check_xdigit(d3) != -1 && check_xdigit(d4) != -1 &&
-		    check_xdigit(d5) != -1 && check_xdigit(d5) != -1 )
+		if (isxdigit(d1) && isxdigit(d2) && 
+		    isxdigit(d3) && isxdigit(d4) &&
+		    isxdigit(d5) && isxdigit(d5) )
 		{
 			set = 1;
 			r = check_xdigit(d1) * 16 + check_xdigit(d2);
@@ -1217,7 +1217,7 @@ static ssize_t	read_color256_seq (const char *start, void *d)
 		 * XXX Note -- this is invalid; but we're tolerant 
 		 * (even though it's ambiguous)
 		 */
-		else if (check_xdigit(ptr[0]) == -1 && ptr[0] != ',')
+		else if (!isxdigit(ptr[0]) && ptr[0] != ',')
 		{
 			if (fg)
 				a->fg = COLOR_NONE;
@@ -1245,7 +1245,7 @@ static ssize_t	read_color256_seq (const char *start, void *d)
 		/*
 		 * Highest priority -- check for two hex digits
 		 */
-		else if (check_xdigit(c1) != -1 && check_xdigit(c2) != -1)
+		else if (isxdigit(c1) && isxdigit(c2))
 		{
 			set = 1;
 			val = check_xdigit(c1) * 16 + check_xdigit(c2);
@@ -1254,7 +1254,7 @@ static ssize_t	read_color256_seq (const char *start, void *d)
 		/*
 		 * Third, check for one hex digit
 		 */
-		else if (check_xdigit(c1) != -1)
+		else if (isxdigit(c1))
 		{
 			set = 1;
 			val = check_xdigit(c1);
@@ -2765,7 +2765,6 @@ char *prepare_display_fixed_size (const char *orig_str, int max_cols, int allow_
 		my_newline = 0;        /* Number of newlines           */
 	char 	*str = NULL;
 	char	*retval = NULL;
-	size_t	clue = 0;
 const 	char	*ptr;
 	char 	buffer[BIG_BUFFER_SIZE + 1];
 	char *	real_retval;
@@ -2834,7 +2833,7 @@ const 	char	*ptr;
 			break;
 	}
 	buffer[pos] = 0;
-	malloc_strcpy_c((char **)&retval, buffer, &clue);
+	malloc_strcpy((char **)&retval, buffer);
 
 	/*
 	 * If we get here, either we have slurped up 'max_cols' cols, or
@@ -2848,7 +2847,7 @@ const 	char	*ptr;
 
 		/* XXX One col per byte assumption! */
 		while (col++ < max_cols)
-			malloc_strcat_c((char **)&retval, fillstr, &clue);
+			malloc_strcat((char **)&retval, fillstr);
 	}
 
 	if (denormalize)

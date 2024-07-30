@@ -53,7 +53,6 @@
 #include "commands.h"
 #include "exec.h"
 #include "files.h"
-#include "flood.h"
 #include "ignore.h"
 #include "input.h"
 #include "ircaux.h"
@@ -547,7 +546,9 @@ static BuiltInFunctions	built_in_functions[] =
 	{ "FINDWS",		function_findws		},
 	{ "FIX_ARGLIST",	function_fix_arglist	},
         { "FIX_WIDTH",          function_fix_width      },
+#if 0
 	{ "FLOODINFO",		function_floodinfo	},
+#endif
 	{ "FLOOR",		function_floor		},
 	{ "FNEXIST",		function_fnexist	},
 	{ "FREWIND",		function_rewind		},
@@ -1637,7 +1638,6 @@ BUILT_IN_FUNCTION(function_userhost, input)
 	if (input && *input)
 	{
 		char *retval = NULL;
-		size_t rvclue=0;
 		char *nick;
 		const char *uh;
 		const char *chan = NULL;
@@ -1648,9 +1648,9 @@ BUILT_IN_FUNCTION(function_userhost, input)
 			if (is_channel(nick))
 				chan = nick;
 			if ((uh = fetch_userhost(from_server, chan, nick)))
-				malloc_strcat_word_c(&retval, space, uh, DWORD_NO, &rvclue);
+				malloc_strcat_word(&retval, space, uh, DWORD_NO);
 			else
-				malloc_strcat_word_c(&retval, space, unknown_userhost, DWORD_NO, &rvclue);
+				malloc_strcat_word(&retval, space, unknown_userhost, DWORD_NO);
 		}
 		RETURN_MSTR(retval);
 	}
@@ -1918,7 +1918,6 @@ BUILT_IN_FUNCTION(function_servers, input)
 {
 	int count;
 	char *retval = NULL;
-	size_t rvclue=0;
 
 	if (!input || !*input)
 	{
@@ -1929,7 +1928,7 @@ BUILT_IN_FUNCTION(function_servers, input)
 	for (count = 0; count < server_list_size(); count++)
 	{
 		if (is_server_registered(count))
-			malloc_strcat_word_c(&retval, space, ltoa(count), DWORD_NO, &rvclue);
+			malloc_strcat_word(&retval, space, ltoa(count), DWORD_NO);
 	}
 	if (!retval)
 		RETURN_EMPTY;
@@ -2219,7 +2218,6 @@ BUILT_IN_FUNCTION(function_insertw, word)
 	char    *what;
 	char    *booya=(char *)0;
 	char 	*str1, *str2;
-	size_t	clue = 0;
 
 	GET_INT_ARG(where, word);
 	
@@ -2233,9 +2231,9 @@ BUILT_IN_FUNCTION(function_insertw, word)
 		str1 = extractfw(word, 0, (where - 1));
 		str2 = extractfw(word, where, EOS);
 
-		malloc_strcat_wordlist_c(&booya, space, str1, &clue);
-		malloc_strcat_word_c(&booya, space, what, DWORD_DWORDS, &clue);
-		malloc_strcat_wordlist_c(&booya, space, str2, &clue);
+		malloc_strcat_wordlist(&booya, space, str1);
+		malloc_strcat_word(&booya, space, what, DWORD_DWORDS);
+		malloc_strcat_wordlist(&booya, space, str2);
 
 		new_free(&str1);
 		new_free(&str2);
@@ -2291,15 +2289,14 @@ BUILT_IN_FUNCTION(function_common, word)
 	char **rightw = NULL;
 	int	leftc, lefti,
 		rightc, righti;
-	size_t	rvclue=0;
 
 	left = word;
 	if (!(right = strchr(word,'/')))
 		RETURN_EMPTY;
 
 	*right++ = 0;
-	leftc = splitw(left, &leftw, DWORD_DWORDS);
-	rightc = splitw(right, &rightw, DWORD_DWORDS);
+	leftc = split_wordlist(left, &leftw, DWORD_DWORDS);
+	rightc = split_wordlist(right, &rightw, DWORD_DWORDS);
 
 	for (lefti = 0; lefti < leftc; lefti++)
 	{
@@ -2307,7 +2304,7 @@ BUILT_IN_FUNCTION(function_common, word)
 		{
 			if (rightw[righti] && !my_stricmp(leftw[lefti], rightw[righti]))
 			{
-				malloc_strcat_word_c(&booya, space, leftw[lefti], DWORD_DWORDS, &rvclue);
+				malloc_strcat_word(&booya, space, leftw[lefti], DWORD_DWORDS);
 				rightw[righti] = NULL;
 			}
 		}
@@ -2336,17 +2333,16 @@ BUILT_IN_FUNCTION(function_diff, word)
 	int 	lefti, leftc,
 	    	righti, rightc;
 	int 	found;
-	size_t	rvclue=0;
 
 	left = word;
 	if ((right = strchr(word, '/')) == (char *) 0)
 		RETURN_EMPTY;
 
 	*right++ = 0;
-	leftc = splitw(left, &leftw, DWORD_DWORDS);
-	rightc = splitw(right, &rightw, DWORD_DWORDS);
+	leftc = split_wordlist(left, &leftw, DWORD_DWORDS);
+	rightc = split_wordlist(right, &rightw, DWORD_DWORDS);
 
-	for (rvclue = lefti = 0; lefti < leftc; lefti++)
+	for (lefti = 0; lefti < leftc; lefti++)
 	{
 		found = 0;
 		for (righti = 0; righti < rightc; righti++)
@@ -2358,13 +2354,13 @@ BUILT_IN_FUNCTION(function_diff, word)
 			}
 		}
 		if (!found)
-			malloc_strcat_word_c(&booya, space, leftw[lefti], DWORD_DWORDS, &rvclue);
+			malloc_strcat_word(&booya, space, leftw[lefti], DWORD_DWORDS);
 	}
 
-	for (rvclue = righti = 0; righti < rightc; righti++)
+	for (righti = 0; righti < rightc; righti++)
 	{
 		if (rightw[righti])
-			malloc_strcat_word_c(&booya, space, rightw[righti], DWORD_DWORDS, &rvclue);
+			malloc_strcat_word(&booya, space, rightw[righti], DWORD_DWORDS);
 	}
 
 	new_free((char **)&leftw);
@@ -2378,13 +2374,12 @@ char *wrapper_pattern(char *word, int mode)
 	char    *blah;
 	char    *booya = NULL;
 	char    *pattern;
-	size_t	rvclue=0;
 
 	GET_FUNC_ARG(pattern, word)
 	while (((blah = next_func_arg(word, &word)) != NULL))
 	{
 		if (!!wild_match(pattern, blah) == !!mode)
-			malloc_strcat_word_c(&booya, space, blah, DWORD_DWORDS, &rvclue);
+			malloc_strcat_word(&booya, space, blah, DWORD_DWORDS);
 	}
 	RETURN_MSTR(booya);
 }
@@ -2414,14 +2409,13 @@ char *wrapper_rpattern (char *word, int mode)
 	char    *blah;
 	char    *booya = NULL;
 	char    *pattern;
-	size_t	rvclue=0;
 
 	GET_FUNC_ARG(blah, word)
 
 	while ((pattern = next_func_arg(word, &word)) != NULL)
 	{
 		if (!!wild_match(pattern, blah) == !!mode)
-			malloc_strcat_word_c(&booya, space, pattern, DWORD_DWORDS, &rvclue);
+			malloc_strcat_word(&booya, space, pattern, DWORD_DWORDS);
 	}
 	RETURN_MSTR(booya);
 }
@@ -2465,7 +2459,6 @@ BUILT_IN_FUNCTION((fn), word)                                          \
                *firstl = (char *) 0, *firstlist = (char *) 0, *firstel = (char *) 0,       \
                *secondl = (char *) 0, *secondlist = (char *) 0, *secondel = (char *) 0;    \
        char    *sfirstl, *ssecondl;                                          \
-       size_t  rvclue=0;                                                     \
                                                                              \
        GET_DWORD_ARG(pattern, word);                                         \
        GET_FUNC_ARG(firstlist, word);                                       \
@@ -2482,7 +2475,7 @@ BUILT_IN_FUNCTION((fn), word)                                          \
                        break;                                                \
                                                                              \
                if ((sense) == !wild_match((pat), (arg)))                     \
-                       malloc_strcat_word_c(&booya, space, secondel, DWORD_DWORDS, &rvclue); \
+                       malloc_strcat_word(&booya, space, secondel, DWORD_DWORDS); \
        }                                                                     \
        new_free(&sfirstl);                                                   \
        new_free(&ssecondl);                                                  \
@@ -2594,7 +2587,6 @@ BUILT_IN_FUNCTION(function_splice, word)
 	char	*old_value = NULL;
 	char	*new_value = NULL;
 	int	num_words;
-	size_t	clue = 0;
 
 	GET_FUNC_ARG(variable, word);
 	GET_INT_ARG(start, word);
@@ -2631,9 +2623,9 @@ BUILT_IN_FUNCTION(function_splice, word)
 		right_part = extractfw(old_value, start + length, EOS);
 	}
 
-	malloc_strcat_wordlist_c(&new_value, space, left_part, &clue);
-	malloc_strcat_wordlist_c(&new_value, space, word, &clue);
-	malloc_strcat_wordlist_c(&new_value, space, right_part, &clue);
+	malloc_strcat_wordlist(&new_value, space, left_part);
+	malloc_strcat_wordlist(&new_value, space, word);
+	malloc_strcat_wordlist(&new_value, space, right_part);
 
 	add_var_alias(variable, new_value, 0);
 
@@ -2703,7 +2695,6 @@ BUILT_IN_FUNCTION(function_key, word)
 	char		*channel;
 	char    	*booya = (char *) 0;
 	const char 	*key;
-	size_t		rvclue=0;
 
 	do
 	{
@@ -2712,7 +2703,7 @@ BUILT_IN_FUNCTION(function_key, word)
 			break;
 
 		key = get_channel_key(channel, from_server);
-		malloc_strcat_word_c(&booya, space, (key && *key) ? key : "*", DWORD_DWORDS, &rvclue);
+		malloc_strcat_word(&booya, space, (key && *key) ? key : "*", DWORD_DWORDS);
 	}
 	while (word && *word);
 
@@ -2728,7 +2719,6 @@ BUILT_IN_FUNCTION(function_channelmode, word)
 	char	*channel;
 	char    *booya = (char *) 0;
 	const char	*mode;
-	size_t	rvclue=0;
 
 	do
 	{
@@ -2737,7 +2727,7 @@ BUILT_IN_FUNCTION(function_channelmode, word)
 			break;
 
 		mode = get_channel_mode(channel, from_server);
-		malloc_strcat_word_c(&booya, space, (mode && *mode) ? mode : "*", DWORD_DWORDS, &rvclue);
+		malloc_strcat_word(&booya, space, (mode && *mode) ? mode : "*", DWORD_DWORDS);
 	}
 	while (word && *word);
 
@@ -2749,12 +2739,9 @@ BUILT_IN_FUNCTION(function_channelmode, word)
 BUILT_IN_FUNCTION(function_revw, words)
 {
 	char *booya = NULL;
-	size_t  rvclue=0, wclue=0;
 
 	while (words && *words)
-		malloc_strcat_word_c(&booya, space, 
-				last_arg(&words, &wclue, DWORD_DWORDS), 
-				DWORD_DWORDS, &rvclue);
+		malloc_strcat_word(&booya, space, last_arg(&words, DWORD_DWORDS), DWORD_DWORDS);
 
 	RETURN_MSTR(booya);
 }
@@ -2804,7 +2791,6 @@ BUILT_IN_FUNCTION(function_jot, input)
 	double  interval = 1;
 	double  counter;
 	char	*booya 	= NULL;
-	size_t	clue = 0;
 	char	ugh[100];
 
         GET_FLOAT_ARG(start,input)
@@ -2827,7 +2813,7 @@ BUILT_IN_FUNCTION(function_jot, input)
 		{
 			snprintf(ugh, 99, "%f", counter);
 			canon_number(ugh);
-			malloc_strcat_word_c(&booya, space, ugh, DWORD_NO, &clue);
+			malloc_strcat_word(&booya, space, ugh, DWORD_NO);
 		}
 	}
         else
@@ -2838,7 +2824,7 @@ BUILT_IN_FUNCTION(function_jot, input)
 		{
 			snprintf(ugh, 99, "%f", counter);
 			canon_number(ugh);
-			malloc_strcat_word_c(&booya, space, ugh, DWORD_NO, &clue);
+			malloc_strcat_word(&booya, space, ugh, DWORD_NO);
 		}
 	}
 
@@ -2966,7 +2952,6 @@ char *function_pop (char *word)
 	char *var	= (char *) 0;
 	char *pointer	= (char *) 0;
 	char *blech     = (char *) 0;
-	size_t	cluep;
 	char *free_it = NULL;
 
 	GET_FUNC_ARG(var, word);
@@ -2978,9 +2963,8 @@ char *function_pop (char *word)
 		RETURN_EMPTY;
 	}
 
-	cluep = strlen(value);
-	pointer = last_arg(&value, &cluep, DWORD_DWORDS);
-	if (!value || cluep == 0)
+	pointer = last_arg(&value, DWORD_DWORDS);
+	if (!value)
 		value = endstr(pointer);
 
 	/* 
@@ -3399,13 +3383,12 @@ BUILT_IN_FUNCTION(function_chrq, word)
 BUILT_IN_FUNCTION(function_ascii, word)
 {
 	char *aboo = NULL;
-	size_t  rvclue=0;
 
 	if (!word || !*word)
 		RETURN_EMPTY;
 
 	for (; *word; ++word)
-		malloc_strcat_wordlist_c(&aboo, space, ltoa((long)(unsigned char)*word), &rvclue);
+		malloc_strcat_wordlist(&aboo, space, ltoa((long)(unsigned char)*word));
 
 	return aboo;
 }
@@ -3423,7 +3406,6 @@ BUILT_IN_FUNCTION(function_ascii, word)
 BUILT_IN_FUNCTION(function_unicode, word)
 {
 	char *	aboo = NULL;
-	size_t  rvclue=0;
 	const char *s;
 	int	code_point;
 	char	result[8];
@@ -3442,7 +3424,7 @@ BUILT_IN_FUNCTION(function_unicode, word)
 			continue;
 		}
 		snprintf(result, sizeof(result), "U+%04X", code_point);
-		malloc_strcat_wordlist_c(&aboo, space, result, &rvclue);
+		malloc_strcat_wordlist(&aboo, space, result);
 		s += offset;
 	}
 
@@ -3464,7 +3446,6 @@ BUILT_IN_FUNCTION(function_unicode, word)
 BUILT_IN_FUNCTION(function_asciiq, word)
 {
 	char	*aboo = NULL, *free_it;
-	size_t	rvclue=0;
 
 	if (!word || !*word)
 		RETURN_EMPTY;
@@ -3475,8 +3456,7 @@ BUILT_IN_FUNCTION(function_asciiq, word)
 
 	for (; word && *word; word++)
 	{
-		malloc_strcat_wordlist_c(&aboo, space, 
-				ltoa((long)(unsigned char)*word), &rvclue);
+		malloc_strcat_wordlist(&aboo, space, ltoa((long)(unsigned char)*word));
 	}
 
 	new_free(&free_it);
@@ -3533,7 +3513,7 @@ BUILT_IN_FUNCTION(function_open, words)
 	else if (!my_stricmp(words, "W"))
 		RETURN_INT(open_file_for_write(filename, "a"));
 	else
-		RETURN_INT(open_file_for_write(filename, lower(words)));
+		RETURN_INT(open_file_for_write(filename, words));
 }
 
 BUILT_IN_FUNCTION(function_close, words)
@@ -4298,7 +4278,6 @@ BUILT_IN_FUNCTION(function_repeat, words)
 	int	num;
 	size_t	size;
 	char *	retval = NULL;
-	size_t	clue;
 
 	/*
 	 * XXX - This is a brutal, unmerciful, and heinous offense
@@ -4335,10 +4314,9 @@ BUILT_IN_FUNCTION(function_repeat, words)
 
 	retval = (char *)new_malloc(size);
 	*retval = 0;
-	clue = 0;
 
 	for (; num > 0; num--)
-		strlcat_c(retval, words, size, &clue);
+		strlcat(retval, words, size);
 
 	return retval;
 }
@@ -4374,7 +4352,7 @@ BUILT_IN_FUNCTION(function_sort, words)
 	char **wordl;
 	char	*retval;
 
-	if (!(wordc = splitw(words, &wordl, DWORD_DWORDS)))
+	if (!(wordc = split_wordlist(words, &wordl, DWORD_DWORDS)))
 		RETURN_EMPTY;
 
 	qsort((void *)wordl, wordc, sizeof(char *), sort_it);
@@ -4421,7 +4399,7 @@ BUILT_IN_FUNCTION(function_numsort, words)
 	char **wordl;
 	char *retval;
 
-	if (!(wordc = splitw(words, &wordl, DWORD_DWORDS)))
+	if (!(wordc = split_wordlist(words, &wordl, DWORD_DWORDS)))
 		RETURN_EMPTY;
 	qsort((void *)wordl, wordc, sizeof(char *), num_sort_it);
 	retval = unsplitw(&wordl, wordc, DWORD_DWORDS);
@@ -4471,7 +4449,6 @@ BUILT_IN_FUNCTION(function_glob, word)
 	Filename path2;
 	char	*retval = NULL;
 	int 	numglobs, i;
-	size_t	rvclue=0;
 	glob_t 	globbers;
 
 	memset(&globbers, 0, sizeof(glob_t));
@@ -4506,10 +4483,10 @@ BUILT_IN_FUNCTION(function_glob, word)
 				b = alloca(size);
 				snprintf(b, size, "\"%s\"", 
 						globbers.gl_pathv[i]);
-				malloc_strcat_wordlist_c(&retval, space, b, &rvclue);
+				malloc_strcat_wordlist(&retval, space, b);
 			}
 			else
-				malloc_strcat_wordlist_c(&retval, space, globbers.gl_pathv[i], &rvclue);
+				malloc_strcat_wordlist(&retval, space, globbers.gl_pathv[i]);
 		}
 		globfree(&globbers);
 		new_free(&freepath);
@@ -4524,7 +4501,6 @@ BUILT_IN_FUNCTION(function_globi, word)
 	Filename path2;
 	char	*retval = NULL;
 	int 	numglobs, i;
-	size_t	rvclue=0;
 	glob_t 	globbers;
 
 	memset(&globbers, 0, sizeof(glob_t));
@@ -4560,10 +4536,10 @@ BUILT_IN_FUNCTION(function_globi, word)
 				b = alloca(size);
 				snprintf(b, size, "\"%s\"", 
 						globbers.gl_pathv[i]);
-				malloc_strcat_wordlist_c(&retval, space, b, &rvclue);
+				malloc_strcat_wordlist(&retval, space, b);
 			}
 			else
-				malloc_strcat_wordlist_c(&retval, space, globbers.gl_pathv[i], &rvclue);
+				malloc_strcat_wordlist(&retval, space, globbers.gl_pathv[i]);
 		}
 		bsd_globfree(&globbers);
 		new_free(&freepath);
@@ -4662,7 +4638,7 @@ BUILT_IN_FUNCTION(function_uniq, word)
         int     listc, listi, listo;
 
 	RETURN_IF_EMPTY(word);
-        listc = splitw(word, &list, DWORD_DWORDS);
+        listc = split_wordlist(word, &list, DWORD_DWORDS);
 
 	/* 'list' is set to NULL if 'word' is empty.  Punt in this case. */
 	if (!list)
@@ -4677,7 +4653,7 @@ BUILT_IN_FUNCTION(function_uniq, word)
 	 * only, the whacky way we go about it is due to compatibility.
 	 *
 	 * The major assumption here is that the pointers in list[] are
-	 * in ascending order.  Since splitw() works by inserting nuls
+	 * in ascending order.  Since split_wordlist() works by inserting nuls
 	 * into the original string, we can be somewhat secure here.
 	 */
 	qsort((void *)list, listc, sizeof(char *), sort_it);
@@ -4701,33 +4677,6 @@ BUILT_IN_FUNCTION(function_uniq, word)
 	/* We want the remaining words to appear in their original order */
 	qsort(list, listc, sizeof(char *), unsort_it);
 	booya = unsplitw(&list, listc, DWORD_DWORDS);
-
-#else
-    { /* Oh hush.  It is #ifdef'd out, after all. */
-	char	*tval;
-	char	*input;
-	size_t	rvclue=0;
-	size_t	size;
-
-	/*
-	 * XXX This algorithm is too expensive.  It should be done
-	 * by some other way.  Calling function_findw() is a hack.
-	 */
-
-	/* The first word is always obviously included. */
-	booya = malloc_strdup(list[0]);
-        for (listi = 1; listi < listc; listi++)
-        {
-		size = strlen(list[listi]) + strlen(booya) + 2;
-		input = alloca(size);
-		strlopencat_c(input, size, NULL, list[listi], space, booya, NULL);
-
-		tval = function_findw(input);
-		if (my_atol(tval) == -1)
-			malloc_strcat_word_c(&booya, space, list[listi], DWORD_DWORDS, &rvclue);
-		new_free(&tval);
-        }
-    }
 #endif
 
         new_free((char **)&list);
@@ -4830,7 +4779,6 @@ BUILT_IN_FUNCTION(function_findws, input)
 	char	*word, *this_word;
 	int	word_cnt;
 	char	*ret = NULL;
-	size_t	clue = 0;
 
 	GET_FUNC_ARG(word, input);
 
@@ -4838,7 +4786,7 @@ BUILT_IN_FUNCTION(function_findws, input)
 	{
 		GET_FUNC_ARG(this_word, input);
 		if (!my_stricmp(this_word, word))
-			malloc_strcat_word_c(&ret, space, ltoa(word_cnt), DWORD_NO, &clue);
+			malloc_strcat_word(&ret, space, ltoa(word_cnt), DWORD_NO);
 	}
 
 	RETURN_MSTR(ret);
@@ -4999,7 +4947,6 @@ BUILT_IN_FUNCTION(function_currchans, input)
 	int	win = 0;
 	char *retval = NULL;
 	const char *chan;
-	size_t	clue = 0;
 
 	if (input && *input)
 		GET_INT_ARG(server, input)
@@ -5009,7 +4956,6 @@ BUILT_IN_FUNCTION(function_currchans, input)
 	if (server == -1)
 		server = from_server;
 
-	clue = 0;
 	while (traverse_all_windows2(&win))
 	{
 		if (server != -2 && get_window_server(win) != server)
@@ -5017,10 +4963,10 @@ BUILT_IN_FUNCTION(function_currchans, input)
 		if (!(chan = get_window_echannel(win)))
 			continue;
 
-		malloc_strcat_wordlist_c(&retval, space, "\"", &clue);
-		malloc_strcat_wordlist_c(&retval, empty_string, ltoa(get_window_server(win)), &clue);
-		malloc_strcat_wordlist_c(&retval, space, chan, &clue);
-		malloc_strcat_wordlist_c(&retval, empty_string, "\"", &clue);
+		malloc_strcat_wordlist(&retval, space, "\"");
+		malloc_strcat_wordlist(&retval, empty_string, ltoa(get_window_server(win)));
+		malloc_strcat_wordlist(&retval, space, chan);
+		malloc_strcat_wordlist(&retval, empty_string, "\"");
 	}
 
 	RETURN_MSTR(retval);
@@ -5146,7 +5092,7 @@ BUILT_IN_FUNCTION(function_regmatches, input)
 	RESIZE(pmatch, regmatch_t, nmatch);
 	if (!(last_regex_error = regexec(&preg, input, nmatch, pmatch, 0)))
 	{
-	    size_t	n, clue = 0;
+	    size_t	n;
 	    const char *rm_so_str, *rm_eo_str;
 	    int		rm_so_str_cnt, rm_eo_str_cnt;
 
@@ -5163,12 +5109,8 @@ BUILT_IN_FUNCTION(function_regmatches, input)
 		rm_so_str_cnt = count_initial_codepoints(input, rm_so_str);
 		rm_eo_str_cnt = count_initial_codepoints(input, rm_eo_str);
 
-		malloc_strcat_word_c(&ret, space, 
-					ltoa(rm_so_str_cnt),
-					DWORD_NO, &clue);
-		malloc_strcat_word_c(&ret, space, 
-					ltoa(rm_eo_str_cnt - rm_so_str_cnt),
-					DWORD_NO, &clue);
+		malloc_strcat_word(&ret, space, ltoa(rm_so_str_cnt), DWORD_NO);
+		malloc_strcat_word(&ret, space, ltoa(rm_eo_str_cnt - rm_so_str_cnt), DWORD_NO);
 	    }
 	}
 	new_free((char **)&pmatch);
@@ -6014,22 +5956,21 @@ BUILT_IN_FUNCTION(function_remws, word)
 	int	leftc,
 		rightc,
 		righti;
-	size_t	rvclue=0;
 
 	left = word;
 	if (!(right = strchr(word,'/')))
 		RETURN_EMPTY;
 
 	*right++ = 0;
-	leftc = splitw(left, &lhs, DWORD_DWORDS);
+	leftc = split_wordlist(left, &lhs, DWORD_DWORDS);
 	if (leftc > 0)
 		qsort((void *)lhs, leftc, sizeof(char *), sort_it);
-	rightc = splitw(right, &rhs, DWORD_DWORDS);
+	rightc = split_wordlist(right, &rhs, DWORD_DWORDS);
 
 	for (righti = 0; righti < rightc; righti++)
 	{
 		if (leftc <= 0 || !bsearch(&rhs[righti], lhs, leftc, sizeof(char *), sort_it))
-			malloc_strcat_word_c(&booya, space, rhs[righti], DWORD_DWORDS, &rvclue);
+			malloc_strcat_word(&booya, space, rhs[righti], DWORD_DWORDS);
 	}
 
 	new_free((char **)&lhs);
@@ -6207,7 +6148,6 @@ BUILT_IN_FUNCTION( thisfn , input)			\
 	char *r;					\
 	char *ret = NULL;				\
 	char **subresults;			\
-	size_t	clue = 0;				\
 	int	howmany = 0;				\
 							\
 	if (!input || !*input)					\
@@ -6221,7 +6161,7 @@ BUILT_IN_FUNCTION( thisfn , input)			\
 	{							\
 		subresults = nextfn (s, &howmany, 0, 0, 0);		\
 		r = unsplitw(&subresults, howmany, DWORD_DWORDS);	\
-		malloc_strcat_wordlist_c(&ret, space, r, &clue);	\
+		malloc_strcat_wordlist(&ret, space, r);	\
 		new_free(&r);					\
 	}							\
 								\
@@ -6565,7 +6505,7 @@ BUILT_IN_FUNCTION(function_prefix, input)
 
 	RETURN_IF_EMPTY(input);
 
-	numwords = splitw(input, &words, DWORD_DWORDS);
+	numwords = split_wordlist(input, &words, DWORD_DWORDS);
 	if (numwords == 0)
 		RETURN_EMPTY;		/* "Oh bother," said pooh. */
 
@@ -6651,7 +6591,7 @@ BUILT_IN_FUNCTION(function_hash_32bit, input)
 	int		len;
 
 	word = new_next_arg(input, &input);
-	len = my_atol(safe_new_next_arg(input, &input));
+	len = my_atol(nonull(new_next_arg(input, &input)));
 	if (!word || !*word)
 		word = input;
 
@@ -6892,12 +6832,11 @@ BUILT_IN_FUNCTION(function_builtin, input)
 BUILT_IN_FUNCTION(function_notifywindows, input)
 {
 	char *	retval = NULL;
-	size_t	rvclue=0;
 	int	window = 0;
 
 	while (traverse_all_windows2(&window))
 		if (get_window_notified(window))
-			malloc_strcat_word_c(&retval, space, ltoa(get_window_user_refnum(window)), DWORD_NO, &rvclue);
+			malloc_strcat_word(&retval, space, ltoa(get_window_user_refnum(window)), DWORD_NO);
 
 	RETURN_MSTR(retval);
 }
@@ -7101,26 +7040,24 @@ BUILT_IN_FUNCTION(function_unsplit, input)
 	char *	sep;
 	char *	word;
 	char *	retval = NULL;
-	size_t	clue = 0;
 
 	GET_DWORD_ARG(sep, input);
 	while ((word = new_next_arg(input, &input)))
-		malloc_strcat_word_c(&retval, sep, word, DWORD_NO, &clue);
+		malloc_strcat_word(&retval, sep, word, DWORD_NO);
 	RETURN_MSTR(retval);
 }
 
 BUILT_IN_FUNCTION(function_encryptparm, input)
 {
 	char	*ret = NULL, *entry = NULL;
-	size_t	clue = 0;
 	List	*key;
 
 	GET_FUNC_ARG(entry, input);
 	if ((key = is_crypted(entry, from_server, NULL))) 
 	{
-		malloc_strcat_word_c(&ret, space, key->name, DWORD_DWORDS, &clue);
-		malloc_strcat_word_c(&ret, space, (char *)(((Crypt *)(key->d))->passwd), DWORD_DWORDS, &clue);
-		malloc_strcat_word_c(&ret, space, ((Crypt *)(key->d))->prog, DWORD_DWORDS, &clue);
+		malloc_strcat_word(&ret, space, key->name, DWORD_DWORDS);
+		malloc_strcat_word(&ret, space, (char *)(((Crypt *)(key->d))->passwd), DWORD_DWORDS);
+		malloc_strcat_word(&ret, space, ((Crypt *)(key->d))->prog, DWORD_DWORDS);
 	}
 
 	RETURN_MSTR(ret);
@@ -7195,49 +7132,58 @@ BUILT_IN_FUNCTION(function_logctl, input)
  */
 BUILT_IN_FUNCTION(function_joinstr, input)
 {
-	char	*sep, *word;
-	char	*retval = NULL, *sub = NULL;
-	char	**freeit = NULL, **vals = NULL;
-	size_t	valc = 0;
-	size_t	retclue = 0;
-	size_t	foo;
+	char	*sep;
+	size_t	numvars;
+	char **	vals = NULL;
+	char **	freeit = NULL;
+	char *	retval = NULL;
+	size_t	varidx;
 
 	GET_FUNC_ARG(sep, input)
-	for (valc = 0; input && *input; valc++) {
+
+	/* Apparently you can combine more than two variables... */
+	for (numvars = 0; input && *input; numvars++) 
+	{
 		char *var;
 
-		RESIZE(vals, vals, valc + 1);
-		RESIZE(freeit, freeit, valc + 1);
+		RESIZE(vals, vals, numvars + 1);
+		RESIZE(freeit, freeit, numvars + 1);
 
 		GET_FUNC_ARG(var, input)
-		freeit[valc] = vals[valc] = get_variable(var);
+		freeit[numvars] = vals[numvars] = get_variable(var);
 	}
 
-	for (;;) {
-		size_t clue = 0;
-		char   more = 0;
+	for (;;) 
+	{
+		char *	sub = NULL;
 
-		for (foo = 0; foo < valc; foo++) {
-			more |= *vals[foo];
-			word = next_func_arg(vals[foo], &vals[foo]);
-			if (word == NULL)
-				word = endstr(vals[foo]);
-			malloc_strcat2_c(&sub, foo?sep:empty_string, word, &clue);
+		/* So now 'varidx' contains the number of variables we are joining. */
+		for (varidx = 0; varidx < numvars; varidx++)
+		{
+			const char *word;
+
+			/* Grab the next word from variable 'varidx'. */
+			word = next_func_arg(vals[varidx], &vals[varidx]);
+
+			/* If this is not the first variable, put in the separator */
+			if (varidx > 0)
+				malloc_strcat(&sub, sep);
+
+			/* Add this word */
+			malloc_strcat(&sub, nonull(word));
 		}
 
-		if (!more)
-			break;
+		/* So now 'sub' contains the separated values from the variables */
+		malloc_strcat_word(&retval, space, sub, DWORD_DWORDS);
 
-		malloc_strcat_word_c(&retval, space, sub, DWORD_DWORDS, &retclue);
-		*sub = 0;	/* Improve malloc performance */
+		new_free(&sub);
 	}
 
-	for (foo = 0; foo < valc; foo++)
-		new_free(&freeit[foo]);
+	for (varidx = 0; varidx < numvars; varidx++)
+		new_free(&freeit[varidx]);
 
 	new_free(&freeit);
 	new_free(&vals);
-	new_free(&sub);
 
 	RETURN_MSTR(retval);
 }
@@ -7247,10 +7193,9 @@ BUILT_IN_FUNCTION(function_exec, input)
 	char	*ret = NULL;
 	char **args = NULL;
 	int	count, *fds, foo;
-	size_t	clue = 0;
 
 	RETURN_IF_EMPTY(input);
-	count = splitw(input, &args, DWORD_YES);
+	count = split_wordlist(input, &args, DWORD_YES);
 	RESIZE(args, void *, count+1);
 	args[count] = NULL;
 
@@ -7262,7 +7207,7 @@ BUILT_IN_FUNCTION(function_exec, input)
 
 	if (fds)
 		for (foo = 0; foo < 3; foo++)
-			malloc_strcat_word_c(&ret, space, ltoa(fds[foo]), DWORD_NO, &clue);
+			malloc_strcat_word(&ret, space, ltoa(fds[foo]), DWORD_NO);
 
 	RETURN_MSTR(ret);
 }
@@ -7829,7 +7774,6 @@ BUILT_IN_FUNCTION(function_channellimit, word)
 	char	*channel;
 	char    *booya = (char *) 0;
 	int	limit;
-	size_t	rvclue=0;
 
 	do
 	{
@@ -7838,8 +7782,7 @@ BUILT_IN_FUNCTION(function_channellimit, word)
 			break;
 
 		limit = get_channel_limit(channel, from_server);
-		malloc_strcat_word_c(&booya, space, ltoa(limit), 
-					DWORD_DWORDS, &rvclue);
+		malloc_strcat_word(&booya, space, ltoa(limit), DWORD_DWORDS);
 	}
 	while (word && *word);
 
@@ -7943,11 +7886,10 @@ char *function_iconvctl (char *input)
 	 */
 	if (!my_strnicmp(listc, "LIST", len)) 
 	{
-		size_t  clue = 0;
 		char *retval = NULL;
 		for (id = 0; id < iconv_list_size; id++)
 			if (iconv_list[id] != NULL && iconv_list[id]->stuff != NULL)
-				malloc_strcat_wordlist_c(&retval, space, ltoa(id), &clue);
+				malloc_strcat_wordlist(&retval, space, ltoa(id));
 		RETURN_MSTR(retval);
 	}
 

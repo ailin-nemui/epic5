@@ -2399,7 +2399,6 @@ static void	mathparse (expr_info *c, int pc)
 		{
 			const char *funcname, *args;
 			char *hack = NULL;
-			size_t clue = 0;
 			char *retval;
 			int	func_token;
 
@@ -2411,17 +2410,13 @@ static void	mathparse (expr_info *c, int pc)
 				push_token(c, 0);
 			else
 			{
-			    malloc_strcpy_c(&hack, funcname, &clue);
-			    malloc_strcat_c(&hack, "(", &clue);
-			    malloc_strcat_c(&hack, args, &clue);
-			    malloc_strcat_c(&hack, ")", &clue);
+			    malloc_sprintf(&hack, "%s(%s)", funcname, args);
 
 			    if (x_debug & DEBUG_NEW_MATH_DEBUG)
 				yell("Parsed function call %s", hack);
 
 			    retval = call_function(hack, c->args);
 			    c->last_token = tokenize_expanded(c, retval);
-
 			    push_token(c, c->last_token);
 			}
 			break;

@@ -4661,7 +4661,6 @@ static char	*get_waiting_channels_by_window (int window_)
 {
 	List *nick;
 	char *stuff = NULL;
-	size_t stuffclue = 0;
 	Window *win;
 
 	if (!window_is_valid(window_))
@@ -4669,7 +4668,7 @@ static char	*get_waiting_channels_by_window (int window_)
 
 	win = get_window_by_refnum_direct(window_);
 	for (nick = win->waiting_chans; nick; nick = nick->next)
-		malloc_strcat_wordlist_c(&stuff, space, nick->name, &stuffclue);
+		malloc_strcat_wordlist(&stuff, space, nick->name);
 
 	if (!stuff)
 		return malloc_strdup(empty_string);
@@ -4681,7 +4680,6 @@ static char	*get_nicklist_by_window (int window_)
 {
 	List *nick;
 	char *stuff = NULL;
-	size_t stuffclue = 0;
 	Window *win;
 
 	if (!window_is_valid(window_))
@@ -4689,7 +4687,7 @@ static char	*get_nicklist_by_window (int window_)
 
 	win = get_window_by_refnum_direct(window_);
 	for (nick = win->nicks; nick; nick = nick->next)
-		malloc_strcat_wordlist_c(&stuff, space, nick->name, &stuffclue);
+		malloc_strcat_wordlist(&stuff, space, nick->name);
 
 	if (!stuff)
 		return malloc_strdup(empty_string);
@@ -5421,11 +5419,10 @@ WINDOWCMD(describe)
 	if (window->waiting_chans)
 	{
 	    List *tmp;
-	    size_t clue = 0;
 
 	    c = NULL;
 	    for (tmp = window->waiting_chans; tmp; tmp = tmp->next)
-		malloc_strcat_word_c(&c, space, tmp->name, DWORD_NO, &clue);
+		malloc_strcat_word(&c, space, tmp->name, DWORD_NO);
 
 	    say("\tWaiting channels list: %s", c);
 	    new_free(&c);
@@ -5437,11 +5434,10 @@ WINDOWCMD(describe)
 	if (window->nicks)
 	{
 	    List *tmp;
-	    size_t clue = 0;
 
 	    c = NULL;
 	    for (tmp = window->nicks; tmp; tmp = tmp->next)
-		malloc_strcat_word_c(&c, space, tmp->name, DWORD_NO, &clue);
+		malloc_strcat_word(&c, space, tmp->name, DWORD_NO);
 
 	    say("\tName list: %s", c);
 	    new_free(&c);

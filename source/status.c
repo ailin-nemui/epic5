@@ -1103,7 +1103,7 @@ int     permit_status_update (int flag)
 		siz = strlen(arg) * 2 + 6;		\
 		expanded_arg = alloca(siz); 		\
 		*expanded_arg = 0; 			\
-		double_quote(arg, "$\\", expanded_arg, siz); \
+		escape_chars(arg, "$\\", expanded_arg, siz); \
 	} else { \
 		expanded_arg = LOCAL_COPY(arg); \
 	} \
@@ -1318,25 +1318,6 @@ STATUS_FUNCTION(status_mode)
 	if (map == 0 || map == 1)
 	{
 	    /* This now gets handled by PRESS() for everything */
-#if 0
-	    /*
-	     * This gross hack is required to make sure that the 
-	     * channel key doesnt accidentally contain anything 
-	     * dangerous...
-	     *
-	     * XXX -is this still necessary? 
-	     */
-	    if (get_int_var(STATUS_DOES_EXPANDOS_VAR) && strchr(mode, '$'))
-	    {
-		size_t	siz;
-		char *	mode2;
-
-		siz = strlen(mode) * 2 + 2;
-		mode2 = alloca(siz);
-		double_quote(mode, "$", mode2, siz);
-		mode = mode2;
-	    }
-#endif
 	}
 	else if (map == 2 || map == 3)
 	{

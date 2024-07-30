@@ -146,7 +146,6 @@ char *	function_xdebug (char *word)
 	char	*ret = NULL, *free_str = NULL;
 	const char	*mask = NULL;
 	int	cnt;
-	size_t	clue = 0;
 
 	mask = next_arg(word, &word);
 	mask = mask && *mask ? mask : star;
@@ -158,17 +157,19 @@ char *	function_xdebug (char *word)
 		} else if (!wild_match(mask,opts[cnt].command)) {
 			continue;
 		} else if (x_debug & opts[cnt].flag) {
-			malloc_strcat_wordlist_c(&ret, space, "+", &clue);
+			malloc_strcat_wordlist(&ret, space, "+");
 		} else {
-			malloc_strcat_wordlist_c(&ret, space, "-", &clue);
+			malloc_strcat_wordlist(&ret, space, "-");
 		}
-		malloc_strcat_c(&ret, opts[cnt].command, &clue);
+		malloc_strcat(&ret, opts[cnt].command);
 	}
 
 	if (word && *word)
-		malloc_strcat_wordlist_c(&ret, space,
-			free_str = function_xdebug(word), &clue);
-	new_free(&free_str);
-	malloc_strcat_c(&ret, "", &clue);
+	{
+		free_str = function_xdebug(word);
+		malloc_strcat_wordlist(&ret, space, free_str);
+		new_free(&free_str);
+	}
+	malloc_strcat(&ret, "");
 	return ret;
 }

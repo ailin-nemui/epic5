@@ -47,7 +47,6 @@
 #include "list.h"
 #include "sedcrypt.h"
 #include "termx.h"
-#include "flood.h"
 #include "window.h"
 #include "screen.h"
 #include "output.h"
@@ -278,10 +277,6 @@ static void	p_topic (const char *from, const char *comm, const char **ArgList)
 				channel, LEVEL_TOPIC) == IGNORED)
 		return;
 
-	if (new_check_flooding(from, FromUserHost, 
-				channel, new_topic, LEVEL_TOPIC))
-		return;
-
 	l = message_from(channel, LEVEL_TOPIC);
 	if (do_hook(TOPIC_LIST, "%s %s %s", from, channel, new_topic))
 		say("%s has changed the topic on channel %s to %s",
@@ -309,11 +304,6 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 		if (check_ignore(from, FromUserHost, LEVEL_OPERWALL) == IGNORED)
 			return;
 
-		/* Check for floods... servers are exempted from flood checks */
-		if (!server_wallop && check_flooding(from, FromUserHost, 
-						LEVEL_OPERWALL, message))
-			return;
-
 		l = message_from(NULL, LEVEL_OPERWALL);
 		retval = do_hook(OPERWALL_LIST, "%s %s", from, message + 11);
 		pop_message_from(l);
@@ -328,11 +318,6 @@ static void	p_wallops (const char *from, const char *comm, const char **ArgList)
 
 	/* Check for ignores... */
 	if (check_ignore(from, FromUserHost, LEVEL_WALLOP) == IGNORED)
-		return;
-
-	/* Check for floods... servers are exempted from flood checks */
-	if (!server_wallop && check_flooding(from, FromUserHost, 
-						LEVEL_WALLOP, message))
 		return;
 
 	l = message_from(NULL, LEVEL_WALLOP);
@@ -412,7 +397,6 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	int		hook_type,
 			level;
 	const char	*hook_format;
-	const char	*flood_channel = NULL;
 	int	l;
 
 	PasteArgs(ArgList, 1);
@@ -450,7 +434,6 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	if (is_channel(target) && im_on_channel(target, from_server))
 	{
 		level = LEVEL_PUBLIC;
-		flood_channel = target;
 
 		if (!is_channel_nomsgs(target, from_server) && 
 				!is_on_channel(target, from)) {
@@ -471,7 +454,6 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	else if (!is_me(from_server, target))
 	{
 		level = LEVEL_WALL;
-		flood_channel = NULL;
 
 		hook_type = MSG_GROUP_LIST;
 		hook_format = "<-%s:%s-> %s";
@@ -479,7 +461,6 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	else
 	{
 		level = LEVEL_MSG;
-		flood_channel = NULL;
 
 		hook_type = MSG_LIST;
 		hook_format = NULL;	/* See below */
@@ -512,12 +493,6 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 			set_server_doing_privmsg(from_server, 0);
 			return;
 		}
-	}
-
-	if (new_check_flooding(from, FromUserHost, flood_channel, 
-				message, level)) {
-		set_server_doing_privmsg(from_server, 0);
-		return;
 	}
 
 	/* Control the "last public/private nickname" variables */
@@ -576,9 +551,6 @@ static void	p_quit (const char *from, const char *comm, const char **ArgList)
 	 * thrown the hook.  That is the only reason this is out of order.
 	 */
 	if (check_ignore(from, FromUserHost, LEVEL_QUIT) == IGNORED)
-		goto remove_quitter;
-
-	if (check_flooding(from, FromUserHost, LEVEL_QUIT, quit_message))
 		goto remove_quitter;
 
 	for (chan = walk_channels(1, from); chan; chan = walk_channels(0, from))
@@ -711,9 +683,6 @@ static void	p_join (const char *from, const char *comm, const char **ArgList)
 				channel, LEVEL_JOIN) == IGNORED)
 		return;
 
-	if (new_check_flooding(from, FromUserHost, channel, star, LEVEL_JOIN))
-		return;
-
 	set_server_joined_nick(from_server, from);
 
 	*extra = 0;
@@ -756,9 +725,6 @@ static void 	p_invite (const char *from, const char *comm, const char **ArgList)
 
 	if (check_ignore_channel(from, FromUserHost, 
 				invited_to, LEVEL_INVITE) == IGNORED)
-		return;
-
-	if (check_flooding(from, FromUserHost, LEVEL_INVITE, invited_to))
 		return;
 
 	set_server_invite_channel(from_server, invited_to);
@@ -925,9 +891,6 @@ static void	p_nick (const char *from, const char *comm, const char **ArgList)
 	if (check_ignore(from, FromUserHost, LEVEL_NICK) == IGNORED)
 		goto do_rename;
 
-	if (check_flooding(from, FromUserHost, LEVEL_NICK, new_nick))
-		goto do_rename;
-
 	for (chan = walk_channels(1, from); chan; chan = walk_channels(0, from))
 	{
 		if (check_ignore_channel(from, FromUserHost, chan, 
@@ -994,9 +957,6 @@ static void	p_mode (const char *from, const char *comm, const char **ArgList)
 	}
 
 	if (check_ignore_channel(from, FromUserHost, target, LEVEL_MODE) == IGNORED)
-		goto do_update_mode;
-
-	if (new_check_flooding(from, FromUserHost, target, changes, LEVEL_MODE))
 		goto do_update_mode;
 
 	l = message_from(m_target, LEVEL_MODE);
@@ -1160,9 +1120,6 @@ static void	p_kick (const char *from, const char *comm, const char **ArgList)
 		goto do_remove_nick;
 
 
-	if (new_check_flooding(from, FromUserHost, channel, victim, LEVEL_KICK))
-		goto do_remove_nick;
-
 	l = message_from(channel, LEVEL_KICK);
 	if (do_hook(KICK_LIST, "%s %s %s %s", 
 			victim, from, channel, comment))
@@ -1193,10 +1150,8 @@ static void	p_part (const char *from, const char *comm, const char **ArgList)
 		{ rfc1459_odd(from, comm, ArgList); return; }
 	if (!(reason = ArgList[1])) { }
 
-	if ((check_ignore_channel(from, FromUserHost, 
+	if (check_ignore_channel(from, FromUserHost, 
 				channel, LEVEL_PART) != IGNORED)
-		&& !new_check_flooding(from, FromUserHost, channel,
-			reason ? reason : star, LEVEL_PART))
 	{
 		l = message_from(channel, LEVEL_PART);
 		if (reason)		/* Dalnet part messages */
@@ -1365,7 +1320,6 @@ static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 	const char 	*target, *message;
 	const char	*real_target;
 	int		hook_type;
-	const char *	flood_channel = NULL;
 	int		l;
 
 	PasteArgs(ArgList, 1);
@@ -1385,8 +1339,6 @@ static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 #endif
 								message);
 	if (!*message) {
-		new_check_flooding(from, FromUserHost, flood_channel, 
-					message, LEVEL_NOTICE);
 		set_server_doing_notice(from_server, 0);
 		return;
 	}
@@ -1414,17 +1366,14 @@ static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 	 */
 	if (is_channel(target) && im_on_channel(target, from_server))
 	{
-		flood_channel = target;
 		hook_type = PUBLIC_NOTICE_LIST;
 	}
 	else if (!is_me(from_server, target))
 	{
-		flood_channel = NULL;
 		hook_type = NOTICE_LIST;
 	}
 	else
 	{
-		flood_channel = NULL;
 		hook_type = NOTICE_LIST;
 		target = from;
 	}
@@ -1457,13 +1406,6 @@ static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 			return;
 		}
 	}
-
-	if (new_check_flooding(from, FromUserHost, flood_channel, 
-					message, LEVEL_NOTICE)) {
-		set_server_doing_notice(from_server, 0);
-		return;
-	}
-
 
 	/* Go ahead and throw it to the user */
 	l = message_from(target, LEVEL_NOTICE);
@@ -1517,7 +1459,9 @@ typedef struct {
 static protocol_command rfc1459[] = {
 {	"ADMIN",	NULL,		0		},
 {	"AWAY",		NULL,		0		},
+#if 0
 {	"CAP",		p_cap,		0		},
+#endif
 { 	"CONNECT",	NULL,		0		},
 {	"ERROR",	p_error,	0		},
 {	"ERROR:",	p_error,	0		},

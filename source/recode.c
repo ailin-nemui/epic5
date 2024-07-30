@@ -1381,15 +1381,13 @@ char *	function_encodingctl (char *input)
 	len = strlen(listc);
 
 	if (!my_strnicmp(listc, "REFNUMS", len)) {
-		char *retval = NULL;
-		size_t clue = 0;
+		char *	retval = NULL;
 		int	i;
 
 		for (i = 0; i < MAX_RECODING_RULES; i++)
 		{
 		    if (recode_rules[i])
-			malloc_strcat_word_c(&retval, space,
-						ltoa(i), DWORD_NO, &clue);
+			malloc_strcat_word(&retval, space, ltoa(i), DWORD_NO);
 		}
 		RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "MATCH", len)) {
