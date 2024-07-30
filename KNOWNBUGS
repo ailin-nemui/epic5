@@ -1366,7 +1366,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Include new script, /load epiclogo -- a nice easter egg. :)
 * Change /exec so it's fully line buffered.  This fixes /exec cat.
 * Stop using "inline", since the compiler does what it wants anyways.
-* Roll back the CAP support, it inteferes with the SASL script
+* Roll back the CAP support, it inteferes with the SASL script (rb skered)
 * Below is the "Spring Cleaning 2024" project
 * De-orbit flood detection and its attendant features (see UPDATES)
 * De-orbit the "clue" stuff
