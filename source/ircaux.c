@@ -987,7 +987,6 @@ char *	malloc_strcat_wordlist (char **ptr, const char *word_delim, const char *w
 char *	malloc_strext (const char *str, ptrdiff_t numbytes)
 {
 	char *	retval;
-	int	i;
 
 	if (numbytes <= 0)
 		return NULL;
@@ -1598,7 +1597,7 @@ int	normalize_filename (const char *str, Filename result)
 	if (expand_twiddle(str, workpath))
 		return -1;
 
-	if (realpath(str, result) == NULL)
+	if (realpath(workpath, result) == NULL)
 		return -1;
 
 	return 0;

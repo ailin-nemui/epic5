@@ -1358,15 +1358,15 @@ char	*expand_alias	(const char *string, const char *args)
 	char	*buffer = NULL,
 		*ptr,
 		*stuff = NULL,
-		*quote_str = NULL;
-	char	quote_temp[2];
+		*escape_str = NULL;
+	char	escape_temp[2];
 	char	ch;
 	int	is_quote = 0;
 
 	if (!string || !*string)
 		return malloc_strdup(empty_string);
 
-	quote_temp[1] = 0;
+	escape_temp[1] = 0;
 
 	ptr = stuff = LOCAL_COPY(string);
 
@@ -1384,28 +1384,50 @@ char	*expand_alias	(const char *string, const char *args)
 		    case '$':
 		    {
 			char *buffer1 = NULL;
+
+			/*
+			 * Replace the $ with a nul, then ptr points 
+			 * at the char after the $ (the expando)
+			 */
 			*ptr++ = 0;
 			if (!*ptr)
 			{
+				/* 
+				 * But if it's an $ at the end of
+				 * the string -> ignore it.
+				 */
 				malloc_strcat(&buffer, empty_string);
 				break;		/* Hrm. */
 			}
 
+			/* Append the stuff before the $ to the work buffer. */
 			malloc_strcat_ues(&buffer, stuff, empty_string);
 
+			/* 
+			 * After a $ may be any number of ^x sequences,
+			 * which cause 'x' to be escaped (x -> \x)
+			 */
 			for (; *ptr == '^'; ptr++)
 			{
 				ptr++;
 				if (!*ptr)	/* Blah */
 					break;
-				quote_temp[0] = *ptr;
-				malloc_strcat(&quote_str, quote_temp);
+				escape_temp[0] = *ptr;
+				malloc_strcat(&escape_str, escape_temp);
 			}
-			stuff = alias_special_char(&buffer1, ptr, args, quote_str);
+
+			/* Now expand (and quote) the expando into 'buffer1' */
+			/* The retval (stuff) is the byte after the expando */
+			stuff = alias_special_char(&buffer1, ptr, args, escape_str);
+
+			/* And then append that to the work buffer. */
 			malloc_strcat(&buffer, buffer1);
+
 			new_free(&buffer1);
-			if (quote_str)		/* Why ``stuff''? */
-				new_free(&quote_str);
+			if (escape_str)		/* Why ``stuff''? */
+				new_free(&escape_str);
+
+			/* Set the next char to after the expando */
 			ptr = stuff;
 			break;
 		    }

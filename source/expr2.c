@@ -722,8 +722,7 @@ static	const char *	get_token_expanded (expr_info *c, TOKEN v)
 				yell(">>> Looking up variable [%d]: [%s]", 
 					v, myval);
 
-			alias_special_char(&buffer, myval, c->args, 
-					NULL);
+			alias_special_char(&buffer, myval, c->args, NULL);
 			if (!buffer)
 				buffer = malloc_strdup(empty_string);
 			TOK(c, v).expanded_value = buffer;
