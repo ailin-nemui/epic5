@@ -4159,7 +4159,7 @@ void	dequoter (char **str, int full, int extended, const char *delims)
 			retval++;
 
 		*orig_str = 0;
-		strlcpy(orig_str, retval, orig_size);
+		strlcpy(orig_str, retval, orig_size + 1);
 		*str = orig_str;
 	}
 }
