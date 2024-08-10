@@ -1373,35 +1373,30 @@ BUILT_IN_FUNCTION(function_mid, word)
 
 /*
  * Usage: $rand(max)
- * Returns: A random number from zero to max-1.
+ * Returns: A random number from 1 to max-1.
+ *	    It returns 0 if there was an error
  * Example: $rand(10) might return any number from 0 to 9.
+ *	"max = 0" returns a random number without a ceiling
  */
 BUILT_IN_FUNCTION(function_rand, word)
 {
-	unsigned long	tempin, ret;
-static	unsigned long	rn = 0;
+	unsigned long	maxval, randomval;
 
-	GET_INT_ARG(tempin, word);
-	if (tempin == 0)
-		ret = random_number(0);
-	else {
-		if (rn < tempin)
-			rn ^= random_number(0);
-		ret = rn % tempin;
-		rn /= tempin;
-	}
-	RETURN_INT(ret);
+	GET_INT_ARG(maxval, word);
+	randomval = random_number(0);
+	if (maxval != 0)
+		randomval %= maxval;
+	RETURN_INT(randomval);
 }
 
 /*
  * Usage: $srand(seed)
  * Returns: Nothing.
- * Side effect: seeds the random number generater.
- * Note: the argument is ignored.
+ * Side effect: Nothing
+ * This used to be used to seed the RNG.  But now it's a NOP.
  */
 BUILT_IN_FUNCTION(function_srand, word)
 {
-	random_number(time(NULL));
 	RETURN_EMPTY;
 }
 
@@ -5230,17 +5225,47 @@ BUILT_IN_FUNCTION(function_randread, input)
 	if (!fgets(buffer, BIG_BUFFER_SIZE, fp))
 	{
 		if (feof(fp))
-			fseeko(fp, (off_t)0, SEEK_SET);
+		{
+			/* 
+			 * BTW, all this nonsense here and below is to satisfy clang,
+			 * who is deeply concerned that rewind seek might fail and we
+			 * aren't handling it.
+			 */
+			if (fseek(fp, (long)0, SEEK_SET))
+			{
+				strlcpy(buffer, "randread: something went really wrong (1a)", sizeof(buffer));
+				goto randread_cleanup;
+			}
+		}
+		else
+		{
+			strlcpy(buffer, "randread: something went really wrong (1b)", sizeof(buffer));
+			goto randread_cleanup;
+		}
 	}
 	if (!fgets(buffer, BIG_BUFFER_SIZE, fp))
 	{
 		if (feof(fp))
 		{
-			fseeko(fp, (off_t)0, SEEK_SET);
+			if (fseek(fp, (long)0, SEEK_SET))
+			{
+				strlcpy(buffer, "randread: something went really wrong (2)", sizeof(buffer));
+				goto randread_cleanup;
+			}
 			if (!fgets(buffer, BIG_BUFFER_SIZE, fp))
-				yell("I'm having some difficulty in $randread().");
+			{
+				strlcpy(buffer, "randread: something went really wrong (3)", sizeof(buffer));
+				goto randread_cleanup;
+			}
+		}
+		else
+		{
+			strlcpy(buffer, "randread: something went really wrong (4)", sizeof(buffer));
+			goto randread_cleanup;
 		}
 	}
+
+randread_cleanup:
 	chomp(buffer);
 	fclose(fp);
 

@@ -333,7 +333,6 @@ else
 	AC_CHECK_HEADERS(termcap.h,)
 fi
 
-AC_CHECK_FUNC(arc4random, AC_DEFINE([HAVE_ARC4RANDOM], 1, [Define this if you have arc4random()]),)
 AC_CHECK_FUNC(clock_gettime, AC_DEFINE([HAVE_CLOCK_GETTIME], 1, [Define if you have clock_gettime()]),)
 AC_CHECK_FUNC(crypt, AC_DEFINE([HAVE_CRYPT], 1, [Define if you have crypt()]),)
 AC_CHECK_FUNC(fchdir, AC_DEFINE([HAVE_FCHDIR], 1, [Define if you have fchdir()]),)

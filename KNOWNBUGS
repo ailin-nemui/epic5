@@ -1379,3 +1379,13 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Comment functions to force analysis of behavior, fix bogons
 * Fix normalize_filename() (rb skered, foo, fudd)
 * Fix off-by-one (too short) error in dequoter() [rb fudd,lw]
+* Add support for OpenSSL's RAND_bytes() API
+* Stop doing all the other legacy PRNGs.
+* Deorbit arc4random() support, particularly the builtin stuff
+* Regen autoconf with 2.72, because a 1 line change causes 125k diff!
+* Fix various complaints from gcc and clang's static analyzers
+* Refactor upper()/lower() to a new strmap() to reduce dup code
+* Rationalize and comment stristr() and rstristr()
+* Random numbers now always use openssl -- /set random_source is ignored
+* Fix "long topline can be longer than status bar" (rb fusion)
+

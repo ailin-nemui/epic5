@@ -23,11 +23,6 @@ size_t	strlcpy (char *, const char *, size_t);
 size_t	strlcat (char *, const char *, size_t);
 #endif
 
-#ifndef HAVE_ARC4RANDOM
-uint32_t	bsd_arc4random (void);
-#define arc4random bsd_arc4random
-#endif
-
 int	my_base64_encode (const void *, int, char **);
 int	my_base64_decode (const char *, void *);
 

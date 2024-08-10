@@ -978,139 +978,6 @@ size_t	strlcat (char *dst, const char *src, size_t siz)
 }
 #endif
 
-/* --------------------------- start of arc4 stuff -------------------- */
-#ifndef HAVE_ARC4RANDOM
-/*
- * Arc4 random number generator for OpenBSD.
- * Copyright 1996 David Mazieres <dm@lcs.mit.edu>.
- *
- * Modification and redistribution in source and binary forms is
- * permitted provided that due credit is given to the author and the
- * OpenBSD project (for instance by leaving this copyright notice
- * intact).
- */
-
-/*
- * This code is derived from section 17.1 of Applied Cryptography,
- * second edition, which describes a stream cipher allegedly
- * compatible with RSA Labs "RC4" cipher (the actual description of
- * which is a trade secret).  The same algorithm is used as a stream
- * cipher called "arcfour" in Tatu Ylonen's ssh package.
- *
- * Here the stream cipher has been modified always to include the time
- * when initializing the state.  That makes it impossible to
- * regenerate the same random sequence twice, so this can't be used
- * for encryption, but will generate good random numbers.
- *
- * RC4 is a registered trademark of RSA Laboratories.
- */
-struct bsd_arc4_stream {
-	unsigned char	i;
-	unsigned char	j;
-	unsigned char	s[256];
-};
-typedef struct bsd_arc4_stream 	ARC4;
-
-static int	rs_initialized = 0;
-static ARC4	rs;
-
-static void	bsd_arc4_init (ARC4 *as)
-{
-	int     n;
-
-	for (n = 0; n < 256; n++)
-		as->s[n] = n;
-	as->i = 0;
-	as->j = 0;
-}
-
-static void	bsd_arc4_addrandom (ARC4 *as, unsigned char *dat, int datlen)
-{
-	int     n;
-	unsigned char	si;
-
-	as->i--;
-	for (n = 0; n < 256; n++) {
-		as->i = (as->i + 1);
-		si = as->s[as->i];
-		as->j = (as->j + si + dat[n % datlen]);
-		as->s[as->i] = as->s[as->j];
-		as->s[as->j] = si;
-	}
-}
-
-static void	bsd_arc4_stir (ARC4 *as)
-{
-	int     fd;
-	struct {
-		Timeval tv;
-		pid_t 	pid;
-		unsigned char	rnd[128 - sizeof(Timeval) - sizeof(pid_t)];
-	}       rdat;
-
-	gettimeofday(&rdat.tv, NULL);
-	rdat.pid = getpid();
-	if ((fd = open("/dev/urandom", O_RDONLY, 0)) >= 0) 
-	{
-		if (read(fd, rdat.rnd, sizeof(rdat.rnd)) <= 0)
-			yell("Read from /dev/urandom failed.  Bummer.");
-		close(fd);
-	}
-	/* 
-	 * fd < 0?  Ah, what the heck. We'll just take whatever was on the
-	 * stack... 
-	 */
-	bsd_arc4_addrandom(as, (void *) &rdat, sizeof(rdat));
-}
-
-static unsigned char		bsd_arc4_getbyte (ARC4 *as)
-{
-	unsigned char si, sj;
-
-	as->i = (as->i + 1);
-	si = as->s[as->i];
-	as->j = (as->j + si);
-	sj = as->s[as->j];
-	as->s[as->i] = sj;
-	as->s[as->j] = si;
-	return (as->s[(si + sj) & 0xff]);
-}
-
-static uint32_t	bsd_arc4_getword (ARC4 *as)
-{
-	uint32_t val;
-
-	val = bsd_arc4_getbyte(as) << 24;
-	val |= bsd_arc4_getbyte(as) << 16;
-	val |= bsd_arc4_getbyte(as) << 8;
-	val |= bsd_arc4_getbyte(as);
-	return val;
-}
-
-void	bsd_arc4random_stir (void)
-{
-	if (!rs_initialized) {
-		bsd_arc4_init(&rs);
-		rs_initialized = 1;
-	}
-	bsd_arc4_stir(&rs);
-}
-
-void	bsd_arc4random_addrandom (unsigned char *dat, int datlen)
-{
-	if (!rs_initialized)
-		bsd_arc4random_stir();
-	bsd_arc4_addrandom(&rs, dat, datlen);
-}
-
-uint32_t	bsd_arc4random (void)
-{
-	if (!rs_initialized)
-		bsd_arc4random_stir();
-	return bsd_arc4_getword(&rs);
-}
-#endif
-
 /* --------------------------- start of misc stuff -------------------- */
 /* This is written by EPIC Software Labs contributers and is public domain */
 #ifndef HAVE_VSNPRINTF
@@ -1163,6 +1030,12 @@ int	setenv (const char *name, const char *value, int overwrite)
 		warning = 1;
 	}
 
+	/* 
+	 * POSIX requires that the string passed to 'putenv' 
+	 * be inserted into the environment.  We have no
+	 * choice but to malloc() this, and accept the 
+	 * inevitable memory leak.
+	 */
 	len = strlen(name) + strlen(value) + 2;
 	envvalue = (char *)malloc(len);
 	snprintf(envvalue, len, "%s=%s", name, value);
@@ -1215,23 +1088,6 @@ char *	my_realpath (const char *pathname, char resolved_path[PATH_MAX])
 	return resolved_path;
 }
 #endif
-
-/*
-#ifdef NEED_STRTOLL
-long long	strtoll (const char *nptr, char **endptr, int base)
-{
-}
-#endif
-*/
-
-/*
-#ifndef HAVE_STRTOIMAX
-long		strtoimax (const char *nptr, char **endptr, int base)
-{
-	return (long)strtol(nptr, endptr, base);
-}
-#endif
-*/
 
 /**** END MISC PUBLIC DOMAIN STUFF ****/
 

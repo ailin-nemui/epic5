@@ -156,6 +156,7 @@
 #include "output.h"
 #include "vars.h"
 #include "words.h"
+#include <openssl/rand.h>
 
 static char *	decipher_evp (const char *passwd, int passwdlen, const char *ciphertext, int cipherlen, const EVP_CIPHER *type, int *outlen, int ivsize);
 static char *	decrypt_by_prog (const char *str, size_t *len, List *crypt);
@@ -448,16 +449,15 @@ static char *	cipher_evp (const char *passwd_, int passwdlen, const char *plaint
 {
 	const unsigned char *passwd = (const unsigned char *)passwd_;
 	const unsigned char *plaintext = (const unsigned char *)plaintext_;
-        unsigned char *outbuf;
-        int     outlen = 0;
-	int	extralen = 0;
+        unsigned char 	*outbuf;
+        int     	outlen = 0;
+	int		extralen = 0;
 	unsigned char	*iv = NULL;
-	unsigned long errcode;
-	uint32_t	randomval;
-	int		iv_count;
+	unsigned long 	errcode;
         EVP_CIPHER_CTX *context = EVP_CIPHER_CTX_new();
 
-	if(context == NULL) {
+	if (context == NULL) 
+	{
 		yell("ERROR: Could not generate cipher context");
 		return NULL;
 	}
@@ -469,17 +469,14 @@ static char *	cipher_evp (const char *passwd_, int passwdlen, const char *plaint
 
 	if (ivsize > 0)
 	{
-	    if (ivsize % sizeof(uint32_t) != 0)
-		panic(1, "The IV size for a crypto type you're using is %d "
-			"which is not a multiple of %ld", 
-			ivsize, (long)sizeof(uint32_t));
+		iv = new_malloc(ivsize);
 
-	    iv = new_malloc(ivsize);
-	    for (iv_count = 0; iv_count < ivsize; iv_count += sizeof(uint32_t))
-	    {
-		randomval = arc4random();  
-		memmove(iv + iv_count, &randomval, sizeof(uint32_t));
-	    }
+		/* 
+		 * If RAND_bytes() fails, it seems better to use zeroes than to 
+		 * leak what was there before...
+		 */
+		if ((RAND_bytes(iv, ivsize)) <= 0)
+			memset(iv, 0, ivsize);
 	}
 
 	outbuf = new_malloc(plaintextlen + 100);
@@ -493,18 +490,17 @@ static char *	cipher_evp (const char *passwd_, int passwdlen, const char *plaint
 	EVP_EncryptFinal_ex(context, outbuf + ivsize + outlen, &extralen);
         EVP_CIPHER_CTX_free(context);
 	outlen += extralen;
+	new_free(&iv);
 
 	ERR_load_crypto_strings();
 	while ((errcode = ERR_get_error()))
 	{
-	    char r[256];
-	    ERR_error_string_n(errcode, r, 256);
-	    yell("ERROR: %s", r);
+		char r[256];
+		ERR_error_string_n(errcode, r, 256);
+		yell("ERROR: %s", r);
 	}
 
 	*retsize = outlen + ivsize;
-	if (iv)
-		new_free(&iv);		/* XXX Is this correct? */
 	return (char *)outbuf;
 }
 

@@ -44,6 +44,7 @@
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
 #endif
+#include <openssl/rand.h>
 #include "ircaux.h"
 #include "output.h"
 #include "termx.h"
@@ -73,6 +74,7 @@ typedef struct _mo_money
 #define mo_ptr(ptr) ((MO *)( (char *)(ptr) - sizeof(MO) ))
 #define alloc_size(ptr) ((mo_ptr(ptr))->size)
 #define magic(ptr) ((mo_ptr(ptr))->magic)
+#define end_ptr(ptr) ((char *)(ptr) + alloc_size(ptr))
 
 #define FREED_VAL -3
 #define ALLOC_MAGIC (unsigned long)0x7fbdce70
@@ -452,8 +454,10 @@ char *	malloc_vsprintf (char **ptr, const char *format, va_list args)
 				buffer_size = vsn_retval + 1;
 			RESIZE(buffer, char, buffer_size);
 
+			va_end(args);
 			va_copy(args, orig_args);
 		} 
+		va_end(orig_args);
 
 	}
 
@@ -504,6 +508,7 @@ char *	malloc_strcdup (int numargs, ...)
 	retval = new_malloc(retsize);
 	*retval = 0;
 
+	va_end(args);
 	va_copy(args, orig_args);
 	for (i = 0; i < numargs; i++)
 	{
@@ -511,6 +516,7 @@ char *	malloc_strcdup (int numargs, ...)
 			strlcat(retval, this_arg, retsize);
 	}
 	va_end(args);
+	va_end(orig_args);
 
 	return retval;
 }
@@ -1002,124 +1008,174 @@ char *	malloc_strext (const char *str, ptrdiff_t numbytes)
 }
 
 
+/*
+ * strmap: Map every character in a string (in place) using a func
+ *	    (Used for uppercasing/lowercasing)
+ * 
+ * Arguments:
+ *	str	- (INPUT - OUTPUT) A string to convert/map
+ *
+ * Return value:
+ *	Always returns 'str'.
+ *
+ * Notes:
+ *	Each code point in 'str' is mapped via your callback.
+ *	If the callback substitutes a new code point, then it
+ *	is written in place.  
+ *
+ *	Technically there would be a problem if the new code 
+ *	point took more bytes than the original code point.
+ *	So if that happens, we don't do the conversion.
+ */
+static char *	strmap (char *str, int (*func)(int))
+{
+	char *		x;	/* Pointer to this cp in 'str' */
+	ptrdiff_t	offset;	/* How many bytes this codepoint took */
+	char *		s;	/* Pointer to the next cp in 'str' */
+	int		c, 	/* Each cp in 'str' */
+			d;	/* Uppercase version of 'c' */
+	char *		y;	/* The utf8 version of 'd' */
 
+	/*
+	 * For each code point 'c' in 'str'...
+	 */
+	s = str;
+	while (x = s, (c = next_code_point2(s, &offset, 1)))
+	{
+		s += offset;
 
+		/* Map the character */
+		d = func(c);
 
-/*******************************************************************************/
+		/* 
+		 * If d != c, then copy over d in place of c.
+		 * (otherwise, just move to the next codepoint)
+		 */
+		if (c != d)
+		{
+			char c_utf8str[16];
+			char d_utf8str[16];
+
+			ucs_to_utf8(c, c_utf8str, sizeof(c_utf8str));
+			ucs_to_utf8(d, d_utf8str, sizeof(d_utf8str));
+			if ((ssize_t)strlen(d_utf8str) != (s - x))
+			{
+				yell("The string [%s] contains a character [%s] whose new version [%s] is not the same length.  I didn't convert it for your safety.", str, c_utf8str, d_utf8str);
+				continue;
+			}
+
+			y = d_utf8str;
+			while (*y)
+				*x++ = *y++;
+		}
+	}
+
+	return str;
+}
 
 /*
- * Now *technically* there could be a problem if uppercase of a code point
- * took more bytes than the original one.  So we pay attention to that.
+ * upper - Convert a utf-8 string to all uppercase
+ *
+ * Arguments:
+ *	str - A utf8 string
+ *
+ * Return value:
+ *	Always returns 'str'
+ *
+ * Note:
+ *	Uppercase conversion is done via your system's 
+ *	towupper_l() function.  If that doesn't work, bummer.
  */
 char *	upper (char *str)
 {
-	char 	*s;
-	int	c, d;
-	char	*x, *y;
-	ptrdiff_t	offset;
-
-	s = str;
-	while (x = s, (c = next_code_point2(s, &offset, 1)))
-	{
-		s += offset;
-		d = mkupper_l(c);
-		if (c != d)
-		{
-			char c_utf8str[16];
-			char d_utf8str[16];
-
-			ucs_to_utf8(c, c_utf8str, sizeof(c_utf8str));
-			ucs_to_utf8(d, d_utf8str, sizeof(d_utf8str));
-			if ((ssize_t)strlen(d_utf8str) != (s - x))
-			{
-				yell("The string [%s] contains a character [%s] whose upper case version [%s] is not the same length.  I didn't convert it for your safety.", str, c_utf8str, d_utf8str);
-				continue;
-			}
-
-			y = d_utf8str;
-			while (*y)
-				*x++ = *y++;
-		}
-	}
-
-	return str;
+	return strmap(str, mkupper_l);
 }
 
+/*
+ * lower - Convert a utf-8 string to all lowercase
+ *
+ * Arguments:
+ *	str - A utf8 string
+ *
+ * Return value:
+ *	Always returns 'str'
+ *
+ * Note:
+ *	Lowercase conversion is done via your system's 
+ *	towlower_l() function.  If that doesn't work, bummer.
+ */
 char *	lower (char *str)
 {
-	char 	*s;
-	int	c, d;
-	char	*x, *y;
-	ptrdiff_t	offset;
-
-	s = str;
-	while (x = s, (c = next_code_point2(s, &offset, 1)))
-	{
-		s += offset;
-		d = mklower_l(c);
-		if (c != d)
-		{
-			char c_utf8str[16];
-			char d_utf8str[16];
-
-			ucs_to_utf8(c, c_utf8str, sizeof(c_utf8str));
-			ucs_to_utf8(d, d_utf8str, sizeof(d_utf8str));
-			if ((ssize_t)strlen(d_utf8str) != (s - x))
-			{
-				yell("The string [%s] contains a character [%s] whose upper case version [%s] is not the same length.  I didn't convert it for your safety.", str, c_utf8str, d_utf8str);
-				continue;
-			}
-
-			y = d_utf8str;
-			while (*y)
-				*x++ = *y++;
-		}
-	}
-
-	return str;
+	return strmap(str, mklower_l);
 }
 
+
 /* case insensitive string searching */
-ssize_t	stristr (const char *start, const char *srch)
+/*
+ * stristr - Unicode-aware case insensitive string searching
+ *
+ * Arguments:
+ *	big	- (INPUT) A UTF-8 string containing a lot of text
+ *	small	- (INPUT) A UTF-8 shorter string that might be somewhere in 'big'
+ *
+ * Return value:
+ *	The index of the code point in 'big' where you can find 'small'
+ *	  -1	'small' is not found in 'big'
+ *	>= 0	'small' is at the n'th code point in 'big'
+ *
+ * Notes:
+ *	There are two use cases:
+ *	  1. Is this string in another string? (check for -1 or not)
+ *	  2. What value should i pass to $mid(), $index(), $left(), etc,
+ *	     based on where 'small' is in 'big' ?
+ *
+ * 	This function should correctly handle case insensitivity in 
+ *	*any* language, as long as your system's towupper_l() works.
+ */
+ssize_t	stristr (const char *big, const char *small)
 {
 	const char *p;
-	int	srchlen;
-	size_t	srchsiz;
+	int	smalllen;
+	size_t	smallsiz;
 	int	d;
 
 	/* There must be both a source string and a search string */
-	if (!start || !*start || !srch || !*srch)
+	if (!big || !*big || !small || !*small)
 		return -1;
 
-	srchlen = quick_code_point_count(srch);
-	srchsiz = strlen(srch);
+	smalllen = quick_code_point_count(small);
+	smallsiz = strlen(small);
 
 	/* The search string must be shorter than the source string */
-	if (srchlen > quick_code_point_count(start))
+	if (smalllen > quick_code_point_count(big))
 		return -1;
 
 	/*
-	 * For each byte in 'start' (-> p)
- 	 *  - If 'srch' exists here
-	 *	Return this position as code points into 'start'.
+	 * For each byte in 'big' (-> p)
+ 	 *  - If 'small' exists here
+	 *	Return this position as code points into 'big'.
 	 *	(Counting code points instead of bytes makes this utf-8 aware)
  	 *  - Grab the next code point from "here"
 	 *  - If there is no code point here, skip this byte
 	 *	[see note below]
-	 *  - If this code point is nul, then we didn't find 'srch'.
+	 *  - If this code point is nul, then we didn't find 'small'.
 	 */
-	p = start;
+	p = big;
 	for (;;)
 	{
 		ptrdiff_t	offset;
 
-		/* XXX NO! XXX 'srclen' is not bytes! */
-		if (!my_strnicmp(p, srch, srchsiz))
-			return quick_code_point_index(start, p);
+		/*
+		 * If i find 'small' right here at 'p',
+		 * then this is my huckleberry.  
+	 	 * Calculate where I am in 'big'
+		 */
+		if (!my_strnicmp(p, small, smallsiz))
+			return quick_code_point_index(big, p);
 
 		/*
-		 * Although we support 'start' and 'srch' being UTF-8,
-		 * why do we walk 'start' byte-by-byte instead of 
+		 * Although we support 'big' and 'small' being UTF-8,
+		 * why do we walk 'big' byte-by-byte instead of 
 		 * codepoint-by-codepoint?
 		 *
 		 * 1. We know both strings are in the same encoding, so
@@ -1148,8 +1204,29 @@ ssize_t	stristr (const char *start, const char *srch)
 	return -1;
 }
 
-/* case insensitive string searching from the end */
-/* All the comments from stristr() apply here */
+/*******************************************************/
+/*
+ * rstristr - Unicode-aware case insensitive string searching (from the end)
+ *
+ * Arguments:
+ *	big	- (INPUT) A UTF-8 string containing a lot of text
+ *	small	- (INPUT) A UTF-8 shorter string that might be somewhere in 'big'
+ *
+ * Return value:
+ *	The index of the code point in 'big' where you can find the 
+ *	last instance of 'small'
+ *	  -1	'small' is not found in 'big'
+ *	>= 0	'small' is at the n'th code point in 'big'
+ *
+ * Notes:
+ *	There are two use cases:
+ *	  1. Is this string in another string? (check for -1 or not)
+ *	  2. What value should i pass to $mid(), $index(), $right(), etc,
+ *	     based on where 'small' is in 'big' ?
+ *
+ * 	This function should correctly handle case insensitivity in 
+ *	*any* language, as long as your system's towupper_l() works.
+ */
 ssize_t	rstristr (const char *start, const char *srch)
 {
 	const char *p;
@@ -1571,7 +1648,7 @@ char *	strlopencpy (char *dest, size_t maxlen, ...)
 
 
 /*
- * normalize_filename: replacement for expand_twiddle
+ * normalize_filename: canonicalize a filename (that must exist)
  *
  * Arguments:
  *	str	- (INPUT) A filename which may begin with a '~/' or '~user/' segment
@@ -1582,7 +1659,7 @@ char *	strlopencpy (char *dest, size_t maxlen, ...)
  *	- 'str' and 'result' must point to different buffers
  *
  * Return value:
- *	 0 - Success ('result' contains the FWCP of 'str')
+ *	 0 - Success ('result' contains the FQCP of 'str')
  *	-1 - Failure ('result' was not changed)
  *	     - 'str' does not resolve to an actual file that exists
  *
@@ -1619,8 +1696,9 @@ int	normalize_filename (const char *str, Filename result)
  *	-1 -  Failure (result has not been modified)
  *	       - 'str' refers to '~user/' where 'user' doesn't exist.
  *
- * Note: It is not required that 'str' refer to a file that actually exists.
- * If you need to know if 'str' is valid, use normalize_filename() instead.
+ * Note: 
+ *	This function does not check whether 'str' is a file that exists.
+ *	You must call normalize_filename() with 'result' for that.
  */
 int	expand_twiddle (const char *str, Filename result)
 {
@@ -3589,173 +3667,42 @@ int 	count_char (const char *src, const char look)
  * Return value:
  *	'source' is always returned, even on error
  *
- * Weakness:
- *	The string resulting from 'format' may not exceed
- *	BIG_BUFFER_SIZE (2048 bytes).  Of course, this is heinous.
- *
- * 	XXX - I really hate these functions that just combine two 
- * 	other trivial functions, just to make the caller pretty.
+ * Notes:
+ *	Since 'source' can never be larger than 'size', we don't let
+ *	the 'format' result larger than 'size' either.  This way,
+ *	you can use an arbitrarily large 'size'.
  */
 char *	strlpcat (char *source, size_t size, const char *format, ...)
 {
 	va_list args;
-	char	buffer[BIG_BUFFER_SIZE + 1];
+	char	buffer[size];
 
 	va_start(args, format);
-	vsnprintf(buffer, sizeof buffer, format, args);
+	vsnprintf(buffer, size, format, args);
 	va_end(args);
 
 	strlcat(source, buffer, size);
 	return source;
 }
 
-/* RANDOM NUMBERS */
-/*
- * Random number generator #1 -- psuedo-random sequence
- * If you do not have /dev/random and do not want to use gettimeofday(), then
- * you can use the psuedo-random number generator.  Its performance varies
- * from weak to moderate.  It is a predictable mathematical sequence that
- * varies depending on the seed, and it provides very little repetition,
- * but with 4 or 5 samples, it should be trivial for an outside person to
- * find the next numbers in your sequence.
- *
- * If 'l' is not zero, then it is considered a "seed" value.  You want 
- * to call it once to set the seed.  Subsequent calls should use 'l' 
- * as 0, and it will return a value.
- */
-static	unsigned long	randm (unsigned long l)
-{
-	/* patch from Sarayan to make $rand() better */
-static	const	long		RAND_A = 16807L;
-static	const	long		RAND_M = 2147483647L;
-static	const	long		RAND_Q = 127773L;
-static	const	long		RAND_R = 2836L;
-static		unsigned long	z = 0;
-		long		t;
-
-	if (z == 0)
-		z = (unsigned long) getuid();
-
-	if (l == 0)
-	{
-		t = RAND_A * (z % RAND_Q) - RAND_R * (z / RAND_Q);
-		if (t > 0)
-			z = t;
-		else
-			z = t + RAND_M;
-		return (z >> 8) | ((z & 255) << 23);
-	}
-	else
-	{
-		if ((long) l < 0)
-			z = (unsigned long) getuid();
-		else
-			z = l;
-		return 0;
-	}
-}
-
-/*
- * Random number generator #2 -- gettimeofday().
- * If you have gettimeofday(), then we could use it.  Its performance varies
- * from weak to moderate.  At best, it is a source of modest entropy, with 
- * distinct linear qualities. At worst, it is a linear sequence.  If you do
- * not have gettimeofday(), then it uses randm() instead.
- */
-static unsigned long randt_2 (void)
-{
-	Timeval tp1;
-
-	get_time(&tp1);
-	return (unsigned long) tp1.tv_usec;
-}
-
-static	unsigned long randt (unsigned long l)
-{
-#ifdef HAVE_GETTIMEOFDAY
-	unsigned long t1, t2, t;
-
-	if (l != 0)
-		return 0;
-
-	t1 = randt_2();
-	t2 = randt_2();
-	t = (t1 & 65535) * 65536 + (t2 & 65535);
-	return t;
-#else
-	return randm(l);
-#endif
-}
-
-
-/*
- * Random number generator #3 -- /dev/urandom.
- * If you have the /dev/urandom device, then we will use it.  Its performance
- * varies from moderate to very strong.  At best, it is a source of pretty
- * substantial unpredictable numbers.  At worst, it is mathematical psuedo-
- * random sequence (which randm() is).
- */
-static unsigned long randd (unsigned long l)
-{
-	unsigned long	value;
-static	int		random_fd = -1;
-
-	if (l != 0)
-		return 0;	/* No seeding appropriate */
-
-	if (random_fd == -2)
-		return randm(l);
-
-	else if (random_fd == -1)
-	{
-		if ((random_fd = open("/dev/urandom", O_RDONLY)) == -1)
-		{
-			random_fd = -2;
-			return randm(l);	/* Fall back to randm */
-		}
-	}
-
-	if (read(random_fd, (void *)&value, sizeof(value)) <= 0)
-	{
-		close(random_fd);
-		random_fd = -2;
-		return randm(l);	/* Fall back to randm */
-	}
-
-	return value;
-}
-
-/*
- * Random number generator #4 -- Arc4random.
- * If you have the /dev/urandom device, this this may very well be the best
- * random number generator for you.  It spits out relatively good entropic
- * numbers, while not severely depleting the entropy pool (as reading directly
- * from /dev/random does).   If you do not have the /dev/urandom device, then
- * this function uses the stack for its entropy, which may or may not be 
- * suitable, but what the heck.  This generator is always available.
- */
-static unsigned long	randa (unsigned long l)
-{
-	if (l != 0)
-		return 0;	/* No seeding appropriate */
-
-	return (unsigned long)arc4random();
-}
-
 unsigned long	random_number (unsigned long l)
 {
-	switch (get_int_var(RANDOM_SOURCE_VAR))
-	{
-		case 0:
-			return randd(l);
-		case 1:
-			return randm(l);
-		case 2:
-			return randt(l);
-		case 3:
-		default:
-			return randa(l);
-	}
+	unsigned char	bytes[sizeof(unsigned long)];
+	int		err;
+	unsigned long	retval;
+
+	if (l != 0)
+		return 0;
+
+	err = RAND_bytes(bytes, sizeof(unsigned long));
+	if (err != 1)
+		return 0;
+
+	memcpy(&retval, bytes, sizeof(unsigned long));	
+	if (retval == 0)
+		return random_number(l);
+	return retval;
+
 }
 
 /* 
@@ -6760,15 +6707,12 @@ static char *	uuid4_generate_internal (int dashes)
 static const char *template_with_dashes = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";
 static const char *template_without_dashes = "xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx";
 static const char *chars = "0123456789abcdef";
-	union { unsigned char b[16]; uint32_t word[4]; } s;
+	unsigned char 	s[16];
 	const char *	p;
-	int 	i, n;
-	char	*dst, *retval;
+	int 		i, n;
+	char		*dst, *retval;
 
-	s.word[0] = (uint32_t)random_number(0);
-	s.word[1] = (uint32_t)random_number(0);
-	s.word[2] = (uint32_t)random_number(0);
-	s.word[3] = (uint32_t)random_number(0);
+	RAND_bytes(s, sizeof(s));
 
 	dst = retval = new_malloc(64);
 	memset(retval, 0, 64);
@@ -6781,7 +6725,7 @@ static const char *chars = "0123456789abcdef";
 
 	for (i = 0; *p; p++, dst++)
 	{
-		n = s.b[i >> 1];
+		n = s[i >> 1];
 		n = (i & 1) ? (n >> 4) : (n & 0xf);
 
 		switch (*p) 
@@ -7060,3 +7004,4 @@ const char *	nonull (const char *x)
 	else
 		return empty_string;
 }
+

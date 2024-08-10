@@ -2829,7 +2829,8 @@ const 	char	*ptr;
 	     * want to treat this exactly as 1 line, and col has already 
 	     * been incremented.
 	     */
-	    if ((allow_truncate && col > max_cols) || my_newline)
+	    /* I'm not sure about this >= here... it's always been > */
+	    if ((allow_truncate && col >= max_cols) || my_newline)
 			break;
 	}
 	buffer[pos] = 0;
@@ -3886,7 +3887,7 @@ int	create_additional_screen (void)
 		if (get_screen_fdin(new_s) == 0) 
 		{
 			int	fd;	/* Hurt me harder, clang... */
-			FILE *	f;
+			FILE *	fin, *fout;
 
 			if ((fd = accept(new_cmd, &new_socket.sa, &new_sock_size)) < 0)
 			{
@@ -3900,15 +3901,23 @@ int	create_additional_screen (void)
 			set_screen_fdout(new_s, fd);
 			new_open(fd, do_screens, NEWIO_RECV, 1, -1);
 
-			if (!(f = fdopen(fd, "r+")))
+			if (!(fin = fdopen(fd, "r+")))
 			{
 				close(new_cmd);
 				kill_screen(new_s);
 				yell("Couldn't establish data connection to new screen");
 				return -1;
 			}
-			set_screen_fpin(new_s, f);
-			set_screen_fpout(new_s, f);
+			if (!(fout = fdopen(fd, "r+")))
+			{
+				fclose(fin);
+				close(new_cmd);
+				kill_screen(new_s);
+				yell("Couldn't establish data connection to new screen");
+				return -1;
+			}
+			set_screen_fpin(new_s, fin);
+			set_screen_fpout(new_s, fout);
 			continue;
 		}
 		else
@@ -3917,6 +3926,7 @@ int	create_additional_screen (void)
 
 			set_screen_control(new_s, accept(new_cmd, &new_socket.sa, &new_sock_size));
 			close(new_cmd);
+
 			if (get_screen_control(new_s) < 0)
 			{
                                 kill_screen(new_s);
@@ -3928,10 +3938,12 @@ int	create_additional_screen (void)
 
                         if ((refnum = new_window(new_s)) < 1)
                                 panic(1, "WINDOW is NULL and it shouldnt be!");
+
                         return refnum;
 		}
 	    }
 	}
+	close(new_cmd);		/* Oh, shut up clang */
 	return -1;
 #endif
 }
@@ -3973,8 +3985,16 @@ void 	kill_screen (int screen_)
 	screen->last_window_refnum = -1;
 	screen->visible_windows = 0;
 	screen->window_stack = NULL;
-	screen->fpin = NULL;
-	screen->fpout = NULL;
+	if (screen->fpin)
+	{
+		fclose(screen->fpin);
+		screen->fpin = NULL;
+	}
+	if (screen->fpout)
+	{
+		fclose(screen->fpout);
+		screen->fpout = NULL;
+	}
 	screen->fdin = -1;
 	screen->fdout = -1;
 
