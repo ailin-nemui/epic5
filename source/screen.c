@@ -3636,10 +3636,6 @@ static	int	refnumber = 0;
 #define ST_TMUX		2
 int	create_additional_screen (void)
 {
-#ifdef NO_JOB_CONTROL
-	yell("Your system doesn't support job control, sorry.");
-	return NULL;
-#else
 	int		oldscreen, new_s;
         int     	screen_type = ST_NOTHING;
 	SSu		local_sockaddr;
@@ -3945,7 +3941,6 @@ int	create_additional_screen (void)
 	}
 	close(new_cmd);		/* Oh, shut up clang */
 	return -1;
-#endif
 }
 
 /* Old screens never die. They just fade away. */

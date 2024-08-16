@@ -73,9 +73,6 @@
 /* Define this if you have a useful iconv() */
 #undef HAVE_ICONV
 
-/* Define to 1 if you have the <ieeefp.h> header file. */
-#undef HAVE_IEEEFP_H
-
 /* Define to 1 if the system has the type 'intmax_t'. */
 #undef HAVE_INTMAX_T
 
@@ -306,9 +303,6 @@
 /* Define this if newlocale() requires #define __XOPEN_SOURCE 700 to work */
 #undef NEWLOCALE_REQUIRES__XOPEN_SOURCE_700
 
-/* Define this if you don't have job control */
-#undef NO_JOB_CONTROL
-
 /* Define if you do not have struct linger */
 #undef NO_STRUCT_LINGER
 
@@ -354,9 +348,6 @@
 /* Stuff to add to LDFLAGS to support ruby */
 #undef RUBYLIBS
 
-/* Define this if you wanted to use SOCKS */
-#undef SOCKS
-
 /* If using the C implementation of alloca, define if you know the
    direction of stack growth for your system; otherwise it will be
    automatically deduced at runtime.
@@ -385,9 +376,6 @@
 /* Define this if you want to use select as the multiplexer */
 #undef USE_SELECT
 
-/* Define this if you wanted to use SOCKS5 */
-#undef USE_SOCKS5
-
 /* Define this if you want to use Solaris ports as the multiplexer */
 #undef USE_SOLARIS_PORTS
 
@@ -405,18 +393,6 @@
    <pthread.h>, or <semaphore.h> is not used. If the typedef were allowed, the
    #define below would cause a syntax error. */
 #undef _UINT8_T
-
-/* Defined when using SOCKS */
-#undef accept
-
-/* Defined when using SOCKS */
-#undef bind
-
-/* Defined when using SOCKS */
-#undef connect
-
-/* Defined when using SOCKS */
-#undef getsockname
 
 /* Define as 'int' if <sys/types.h> doesn't define. */
 #undef gid_t
@@ -445,9 +421,6 @@
    if such a type exists, and if the system does not define it. */
 #undef intptr_t
 
-/* Defined when using SOCKS */
-#undef listen
-
 /* Define to 'int' if <sys/types.h> does not define. */
 #undef mode_t
 
@@ -456,9 +429,6 @@
 
 /* Define as a signed integer type capable of holding a process identifier. */
 #undef pid_t
-
-/* Defined when using SOCKS */
-#undef select
 
 /* Define as 'unsigned int' if <stddef.h> doesn't define. */
 #undef size_t

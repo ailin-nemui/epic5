@@ -37,11 +37,6 @@
 #include "output.h"
 #include <sys/ioctl.h>
 
-/* This will eventually become a configurable */
-#ifndef NO_JOB_CONTROL
-#define ASYNC_DNS
-#endif
-
 static int	Connect 	 (int, SSu *);
 static socklen_t socklen  	 (SSu *);
 static int	Getnameinfo 	 (SSu *, socklen_t, char *, size_t, char *, size_t, int);
@@ -827,14 +822,12 @@ pid_t	async_getaddrinfo (const char *nodename, const char *servname, const AI *h
 	AI *results = NULL;
 	ssize_t	err;
 
-#ifdef ASYNC_DNS
 	{
 	/* XXX Letting /exec clean up after us is a hack. */
 	pid_t	helper;
 	if ((helper = fork()))
 		return helper;
 	}
-#endif
 
         if ((err = my_getaddrinfo(nodename, servname, hints, &results)))
         {
@@ -842,11 +835,7 @@ pid_t	async_getaddrinfo (const char *nodename, const char *servname, const AI *h
 		if (!write(fd, &err, sizeof(err))) 
 			(void) 0;
 		close(fd);
-#ifdef ASYNC_DNS
 		exit(0);
-#else
-		return 0;
-#endif
         }
 
 	if (!results)
@@ -855,19 +844,13 @@ pid_t	async_getaddrinfo (const char *nodename, const char *servname, const AI *h
 		if (!write(fd, &err, sizeof(err))) 
 			(void) 0;
 		close(fd);
-#ifdef ASYNC_DNS
 		exit(0);
-#else
-		return 0;
-#endif
         }
 
         marshall_getaddrinfo(fd, results);
         my_freeaddrinfo(results);
         close(fd);
-#ifdef ASYNC_DNS
 	exit(0);
-#endif
 	return 0;	/* XXX This function should be void */
 }
 

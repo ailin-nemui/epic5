@@ -58,10 +58,6 @@
 #ifndef AI_ADDRCONFIG
 # define AI_ADDRCONFIG 0
 #endif
-#ifdef USE_SOCKS5
-# define INCLUDE_PROTOTYPES
-# include <socks.h>
-#endif
 #ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
 #endif

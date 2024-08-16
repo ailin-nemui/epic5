@@ -1388,4 +1388,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Rationalize and comment stristr() and rstristr()
 * Random numbers now always use openssl -- /set random_source is ignored
 * Fix "long topline can be longer than status bar" (rb fusion)
+* De-orbit support for socks[45], including "socks5p.h"
+* Stop checking for any using <ieeefp.h> unless someone can explain why not
+* De-orbit support for systems without job control (!!)
 

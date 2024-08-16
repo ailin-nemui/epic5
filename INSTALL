@@ -35,13 +35,6 @@ any GNU software (however, this is _not_ GNU software)
 		EPIC will use ONLY termcap, and not look for terminfo.
 		You ought not specify this unless the terminfo support
 		on your system is more broken than your termcap support.
-	  --with-socks[=PATH]
-		EPIC will attempt to use SOCKS4 firewall code when making
-		network connections.  The PATH should specify the directory
-		tree where all of the interesting files can be found.  This
-		is usually something like /usr/local
-	  --with-socks5[=PATH]
-		Same thing as above, but for SOCKS5.
 	  --with-perl[=PATH]
 		Enable the perl support in the scripting language.
 		WARNING:  Currently requires Perl 5.6+.

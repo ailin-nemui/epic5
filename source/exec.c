@@ -50,24 +50,6 @@
 #include "ifcmd.h"
 #include "functions.h"
 
-#ifdef NO_JOB_CONTROL
-BUILT_IN_COMMAND(execcmd)
-{ 
-	say("Your system does not support job control, sorry.");
-	return; 
-}
-int	get_child_exit (pid_t x)			{ return -1; }
-void	clean_up_processes (void)			{ return; }
-int	text_to_process (const char *x, const char *y, int z) 	
-{ 
-	say("Cannot send text to process without job control, sorry.");
-	return 1; 
-}
-void	add_process_wait (const char *, const char *y)	{ return; }
-int	is_valid_process (const char *x)		{ return -1; }
-BUILT_IN_FUNCTION(execctl) { RETURN_EMPTY; }
-#else
-
 #include <sys/wait.h>
 #include <sys/ioctl.h>
 #ifdef HAVE_SYS_FILIO_H
@@ -2026,6 +2008,4 @@ char *  execctl (char *input)
 
 	RETURN_EMPTY;
 }
-
-#endif
 

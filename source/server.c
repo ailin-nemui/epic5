@@ -147,6 +147,7 @@ static 	int	server_addrs_left (int refnum);
 static const char *	get_server_type (int servref);
 static	int	get_server_accept_cert (int refnum);
 static	void	set_server_accept_cert (int refnum, int val);
+static	char *  get_my_fallback_userhost (void);
 
 /*
  * clear_serverinfo: Initialize/Reset a ServerInfo object
@@ -5007,5 +5008,23 @@ Server *      get_server (int server)
         if (server < 0 || server >= number_of_servers)
                 return NULL;
         return server_list[server];
+}
+
+
+/* This was moved from ircaux.c */
+static char *  get_my_fallback_userhost (void)
+{
+        static char uh[BIG_BUFFER_SIZE];
+
+        const char *x = get_string_var(DEFAULT_USERNAME_VAR);
+
+        if (x && *x)
+                strlcpy(uh, x, sizeof uh);
+        else
+                strlcpy(uh, "Unknown", sizeof uh);
+
+        strlcat(uh, "@", sizeof uh);
+        strlcat(uh, hostname, sizeof uh);
+        return uh;
 }
 

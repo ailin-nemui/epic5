@@ -326,7 +326,7 @@ dnl Checking for headers, functions, and a type declarations
 dnl sigh.  I used to check for sys/fcntl.h
 dnl
 
-AC_CHECK_HEADERS(fcntl.h ieeefp.h inttypes.h locale.h math.h ndbm.h netdb.h regex.h stdargs.h stddef.h stdint.h sys/cdefs.h sys/file.h sys/filio.h sys/select.h sys/syslimits.h sys/time.h sys/un.h sys/param.h termios.h sys/termios.h xlocale.h,)
+AC_CHECK_HEADERS(fcntl.h inttypes.h locale.h math.h ndbm.h netdb.h regex.h stdargs.h stddef.h stdint.h sys/cdefs.h sys/file.h sys/filio.h sys/select.h sys/syslimits.h sys/time.h sys/un.h sys/param.h termios.h sys/termios.h xlocale.h,)
 if test $termcap -eq 0 ; then
 	AC_CHECK_HEADERS(term.h,)
 else
@@ -646,60 +646,6 @@ AC_RUN_IFELSE([AC_LANG_PROGRAM([[
 
 dnl ----------------------------------------------------------
 dnl
-dnl Socks4 or Socks5 or neither?
-dnl
-
-AC_MSG_CHECKING(whether to support SOCKS)
-AC_ARG_WITH(socks,
-[  --with-socks[=PATH]               Compile with SOCKS (libsocks without socks.h) firewall traversal support.],
-[ case "$withval" in
-  no)
-	AC_MSG_RESULT(no)
-	;;
-  *)
-	if test "x$withval" != "xyes"; then
-		LIBS="$LIBS -L$withval"
-	fi
-
-	AC_MSG_RESULT(yes)
-	LIBS="$LIBS -lsocks"
-	AC_DEFINE([SOCKS], 1, [Define this if you wanted to use SOCKS])
-	AC_DEFINE([connect], [Rconnect], [Defined when using SOCKS])
-	AC_DEFINE([getsockname], [Rgetsockname], [Defined when using SOCKS])
-	AC_DEFINE([bind], [Rbind], [Defined when using SOCKS])
-	AC_DEFINE([accept], [Raccept], [Defined when using SOCKS])
-	AC_DEFINE([listen], [Rlisten], [Defined when using SOCKS])
-	AC_DEFINE([select], [Rselect], [Defined when using SOCKS])
-	;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
-AC_MSG_CHECKING(whether to support SOCKS5)
-AC_ARG_WITH(socks5,
-[  --with-socks5[=PATH]              Compile with SOCKS5 (libsocks with socks.h) firewall traversal support.],
-[ case "$withval" in
-  no)
-	AC_MSG_RESULT(no)
-	;;
-  *)
-	if test "x$withval" != "xyes"; then
-		LIBS="$LIBS -L$withval"
-		CFLAGS="$CFLAGS -I$withval/../include/"
-	fi
-
-	AC_MSG_RESULT(yes)
-	LIBS="$LIBS -lsocks"
-	AC_DEFINE([SOCKS], 1, [Define this if you wanted to use SOCKS])
-	AC_DEFINE([USE_SOCKS5], 1, [Define this if you wanted to use SOCKS5])
-	;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
-
-dnl ----------------------------------------------------------
-dnl
 dnl Iconv support?
 dnl
 AC_ARG_WITH(iconv,
@@ -791,20 +737,6 @@ fi
 
 dnl #sigh#
 dnl AC_CHECK_FUNC(iconv_open, AC_DEFINE([HAVE_ICONV], 1, [Define this if you have a useful iconv())],)
-
-
-dnl ----------------------------------------------------------
-dnl
-dnl Job Control / Wserv support?
-dnl
-AC_MSG_CHECKING(whether you have posix-like job control)
-if test "x$ac_cv_func_tcsetpgrp" = "xyes" -a "x$ac_cv_func_setsid" = "xyes"; then
-	AC_MSG_RESULT(yes)
-else
-	AC_MSG_RESULT(no)
-	AC_DEFINE([NO_JOB_CONTROL], 1, [Define this if you don't have job control])
-	no_job_control=1
-fi
 
 AC_MSG_CHECKING(whether to include wserv support)
 include_wserv="yes"

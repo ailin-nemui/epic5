@@ -52,7 +52,7 @@ const char internal_version[] = "20240614";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 2133;
+const unsigned long	commit_id = 2134;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -1036,9 +1036,6 @@ int 	main (int argc, char *argv[])
 
 	create_utf8_locale();
 	setvbuf(stdout, NULL, _IOLBF, 1024);
-#ifdef SOCKS
-	SOCKSinit(argv[0]);
-#endif
         get_time(&start_time);
 
 	init_levels();
@@ -1061,7 +1058,6 @@ int 	main (int argc, char *argv[])
 	fprintf(stderr, "%s\n", compile_info);
 	fprintf(stderr, "OpenSSL version: %#8.8lx\n", OpenSSL_version_num());
 
-#ifndef NO_JOB_CONTROL
 	/* If we're a bot, do the bot thing. */
 	if (!use_input)
 	{
@@ -1082,7 +1078,6 @@ int 	main (int argc, char *argv[])
 		}
 	}
 	else
-#endif
 	{
 		fprintf(stderr, "Process [%d]", getpid());
 		if (isatty(0))

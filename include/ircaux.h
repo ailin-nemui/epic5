@@ -53,7 +53,6 @@ struct metric_time {
 
 	/* - - - - Functions dealing with irc things - - - - */
 	char *	check_nickname 		(char *, int);
-	char *	get_my_fallback_userhost (void);
 	int	figure_out_address	(const char *, char **, char **, char **);
 
 	/* - - - - Functions dealing with ircII syntax - - - - */
@@ -94,7 +93,6 @@ struct 	epic_loadfile *	uzfopen 	(char **, const char *, int, struct stat *);
 	ptrdiff_t    	rcpindex2 	(const char *, const char *, const char *, int, size_t *, int *);
 	ssize_t		findchar_honor_escapes (const char *, int);
 	int		charcount	(const char *, char);
-	ssize_t 	searchbuf	(const char *, size_t, size_t, int);
 	int     	check_xdigit 	(char digit);
 
 	/* - - - - Functions dealing with comparing strings - - - - */
@@ -149,13 +147,11 @@ const 	char *	nonull			(const char *);
 #define ltoa intmaxtoa
 	int	is_number 		(const char *);
 	int	is_real_number 		(const char *);
-const 	char *	my_ltoa 		(long);
 const 	char *	intmaxtoa 		(intmax_t);
 const 	char *	ftoa			(double);
 	int	check_val 		(const char *);
 	int	parse_number 		(char **);
 	long	my_atol 		(const char *);
-	int	count_char		(const char *, const char);
 
 	/* - - - - Functions dealing with time - - - - */
 	const char *	my_ctime 		(time_t);
@@ -178,7 +174,7 @@ struct 	metric_time 	timeval_to_metric	(const Timeval *);
 	unsigned long	random_number	(unsigned long);
 
 	/* - - - - - - */
-	char *	exec_pipe		(const char *, char *, size_t *, char *const *);
+	char *  exec_pipe 		(const char *executable, char *input, size_t *len, char * const *args);
 	FILE **	open_exec		(const char *executable, char * const *args);
 	void	panic 			(int, const char *, ...) __A(2) __N;
 

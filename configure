@@ -717,8 +717,6 @@ with_libarchive
 with_ssl
 with_termcap
 with_ipv6
-with_socks
-with_socks5
 with_iconv
 with_wserv
 with_valgrind
@@ -1359,8 +1357,6 @@ Optional Packages:
   --with-ssl=PATH                 Help me find your SSL installation (DIR is OpenSSL's install dir).
   --with-termcap                  Force use of termcap even if terminfo/ncurses is available
   --without-ipv6                  Refuse to support IPv6
-  --with-socks=PATH               Compile with SOCKS (libsocks without socks.h) firewall traversal support.
-  --with-socks5=PATH              Compile with SOCKS5 (libsocks with socks.h) firewall traversal support.
   --with-iconv=PATH               Include iconv support (PATH is (eg) /usr/local).
   --without-wserv                 Refuse to support wserv (for multiple screens)
   --with-valgrind                 Include support for Valgrind Memcheck
@@ -5154,12 +5150,6 @@ then :
   printf "%s\n" "#define HAVE_FCNTL_H 1" >>confdefs.h
 
 fi
-ac_fn_c_check_header_compile "$LINENO" "ieeefp.h" "ac_cv_header_ieeefp_h" "$ac_includes_default"
-if test "x$ac_cv_header_ieeefp_h" = xyes
-then :
-  printf "%s\n" "#define HAVE_IEEEFP_H 1" >>confdefs.h
-
-fi
 ac_fn_c_check_header_compile "$LINENO" "inttypes.h" "ac_cv_header_inttypes_h" "$ac_includes_default"
 if test "x$ac_cv_header_inttypes_h" = xyes
 then :
@@ -6813,94 +6803,6 @@ fi
 
 
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether to support SOCKS" >&5
-printf %s "checking whether to support SOCKS... " >&6; }
-
-# Check whether --with-socks was given.
-if test ${with_socks+y}
-then :
-  withval=$with_socks;  case "$withval" in
-  no)
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-	;;
-  *)
-	if test "x$withval" != "xyes"; then
-		LIBS="$LIBS -L$withval"
-	fi
-
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
-	LIBS="$LIBS -lsocks"
-
-printf "%s\n" "#define SOCKS 1" >>confdefs.h
-
-
-printf "%s\n" "#define connect Rconnect" >>confdefs.h
-
-
-printf "%s\n" "#define getsockname Rgetsockname" >>confdefs.h
-
-
-printf "%s\n" "#define bind Rbind" >>confdefs.h
-
-
-printf "%s\n" "#define accept Raccept" >>confdefs.h
-
-
-printf "%s\n" "#define listen Rlisten" >>confdefs.h
-
-
-printf "%s\n" "#define select Rselect" >>confdefs.h
-
-	;;
-  esac
-else case e in #(
-  e) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
- ;;
-esac
-fi
-
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether to support SOCKS5" >&5
-printf %s "checking whether to support SOCKS5... " >&6; }
-
-# Check whether --with-socks5 was given.
-if test ${with_socks5+y}
-then :
-  withval=$with_socks5;  case "$withval" in
-  no)
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-	;;
-  *)
-	if test "x$withval" != "xyes"; then
-		LIBS="$LIBS -L$withval"
-		CFLAGS="$CFLAGS -I$withval/../include/"
-	fi
-
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
-	LIBS="$LIBS -lsocks"
-
-printf "%s\n" "#define SOCKS 1" >>confdefs.h
-
-
-printf "%s\n" "#define USE_SOCKS5 1" >>confdefs.h
-
-	;;
-  esac
-else case e in #(
-  e) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
- ;;
-esac
-fi
-
-
-
-
 # Check whether --with-iconv was given.
 if test ${with_iconv+y}
 then :
@@ -7038,21 +6940,6 @@ printf "%s\n" "#define HAVE_ICONV 1" >>confdefs.h
 
 fi
 
-
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether you have posix-like job control" >&5
-printf %s "checking whether you have posix-like job control... " >&6; }
-if test "x$ac_cv_func_tcsetpgrp" = "xyes" -a "x$ac_cv_func_setsid" = "xyes"; then
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
-else
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-
-printf "%s\n" "#define NO_JOB_CONTROL 1" >>confdefs.h
-
-	no_job_control=1
-fi
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether to include wserv support" >&5
 printf %s "checking whether to include wserv support... " >&6; }

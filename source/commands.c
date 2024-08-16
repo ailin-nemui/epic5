@@ -3909,7 +3909,7 @@ BUILT_IN_COMMAND(returncmd)
 
 BUILT_IN_COMMAND(botmodecmd)
 {
-#if defined(NO_BOTS) || defined(NO_JOB_CONTROL)
+#if defined(NO_BOTS)
 	yell("This client was configured not to allow bots.  Bummer.");
 #else
 	if (dumb_mode) {
