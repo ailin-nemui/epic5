@@ -97,7 +97,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Try to make the perl configure check more robust for non-working perls.
 * Start a project to convert things to use transform_string().
 * Fix show_lastlog() to return the rewritten result (so -mangle works)
-* Actually de-orbit [en|de]code().
+* Actually sunset [en|de]code().
 * Create transform_string_dyn, a pleasant api in front of transform_string.
 * Create a bunch of global vars for transform_string to avoid lookups.
 * Add hints to how big destination buffers should be for xforming.
@@ -1247,7 +1247,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * More conversions of internal window.c functions to refnums
 * Complete conversion of internal functions from (Window *) to (int). Yay!
 * Create screen restful api (well, the getters at least)
-* De-orbit global "Screen *screen_list" in favor of get_screen_by_refnum()
+* Sunset global "Screen *screen_list" in favor of get_screen_by_refnum()
 * Make everything that used (Screen *) use int refnums (except windows)
 * Don't have dequoter() take clue, was causing ub (sorry, ce) (rb zlonix)
 * Fix screen->last_window_refnum, was wrong type (rb zlonix)
@@ -1368,10 +1368,10 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Stop using "inline", since the compiler does what it wants anyways.
 * Roll back the CAP support, it inteferes with the SASL script (rb skered)
 * Below is the "Spring Cleaning 2024" project
-* De-orbit flood detection and its attendant features (see UPDATES)
-* De-orbit the "clue" stuff
-* De-orbit the "alloc tracking" stuff
-* De-orbit the "delayed free" stuff
+* Sunset flood detection and its attendant features (see UPDATES)
+* Sunset the "clue" stuff
+* Sunset the "alloc tracking" stuff
+* Sunset the "delayed free" stuff
 * Differentiate between "quoting" ("") and "escaping" (\)
 * Below is the "ircaux.c reorg" sub-project
 * Categorize and sort all function decls in ircaux.h
@@ -1381,14 +1381,14 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix off-by-one (too short) error in dequoter() [rb fudd,lw]
 * Add support for OpenSSL's RAND_bytes() API
 * Stop doing all the other legacy PRNGs.
-* Deorbit arc4random() support, particularly the builtin stuff
+* Sunset arc4random() support, particularly the builtin stuff
 * Regen autoconf with 2.72, because a 1 line change causes 125k diff!
 * Fix various complaints from gcc and clang's static analyzers
 * Refactor upper()/lower() to a new strmap() to reduce dup code
 * Rationalize and comment stristr() and rstristr()
 * Random numbers now always use openssl -- /set random_source is ignored
 * Fix "long topline can be longer than status bar" (rb fusion)
-* De-orbit support for socks[45], including "socks5p.h"
+* Sunset support for socks[45], including "socks5p.h"
 * Stop checking for any using <ieeefp.h> unless someone can explain why not
-* De-orbit support for systems without job control (!!)
+* Sunset support for systems without job control (!!)
 * Various minor ircaux.c cleanups, nothing user-facing
