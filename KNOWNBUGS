@@ -4,12 +4,7 @@ THINGS TO WORK ON
 ------------------------------------------------
 Actual bugs
 ===========
-* Sending a "Man shrugging medium-light skin tone"
-  https://emojipedia.org/man-shrugging-medium-light-skin-tone
-  is a "ZWJ sequence" which epic may not support correctly
-   [ 5:34PM] -> (#epic) https://imgur.com/a/46IUXP0   -- how it originally appeared as received  (expected behavior per github)
-   [ 5:34PM] -> (#epic) https://imgur.com/a/P8gEFnG   -- how it appeared after you swapped the window out and in again
-   [ 5:35PM] -> (#epic) https://imgur.com/a/lSlLqQE   -- how it appeared in the log (text) file
+<None!>
 
 Creature Comforts
 ====================
@@ -42,6 +37,15 @@ Foundational improvements
 	https://datatracker.ietf.org/doc/html/draft-mitchell-irc-capabilities-01
 * Rewrite the RFC1459 message tokenizer ("BreakArgs")
     - Make CAP tokens (@stupid=value) first class citizens somehow
+* Support for column counting ZWJ compound emojis
+  + Sending a "Man shrugging medium-light skin tone"
+    https://emojipedia.org/man-shrugging-medium-light-skin-tone
+    is a "ZWJ sequence" which epic may not support correctly
+   [ 5:34PM] -> (#epic) https://imgur.com/a/46IUXP0   -- how it originally appeared as received  (expected behavior per github)
+   [ 5:34PM] -> (#epic) https://imgur.com/a/P8gEFnG   -- how it appeared after you swapped the window out and in again
+   [ 5:35PM] -> (#epic) https://imgur.com/a/lSlLqQE   -- how it appeared in the log (text) file
+  + Not every terminal emulator handles them, and then there's screen and tmux, too
+  + Supposedly, you can output emojis and ask for column position to assess what's supported.
 
 [I moved the old list to the file "WISHLIST" to keep this file short]
 
@@ -1358,7 +1362,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add support for bg colors in $rgb(), see UPDATES
 * Fix more suggestions from the nitpickers in gcc and clang
 * Fix $rgb() [rb wcarson, fusion]
-* EPIC5-2.1.13 (2025 - Sockdolager) released here
+* EPIC5-2.1.13 (2125 - Sockdolager) released here
 * ^C16 was defined and was used by lice.  sigh. (rb tjh)
 * Toplines were one column too narrow (rb fusion)
 * Very rudimentary support for CAP multi-prefix. more to come!
@@ -1392,3 +1396,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Stop checking for any using <ieeefp.h> unless someone can explain why not
 * Sunset support for systems without job control (!!)
 * Various minor ircaux.c cleanups, nothing user-facing
+* EPIC5-2.2 (2135 - Sedulous) released here

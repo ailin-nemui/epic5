@@ -1,5 +1,26 @@
 EPIC5-2.2
 
+*** News 08/18/2024 -- EPIC5-2.2 (2135 - Sedulous) released here
+	This is the first release candidate for EPIC5-3.0
+
+*** News 08/18/2024 -- /SET RANDOM_SOURCE now has no effect
+	EPIC has traditionally had 4 random number generators:
+	They have been replaced with just using OpenSSL's BYTES_random().
+	Using /set random_source now has no effect.
+
+*** News 08/18/2024 -- SOCKS support retired
+	SOCKS4 and SOCKS5 support has been sunset.  It was 28 years old.
+
+*** News 08/18/2024 -- Flood control support retired
+	Flood control is a historical ircII feature that solved
+	a problem we used to have with pre RFC1459 servers.
+	Flood detection, as a concept, hasn't been relevant in
+	30 years.  The /on flood and /set flood_* variables have
+	been retired.
+
+*** News 06/14/2024 -- EPIC5-2.1.13 (2125 - Sockdolager released here
+	People like to see releases occasionally!
+
 *** News 06/12/2024 -- I didn't document stuff for a long time
 	You'll notice a lot of things documented on this date.  That's my fault.
 	I've been making changes but not updating this file with the docs.
@@ -123,8 +144,6 @@ EPIC5-2.2
 	
 	Example:
 	  /set banner $symbolctl(GET banner 0 BUILTIN_VARIABLE ORIG_DATA)
-
-
 
 *** News 07/17/2023 -- New /ON, /ON PING (rb skered)
        The /ON PING will be thrown when the server sends you a PING

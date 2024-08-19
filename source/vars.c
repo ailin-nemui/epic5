@@ -429,13 +429,6 @@ void 	init_variables_stage1 (void)
 	VAR(FIRST_LINE,			STR,  NULL);
 	VAR(FLOATING_POINT_MATH, 	BOOL, NULL);
 	VAR(FLOATING_POINT_PRECISION,	INT,  NULL);
-	VAR(FLOOD_AFTER, 		INT,  NULL);
-	VAR(FLOOD_IGNORE, 		BOOL, NULL);
-	VAR(FLOOD_MASKUSER,		INT,  NULL);
-	VAR(FLOOD_RATE,			INT,  NULL);
-	VAR(FLOOD_RATE_PER,		INT,  NULL);
-	VAR(FLOOD_USERS,		INT,  NULL);
-	VAR(FLOOD_WARNING,		BOOL, NULL);
 	VAR(HIDE_PRIVATE_CHANNELS,	BOOL, update_all_status_wrapper);
 	VAR(HOLD_SLIDER,		INT,  NULL);
 	VAR(INDENT,			BOOL, set_indent);
@@ -482,7 +475,6 @@ void 	init_variables_stage1 (void)
 	VAR(OUTPUT_REWRITE,             STR,  NULL);
 	VAR(PAD_CHAR,                   CHAR, NULL);
 	VAR(QUIT_MESSAGE,               STR,  NULL);
-	VAR(RANDOM_SOURCE,              INT,  NULL);
 	VAR(SCREEN_OPTIONS,             STR,  NULL);
 	VAR(SCROLLBACK,                 INT,  set_scrollback_size);
 	VAR(SCROLLBACK_RATIO,           INT,  NULL);
