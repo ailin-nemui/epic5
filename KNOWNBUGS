@@ -1397,3 +1397,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Sunset support for systems without job control (!!)
 * Various minor ircaux.c cleanups, nothing user-facing
 * EPIC5-2.2 (2135 - Sedulous) released here
+* Fix /xecho -b (rb fudd)
+* EPIC5-2.4 (2136 - Sedulous) released here

@@ -1156,6 +1156,7 @@ BUILT_IN_COMMAND(xechocmd)
 			malloc_sprintf(&stuff, "%s %s", b, args);
 		else
 			malloc_sprintf(&stuff, "%s", args);
+		args = stuff;
 	}
 	else if (want_banner != 0)
 		panic(1, "xecho: want_banner is %d", want_banner);
