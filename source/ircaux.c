@@ -909,12 +909,15 @@ char *	malloc_strcat_word (char **ptr, const char *word_delim, const char *word,
 		if (strpbrk(word, word_delim))
 		{
 			char *	oofda = NULL;
+			char *	oofda2 = NULL;
 			size_t	oofda_siz;
 
 			oofda_siz = strlen(word) * 2 + 2;
 			oofda = alloca(oofda_siz);
 			escape_chars(word, "\"", oofda, oofda_siz);
-			malloc_sprintf(ptr, "\"%s\"", oofda);
+			malloc_sprintf(&oofda2, "\"%s\"", oofda);
+			malloc_strcat(ptr, oofda2);
+			new_free(&oofda2);
 		}
 		else
 			malloc_strcat(ptr, word);
