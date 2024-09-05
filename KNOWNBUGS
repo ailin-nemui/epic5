@@ -1401,4 +1401,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * EPIC5-2.4 (2136 - Sedulous) released here
 * Fix malloc_strcat_word()
 * EPIC5-2.6 (2137 - Sedulous) released here
-
+* Fix binary to hex encoding 
+* EPIC5-3.0 (2139 - Brigadoon) released here
