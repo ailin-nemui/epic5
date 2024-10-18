@@ -1334,6 +1334,7 @@ BUILT_IN_COMMAND(oncmd)
 						type, nick, type, str,
 						(not ? "nothing" : exp),
 						noise_info[noisy]->name, sernum, userial);
+				new_free(&str);
 			}
 			else
 			{

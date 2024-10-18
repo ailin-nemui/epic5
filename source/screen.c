@@ -2737,6 +2737,7 @@ const 	char 	*words;
 	new_free(&output[line]);
 	new_free(&cont_free);
 	new_free(&str_free);
+	new_free(&buffer);
 	*lused = line - 1;
 	return output;
 }

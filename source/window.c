@@ -2425,9 +2425,10 @@ void 	recalculate_windows (int screen_)
 	 */
 	if (excess_li > 0)
 	{
-		int	assigned_lines;
+		int	assigned_lines, circuit_breaker;
 
 		assigned_lines = 0;
+		circuit_breaker = 0;
 		while (assigned_lines < excess_li)
 		{
 			/*
@@ -2444,7 +2445,7 @@ void 	recalculate_windows (int screen_)
 				 * If this is a fixed window, and there is 
 				 * another window, then skip it.
 				 */
-				if (tmp->fixed_size && window_count)
+				if (tmp->fixed_size && window_count && circuit_breaker < 1000)
 					continue;
 
 				tmp->display_lines++;
@@ -2452,6 +2453,13 @@ void 	recalculate_windows (int screen_)
 
 				if (assigned_lines >= excess_li)
 					break;
+			}
+			if (circuit_breaker++ >= 10000)
+			{
+				yell("recalculate_windows: I'm having trouble. "
+				     "Handed out %d of %d excess lines", 
+						assigned_lines, excess_li);
+				break;
 			}
 		}
 	}

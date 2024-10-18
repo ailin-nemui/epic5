@@ -2,9 +2,7 @@ EPIC5 Projects, Bugs, and other Errata:
 
 THINGS TO WORK ON
 ------------------------------------------------
-Actual bugs
-===========
-<None!>
+<none!>
 
 Creature Comforts
 ====================
@@ -1403,3 +1401,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * EPIC5-2.6 (2137 - Sedulous) released here
 * Fix binary to hex encoding 
 * EPIC5-3.0 (2139 - Brigadoon) released here
+* Add circuit breaker if recalculate_windows gets jammed (rb Tilt)
+* Fix two memory leaks; one major, one minor (thanks, valgrind!)
+
