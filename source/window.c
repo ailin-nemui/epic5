@@ -759,6 +759,7 @@ static void	delete_window_contents (int window_)
 	new_free(&window->logfile);
 	new_free(&window->name);
 	new_free(&window->uuid);
+	new_free(&window->original_server_string);
 
 	/* Delete the indicator if it's not already in the logical display */
 	if (window->scrollback_indicator->prev == NULL &&

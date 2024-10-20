@@ -1403,4 +1403,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * EPIC5-3.0 (2139 - Brigadoon) released here
 * Add circuit breaker if recalculate_windows gets jammed (rb Tilt)
 * Fix two memory leaks; one major, one minor (thanks, valgrind!)
-
+* Fix more memory leaks (thanks, valgrind)

@@ -528,7 +528,7 @@ static void remove_hook (int which, char *nick, int sernum, int quiet)
 			new_free(&(tmp->stuff));
 			new_free(&(tmp->filename));
 			if (tmp->arglist != NULL)
-                    destroy_arglist(&(tmp->arglist));
+			    destroy_arglist(&(tmp->arglist));
 					
 	
 			hooklist[tmp->userial] = NULL;
@@ -568,6 +568,8 @@ static void remove_hook (int which, char *nick, int sernum, int quiet)
 		new_free(&(tmp->nick));
 		new_free(&(tmp->stuff));
 		new_free(&(tmp->filename));
+		if (tmp->arglist != NULL)
+                    destroy_arglist(&(tmp->arglist));
 		tmp->next = NULL;
 		
 		new_free((char **)&tmp);

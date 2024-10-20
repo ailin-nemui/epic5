@@ -247,6 +247,7 @@ void	flush_all_symbols (void)
 				new_free(&s->builtin_variable->data->string);
 				new_free(&s->builtin_variable->orig_data->string);
 			}
+			new_free(&s->builtin_variable->orig_data);
 			new_free(&s->builtin_variable->data);
 			new_free(&s->builtin_variable->script);
 			new_free(&s->builtin_variable);
