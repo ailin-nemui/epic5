@@ -40,19 +40,19 @@
 /*
  * irc_version is what $J returns, its the common-name for the version.
  */
-const char irc_version[] = "EPIC5-3.0";
-const char useful_info[] = "epic5 3 0 0";
+const char irc_version[] = "EPIC5-3.0.1";
+const char useful_info[] = "epic5 3 0 1";
 
 /*
  * internal_version is what $V returns, its the integer-id for the
  * version, and corresponds to the date of release, YYYYMMDD.
  */ 
-const char internal_version[] = "20240905";
+const char internal_version[] = "20241022";
 
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 2142;
+const unsigned long	commit_id = 2143;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -60,7 +60,7 @@ const unsigned long	commit_id = 2142;
  * reality, I have decided to start doing that with EPIC.  These names
  * are intentionally and maliciously silly.  Complaints will be ignored.
  */
-const char ridiculous_version_name[] = "Brigadoon";
+const char ridiculous_version_name[] = "Corrigendum";
 
 #define __need_putchar_x__
 #include "status.h"
