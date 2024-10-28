@@ -1405,3 +1405,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix two memory leaks; one major, one minor (thanks, valgrind!)
 * Fix more memory leaks (thanks, valgrind)
 * EPIC5-3.0.1 (2143 - Corrigendum) released here
+* Don't disable padding for encryption/decryption (zlonix)

@@ -283,7 +283,7 @@ static char *	decipher_evp (const char *passwd_, int passwdlen, const char *ciph
 		return NULL;
 	}
 
-	EVP_CIPHER_CTX_set_padding(context, 0);
+	EVP_CIPHER_CTX_set_padding(context, 1);
 
 	if (ivsize > 0)
 		iv = new_malloc(ivsize);
@@ -462,7 +462,7 @@ static char *	cipher_evp (const char *passwd_, int passwdlen, const char *plaint
 		return NULL;
 	}
 
-	EVP_CIPHER_CTX_set_padding(context, 0);
+	EVP_CIPHER_CTX_set_padding(context, 1);
 
 	if (ivsize < 0)
 		ivsize = 0;		/* Shenanigans! */
