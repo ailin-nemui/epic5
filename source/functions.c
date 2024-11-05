@@ -5020,9 +5020,15 @@ BUILT_IN_FUNCTION(function_regcomp_cs, input)
 {
 	char *	dest;
 	regex_t preg;
+	int	flag;
+
+	flag = REG_EXTENDED;
+#ifdef REG_ENHANCED
+	flag |= REG_ENHANCED;
+#endif
 
 	memset(&preg, 0, sizeof(preg)); 	/* make valgrind happy */
-	last_regex_error = regcomp(&preg, input, REG_EXTENDED);
+	last_regex_error = regcomp(&preg, input, flag);
 
 	dest = transform_string_dyn("+ENC", (char *)&preg, 
 					sizeof(regex_t), NULL);
@@ -5033,9 +5039,15 @@ BUILT_IN_FUNCTION(function_regcomp, input)
 {
 	char *	dest;
 	regex_t preg;
+	int	flag;
+
+	flag = REG_EXTENDED | REG_ICASE;
+#ifdef REG_ENHANCED
+	flag |= REG_ENHANCED;
+#endif
 
 	memset(&preg, 0, sizeof(preg)); 	/* make valgrind happy */
-	last_regex_error = regcomp(&preg, input, REG_EXTENDED | REG_ICASE);
+	last_regex_error = regcomp(&preg, input, flag);
 
 	dest = transform_string_dyn("+ENC", (char *)&preg, 
 					sizeof(regex_t), NULL);
