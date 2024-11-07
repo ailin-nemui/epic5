@@ -8,6 +8,14 @@ package colors;
 ## Colors script for EPIC5.
 ## Written by zlonix@efnet, public domain.
 ##
+## This script adds colors for general events, like public or private messages,
+## notices, ctcps, etc. It also adds basic /scan alias to show participants in a
+## channel in a colorful way.
+##
+## Purpose of this script is to quickly colorize messages from the client and
+## give better experience for novice users, who used to other, more colorful
+## clients.
+##
 ## Version: 1.0 (Febrary, 2022)
 ##  - Initial roll-out
 ##
@@ -54,14 +62,28 @@ package colors;
 ##
 ##   These two sets are independent - you can turn off colors and use only
 ##   hilighting feature.
-
-## This script adds colors for general events, like public or private messages,
-## notices, ctcps, etc. It also adds basic /scan alias to show participants in a
-## channel in a colorful way.
 ##
-## Purpose of this script is to quickly colorize messages from the client and
-## give better experience for novice users, who used to other, more colorful
-## clients.
+## Version 1.3 (September, 2024)
+## - Added /msgwin alias for action window, where you will have all your
+##   private messages and hilights logged, /msgwin 0 creates split window
+##   /msgwin 1 creates hidden window, by default hidden window created.
+##   Use alt+w to switch to it and get back to previous window
+##
+## - You will get hilight notification if the action has happened in
+##   hidden window
+##
+## - If you have requested account-tag CAP and person talks from account
+##   which is different from his nick tilda (~) will be prepended to his
+##   nick in their public messages.
+##
+## - New /clearcolors and /clearhilights commands to clear all nick
+##   coloring and hilighting rules respectevely
+##
+## TODO:
+## - highlight nicks in quit, join, parts, kicks, modes, actions
+## - highlight nicks with _,], etc like nick_, or nick], but not nickABC
+## - on mode $servernick() is not deleted
+## - scan alias for no color mode
 
 load addset;
 
@@ -82,11 +104,84 @@ addset colors bool {
 };
 
 alias chanflag (nick, chan, void) {
-	if (chanflags == [off]) {
-		return;
+	# tags: foo bar account=myacc test/ test/123
+	@ :account = after(1 = $pattern(account=* $tags())));
+
+	if (account != [] && nick != account) {
+		if (colors == [on]) {
+			@ :flags = cparse(%R~%n);
+		} else {
+			@ :flags = [~];
+		};
+	};
+	if (chanflags == [on]) {
+		@ :flags #= [${ischanop($nick $chan) ? [@] : ishalfop($nick $chan) == 1 ? [%] : ischanvoice($nick $chan) ? [+] : []}];
+	};
+
+	return $flags;
+};
+
+alias swap (win, void) {
+	window ${(winnum($win) == winnum()) ? [swap last] : [refnum_or_swap $win]};
+};
+
+alias msgwin (type default "1", size default "12", void) {
+	if (winnam(MsgWin)) {
+		^window MsgWin kill;
+		^bind ^[w nothing;
+		^bind ^[\; nothing;
+		^bind ^[' nothing;
+		xecho -b Destroyed message window;
 	} else {
-		return ${ischanop($nick $chan) ? [@] : ishalfop($nick $chan) == 1 ? [%] : ischanvoice($nick $chan) ? [+] : []};
-	}
+		if (type) {
+			^window new_hide swap last name MsgWin number 50 level msg,notice double off noserv;
+			^window back;
+		} else {
+			^window push new name MsgWin number 50 size $size level msg,notice double off fixed on skip on swappable off noserv pop;
+			^window MsgWin status_format "^V *** %> [Messages] ";
+			^bind ^[\; parse_command window push refnum MsgWin scroll_backward 0 pop;
+			^bind ^[' parse_command window push refnum MsgWin scroll_forward 0 pop;
+		};
+		if (colors == [on]) {
+			^window MsgWin status_format "15,02 ***%F %> 10[15Messages10]15 ";
+		} else {
+			^window MsgWin status_format " ***%F %> [Messages] ";
+		}
+
+		^window 50 level msgs,notices,ctcps,invites;
+		^window 50 notify_level ctcps,invites;
+		^bind ^[w parse_command swap MsgWin;
+
+		xecho -b Created ${type ? [hidden] : [split]} message window;
+	};
+};
+alias mw msgwin $$*;
+
+on #-msg 500 * {
+	if (winnum(msgwin)) {
+		@ :net = tolower($serverctl(get $servernum() 005 NETWORK));
+
+		if (colors == [on]) {
+			xecho -w MsgWin 10[15$net10] $cparse("%K-%P$$0%K\\\(%p$$userhost()1%K\\\)-%n $$1-" $*);
+		} else {
+			xecho -w MsgWin [$net] *$0\* $1-;
+		};
+		@ ::actions++;
+		parsekey refresh_status;
+	};
+};
+on #-notice 500 * {
+	if (winnum(msgwin)) {
+		@ :net = tolower($serverctl(get $servernum() 005 NETWORK));
+
+		if (colors == [on]) {
+			xecho -w MsgWin 10[15$net10] $cparse("%k-%p$$0%k\\\(%p$$userhost()1%k\\\)-%n $$1-" $*);
+		} else {
+			xecho -w MsgWin [$net] -$0\- $1-;
+		};
+		@ ::actions++;
+		parsekey refresh_status;
+	};
 };
 
 alias getcode (color, void) {
@@ -119,6 +214,26 @@ alias getcode (color, void) {
 	};
 
 	return $code;
+};
+
+alias clearcolors (void) {
+	foreach nickcolors ii {
+		foreach nickcolors.${ii} nn {
+			^assign -nickcolors.${ii}.${nn};
+		};
+	};
+
+	xecho -b All nick colorings have been cleared;
+};
+
+alias clearhilights (void) {
+	foreach hilighting ii {
+		foreach hilighting.${ii} nn {
+			^assign -hilighting.${ii}.${nn};
+		};
+	};
+
+	xecho -b All hilights have been cleared;
 };
 
 alias color (net, nick, color, void) {
@@ -176,16 +291,14 @@ on ^public * {
 
 	if (@nickcolors[$net_enc][$nick_enc]) {
 		@ :color = nickcolors[$net_enc][$nick_enc];
-	} else if (@nickcolors[CK][$nick_enc]) {
-		## CK is being asterisk '*' encoded
-		@ :color = nickcolors[CK][$nick_enc];
+	} else if (@nickcolors[$encode(*)][$nick_enc]) {
+		@ :color = nickcolors[$encode(*)][$nick_enc];
 	};
 
-	## CK is being asterisk '*' encoded
-	foreach hilighting.CK pp {
+	foreach hilighting[$encode(*)] pp {
 		@ :pat = decode($pp);
 		if (pattern($pat $2-)) {
-			@ :color = hilighting[CK][$pp];
+			@ :color = hilighting[$encode(*)][$pp];
 			@ :hl = 1;
 		};
 	};
@@ -209,7 +322,7 @@ on ^public * {
 				xecho -b Can't open $hilight_log_file for hilight logging;
 			}
 		}
-		@ write($fd $strftime(%H:%M:%S %d-%b %Y) <$0:$1> $2-);
+		@ write($fd $strftime(%H:%M:%S %d-%b %Y) [$net] <$0:$1> $2-);
 		@ close($fd);
 	};
 
@@ -218,6 +331,29 @@ on ^public * {
 	};
 
 	if (@color) {
+		@ :actwin = winchan($1 $servernum());
+		@ :net = tolower($serverctl(get $servernum() 005 NETWORK));
+
+		if (!winvisible($actwin) && hl) {
+			if (colors == [on]) {
+				xecho -b -v Hilight event on window 08$actwin network 08$net channel 08$1: $cparse("%B<%C$$chanflag($0 $1)%n$$0%B>%n $$2-" $*);
+			} else {
+				xecho -b -v Hilight event on window $actwin network $net channel $1: <$chanflag($0 $1)$0> $2-;
+			};
+		};
+
+		if (winnum(MsgWin) && hl) {
+			@ :net = tolower($serverctl(get $servernum() 005 NETWORK));
+
+			if (colors == [on]) {
+				xecho -w MsgWin 10[15$net10] $cparse("%B<%C$$chanflag($0 $1)%n$color$$0%K:%n$$1%B>%n $$2-" $*);
+			} else {
+				xecho -w MsgWin [$net] $cparse("<$$chanflag($0 $1)$$0:$$1> $$2-" $*);
+			};
+			@ ::actions++;
+			parsekey refresh_status;
+		};
+
 		if (hilight == [on] && colors == [on]) {
 			echo $cparse("%B<%C$$chanflag($0 $1)%n$color$$0%n%B>%n $$2-" $*);
 		} else if (hilight == [on]) {
@@ -242,16 +378,14 @@ on ^public_other * {
 
 	if (@nickcolors[$net_enc][$0]) {
 		@ :color = nickcolors[$net_enc][$0];
-	} else if (@nickcolors[CK][$0]) {
-		## CK is being asterisk '*' encoded
-		@ :color = nickcolors[CK][$0];
+	} else if (@nickcolors[$encode(*)][$0]) {
+		@ :color = nickcolors[$encode(*)][$0];
 	};
 
-	## CK is being asterisk '*' encoded
-	foreach hilighting.CK pp {
+	foreach hilighting.$encode(*) pp {
 		@ :pat = decode($pp);
 		if (pattern($pat $2-)) {
-			@ :color = hilighting[CK][$pp];
+			@ :color = hilighting[$encode(*)][$pp];
 			@ :hl = 1;
 		};
 	};
@@ -275,7 +409,7 @@ on ^public_other * {
 				xecho -b Can't open $hilight_log_file for hilight logging;
 			}
 		}
-		@ write($fd $strftime(%H:%M:%S %d-%b %Y) <$0:$1> $2-);
+		@ write($fd $strftime(%H:%M:%S %d-%b %Y) [$net] <$0:$1> $2-);
 		@ close($fd);
 	};
 
@@ -284,6 +418,27 @@ on ^public_other * {
 	};
 
 	if (@color) {
+		@ :actwin = winchan($1 $servernum());
+		@ :net = tolower($serverctl(get $servernum() 005 NETWORK));
+
+		if (!winvisible($actwin) && hl) {
+			if (colors == [on]) {
+				xecho -b -v Hilight event on window 08$actwin network 08$net channel 08$1: $cparse("%B<%C$$chanflag($0 $1)%n$$0%B>%n $$2-" $*);
+			} else {
+				xecho -b -v Hilight event on window $actwin network $net channel $1: <$chanflag($0 $1)$0> $2-;
+			};
+		};
+
+		if (winnum(MsgWin) && hl) {
+			if (colors == [on]) {
+				xecho -w MsgWin 10[15$net10] $cparse("%B<%C$$chanflag($0 $1)%n$color$$0%K:%n$$1%B>%n $$2-" $*);
+			} else {
+				xecho -w MsgWin [$net] $cparse("<$$chanflag($0 $1)$$0:$$1> $$2-" $*);
+			};
+			@ ::actions++;
+			parsekey refresh_status;
+		};
+
 		if (hilight == [on] && colors == [on]) {
 			echo $cparse("%b<%c$$chanflag($0 $1)%n$color$$0%n%K:%n$$1%b>%n $$2-" $*);
 		} else if (hilight == [on]) {
@@ -297,16 +452,24 @@ on ^public_other * {
 		if (colors == [on]) {
 			echo $cparse("%b<%c$$chanflag($0 $1)%n$$0%K:%n$$1%b>%n $$2-" $*);
 		} else {
-			echo 3;
 			echo $cparse("<$$chanflag($0 $1)$$0:$$1> $$2-" $*);
 		};
 	};
+
 };
+
+on #-switch_windows 100 * {
+	if (winnam() == [MsgWin]) {
+		@ ::actions = 0;
+	};
+};
+
 alias theme.default.install (void) {
 	set -status_user;
 	set banner $cparse(%G>%g>%K>%n);
 	set input_prompt [$$T] ;
 	set output_rewrite  $$Z $$1-;
+	set status_away  10(15Away10);
 	set status_channel  10[15$$winnum():$$serverctl(get $servernum() 005 NETWORK)/$$C;
 	set status_chanop 15@;
 	set status_clock 10[15%T10] ;
@@ -320,11 +483,12 @@ alias theme.default.install (void) {
 	set status_mail  [15Mail: 15%M10];
 	set status_mode 15\(10+15%+15\)$${encodingctl(MATCH $servernum() $^\servernick() $T) == encodingctl(GET 2 ENCODING) ? [] : [/$tolower($encodingctl(MATCH $^\servernum() $servernick() $T))]}10];
 	set status_nick 15$$servernick()10;
-	set status_notify  [15Act: 15%F10];
+	set status_notify 10,02 [15,02Act: %F10,02];
 	set status_query  [15$$winnum():$$serverctl(get $servernum() 005 NETWORK)/%Q$${encodingctl(MATCH $servernum() $servernick() $T) == encodingctl(GET 2 ENCODING) ? [] : [/$tolower($encodingctl(MATCH $servernum() $servernick() $T))]}10];
 	set status_umode 15\(10+15%#15\)10;
 	set status_voice 15+;
-	set status_window  10(15Active10) ;
+	set status_window 10(15Active10) ;
+	set status_user $${actions && winnam(MsgWin) ? [ 10\(08Hilighted10\)] : []};
 
 	alias scan.echo (chan, nicks) {
 		@ :line = [];
@@ -559,6 +723,9 @@ alias theme.default.install (void) {
 	on ^320 '% % is signed on as account %' {
 		echo $cparse("%K| %Ws%nervice  : $$1-");
 	};
+	on ^276 '% % has client certificate fingerprint %' {
+		echo $cparse("%K| %Wc%nert     : $$6-" $*);
+	};
 
 	# IRCnet
 	on ^320 '% % is a Secure Connection*' {
@@ -655,22 +822,25 @@ alias theme.default.clean (void) {
 	set banner ***;
 	set input_prompt $$T> ;
 	set output_rewrite  $$Z $$1-;
-	set status_channel %C;
+	set status_away  (Away);
+	set status_channel  %C;
 	set status_chanop @;
 	set status_clock  %T;
-	set status_does_expando off;
-	set status_format %T [%R] %*%=%@%N%#%S%{1}H%H%B%Q%A%C%+%I%O%M%F%L %D %U %W;
+	set status_does_expando on;
+	set status_format %T [%R] %*%=%@%N%#%S%{1}H%H%B%Q%A%C%+%I%O%M%F%L%D%U %W;
 	set status_hold  Held:;
 	set status_hold_lines %B;
 	set status_holdmode  (Hold);
-	set status_mail (Mail: %M);
-	set status_mode  (+%+);
-	set status_nick %N;
+	set status_mail  (Mail: %M);
+	set status_mode (+%+);
+	set status_nick $$servernick();
 	set status_notify  (W: %F);
 	set status_query  (Query: %Q);
-	set status_umode  (+%#);
+	set status_server  (%S);
+	set status_umode (+%#);
 	set status_voice +;
 	set status_window ^^^^^^^^;
+	set status_user $${actions && winnam(MsgWin) ? [ \(Hilighted\)] : []};
 
 	alias -scan.echo;
 	alias -scan;
@@ -683,7 +853,7 @@ alias theme.default.clean (void) {
 	on ^part -*;
 	on ^nickname -*;
 	on ^nickname '% $$servernick()';
-	on ^send_public -*;
+	on ^send_public * { echo $0> $1- };
 	on ^send_action -*;
 	on ^action -*;
 	on ^mode -*;
@@ -721,6 +891,7 @@ alias theme.default.clean (void) {
 	on ^338 -*;
 	on ^716 -*;
 	on ^307 -'% % user has identified to services';
+	on ^276 -'% % has client certificate fingerprint %';
 	on ^320 -'% % is identified to services*';
 	on ^320 -'% % is signed on as account %';
 	on ^320 -'% % is a Secure Connection*';

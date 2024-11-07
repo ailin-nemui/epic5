@@ -114,12 +114,6 @@ if (word(2 $loadinfo()) != [pf]) {
 bind ^I TABKEY_COMPLETION_FORWARD;
 bind ^[^I TABKEY_COMPLETION_BACKWARD;
 
-if (info(i) < 1000) {
-	@ TABKEY.LEVELS = [ALL NONE CRAP PUBLIC MSGS NOTICES WALLS WALLOPS NOTES OPNOTES SNOTES ACTIONS DCC CTCP USERLOG1 USERLOG2 USERLOG3 USERLOG4];
-} else {
-	@ TABKEY.LEVELS = [ALL NONE CRAP PUBLICS MSGS NOTICES WALLS WALLOPS OPNOTES SNOTES ACTIONS DCCS CTCPS INVITES JOINS NICKS TOPICS PARTS QUITS KICKS MODES USER1 USER2 USER3 USER4 USER5 USER6 USER7 USER8 USER9 USER10];
-};
-
 #
 # tabkey.main [-1|0|1]
 #
@@ -428,7 +422,7 @@ alias tabkey.cmd.ignore (...)
 	if (curword == 1) {
 		@ :retval = tabkey.method.mask($*);
 	} else if (curword > 1) {
-		@ :retval = pattern($0* $TABKEY.LEVELS);
+		@ :retval = pattern($0* $levelctl(LEVELS));
 	};
 	@ function_return = tabkey.nofallback($retval);
 };
@@ -595,7 +589,7 @@ alias tabkey.cmd.window (...)
 				@ :word_a = before(-1 , $word);
 				@ :word_b = after(-1 , $word);
 			};
-			@ :list = TABKEY.LEVELS;
+			@ :list = levelctl(LEVELS);
 		}
 		(LOGFILE) {
 			@ :list = tabkey.method.file($*);

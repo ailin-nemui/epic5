@@ -57,6 +57,7 @@ alias altchan.toggle (number, void) {
 @ bindctl(sequence ^[0 set parse_command altchan.toggle 10);
 fe ($jot(1 9 1)) aa {
 	@ bindctl(sequence ^[$aa set parse_command altchan.toggle $aa);
+	alias $aa altchan.toggle $aa;
 };
 @ bindctl(sequence ^[- set parse_command window previous);
 @ bindctl(sequence ^[= set parse_command window next);

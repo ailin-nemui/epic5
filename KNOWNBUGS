@@ -1409,3 +1409,7 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Regex problems: Extended regexes don't support backrefs (boo!)
 * Regex improvements: Use REG_ENHANCED for mac os x (wcarson)
 * Regex improvements: Use -lregex for freebsd
+* Add /1 /2 /3 ... aliases to /load altchan for window switch (zlonix)
+* Use $levelctl(LEVELS) instead of list in /load tabkey.ce (zlonix)
+* Updates to /load colors (zlonix)
+
