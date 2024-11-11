@@ -20,9 +20,11 @@ if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 #
 #  /set variables this script uses:
 #
-#    NICK_COMPLETION_CHAR -- the value of this set will be appended each time
-#                            nickname completion occurs as the first word of the
-#                            input line.  a typical value might be ':'.
+#   NICK_COMPLETION_CHAR -- the value of this set will be appended each time
+#                           nickname completion occurs as the first word of the
+#                           input line.  a typical value might be ':'.
+#
+#   STATIC_NICK_COMPLETE_LIST -- static list of nicks to complete
 #
 #   TAB_HISTORY_CYCLE_SIZE -- how many nicknames to keep in the /msg history
 #
@@ -41,6 +43,7 @@ if (word(2 $loadinfo()) != [pf]) { load -pf $word(1 $loadinfo()); return; };
 @nick_completion_char = [];
 @tab_history_cycle_size = 10;
 @zsh_style_completion = [off];
+@static_nick_complete_list = [];
 
 
 # *** global variables ***
@@ -200,6 +203,18 @@ alias do_set (variable, value) {
 				@nick_completion_char = value;
 
 				xecho -b Value of NICK_COMPLETION_CHAR set to $value;
+			};
+		}
+
+		(STATIC_NICK_COMPLETE_LIST) {
+			if (value == [<unset>]) {
+				@static_nick_complete_list = [];
+
+				xecho -b Value of STATIC_NICK_COMPLETE_LIST set to <EMPTY>;
+			} else {
+				@static_nick_complete_list = value;
+
+				xecho -b Value of STATIC_NICK_COMPLETE_LIST set to $value;
 			};
 		}
 
@@ -593,7 +608,7 @@ alias match_load (fragment) {
 };
 
 alias match_nick (fragment) {
-	@:nick_matches = pattern(${fragment}* $onchannel());
+	@:nick_matches = pattern(${fragment}* $onchannel() $static_nick_complete_list);
 
 	if (nick_matches == []) {
 		@:nick_list = [];
@@ -630,7 +645,7 @@ alias match_notify (fragment) {
 
 alias match_set (fragment) {
 	@:matches = [];
-	@:my_sets = [NICK_COMPLETION_CHAR TAB_HISTORY_CYCLE_SIZE ZSH_STYLE_COMPLETION];
+	@:my_sets = [NICK_COMPLETION_CHAR STATIC_NICK_COMPLETE_LIST TAB_HISTORY_CYCLE_SIZE ZSH_STYLE_COMPLETION];
 
 	@push(matches $getsets(${fragment}*));
 	@push(matches $pattern(${fragment}* $my_sets));
@@ -727,6 +742,10 @@ on ?send_to_server "% % PRIVMSG %:% *" {
 	xquote -server $refnum PRIVMSG $target $4-;
 
 	return 1;
+};
+
+on ^set "STATIC_NICK_COMPLETE_LIST *" {
+	@do_set(STATIC_NICK_COMPLETE_LIST $1-);
 };
 
 on ^set "NICK_COMPLETION_CHAR *" {
