@@ -4463,7 +4463,7 @@ BUILT_IN_FUNCTION(function_glob, word)
 		}
 		expand_twiddle(path, path2);
 
-		if ((numglobs = glob(path2, GLOB_MARK | GLOB_QUOTE | GLOB_BRACE,
+		if ((numglobs = glob(path2, GLOB_MARK | GLOB_BRACE,
 						NULL, &globbers)) < 0)
 			RETURN_INT(numglobs);
 
@@ -4516,7 +4516,7 @@ BUILT_IN_FUNCTION(function_globi, word)
 		expand_twiddle(path, path2);
 
 		if ((numglobs = bsd_glob(path2,
-				GLOB_MARK | GLOB_INSENSITIVE | GLOB_QUOTE | GLOB_BRACE, 
+				GLOB_MARK | GLOB_INSENSITIVE | GLOB_BRACE, 
 				NULL, &globbers)) < 0)
 			RETURN_INT(numglobs);
 
