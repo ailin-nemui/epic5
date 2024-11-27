@@ -1,5 +1,12 @@
 EPIC5-2.2
 
+*** News 11/26/2024 -- Connecting to port 6697 forces SSL by default
+	If you connect to a server on port 6697, the client will
+	ignore the "server type" and just use SSL.  Therefore, there
+	is no way to pathologically connect to an irc server on port
+	6697 without using SSL.  Please be reasonable.  This makes
+	the client behave reasonably for 99.99% of people.
+
 *** News 11/26/2024 -- New flag, /EXEC -EXIT {code} (rb fusion)
 	Although there is already /EXEC -END {code} and /WAIT -CMD to 
 	run callbacks after a process ends, neither of those interact

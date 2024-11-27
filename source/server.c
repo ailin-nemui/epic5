@@ -1648,7 +1648,7 @@ something_broke:
 			 * ready, and change our state to tell us what we're 
 			 * doing.
 			 */
-			if (!my_stricmp(get_server_type(i), "IRC-SSL"))
+			if (get_server_port(i) == 6697 || !my_stricmp(get_server_type(i), "IRC-SSL"))
 			{
 				/* XXX 'des' might not be both the vfd and channel! */
 				/* (ie, on systems where vfd != channel) */
