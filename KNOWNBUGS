@@ -2,7 +2,9 @@ EPIC5 Projects, Bugs, and other Errata:
 
 THINGS TO WORK ON
 ------------------------------------------------
-<none!>
+Actual bugs
+============
+* /exec should have -notify {#} to catch the final notification (or something) [fusion]
 
 Creature Comforts
 ====================
@@ -1414,3 +1416,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Updates to /load colors (zlonix)
 * Updates to tabkey.jm (skered)
 * GLOB_QUOTE does not actually exist
+* Change notion of "away" to "away_message" [see UPDATES]
+* Add notion of "away status" and $serverctl(GET x AWAY_STATUS)

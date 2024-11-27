@@ -743,7 +743,8 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	s->itsname = (char *) 0;
 	s->altnames = new_bucket();
 	add_to_bucket(s->altnames, shortname(s->info->host), NULL);
-	s->away = (char *) 0;
+	s->away_message = (char *) 0;
+	s->away_status = 0;
 	s->version_string = (char *) 0;
 	s->des = -1;
 	s->state = SERVER_CREATED;
@@ -891,7 +892,7 @@ static 	void 	remove_from_server_list (int i)
 
 	clean_server_queues(i);
 	new_free(&s->itsname);
-	new_free(&s->away);
+	new_free(&s->away_message);
 	new_free(&s->version_string);
 	new_free(&s->nickname);
 	new_free(&s->s_nickname);
@@ -2507,7 +2508,7 @@ void	close_server (int refnum, const char *message)
  * (when we do connect, then we send out the AWAY command.)
  * All this saves a lot of headaches and crashes.
  */
-void	set_server_away (int refnum, const char *message)
+void	set_server_away_message (int refnum, const char *message)
 {
 	Server *s;
 
@@ -2519,20 +2520,20 @@ void	set_server_away (int refnum, const char *message)
 
 	if (message && *message)
 	{
-		if (!s->away || strcmp(s->away, message))
-			malloc_strcpy(&s->away, message);
+		if (!s->away_message || strcmp(s->away_message, message))
+			malloc_strcpy(&s->away_message, message);
 		if (is_server_registered(refnum))
 			send_to_aserver(refnum, "AWAY :%s", message);
 	}
 	else
 	{
-		new_free(&s->away);
+		new_free(&s->away_message);
 		if (is_server_registered(refnum))
 			send_to_aserver(refnum, "AWAY :");
 	}
 }
 
-const char *	get_server_away (int refnum)
+const char *	get_server_away_message (int refnum)
 {
 	Server *s;
 
@@ -2545,8 +2546,8 @@ const char *	get_server_away (int refnum)
 			if (!(s = get_server(i)))
 				continue;
 
-			if (is_server_registered(i) && s->away)
-				return s->away;
+			if (is_server_registered(i) && s->away_message)
+				return s->away_message;
 		}
 
 		return NULL;
@@ -2555,7 +2556,34 @@ const char *	get_server_away (int refnum)
 	if (!(s = get_server(refnum)))
 		return NULL;
 	
-	return s->away;
+	return s->away_message;
+}
+
+void	set_server_away_status (int refnum, int status)
+{
+	Server *s;
+
+	if (!(s = get_server(refnum)))
+	{
+		say("You are not connected to a server.");
+		return;
+	}
+
+	/* Prevent shenanigans with 'status' */
+	if (status)
+		s->away_status = 1;
+	else
+		s->away_status = 0;
+}
+
+int	get_server_away_status (int refnum)
+{
+	Server *s;
+
+	if (!(s = get_server(refnum)))
+		return 0;
+
+	return s->away_status;
 }
 
 
@@ -2900,6 +2928,7 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 	discard_dns_results(refnum);
 	set_server_state(refnum, SERVER_SYNCING);
 
+	set_server_away_status(refnum, 0);
 	accept_server_nickname(refnum, ourname);
 	set_server_itsname(refnum, itsname);
 
@@ -2934,8 +2963,8 @@ void  server_is_registered (int refnum, const char *itsname, const char *ourname
 		new_free(&default_channel);
 	}
 
-	if (get_server_away(refnum))
-		set_server_away(from_server, get_server_away(from_server));
+	if (get_server_away_message(refnum))
+		set_server_away_message(from_server, get_server_away_message(from_server));
 
 	update_all_status();
 	do_hook(CONNECT_LIST, "%s %d %s", get_server_name(refnum), 
@@ -2962,6 +2991,7 @@ void	server_is_unregistered (int refnum)
 		return;
 
 	destroy_005(refnum);
+	set_server_away_status(refnum, 0);
 	set_server_state(refnum, SERVER_EOF);
 }
 
@@ -4608,8 +4638,11 @@ char 	*serverctl 	(char *input)
 		GET_FUNC_ARG(listc, input);
 		len = strlen(listc);
 		if (!my_strnicmp(listc, "AWAY", len)) {
-			ret = get_server_away(refnum);
+			ret = get_server_away_message(refnum);
 			RETURN_STR(ret);
+		} else if (!my_strnicmp(listc, "AWAY_STATUS", len)) {
+			num = get_server_away_status(refnum);
+			RETURN_INT(num);
 		} else if (!my_strnicmp(listc, "MAXCACHESIZE", len)) {
 			num = get_server_max_cached_chan_size(refnum);
 			RETURN_INT(num);
@@ -4775,7 +4808,12 @@ char 	*serverctl 	(char *input)
 		GET_FUNC_ARG(listc, input);
 		len = strlen(listc);
 		if (!my_strnicmp(listc, "AWAY", len)) {
-			set_server_away(refnum, input);
+			set_server_away_message(refnum, input);
+			RETURN_INT(1);
+		} else if (!my_strnicmp(listc, "AWAY_STATUS", len)) {
+			int	num;
+			GET_INT_ARG(num, input);
+			set_server_away_status(refnum, num);
 			RETURN_INT(1);
 		} else if (!my_strnicmp(listc, "MAXCACHESIZE", len)) {
 			int	size;

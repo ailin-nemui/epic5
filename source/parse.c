@@ -510,7 +510,7 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	{
 	    if (hook_type == MSG_LIST)
 	    {
-		const char *away = get_server_away(NOSERV);
+		const char *away = get_server_away_message(NOSERV);
 
 		if (do_hook(hook_type, "%s %s", from, message))
 		{

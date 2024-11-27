@@ -1550,7 +1550,7 @@ STATUS_FUNCTION(status_away)
 		return empty_string;
 
 	if (get_window_server(window_) != NOSERV && 
-	    get_server_away(get_window_server(window_)) && 
+	    get_server_away_message(get_window_server(window_)) && 
 	    (text = get_string_var(STATUS_AWAY_VAR)))
 		return text;
 

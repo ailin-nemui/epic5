@@ -1,5 +1,28 @@
 EPIC5-2.2
 
+*** News 11/26/2024 -- /AWAY restatement
+	When you do /AWAY <message> you tell the client you are away.
+	The client then tells the server you are /AWAY.  Later on, you
+	do /AWAY and the client tells the server you are no longer away.
+
+	But the notion of "am i away?" is a client-side thing, and it is
+	triggered on whether you have set an away message, and not whether
+	the server has acknowledged your away-ness.
+
+	So $serverctl(GET x AWAY) returns your away message, and $isaway()
+	is triggered based on whether you have an away message.  Fusion
+	pointed out there was no way to know whether the server thought you
+	were away or not, since the client has never tracked the 305/306
+	numerics.
+
+	So now the client tracks the 305/306 numerics which tell us whether
+	the server thinks we're away or not.   This is available via
+	$serverctl(GET x AWAY_STATUS)
+
+	For backwards compatability reasons, _absolutely nothing_ that changes
+	its behavior if you are "away" is changing here.  That continues to
+	be controlled only on whether you have set an away message (or not)
+
 *** News 09/05/2024 -- EPIC5-3.0 (2139 - Brigadoon) released here
 	This is the third production release of EPIC5
 

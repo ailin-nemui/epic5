@@ -408,10 +408,10 @@ BUILT_IN_COMMAND(away)
 	{
 		for (i = 0; i < server_list_size(); i++)
 		    if (is_server_valid(i))
-			set_server_away(i, args);
+			set_server_away_message(i, args);
 	}
 	else
-		set_server_away(from_server, args);
+		set_server_away_message(from_server, args);
 
 	update_all_status();
 }

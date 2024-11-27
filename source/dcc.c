@@ -3236,7 +3236,7 @@ const	char *	utf8_text = NULL;
 		char timestr[256];
 
 		*timestr = 0;
-		if (get_server_away(NOSERV))
+		if (get_server_away_message(NOSERV))
 			snprintf(timestr, sizeof(timestr), " <%s>", my_ctime(time(NULL)));
 
 		put_it("=%s= %s%s", Client->user, utf8_text, timestr);

@@ -397,6 +397,18 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		goto END;
         }
 
+	case 305:		/* #define RPL_NOTAWAY		305 */
+	{
+		set_server_away_status(from_server, 0);
+		break;
+	}
+
+	case 306:		/* #define RPL_NOWAWAY		306 */
+	{
+		set_server_away_status(from_server, 1);
+		break;
+	}
+
 	/*	311	WHOISUSER	ArgList[0] (the realname) */
 	case 311:		/* #define RPL_WHOISUSER        311 */
 	{

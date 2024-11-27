@@ -1103,7 +1103,7 @@ static	char	*alias_time 		(void) { return malloc_strdup(get_clock()); }
 static	char	*alias_dollar 		(void) { return malloc_strdup("$"); }
 static	char	*alias_detected 	(void) { return malloc_strdup(last_notify_nick); }
 static	char	*alias_nick 		(void) { return malloc_strdup((get_window_server(0) != NOSERV) ? get_server_nickname(get_window_server(0)) : empty_string); }
-static	char	*alias_away 		(void) { return malloc_strdup(get_server_away(from_server)); }
+static	char	*alias_away 		(void) { return malloc_strdup(get_server_away_message(from_server)); }
 static  char    *alias_sent_nick        (void) { return malloc_strdup((get_server_sent_nick(from_server)) ? get_server_sent_nick(from_server) : empty_string); }
 static  char    *alias_recv_nick        (void) { return malloc_strdup((get_server_recv_nick(from_server)) ? get_server_recv_nick(from_server) : empty_string); }
 static  char    *alias_msg_body         (void) { return malloc_strdup((get_server_sent_body(from_server)) ? get_server_sent_body(from_server) : empty_string); }
@@ -6490,7 +6490,7 @@ BUILT_IN_FUNCTION(function_isaway, input)
         else
                 GET_INT_ARG(refnum, input);
 
-        if (get_server_away(refnum))
+        if (get_server_away_message(refnum))
                 RETURN_INT(1);
 
         RETURN_INT(0);

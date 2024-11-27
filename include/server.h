@@ -100,7 +100,8 @@ const	AI *		next_addr;		/* The next one to try upon failure */
 						/* Used to guard an annoying error message */
 	char		umode[54];		/* Currently set user modes */
 	char *		userhost;		/* my userhost on this server */
-	char *		away;			/* away message for this server */
+	char *		away_message;		/* away message for this server */
+	int		away_status;		/* whether the server thinks we're away */
 
 		/* metadata about the session */
 	int		sent;			/* set if something has been sent, used for redirect */
@@ -224,8 +225,10 @@ extern	Server	**server_list;
 
 	void	do_server			(int);
 
-	void	set_server_away			(int, const char *);
-const	char *	get_server_away			(int);
+	void	set_server_away_message		(int, const char *);
+const	char *	get_server_away_message		(int);
+	void	set_server_away_status		(int, int);
+	int	get_server_away_status		(int);
 	int	get_server_operator		(int);
 
 const	char *	get_umode			(int);
