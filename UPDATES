@@ -1,5 +1,20 @@
 EPIC5-2.2
 
+*** News 11/26/2024 -- New flag, /EXEC -EXIT {code} (rb fusion)
+	Although there is already /EXEC -END {code} and /WAIT -CMD to 
+	run callbacks after a process ends, neither of those interact
+	with /ON EXEC_EXIT or /SET NOTIFY_ON_TERMINATION.
+
+	Fusion asked if there was a way to defeat the "process exited"
+	message of /SET NOTIFY_ON_TERMINATION on an /exec-by-/exec 
+	basis.  So the flag /EXEC -EXIT {...} was added.  I will admit
+	that having two ways to run code seems confusing, so I will just
+	say that this callback is run *instead of* /on exec_exit or 
+	/set notify_on_termination handling.  So you should only use it
+	to format messages about the process exiting.
+
+	You can do  /exec -exit {#} ls   to (eg) suppress all that
+
 *** News 11/26/2024 -- /AWAY restatement
 	When you do /AWAY <message> you tell the client you are away.
 	The client then tells the server you are /AWAY.  Later on, you

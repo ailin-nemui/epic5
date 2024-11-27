@@ -93,6 +93,7 @@ typedef struct
 	char *	stdoutpc;		/* Commands to run on each partial line of output (-LINEPART) */
 	char *	stderrc;		/* Commands to run on each line of stderr (-ERROR) */
 	char *	stderrpc;		/* Commands to run on each partial line of error (-ERRORPART) */
+	char *	exitpc;			/* Commands to run on process cleanup (-EXIT) */
 	WaitCmd *waitcmds;		/* Commands to run on process exit (-END or /WAIT -CMD) */
 
 	Timeval	started_at;		/* When the process began */
@@ -685,35 +686,40 @@ static void 	cleanup_dead_processes (void)
 			new_free((char **)&cmd);
 		}
 
-		/*
-		 * Throw /on exec_exit
-		 */
-		if (do_hook(EXEC_EXIT_LIST, "%s", exit_info))
+		if (proc->exitpc && *proc->exitpc)
+			call_lambda_command("EXEC", proc->exitpc, exit_info);
+		else
 		{
-		    if (get_int_var(NOTIFY_ON_TERMINATION_VAR))
-		    {
-			if (deadproc->termsig > 0 && deadproc->termsig < NSIG)
+			/*
+			 * Throw /on exec_exit
+			 */
+			if (do_hook(EXEC_EXIT_LIST, "%s", exit_info))
 			{
-				say("Process %d (%s) terminated "
-					"with signal %s (%d)", 
-				   deadproc->refnum, deadproc->commands,
-				   get_signal_name(deadproc->termsig),
-				   deadproc->termsig);
+			    if (get_int_var(NOTIFY_ON_TERMINATION_VAR))
+			    {
+				if (deadproc->termsig > 0 && deadproc->termsig < NSIG)
+				{
+					say("Process %d (%s) terminated "
+						"with signal %s (%d)", 
+					   deadproc->refnum, deadproc->commands,
+					   get_signal_name(deadproc->termsig),
+					   deadproc->termsig);
 
+				}
+				else if (deadproc->disowned)
+				{
+					say("Process %d (%s) disowned", 
+					   deadproc->refnum, deadproc->commands);
+				}
+				else
+				{
+					say("Process %d (%s) terminated "
+						"with return code %d", 
+					   deadproc->refnum, deadproc->commands, 
+					   deadproc->retcode);
+				}
+			    }
 			}
-			else if (deadproc->disowned)
-			{
-				say("Process %d (%s) disowned", 
-				   deadproc->refnum, deadproc->commands);
-			}
-			else
-			{
-				say("Process %d (%s) terminated "
-					"with return code %d", 
-				   deadproc->refnum, deadproc->commands, 
-				   deadproc->retcode);
-			}
-		    }
 		}
 		pop_message_from(l);
 
@@ -728,6 +734,7 @@ static void 	cleanup_dead_processes (void)
 		new_free(&deadproc->stdoutpc);
 		new_free(&deadproc->stderrc);
 		new_free(&deadproc->stderrpc);
+		new_free(&deadproc->exitpc);
 		new_free((char **)&deadproc);
 	}
 
@@ -1053,6 +1060,7 @@ static Process *	new_process (const char *commands)
 	proc->stdoutpc = NULL;
 	proc->stderrc = NULL;
 	proc->stderrpc = NULL;
+	proc->exitpc = NULL;
 	proc->waitcmds = NULL;
 
 	get_time(&proc->started_at);
@@ -1306,6 +1314,10 @@ static int	start_process (Process *proc)
  *		Run {block} when the process exits.
  *		This does the same thing as /WAIT %proc -CMD {code}
  *		The curly braces are required
+ *	-EXIT {block}
+ *		Run {block} after the process exits
+ *		This runs INSTEAD of /on exec_exit or /set notify_on_termination
+ *		The curly braces are required
  *
  *	-DIRECT
  *		Run the command directly with execvp(), do not use a shell
@@ -1454,6 +1466,15 @@ static const char **	execcmd_tokenize_arguments (const char *args, Process **pro
 				say("EXEC: Error: Need {...} argument for -ERRORPART flag");
 		}
 		else if (my_strnicmp(flag, "-END", len) == 0)
+		{
+			char *arg = next_expr(&args_copy, '{');
+			if (arg && *arg)
+			{
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, flag);
+				execcmd_push_arg(arg_list, arg_list_size, arg_list_idx++, arg);
+			}
+		}
+		else if (my_strnicmp(flag, "-EXIT", len) == 0)
 		{
 			char *arg = next_expr(&args_copy, '{');
 			if (arg && *arg)
@@ -1696,6 +1717,15 @@ BUILT_IN_COMMAND(execcmd)
 			else
 				say("EXEC: Error: Need {...} argument for -END flag");
 		}
+		else if (my_strnicmp(flag, "-EXIT", len) == 0)
+		{
+			const char *arg = flags[++i];
+
+			if (arg && *arg)
+				malloc_strcpy(&process->exitpc, arg);
+			else
+				say("EXEC: Error: Need {...} argument for -EXIT flag");
+		}
 		else if (my_strnicmp(flag, "-DIRECT", len) == 0)
 			process->direct = 1;
 		else if (my_strnicmp(flag, "-LIMIT", len) == 0)
@@ -1766,6 +1796,7 @@ BUILT_IN_COMMAND(execcmd)
  *	STDOUTPC	Code to execute when an incomplete line of stdout happens
  *	STDERRC		Code to execute when a complete line of stderr happens
  *	STDERRPC	Code to execute when an incomplete line of stderr happens
+ *	EXITPC		Code to execute when program is cleaned up 
  *
  * All of the following [LIST] values may be GET but not SET.
  * I make absolutely no guarantees these things won't change. use at your own risk.
@@ -1881,6 +1912,8 @@ char *  execctl (char *input)
 			RETURN_STR(proc->stderrc);
 		} else if (!my_stricmp(field, "STDERRPC")) {
 			RETURN_STR(proc->stderrpc);
+		} else if (!my_stricmp(field, "EXITPC")) {
+			RETURN_STR(proc->exitpc);
 		} else if (!my_stricmp(field, "PID")) {
 			RETURN_INT(proc->pid);
 		} else if (!my_stricmp(field, "STARTED_AT")) {
@@ -1992,6 +2025,9 @@ char *  execctl (char *input)
 			RETURN_INT(1);
 		} else if (!my_stricmp(field, "STDERRPC")) {
 			malloc_strcpy(&proc->stderrpc, input);
+			RETURN_INT(1);
+		} else if (!my_stricmp(field, "EXITPC")) {
+			malloc_strcpy(&proc->exitpc, input);
 			RETURN_INT(1);
 		} else if (!my_stricmp(field, "LINES_LIMIT")) {
 			int	newval;
