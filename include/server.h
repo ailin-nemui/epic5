@@ -78,6 +78,7 @@ const	AI *		next_addr;		/* The next one to try upon failure */
 	char *		d_nickname;		/* Default nickname to use */
 	char *		realname;		/* The actual realname. */
 	char *		default_realname;	/* The default realname. */
+	int		any_data;		/* SSL servers won't send any data back */
 
 	/* state = SYNCING */
 

@@ -1420,3 +1420,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Add notion of "away status" and $serverctl(GET x AWAY_STATUS)
 * Add /exec -exit {} (rb fusion) [see UPDATES]
 * Connecting to port 6697 now always forces SSL.  So there.
+* If a server connection fails w/o data, it might be an SSL server

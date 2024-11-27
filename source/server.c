@@ -148,6 +148,7 @@ static const char *	get_server_type (int servref);
 static	int	get_server_accept_cert (int refnum);
 static	void	set_server_accept_cert (int refnum, int val);
 static	char *  get_my_fallback_userhost (void);
+static	void	set_server_server_type (int servref, const char * param );
 
 /*
  * clear_serverinfo: Initialize/Reset a ServerInfo object
@@ -778,6 +779,7 @@ static	int	serverinfo_to_newserv (ServerInfo *si)
 	s->autoclose = 1;
 	s->default_realname = NULL;
 	s->realname = NULL;
+	s->any_data = 0;
 
 	s->protocol_metadata = 0;
 	s->doing_privmsg = 0;
@@ -1648,7 +1650,7 @@ something_broke:
 			 * ready, and change our state to tell us what we're 
 			 * doing.
 			 */
-			if (get_server_port(i) == 6697 || !my_stricmp(get_server_type(i), "IRC-SSL"))
+			if (/* get_server_port(i) == 6697 || */!my_stricmp(get_server_type(i), "IRC-SSL"))
 			{
 				/* XXX 'des' might not be both the vfd and channel! */
 				/* (ie, on systems where vfd != channel) */
@@ -1826,6 +1828,15 @@ return_from_ssl_detour:
 				{
 					int	server_was_registered = is_server_registered(i);
 
+					/* XXX Ugh. i'm going to regret this */
+					if (s->any_data == 0 && strcmp(get_server_type(i), "IRC-SSL") )
+					{
+						close_server(i, NULL);
+						set_server_server_type(i, "IRC-SSL");
+						set_server_state(i, SERVER_RECONNECT);
+						say("Connection closed from %s - Trying SSL next", s->info->host);
+						break;
+					}
 					parsing_server_index = i;
 					server_is_unregistered(i);
 					if (server_was_registered)
@@ -1858,6 +1869,7 @@ return_from_ssl_detour:
 
 					parsing_server_index = i;
 					/* I added this for caf. :) */
+					s->any_data = 1;
 					if (do_hook(RAW_IRC_BYTES_LIST, "%s", buffer))
 					{
 					    /* XXX What should 2nd arg be? */
@@ -2461,6 +2473,7 @@ void	close_server (int refnum, const char *message)
 	new_free(&s->nickname);
 	new_free(&s->s_nickname);
 	new_free(&s->realname);
+	s->any_data = 0;
 
 	/* 
 	 * XXX Previously here, we discarded the extra IP addresses.
@@ -3685,7 +3698,7 @@ const char *	get_server_group (int servref)
 /*
  * Getter and setter for "server_type"
  */
-void	set_server_server_type (int servref, const char * param )
+static void	set_server_server_type (int servref, const char * param )
 {
 	Server *s;
 

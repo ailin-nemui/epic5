@@ -1,5 +1,13 @@
 EPIC5-2.2
 
+*** News 11/27/2024 -- Auto-detection of SSL servers [experimental]
+	If you try to connect to an irc server's SSL port, it closes
+	the socket without sending any data back.  The client now
+	detects this, and if a non-ssl server closes the socket without
+	sending any data back, the server's "type" will be unconditionally
+	changed to "IRC-SSL" and then will try again.  I am 50% sure I am
+	going to regret this, but carpe diem, i suppose.
+
 *** News 11/26/2024 -- Connecting to port 6697 forces SSL by default
 	If you connect to a server on port 6697, the client will
 	ignore the "server type" and just use SSL.  Therefore, there
