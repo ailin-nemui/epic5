@@ -366,7 +366,18 @@ int	str_to_serverinfo (char *str, ServerInfo *s)
 		  }
 		}
 		else if (fieldnum == PORT)
+		{
 			s->port = atol(descstr);
+
+			/* Sigh -- port +6697 means "do ssl" */
+			if (*descstr == '+')
+				s->server_type = "IRC-SSL";
+			else if (*descstr == '-')
+			{
+				s->port = -(s->port);
+				s->server_type = "IRC";
+			}
+		}
 		else if (fieldnum == PASS)
 			s->password = descstr;
 		else if (fieldnum == NICK)

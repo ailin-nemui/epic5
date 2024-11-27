@@ -1,5 +1,12 @@
 EPIC5-2.2
 
+*** News 11/27/2024 -- Easier way to specify SSL server (port prefix)
+	In a server desc, you have specified that a server does ssl 
+	by using :type=irc-ssl: but that's a hassle.  Other clients 
+	permit you to prefix the port with a + sign to indicate this,
+	and so i figured, as long as i'm playing santa claus...
+		/server irc.host.com:+6697
+
 *** News 11/27/2024 -- Auto-detection of SSL servers [experimental]
 	If you try to connect to an irc server's SSL port, it closes
 	the socket without sending any data back.  The client now
