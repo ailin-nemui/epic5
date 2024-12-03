@@ -24,8 +24,6 @@ Weaknesses
 * Typing 😂😂(multi-column emojis) upsets screen.
 * I don't think /msg @L1 is implemented correctly
 	files.c:file_write() for type == 2
-* Revisit why we do not use padding for openssl ("wrong final block length")
-	/eval echo $xform("+AESSHA +B64" test 1)   [rb zlonix]
 
 Foundational improvements
 ===========================
@@ -1422,3 +1420,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Connecting to port 6697 now always forces SSL.  So there.
 * If a server connection fails w/o data, it might be an SSL server
 * In a server desc, a + before a port means "do ssl" like other clients support.
+* EPIC5-3.0.2 (2154 - Peregrination) released here 12/2/2024

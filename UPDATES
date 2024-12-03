@@ -1,4 +1,7 @@
-EPIC5-2.2
+EPIC5-3.0.2
+
+*** News 12/02/2024 -- EPIC5-3.0.2 (2154 - Peregrination) released here
+	The second bugfix release for EPIC5-3.0
 
 *** News 11/27/2024 -- Easier way to specify SSL server (port prefix)
 	In a server desc, you have specified that a server does ssl 
@@ -14,13 +17,6 @@ EPIC5-2.2
 	sending any data back, the server's "type" will be unconditionally
 	changed to "IRC-SSL" and then will try again.  I am 50% sure I am
 	going to regret this, but carpe diem, i suppose.
-
-*** News 11/26/2024 -- Connecting to port 6697 forces SSL by default
-	If you connect to a server on port 6697, the client will
-	ignore the "server type" and just use SSL.  Therefore, there
-	is no way to pathologically connect to an irc server on port
-	6697 without using SSL.  Please be reasonable.  This makes
-	the client behave reasonably for 99.99% of people.
 
 *** News 11/26/2024 -- New flag, /EXEC -EXIT {code} (rb fusion)
 	Although there is already /EXEC -END {code} and /WAIT -CMD to 
