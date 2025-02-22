@@ -4,7 +4,7 @@ THINGS TO WORK ON
 ------------------------------------------------
 Actual bugs
 ============
-* $uname() misuses strlcpy()
+<none>
 
 Creature Comforts
 ====================
@@ -1422,4 +1422,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * In a server desc, a + before a port means "do ssl" like other clients support.
 * EPIC5-3.0.2 (2154 - Peregrination) released here 12/2/2024
 * Backport the fix for /eval echo $rgb(#2C4267)#derp from epic6.
-* Fix $uname(), (rb sob)
+* Fix/rewrite $uname(), (rb sob)

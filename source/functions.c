@@ -5611,12 +5611,11 @@ BUILT_IN_FUNCTION(function_uname, input)
 #ifndef HAVE_UNAME
 	RETURN_STR("unknown");
 #else
-	struct utsname un;
-	size_t	size = BIG_BUFFER_SIZE;
-	char 	tmp[BIG_BUFFER_SIZE + 1];
-	char *	ptr = tmp;
-	int 	i;
-	int	len;
+	struct utsname 	un;
+	size_t		input_len;
+	size_t		input_span;
+	char		output[BIG_BUFFER_SIZE + 1];
+	size_t		output_span;
 
 	if (uname(&un) == -1)
 		RETURN_STR("unknown");
@@ -5624,40 +5623,61 @@ BUILT_IN_FUNCTION(function_uname, input)
 	if (!*input)
 		input = LOCAL_COPY("%s %r");
 
-	for (i = 0, len = strlen(input); i < len; i++)
+	input_len = strlen(input);
+	*output = 0;
+
+	for (output_span = input_span = 0; input_span < input_len; input_span++)
 	{
-		if (ptr - tmp >= (int)size)
+		if (output_span >= BIG_BUFFER_SIZE - 32)
 			break;
 
-		if (input[i] == '%') 
+		if (input[input_span] == '%') 
 		{
-		    switch (input[++i]) 
+		    input_span++;
+		    switch (input[input_span]) 
 		    {
-			case 'm':	strlcpy(ptr, un.machine, size);
-					break;
-			case 'n':	strlcpy(ptr, un.nodename, size);
-					break;
-			case 'r':	strlcpy(ptr, un.release, size);
-					break;
-			case 's':	strlcpy(ptr, un.sysname, size);
-					break;
-			case 'v':	strlcpy(ptr, un.version, size);
-					break;
-			case 'a':	snprintf(ptr, size, "%s %s %s %s %s",
-						un.sysname, un.nodename,
-						un.release, un.version,
-						un.machine);
-					break;
-			case '%':	strlcpy(ptr, "%", size);
+#define PRESS_STRING(x)  snprintf(output+output_span, BIG_BUFFER_SIZE - output_span, "%s", x );
+
+			case 'm':	
+				PRESS_STRING(un.machine);
+				break;
+			case 'n':	
+				PRESS_STRING(un.nodename);
+				break;
+			case 'r':	
+				PRESS_STRING(un.release);
+				break;
+			case 's':	
+				PRESS_STRING(un.sysname);
+				break;
+			case 'v':	
+				PRESS_STRING(un.version);
+				break;
+			case 'a':	
+				snprintf(output + output_span, 
+					 BIG_BUFFER_SIZE - output_span,
+					"%s %s %s %s %s",
+					un.sysname, un.nodename,
+					un.release, un.version,
+					un.machine);
+				break;
+			case '%':	
+				PRESS_STRING("%");
+				break;
+			default:
+				output[output_span++] = '%';
+				output[output_span++] = input[input_span];
+				output[output_span] = 0;
+				break;
 		    }
-		    ptr += strlen(ptr);
+		    output_span = strlen(output);
 		}
 		else
-		    *ptr++ = input[i];
+		    output[output_span++] = input[input_span];
 	}
-	*ptr = 0;
+	output[output_span] = 0;
 
-	RETURN_FSTR(tmp);
+	RETURN_FSTR(output);
 #endif
 }
 
