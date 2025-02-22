@@ -4,7 +4,7 @@ THINGS TO WORK ON
 ------------------------------------------------
 Actual bugs
 ============
-<none!>
+* $uname() misuses strlcpy()
 
 Creature Comforts
 ====================
@@ -1421,3 +1421,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * If a server connection fails w/o data, it might be an SSL server
 * In a server desc, a + before a port means "do ssl" like other clients support.
 * EPIC5-3.0.2 (2154 - Peregrination) released here 12/2/2024
+* Backport the fix for /eval echo $rgb(#2C4267)#derp from epic6.
+* Fix $uname(), (rb sob)

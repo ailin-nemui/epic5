@@ -570,11 +570,13 @@ static size_t	write_ircii_attributes (char *output, size_t output_size, Attribut
 			int	r, g, b;
 
 			*str++ = '\030', count++;
+			*str++ = '{', count++;
 			*str++ = '#', count++;
 			GET_RGB_COLOR(a->fg, r, g, b);
 			count += hex256(r & 0xFFU, &str);
 			count += hex256(g & 0xFFU, &str);
 			count += hex256(b & 0xFFU, &str);
+			*str++ = '}', count++;
 		} 
 
 		if (IS_COLOR_NONE(a->bg)) {
@@ -596,12 +598,14 @@ static size_t	write_ircii_attributes (char *output, size_t output_size, Attribut
 			int	r, g, b;
 
 			*str++ = '\030', count++;
+			*str++ = '{', count++;
 			*str++ = '#', count++;
 			*str++ = ',', count++;
 			GET_RGB_COLOR(a->bg, r, g, b);
 			count += hex256(r & 0xFFU, &str);
 			count += hex256(g & 0xFFU, &str);
 			count += hex256(b & 0xFFU, &str);
+			*str++ = '}', count++;
 		} 
 	}
 
@@ -990,6 +994,7 @@ static ssize_t	read_rgb_seq (const char *start, void *d)
 		Attribute	ad;
 		int		fg;
 		int		set;
+		int		brace = 0;
 
 	/* Copy the inward attributes, if provided */
 	if (d)
@@ -1007,6 +1012,10 @@ static ssize_t	read_rgb_seq (const char *start, void *d)
 	 */
 	if (*ptr == COLOR_EXTENDED_TAG)
 		ptr++;
+	if (*ptr == '{') {
+		brace = 1;
+		ptr++;
+	}
 
 	/*
 	 * This is a one-or-two-time-through loop.  We find the maximum
@@ -1035,7 +1044,7 @@ static ssize_t	read_rgb_seq (const char *start, void *d)
 			if (fg)
 				a->fg = COLOR_NONE;
 			a->bg = COLOR_NONE;
-			return ptr - start;
+			break;
 		}
 
 		/*
@@ -1048,7 +1057,8 @@ static ssize_t	read_rgb_seq (const char *start, void *d)
 			if (fg)
 				a->fg = COLOR_NONE;
 			a->bg = COLOR_NONE;
-			return (ptr + 2) - start;
+			ptr += 2;
+			break;
 		}
 
 		/*
@@ -1061,7 +1071,7 @@ static ssize_t	read_rgb_seq (const char *start, void *d)
 			if (fg)
 				a->fg = COLOR_NONE;
 			a->bg = COLOR_NONE;
-			return ptr - start;
+			break;
 		}
 
 		/*
@@ -1131,6 +1141,8 @@ static ssize_t	read_rgb_seq (const char *start, void *d)
 		else
 			break;
 	}
+	if (brace && *ptr == '}')
+		ptr++;
 
 	return ptr - start;
 }
@@ -1992,7 +2004,7 @@ normal_char:
 
 			if (state == 3)
 				len = read_color_seq_new(str, (void *)&a);
-			else if (*str == '#')
+			else if (*str == '{' || *str == '#')
 				len = read_rgb_seq(str, (void *)&a);
 			else
 				len = read_color256_seq(str, (void *)&a);

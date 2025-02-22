@@ -8605,7 +8605,7 @@ BUILT_IN_FUNCTION(function_rgb, input)
 		*bg_color_str = 0;
 
 	if (attr)
-		snprintf(retval_str, 25, COLOR_EXTENDED_TAG_STR "#%s,%s", fg_color_str, bg_color_str);
+		snprintf(retval_str, 25, COLOR_EXTENDED_TAG_STR "{#%s,%s}", fg_color_str, bg_color_str);
 	else
 		snprintf(retval_str, 25, "%s,%s", fg_color_str, bg_color_str);
 
