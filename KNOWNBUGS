@@ -1423,3 +1423,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * EPIC5-3.0.2 (2154 - Peregrination) released here 12/2/2024
 * Backport the fix for /eval echo $rgb(#2C4267)#derp from epic6.
 * Fix/rewrite $uname(), (rb sob)
+* EPIC5-3.0.3 (2157 - Obturation) released here 2/27/2025
