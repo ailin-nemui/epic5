@@ -377,6 +377,12 @@ int	str_to_serverinfo (char *str, ServerInfo *s)
 				s->port = -(s->port);
 				s->server_type = "IRC";
 			}
+
+			if (s->port == 6697 || s->port == 7000)
+				s->server_type = "IRC-SSL";
+			else
+				s->server_type = "IRC";
+
 		}
 		else if (fieldnum == PASS)
 			s->password = descstr;
@@ -1839,15 +1845,33 @@ return_from_ssl_detour:
 				{
 					int	server_was_registered = is_server_registered(i);
 
+ 
 					/* XXX Ugh. i'm going to regret this */
-					if (s->any_data == 0 && strcmp(get_server_type(i), "IRC-SSL") )
+					if (s->any_data == 0)
 					{
-						close_server(i, NULL);
-						set_server_server_type(i, "IRC-SSL");
-						set_server_state(i, SERVER_RECONNECT);
-						say("Connection closed from %s - Trying SSL next", s->info->host);
-						break;
+						if (s->info->port > 6690 && strcmp(get_server_type(i), "IRC-SSL"))
+						{
+							close_server(i, NULL);
+							set_server_server_type(i, "IRC-SSL");
+							set_server_state(i, SERVER_RECONNECT);
+							say("Connection closed from %s - Trying SSL next", s->info->host);
+							break;
+						}
+						else if (s->info->port <= 6690 && strcmp(get_server_type(i), "IRC"))
+						{
+							close_server(i, NULL);
+							set_server_server_type(i, "IRC");
+							set_server_state(i, SERVER_RECONNECT);
+							say("Connection closed from %s - Trying no-SSL next", s->info->host);
+							break;
+						}
+						else
+						{
+							say("Something went wrong with your connection to %s -- you might need to help me!", s->info->host);
+							/* No "break" here -- fallthrough */
+						}
 					}
+
 					parsing_server_index = i;
 					server_is_unregistered(i);
 					if (server_was_registered)
