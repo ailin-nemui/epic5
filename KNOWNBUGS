@@ -1428,4 +1428,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Try to make /bind DELETE_TO_PREVIOUS_SPACE behave like epic4 did. (rb zlonix)
 * Backport the fix for /unload timers from epic6 (3080)
 * Backport the fix for /set input_right_indicator needing a space after it (3081)
-
+* Backport 'colors' script from epic6 (3073) (zlonix)

@@ -82,8 +82,8 @@ package colors;
 ## TODO:
 ## - highlight nicks in quit, join, parts, kicks, modes, actions
 ## - highlight nicks with _,], etc like nick_, or nick], but not nickABC
-## - on mode $servernick() is not deleted
 ## - scan alias for no color mode
+## - use hookctl() to remove duplicated code in on public{_other}
 
 load addset;
 
@@ -568,7 +568,7 @@ alias theme.default.install (void) {
 		xecho -b $cparse("Mode change %K[%W$$2-%K]%n for user %c$$1%n by %W$$0%n" $*);
 	};
 	on ^channel_sync * {
-		xecho -b $cparse("%WEPIC5%n: Join to $$0 was synched in $$trunc(2 $1)%n secs!!" $*);
+		xecho -b $cparse("%WEPIC6%n: Join to $$0 was synched in $$trunc(2 $1)%n secs!!" $*);
 	};
 	on ^kick * {
 		xecho -b $cparse("$$0 was kicked off $$2 by %c$$1%n %K\\\(%n$3-%K\\\)%n" $*);
@@ -840,10 +840,12 @@ alias theme.default.clean (void) {
 	set status_umode (+%#);
 	set status_voice +;
 	set status_window ^^^^^^^^;
-	set status_user $${actions && winnam(MsgWin) ? [ \(Hilighted\)] : []};
+	set status_user $${actions && winnam(MsgWin) ? [\(Hilighted\)] : []};
 
 	alias -scan.echo;
 	alias -scan;
+
+	on ^send_public * { echo $0> $1- };
 
 	on ^ctcp -*;
 	on ^channel_signoff -*;
@@ -852,16 +854,15 @@ alias theme.default.clean (void) {
 	on ^join -*;
 	on ^part -*;
 	on ^nickname -*;
-	on ^nickname '% $$servernick()';
-	on ^send_public * { echo $0> $1- };
+	on ^nickname -'% $$servernick()';
 	on ^send_action -*;
 	on ^action -*;
 	on ^mode -*;
-	on ^mode '$$servernick() $$servernick() -*';
-	on ^mode '% $$servernick() -*';
+	on ^mode -'$$servernick() $$servernick() *';
+	on ^mode -'% $$servernick() *';
 	on ^channel_sync -*;
 	on ^kick -*;
-	on ^kick '$$servernick() -*';
+	on ^kick -'$$servernick() *';
 	on ^topic -*;
 	on ^324 -*;;
 	on ^328 -*;
@@ -873,7 +874,7 @@ alias theme.default.clean (void) {
 	on ^server_notice -*;
 	on ^send_msg -*;
 	on ^send_notice -*;
-	^on ^366 -*;
+	on ^366 -*;
 	on ^251 -*;
 	on ^252 -*;
 	on ^253 -*;
