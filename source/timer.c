@@ -1335,7 +1335,7 @@ void	unload_timers (char *filename)
 
 	for (ref = PendingTimers; ref; )
 	{
-		if (!my_stricmp(ref->package, filename))
+		if (filename && ref->package && !my_stricmp(ref->package, filename))
 		{
 			unlink_timer(ref);
 			delete_timer(ref);

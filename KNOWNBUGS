@@ -1426,4 +1426,6 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * EPIC5-3.0.3 (2157 - Obturation) released here 2/27/2025
 * Better handle "server doesn't respond" failures based on port number
 * Try to make /bind DELETE_TO_PREVIOUS_SPACE behave like epic4 did. (rb zlonix)
+* Backport the fix for /unload timers from epic6 (3080)
+* Backport the fix for /set input_right_indicator needing a space after it (3081)
 
