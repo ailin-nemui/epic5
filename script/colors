@@ -712,16 +712,20 @@ alias theme.default.install (void) {
 	};
 
 	# OFTC
-	on ^307 '% % user has identified to services' {
-		echo $cparse("%K| %Ws%nervice  : $$1-");
+	on ^307 '% % user has identified*' {
+		echo $cparse("%K| %Ws%nervice  : $$1-" $*);
 	};
+	on ^275 '% % is connected via SSL (secure link)' {
+		echo $cparse("%K│ %Ws%necure   : $$4-" $*);
+	};
+
 
 	# Freenode
 	on ^320 '% % is identified to services*' {
-		echo $cparse("%K| %Ws%nervice  : $$1-");
+		echo $cparse("%K| %Ws%nervice  : $$1-" $*);
 	};
 	on ^320 '% % is signed on as account %' {
-		echo $cparse("%K| %Ws%nervice  : $$1-");
+		echo $cparse("%K| %Ws%nervice  : $$1-" $*);
 	};
 	on ^276 '% % has client certificate fingerprint %' {
 		echo $cparse("%K| %Wc%nert     : $$6-" $*);
@@ -891,7 +895,8 @@ alias theme.default.clean (void) {
 	on ^378 -*;
 	on ^338 -*;
 	on ^716 -*;
-	on ^307 -'% % user has identified to services';
+	on ^307 -'% % user has identified*';
+	on ^275 -'% % is connected via SSL (secure link)';
 	on ^276 -'% % has client certificate fingerprint %';
 	on ^320 -'% % is identified to services*';
 	on ^320 -'% % is signed on as account %';

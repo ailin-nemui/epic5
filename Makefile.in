@@ -94,10 +94,10 @@ MFLAGS ='CC=$(CC)'					\
 all everything:
 	@+cd source; $(MAKE2) epic5 @WSERV_BIN@
 install installeverything: all installbin installscript installman
-installbin: installepic5 @WSERV_INSTALL@
+installbin: installepic5-@INSTALL_TYPE@ @WSERV_INSTALL@
 
 uninstall uninstalleverything: uninstallbin uninstallscript uninstallman uninstalldirs
-uninstallbin: uninstallepic5 uninstallwserv4 uninstalloldbins
+uninstallbin: uninstallepic5-@INSTALL_TYPE@ uninstallwserv4 uninstalloldbins
 
 VPATH=@srcdir@
 
@@ -110,13 +110,20 @@ epic5:
 EPIC 	  = $(epic5_exe)-$(VERSION)
 EPIC_OLD  = $(epic5_exe).old
 EPIC_LINK = $(epic5_exe)
-installepic5 installirc: epic5 installdirs 
+installepic5-std installirc-std: installdirs
 	$(INSTALL_PROGRAM) source/epic5 $(IP)$(DESTDIR)$(EPIC);	\
 	$(RM) $(IP)$(DESTDIR)$(EPIC_LINK); \
 	ln -s $(epic5)-$(VERSION) $(IP)$(DESTDIR)$(EPIC_LINK); 
-uninstallepic5 uninstallirc: 
+uninstallepic5-std uninstallirc-std: 
 	$(RM) $(IP)$(DESTDIR)$(EPIC)
 	$(RM) $(IP)$(DESTDIR)$(EPIC_LINK)
+
+installepic5-prod installirc-prod: installdirs 
+	$(RM) $(IP)$(DESTDIR)$(EPIC_LINK); \
+	$(INSTALL_PROGRAM) source/epic5 $(IP)$(DESTDIR)$(EPIC_LINK)
+uninstallepic5-prod uninstallirc-prod: 
+	$(RM) $(IP)$(DESTDIR)$(epic5_exe)
+
 uninstalloldbins:
 	$(RM) $(IP)$(DESTDIR)$(epic5_exe)-*
 

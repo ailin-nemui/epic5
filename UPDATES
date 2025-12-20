@@ -1,3 +1,18 @@
+EPIC5-3.0.4
+
+*** News 12/17/2025 -- New configure flag, "--with-installtype"
+        Traditionally epic installs its binary as epic6-<version>
+        and a symlink from "epic6" to "epic6-<version>".
+
+        It does this because that's what ircII has always done,
+        and that was inherited from gnu screen's behavior
+
+        For those who would prefer to do without this quirk, you can
+        now do
+                ./configure --with-installtype=prod
+        and then the epic binary will be installed as "epic6" without
+        the version suffix and without the symlink.
+
 EPIC5-3.0.3
 
 *** News 2/27/2025 -- EPIC5-3.0.3 (2157 - Obturation) released here

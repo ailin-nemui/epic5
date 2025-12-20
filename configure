@@ -644,6 +644,7 @@ program_prefix
 epic5
 srcdir
 irclibdir
+INSTALL_TYPE
 WSERV_INSTALL
 WSERV_BIN
 PYTHON_LDFLAGS
@@ -718,6 +719,7 @@ with_ssl
 with_termcap
 with_ipv6
 with_iconv
+with_installtype
 with_wserv
 with_valgrind
 with_clang_sanitizing
@@ -1358,6 +1360,7 @@ Optional Packages:
   --with-termcap                  Force use of termcap even if terminfo/ncurses is available
   --without-ipv6                  Refuse to support IPv6
   --with-iconv=PATH               Include iconv support (PATH is (eg) /usr/local).
+  --with-installtype,   Either "std" (default) or "prod".
   --without-wserv                 Refuse to support wserv (for multiple screens)
   --with-valgrind                 Include support for Valgrind Memcheck
   --with-clang-sanitizing         Include support for clang sanitizing
@@ -6989,6 +6992,35 @@ printf "%s\n" "#define HAVE_ICONV 1" >>confdefs.h
 fi
 
 
+
+# Check whether --with-installtype was given.
+if test ${with_installtype+y}
+then :
+  withval=$with_installtype;
+else case e in #(
+  e) with_installtype=std ;;
+esac
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking what kind of install to support" >&5
+printf %s "checking what kind of install to support... " >&6; }
+if test "x$with_installtype" = "x" ; then
+	INSTALL_TYPE=std
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: std" >&5
+printf "%s\n" "std" >&6; }
+elif test "x$with_installtype" = "xstd" ; then
+	INSTALL_TYPE=std
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: std" >&5
+printf "%s\n" "std" >&6; }
+elif test "x$with_installtype" = "xprod" ; then
+	INSTALL_TYPE=prod
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: prod" >&5
+printf "%s\n" "prod" >&6; }
+else
+	as_fn_error $? "--with-installtype must be \"std\" or \"prod\"" "$LINENO" 5
+fi
+
+
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether to include wserv support" >&5
 printf %s "checking whether to include wserv support... " >&6; }
 include_wserv="yes"
@@ -7946,6 +7978,7 @@ printf "%s\n" "no" >&6; }
 esac
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
 
 
 
