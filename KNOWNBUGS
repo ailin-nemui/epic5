@@ -1430,3 +1430,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Backport the fix for /set input_right_indicator needing a space after it (3081)
 * Backport 'colors' script from epic6 (3073) (zlonix)
 * Backport ./configure --with-install-type=prod and colors from epic6 (3084, 3085)
+* Fix my_goto_window() (rb tau)

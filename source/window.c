@@ -2669,7 +2669,7 @@ static void 	my_goto_window (int screen_, int which)
 	i = 1;
 	tmp_ = 0;
 	while (traverse_all_windows_on_screen2(&tmp_, screen_))
-		if (i >= which)
+		if (i++ >= which)
 			break;
 
 	set_screens_current_window(screen_, tmp_);
