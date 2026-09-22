@@ -1431,3 +1431,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Backport 'colors' script from epic6 (3073) (zlonix)
 * Backport ./configure --with-install-type=prod and colors from epic6 (3084, 3085)
 * Fix my_goto_window() (rb tau)
+* Fix /reconnect -force (rb skered)

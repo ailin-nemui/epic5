@@ -3090,9 +3090,9 @@ BUILT_IN_COMMAND(disconnectcmd)
 				i = get_window_server(0);
 			break;
 		}
-		else if (my_strnicmp(arg, "-FORCE", 1))
+		else if (!my_strnicmp(arg, "-FORCE", 1))
 			force = 1;
-		else if (my_strnicmp(arg, "-SAFE", 1))
+		else if (!my_strnicmp(arg, "-SAFE", 1))
 			force = 0;
 		else
 		{
