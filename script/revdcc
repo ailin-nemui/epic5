@@ -84,6 +84,7 @@ alias receivefile {
   @ rev.file[$rev.snick] = [$0\.uu];
   @ rev.lsocket = [$1];
   @ rev.lport = [$2];
+  @ rev.out[$rev.snick] = [$0];
   @ fd = open($rev.file[$rev.snick] W);
   stack push on dcc_raw;
   ^on ^dcc_raw "$1 % D*" {
@@ -104,7 +105,9 @@ alias receivefile {
       @ fd = sendnick = rev.file[$rev.snick] = rev.lsocket = rev.lport = rev.fname[$rev.snick] = rev.port[$rev.snick] = rev.snick = [];
     };
     stack pop on dcc_raw;
-    exec -name decodefile$rev.file[$rev.snick] uudecode $rev.file[$rev.snick];
+    # -direct: don't let a shell see the filename.
+    # -o: otherwise uudecode writes to whatever path the sender's "begin" line says.
+    exec -direct -name decodefile$rev.file[$rev.snick] uudecode -o $rev.out[$rev.snick] $rev.file[$rev.snick];
   };
 };
 
@@ -116,7 +119,8 @@ on ^ctcp_reply "% REVDCC GET *" {
   @ getnick = ento($0);
   @ rev.sfile[$getnick] = [$3];
   @ rev.sendport[$getnick] = [$4];
-  if (match($3 $sendqueue[$getnick])) {
+  # Exact match only -- $3 comes from the peer, and match() would treat it as a wildcard
+  if (findw($3 $sendqueue[$getnick]) > -1) {
     ^on ^exec "sendfile$getnick *" {
       dcc raw $rev.socket[$getnick] $rev.host[$getnick] $1-;
     };
@@ -131,13 +135,20 @@ on ^ctcp_reply "% REVDCC GET *" {
     };
     @ rev.socket[$getnick] = connect($rev.host[$getnick] $rev.sendport[$getnick]);
     xecho -b Sending $3 to $0;
-    ^exec -name sendfile$getnick uuencode $3 $3;
+    ^exec -direct -name sendfile$getnick uuencode $3 $3;
   };
 };
 
 on ^ctcp "% % REVDCC SEND *" {
   @ sendnick = ento($0);
-  @ rev.fname[$sendnick] = [$4];
+  # The filename comes from the peer.  It ends up in a filename and an /exec,
+  # so only allow a plain filename made of safe characters (no paths).
+  @ :safe = pass(ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._- $4);
+  if (safe == [] || safe != [$4] || left(1 $safe) == [.] || left(1 $safe) == [-]) {
+    xecho -b Rejected reverse DCC SEND request from $0 with unsafe filename: $4;
+    return;
+  };
+  @ rev.fname[$sendnick] = safe;
   @ rev.seed = srand($time());
   @ rev.port[$sendnick] = rand(10000) + 8000;
   ^on ^dcc_raw "% % N $rev.port[$sendnick]" {

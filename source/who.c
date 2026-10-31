@@ -1862,8 +1862,10 @@ void	userhost_returned (int refnum, const char *from, const char *comm, const ch
 			else
 				item.away = 1;
 
+			/* Skip the '=' and the away flag (if it's there) */
 			*user++ = 0;
-			user++;
+			if (*user)
+				user++;
 
 			host = strchr(user, '@');
 			if (!host)

@@ -297,7 +297,8 @@ on ^303 "*" {
 	};
 
 	if (ison_oncmd != []) {
-		^eval $ison_oncmd $ison_reply_list;
+		# No eval -- the reply list comes from the server and must not be expanded twice
+		$ison_oncmd $ison_reply_list;
 
 		if (ison_end_request) {
 			^alias -$ison_oncmd;
@@ -305,7 +306,7 @@ on ^303 "*" {
 	};
 
 	if (ison_offcmd != []) {
-		^eval $ison_offcmd $remws($ison_reply_list / $ison_req);
+		$ison_offcmd $remws($ison_reply_list / $ison_req);
 
 		if (ison_end_request) {
 			^alias -$ison_offcmd;

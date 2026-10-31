@@ -1888,11 +1888,16 @@ return_from_ssl_detour:
 				{
 					char *end;
 
+					/*
+					 * A line that starts with a nul has
+					 * strlen() == 0; don't back up 
+					 * before the start of 'buffer'.
+					 */
 					end = strlen(buffer) + buffer;
-					if (*--end == '\n')
-						*end-- = '\0';
-					if (*end == '\r')
-						*end-- = '\0';
+					if (end > buffer && end[-1] == '\n')
+						*--end = '\0';
+					if (end > buffer && end[-1] == '\r')
+						*--end = '\0';
 
 					rfc1459_any_to_utf8(bufptr, sizeof(buffer), &extra);
 					if (extra)
@@ -2091,6 +2096,24 @@ static void 	vsend_to_aserver_with_payload (int refnum, const char *payload, con
 	/*
 	 * Send the resulting message out
 	 */
+	/*
+	 * A protocol message is exactly one line.  If there is a \r or \n
+	 * in here (ie, from decrypted text, or /exec output, or $decode()),
+	 * the server would treat the rest as a new command from us!
+	 * So stop at the first one.  If you really need to send raw
+	 * bytes, use /XQUOTE -U, which uses send_to_aserver_raw().
+	 */
+	{
+		size_t	span = strcspn(buffer, "\r\n");
+
+		if (buffer[span])
+		{
+			if (x_debug & DEBUG_OUTBOUND)
+				yell("[%d] -> Truncating outbound line at embedded CR/LF", des);
+			buffer[span] = 0;
+		}
+	}
+
 	len = strlen(buffer);
 	s->sent = 1;
 	if (len > (IRCD_BUFFER_SIZE - 2))

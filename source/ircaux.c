@@ -5725,10 +5725,11 @@ static ssize_t	iconv_recoder (const char *orig, size_t orig_len, const void *met
 	}
 
 	/* Stuff seems to be working... */
-	while (iconv(encodingx, &orig_ptr, &orig_left, &dest_ptr, &dest_left) != 0)
+	/* See recode_with_iconv_t() -- only look at errno on (size_t)-1 */
+	while (iconv(encodingx, &orig_ptr, &orig_left, &dest_ptr, &dest_left) == (size_t)-1)
 	{
 		/* I *THINK* this is a hack. */
-		if (errno == EINVAL || errno == EILSEQ)
+		if ((errno == EINVAL || errno == EILSEQ) && orig_left > 0)
 		{
 			orig_ptr++;
 			orig_left--;
@@ -6174,17 +6175,18 @@ int	recode_with_iconv (const char *from, const char *to, char **data, size_t *nu
 		work_data = *data;
 		dest_ptr = retstr;
 
-		while (iconv(iref, &work_data, numbytes, &dest_ptr, &dest_left) != 0)
+		/* See recode_with_iconv_t() -- only look at errno on (size_t)-1 */
+		while (iconv(iref, &work_data, numbytes, &dest_ptr, &dest_left) == (size_t)-1)
 		{
 			/* I *THINK* this is a hack. */ 
-			if (errno == EINVAL || errno == EILSEQ)
+			if ((errno == EINVAL || errno == EILSEQ) && *numbytes > 0)
 			{
 				work_data++;
 				(*numbytes)--;
 				continue;
 			}
 
-			if (dest_left < 8)
+			if (errno == E2BIG)
 			{
 				size_t	offset;
 				offset = dest_ptr - retstr;
@@ -6248,17 +6250,23 @@ int	recode_with_iconv_t (iconv_t iref, char **data, size_t *numbytes)
 	work_data = *data;
 	dest_ptr = retstr;
 
-        while (iconv(iref, &work_data, numbytes, &dest_ptr, &dest_left) != 0)
+	/*
+	 * iconv() returns (size_t)-1 on error.  Any other value (including
+	 * values > 0, which is the number of irreversible conversions, ie, 
+	 * //TRANSLIT) means success, and 'errno' is NOT set -- so we must
+	 * not look at errno unless iconv() actually failed.
+	 */
+        while (iconv(iref, &work_data, numbytes, &dest_ptr, &dest_left) == (size_t)-1)
         {
                 /* I *THINK* this is a hack. */ 
-                if (errno == EINVAL || errno == EILSEQ)
+                if ((errno == EINVAL || errno == EILSEQ) && *numbytes > 0)
                 {
                         work_data++;
                         (*numbytes)--;
                         continue;
                 }
 
-		if (dest_left < 8)
+		if (errno == E2BIG)
 		{
 			size_t	offset;
 			offset = dest_ptr - retstr;
@@ -6272,6 +6280,26 @@ int	recode_with_iconv_t (iconv_t iref, char **data, size_t *numbytes)
 
                 break;
         }
+
+	/* 
+	 * Callers treat the result as a C string.  Normally the input's nul
+	 * got converted too, but make sure, in case it didn't.
+	 */
+	if (dest_ptr == retstr || dest_ptr[-1] != 0)
+	{
+		size_t	offset;
+		offset = dest_ptr - retstr;
+
+		if (dest_left < 1)
+		{
+			dest_size += 1;
+			dest_left += 1;
+			RESIZE(retstr, char, dest_size);
+			dest_ptr = retstr + offset;
+		}
+		*dest_ptr++ = 0;
+		dest_left--;
+	}
 
 	new_free(data);
 	*data = retstr;

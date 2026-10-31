@@ -1432,3 +1432,42 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Backport ./configure --with-install-type=prod and colors from epic6 (3084, 3085)
 * Fix my_goto_window() (rb tau)
 * Fix /reconnect -force (rb skered)
+* >>> Fix very many bugs from using LLMs are static analysis tools:
+* I asked the LLM to summarize everything (don't hate me)
+* parse.c: p_privmsg/p_notice copy msg to big buf before do_ctcp() 
+* dcc.c: DCC CHAT ctcps use local buf, not exact-size 'extra'; no UAF
+* ctcp.c: do_crypto copies decrypted text to big buf before do_ctcp()
+* crypt.c: decrypt_msg frees 'dest' on dequote fail; fix retval comment
+* ctcp.c: $ctcpctl(GET unknown ...) no longer reads CTCP(-1) 
+* dcc.c: refuse DCC SEND whose url-decoded filename has a '/'
+* dcc.c: $dccctl(SET x PACKET_SIZE n) rejects n<0 or >IO_BUFFER_SIZE
+* dcc.c: dcc_searchlist frees decoded_description on match 
+* url.irc: /pages uses exec -direct (urls from channel -> shell)
+* revdcc: whitelist peer filename, uudecode -o, findw, exec -direct
+* sasl_nistp256: exec -direct so server challenge never hits shell 
+* ison: drop eval of server's ISON reply 
+* server.c: CRLF strip doesn't back up before buffer on leading nul 
+* parse.c: rfc1459_any_to_utf8 prefix scan can't skip past nul 
+* dcc.c: DCC RAW newline strip checks for empty line first 
+* names.c: NAMES prefix loop stops at nul (strchr matches nul) 
+* reg.c: \[ prescan doesn't step past nul on trailing \ (x2) 
+* names.c,names.h: new channels_with_nick() snapshot helper 
+* parse.c: p_quit/p_nick loop on snapshot, not walk_channels() 
+* words.c: move_to_next_word won't treat nul as a quote char 
+* window.c: /window log auto-name turns '/' in channel into '_' 
+* logman: channel log filename turns '/' into '_' 
+* alias.c: parse_arglist stops at 31 args (arrays are 32) 
+* server.c: outbound line truncated at first embedded CR/LF 
+* status.c: make_status caps lhs/rhs buffer writes (cp_limit) 
+* ircaux.c: iconv loops only check errno on (size_t)-1; no wrap 
+* ircaux.c: recode_with_iconv_t always grows on E2BIG, nul-terminates 
+* screen.c: prepare_display_fixed_size leaves room for attribute 
+* crypt.c: AES key copy clamped to 32; other keys zero-padded to 64 
+* parse.c: strip_modes returns if mode string is all spaces 
+* who.c: USERHOST reply parse doesn't skip past nul on "nick="
+* parse.c: p_killmsg uses "*" if killer/path missing; const bastard 
+* numbers.c: add_user_end returns if no channel in 315 reply 
+* status.c: build_status_format stops on trailing bare '%' 
+* keys.c: show_key sizes alloca by slen (key seqs can contain ^@) 
+* If it becomes necessary i'll rewrite them myself by hand.
+* <<< End of very many bugs fixed by using LLM as static analysis tool. 

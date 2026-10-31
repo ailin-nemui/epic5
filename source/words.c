@@ -526,7 +526,8 @@ static int	move_to_next_word (const char **str, const char *start, int extended,
 	 * extended word, move to the "end" of the word, which is the 
 	 * matching puncutation mark.
 	 */
-	if (extended == DWORD_YES && 
+	/* strchr() finds the nul, so make sure we're not at end of string */
+	if (extended == DWORD_YES && *pos &&
 	     ( (simple == 1 && *pos == what) ||
 	       (simple == 0 && strchr(delims, *pos)) ) )
 	{

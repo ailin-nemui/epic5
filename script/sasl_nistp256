@@ -176,7 +176,8 @@ on ^odd_server_stuff '\* AUTHENTICATE %' {
 		@ :idx = rmatch($server $sasl_nistp256.servers)-1;
 		@ :key = word($idx $sasl_nistp256.keys);
 
-		^exec -line { quote AUTHENTICATE $0 } $sasl_nistp256_ecdsatool sign $key $2;
+		# -direct: $2 is the challenge from the server; don't let a shell see it.
+		^exec -direct -line { quote AUTHENTICATE $0 } $sasl_nistp256_ecdsatool sign $key $2;
 	} else {
 		xecho -b sasl_nistp256: odd_server_stuff: AUTHENTICATE: server $server \(real: $0\) is in a wrong state [$state] (should be "auth_sent");
 		sasl_nistp256.setstate $server null;

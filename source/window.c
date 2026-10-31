@@ -6279,8 +6279,10 @@ WINDOWCMD(log)
 	if (add_ext)
 	{
 		const char *title = empty_string;
+		char *	ext;
 
 		strlcat(buffer, ".", sizeof buffer);
+		ext = buffer + strlen(buffer);
 		if ((title = get_window_echannel(window->refnum)))
 			strlcat(buffer, title, sizeof buffer);
 		else if ((title = get_window_equery(window->refnum)))
@@ -6290,6 +6292,11 @@ WINDOWCMD(log)
 			strlcat(buffer, "Window_", sizeof buffer);
 			strlcat(buffer, ltoa(window->user_refnum), sizeof buffer);
 		}
+
+		/* Channel names can contain slashes -- don't let them be paths */
+		for (; *ext; ext++)
+			if (*ext == '/')
+				*ext = '_';
 	}
 
 	do_log(window->log, buffer, &window->log_fp);

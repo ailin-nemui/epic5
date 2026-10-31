@@ -32,9 +32,10 @@ on ^public * {
 alias pages (arg) {
 
 	if (arg == []) {
-		exec /usr/local/firefox/firefox -remote "openURL\($url[0],new-tab\)"
+		# -direct: URLs come from other people; don't let a shell expand $(...) or `...`
+		exec -direct /usr/local/firefox/firefox -remote "openURL\($url[0],new-tab\)"
 	} else if (isnumber($arg) && (arg != 0) && (arg < 11)) {
-		exec /usr/local/firefox/firefox -remote "openURL\($url[${arg - 1}],new-tab\)"		
+		exec -direct /usr/local/firefox/firefox -remote "openURL\($url[${arg - 1}],new-tab\)"		
 	} else {
 		echo 
 		echo Last 10 Captured URLS...

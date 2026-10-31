@@ -49,6 +49,8 @@ alias logman.check_channel_log_existance (server, channel) {
 	if (logctl(REFNUM channel.${server}.${channel}) == []) {
 	    xecho -b Does not exist -- creating it;
 	    @ :filename = **channel_log_name;
+	    # Channel names can contain slashes -- don't let them be paths
+	    @ :filename = tr(!/!_!$filename);
 	    xecho -b Filename is $filename;
 	    log new 
 		name channel.${server}.${channel}

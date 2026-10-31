@@ -554,8 +554,9 @@ int wild_match (const char *p, const char *str)
 				case ']' :  ptr2 = ptr + 2;
 					    nest--;
 					    break;
+					/* A trailing \ must not step past the nul */
 				default:
-					    ptr2 = ptr + 2;
+					    ptr2 = ptr + (ptr[1] ? 2 : 1);
 					    break;
 			}
 		}
@@ -720,8 +721,9 @@ char *	pattern2regex (const char *pattern, int *weight)
 					case ']' :  ptr2 = ptr + 2;
 					    nest--;
 					    break;
+						/* A trailing \ must not step past the nul */
 					default:
-					    ptr2 = ptr + 2;
+					    ptr2 = ptr + (ptr[1] ? 2 : 1);
 					    break;
 				}
 			}

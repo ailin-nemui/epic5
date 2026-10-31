@@ -1757,7 +1757,8 @@ static void	show_all_bindings (Key *map, const char *str, size_t len)
 static void	show_key (Key *key, const char *str, int slen, int recurse) 
 {
 	List *bp;
-	char *clean = alloca(((strlen(str) + 1) * 2) + 1);
+	/* Key sequences can contain nuls (^@), so size by 'slen', not strlen() */
+	char *clean = alloca(((MAX(strlen(str), (size_t)slen) + 1) * 2) + 1);
 
 	if (key == NULL) 
 	{

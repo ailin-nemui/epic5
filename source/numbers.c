@@ -1685,7 +1685,8 @@ static void	add_user_end (int refnum, const char *from, const char *comm, const 
 		{ rfc1459_odd(from, "*", ArgList); return; }
 
 	copy = LOCAL_COPY(ArgList[0]);
-	channel = next_arg(copy, &copy);
+	if (!(channel = next_arg(copy, &copy)))
+		return;
 	channel_not_waiting(channel, refnum);
 }
 

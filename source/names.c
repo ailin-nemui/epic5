@@ -430,7 +430,8 @@ const	char	*prefix;
 	 */
 	for (;;)
 	{
-		if (!strchr(prefix, *nick))
+		/* strchr() finds the nul, so check for end of string first */
+		if (!*nick || !strchr(prefix, *nick))
 		{
 			break;
 		}
@@ -1331,6 +1332,25 @@ const char *	walk_channels (int init, const char *nick)
 	}
 
 	return NULL;
+}
+
+/*
+ * channels_with_nick - Like walk_channels(), but returns all the channels
+ *			at once, as a new_malloc()ed space separated list.
+ *
+ * Use this instead of walk_channels() if you're going to run any hooks
+ * while looping, because a hook could remove a channel out from under
+ * walk_channels()'s static pointer.  YOU MUST new_free() THE RETURN VALUE.
+ */
+char *	channels_with_nick (const char *nick)
+{
+	const char *	chan;
+	char *		retval = NULL;
+
+	for (chan = walk_channels(1, nick); chan; chan = walk_channels(0, nick))
+		malloc_strcat_wordlist(&retval, space, chan);
+
+	return retval;
 }
 
 const char *	fetch_userhost (int server, const char *chan, const char *nick)

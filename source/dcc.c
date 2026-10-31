@@ -684,6 +684,7 @@ static	DCC_list *dcc_searchlist (
 			yell("We have a winner!");
 
 		/* Looks like we have a winner! */
+		new_free(&decoded_description);
 		unlock_dcc(NULL);
 		return client;
 	}
@@ -2599,6 +2600,27 @@ void	register_dcc_offer (const char *user, char *type, char *description, char *
 	if (*description == '.')
 		*description = '_';
 
+	/*
+	 * The description is url-encoded, and is decoded before it is
+	 * used as a filename (see dcc_get_subcmd()).  So the check above
+	 * is not enough -- "%2Fetc%2Fpasswd" would sail right through,
+	 * and an absolute pathname is honored as-is by /DCC GET.
+	 * Refuse any offer whose decoded filename contains a path.
+	 */
+	{
+		char *	decoded = dcc_urldecode(description);
+		int	has_path = (strchr(decoded, '/') != NULL);
+
+		new_free(&decoded);
+		if (has_path)
+		{
+			/* MESSAGE_FROM */
+			say("DCC %s (%s) request from %s rejected because the "
+			    "filename contains a path", type, description, user);
+			break;
+		}
+	}
+
 	/* If they give us a file size, set the global variable */
 	if (size && *size)
 		filesize = STRNUM(size);
@@ -3116,6 +3138,7 @@ static	char *	process_dcc_chat_ctcps (DCC_list *Client, char *tmp)
 	int	ctcp_request = 0, ctcp_reply = 0;
 	int	l;
 	char 	*target = NULL, *extra = NULL;
+	char	ctcp_buffer[BIG_BUFFER_SIZE + 1];
 
 #define CTCP_MESSAGE "CTCP_MESSAGE "
 #define CTCP_REPLY "CTCP_REPLY "
@@ -3152,15 +3175,23 @@ static	char *	process_dcc_chat_ctcps (DCC_list *Client, char *tmp)
 		 */
 		target = dcc_target(Client->user);
 		inbound_recode(target, -1, empty_string, tmp, &extra);
-		if (extra)
-			tmp = extra;
+
+		/*
+		 * do_ctcp() needs a buffer of BIG_BUFFER_SIZE + 1, which
+		 * 'extra' is not (it's exactly as big as the recoded text).
+		 * The result has to go back into 'tmp' because that is 
+		 * what our caller uses.  'tmp' is IO_BUFFER_SIZE + 1.
+		 */
+		strlcpy(ctcp_buffer, extra ? extra : tmp, sizeof(ctcp_buffer));
 
 		l = message_from(target, LEVEL_CTCP);
 		if (ctcp_request == 1)
-			tmp = do_ctcp(1, target, nickname, tmp);
+			do_ctcp(1, target, nickname, ctcp_buffer);
 		else
-			tmp = do_ctcp(0, target, nickname, tmp);
+			do_ctcp(0, target, nickname, ctcp_buffer);
 		pop_message_from(l);
+
+		strlcpy(tmp, ctcp_buffer, IO_BUFFER_SIZE + 1);
 
 		FromUserHost = OFUH;
 
@@ -3420,7 +3451,7 @@ static	void		process_dcc_raw_data (DCC_list *Client)
 			else
 				freeme = bufptr = dest;
 		}
-		else if (bytesread > 0 && tmp[strlen(tmp) - 1] == '\n')
+		else if (bytesread > 0 && *tmp && tmp[strlen(tmp) - 1] == '\n')
 			tmp[strlen(tmp) - 1] = '\0';
 		Client->bytes_read += bytesread;
 
@@ -4413,8 +4444,13 @@ char *	dccctl (char *input)
 		} else if (!my_strnicmp(listc, "PACKET_SIZE", len)) {
 			long	packet_size;
 
-			/* Validation? */
+			/*
+			 * process_dcc_raw_data() reads 'packet_size' bytes into
+			 * a buffer of IO_BUFFER_SIZE + 1, so it must not be bigger.
+			 */
 			GET_INT_ARG(packet_size, input);
+			if (packet_size < 0 || packet_size > IO_BUFFER_SIZE)
+				RETURN_EMPTY;
 			client->packet_size = packet_size;
 		} else if (!my_strnicmp(listc, "OFFERADDR", len)) {
 			char *host, *port;

@@ -42,6 +42,7 @@
 	void	destroy_server_channels	(int);
 	Char *	what_channel		(Char *, int);
 	Char *	walk_channels		(int, Char *);
+	char *	channels_with_nick	(Char *);
 	Char *	fetch_userhost		(int, Char *, Char *);
 	int	get_channel_limit	(Char *, int);
 	int	get_channel_oper	(Char *, int);

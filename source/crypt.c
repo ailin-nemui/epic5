@@ -153,15 +153,27 @@ static void	add_to_crypt (Char *nick, Char *serv, Char *passwd, Char *prog, int 
 		memset(d->passwd, 0, 32);
 		d->passwdlen = 32;
 
+		/* The key buffer is 32 bytes -- don't overrun it */
 		if (sed_type == AES256CRYPT)
-			memcpy(d->passwd, passwd, strlen(passwd));
+			memcpy(d->passwd, passwd, MIN(strlen(passwd), 32));
 		else
 			sha256(passwd, strlen(passwd), d->passwd);
 	}
 	else
 	{
-		malloc_strcpy(&d->passwd, passwd);
-		d->passwdlen = strlen(d->passwd);
+		/*
+		 * OpenSSL may read more key bytes than we have (ie, CAST5
+		 * wants at least 5, and uses 16 if set_key_length() fails),
+		 * so zero-pad the buffer out to 64 (EVP_MAX_KEY_LENGTH)
+		 * so it never reads past the end of it.
+		 */
+		size_t	len = strlen(passwd);
+
+		new_free(&d->passwd);
+		d->passwd = new_malloc(MAX(len + 1, 64));
+		memset(d->passwd, 0, MAX(len + 1, 64));
+		memcpy(d->passwd, passwd, len);
+		d->passwdlen = len;
 	}
 
 	/* Fill in the 'prog' field. */
@@ -538,10 +550,10 @@ char *	crypt_msg (const char *str, List *crypti)
  * data.  You need to call decipher_message() directly for that.  This means
  * you can't receive binary data sent over irc via this route.
  *
- * Note that the retval MUST be at least 'BIG_BUFFER_SIZE + 1'.  This is
- * not an oversight -- the caller will pass the retval back to do_ctcp() 
- * which requires a big buffer to scratch around.  (The decrypted text could
- * contain a CTCP UTC which would expand to a larger string of text)
+ * Note that the retval is NOT guaranteed to be 'BIG_BUFFER_SIZE + 1'.
+ * If you pass it to do_ctcp(), copy it into a big enough buffer first,
+ * because the decrypted text could contain a CTCP that expands to a 
+ * larger string of text.
  */ 
 char *	decrypt_msg (const char *str, List *crypti)
 {
@@ -557,6 +569,7 @@ char *	decrypt_msg (const char *str, List *crypti)
 	if (destsize == 0)
 	{
 		yell("decrypt_msg: Could not ctcp-dequote encrypted privmsg");
+		new_free(&dest);
 		return malloc_strdup(str);
 	}
 

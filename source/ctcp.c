@@ -214,6 +214,7 @@ CTCP_HANDLER(do_crypto)
 	char 	*tofrom = NULL;
 	char	*ret = NULL;
 	char 	*extra = NULL;
+	char	ctcp_buffer[BIG_BUFFER_SIZE + 1];
 
 	if (*from == '=')		/* DCC CHAT message */
 		crypt_who = from;
@@ -256,10 +257,20 @@ CTCP_HANDLER(do_crypto)
 	 * might yield another CTCP message), and so we must not
 	 * recode until we have removed any sub-ctcps!
 	 */
+	/*
+	 * do_ctcp() requires a buffer of BIG_BUFFER_SIZE + 1, and 'ret'
+	 * is not guaranteed to be that big (ie, SED, or a failed dequote)
+	 */
 	if (get_server_doing_privmsg(from_server) > 0)
-		extra = malloc_strdup(do_ctcp(1, from, to, ret));
+	{
+		strlcpy(ctcp_buffer, ret, sizeof(ctcp_buffer));
+		extra = malloc_strdup(do_ctcp(1, from, to, ctcp_buffer));
+	}
 	else if (get_server_doing_notice(from_server) > 0)
-		extra = malloc_strdup(do_ctcp(0, from, to, ret));
+	{
+		strlcpy(ctcp_buffer, ret, sizeof(ctcp_buffer));
+		extra = malloc_strdup(do_ctcp(0, from, to, ctcp_buffer));
+	}
 	else
 	{
 		extra = ret;
@@ -1013,6 +1024,8 @@ BUILT_IN_FUNCTION(function_ctcpctl, input)
 
 		RETURN_INT(1);
 	} else if (!my_strnicmp(op, "GET", op_len)) {
+		if (i == -1)
+			RETURN_EMPTY;
 		if (!my_stricmp(field, "REQUEST")) {
 			RETURN_STR(CTCP(i)->user_func);
 		} else if (!my_stricmp(field, "RESPONSE")) {

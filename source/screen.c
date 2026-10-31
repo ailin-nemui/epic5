@@ -2793,7 +2793,13 @@ const 	char	*ptr;
 	/*
 	 * Start walking through the entire string.
 	 */
-	for (ptr = (const char *)str; *ptr && (pos < BIG_BUFFER_SIZE - 8); )
+	/*
+	 * One trip through the loop can write an entire attribute
+	 * (\006 + 11 bytes), and copy_internal_attribute() advances
+	 * 'numbytes' by the full length even if it ran out of room.
+	 * So leave enough room for that, plus the nul at the end.
+	 */
+	for (ptr = (const char *)str; *ptr && (pos < BIG_BUFFER_SIZE - 16); )
 	{
 	    codepoint = next_code_point2(ptr, &offset, 1);
 	    ptr += offset;

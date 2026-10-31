@@ -718,6 +718,13 @@ ArgList	*parse_arglist (char *arglist)
 		if (!(varname = next_arg(this_term, &this_term)))
 			continue;
 
+		/* The arrays are 32 long, and we need room for the NULL */
+		if (arg_count >= 31)
+		{
+			yell("Too many arguments in argument list -- ignoring the rest");
+			break;
+		}
+
 		args->types[arg_count] = WORD;
 		if (!my_stricmp(varname, "void")) {
 			args->void_flag = 1;

@@ -398,6 +398,7 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 			level;
 	const char	*hook_format;
 	int	l;
+	char		ctcp_buffer[BIG_BUFFER_SIZE + 1];
 
 	PasteArgs(ArgList, 1);
 	if (!(target = ArgList[0]))
@@ -414,11 +415,14 @@ static void	p_privmsg (const char *from, const char *comm, const char **ArgList)
 	 * until we know there's other stuff besides the ctcp in the
 	 * message, which keeps things going to the wrong window.
 	 */
-	message = do_ctcp(1, from, target, (char *)
-#ifdef HAVE_INTPTR_T
-					(intptr_t)
-#endif
-						message);
+	/*
+	 * do_ctcp() requires a buffer of at least BIG_BUFFER_SIZE + 1,
+	 * because a CTCP may be replaced by something longer than itself
+	 * (ie, "[ENCRYPTED MESSAGE]").  ArgList[1] lives in an alloca()ed
+	 * buffer that is exactly as long as the line from the server.
+	 */
+	strlcpy(ctcp_buffer, message, sizeof(ctcp_buffer));
+	message = do_ctcp(1, from, target, ctcp_buffer);
 	if (!*message) {
 		set_server_doing_privmsg(from_server, 0);
 		return;
@@ -537,6 +541,7 @@ static void	p_quit (const char *from, const char *comm, const char **ArgList)
 {
 	const char *	quit_message;
 	int		one_prints = 1;
+	char *		chans, *ptr;
 	const char *	chan;
 	int		l;
 
@@ -553,7 +558,12 @@ static void	p_quit (const char *from, const char *comm, const char **ArgList)
 	if (check_ignore(from, FromUserHost, LEVEL_QUIT) == IGNORED)
 		goto remove_quitter;
 
-	for (chan = walk_channels(1, from); chan; chan = walk_channels(0, from))
+	/*
+	 * Don't use walk_channels() directly here -- a hook could remove
+	 * a channel out from under it.  Take a snapshot first.
+	 */
+	chans = channels_with_nick(from);
+	for (ptr = chans; (chan = next_arg(ptr, &ptr)); )
 	{
 	    if (check_ignore_channel(from, FromUserHost, 
 					chan, LEVEL_QUIT) == IGNORED)
@@ -568,6 +578,7 @@ static void	p_quit (const char *from, const char *comm, const char **ArgList)
 		one_prints = 0;
 	    pop_message_from(l);
 	}
+	new_free(&chans);
 
 	if (one_prints)
 	{
@@ -872,6 +883,7 @@ static void	p_nick (const char *from, const char *comm, const char **ArgList)
 	const char	*new_nick;
 	int		been_hooked = 0,
 			its_me = 0;
+	char		*chans, *ptr;
 	const char	*chan;
 	int		ignored = 0;
 	int		l;
@@ -891,7 +903,9 @@ static void	p_nick (const char *from, const char *comm, const char **ArgList)
 	if (check_ignore(from, FromUserHost, LEVEL_NICK) == IGNORED)
 		goto do_rename;
 
-	for (chan = walk_channels(1, from); chan; chan = walk_channels(0, from))
+	/* See the comment in p_quit() */
+	chans = channels_with_nick(from);
+	for (ptr = chans; (chan = next_arg(ptr, &ptr)); )
 	{
 		if (check_ignore_channel(from, FromUserHost, chan, 
 						LEVEL_NICK) == IGNORED)
@@ -905,6 +919,7 @@ static void	p_nick (const char *from, const char *comm, const char **ArgList)
 			been_hooked = 1;
 		pop_message_from(l);
 	}
+	new_free(&chans);
 
 	if (!been_hooked && !ignored)
 	{
@@ -982,7 +997,8 @@ static void strip_modes (const char *from, const char *channel, const char *line
 
 	free_copy = LOCAL_COPY(line);
 	copy = free_copy;
-	mode = next_arg(copy, &copy);
+	if (!(mode = next_arg(copy, &copy)))
+		return;		/* All spaces -- nothing to strip */
 
 	if (is_channel(channel))
 	{
@@ -1215,7 +1231,7 @@ static void	p_rpong (const char *from, const char *comm, const char **ArgList)
 static int 	p_killmsg (const char *from, const char *to, const char *cline)
 {
 	char *poor_sap;
-	char *bastard;
+	const char *bastard;
 	const char *path_to_bastard;
 	const char *reason;
 	char *line;
@@ -1239,7 +1255,8 @@ static int 	p_killmsg (const char *from, const char *to, const char *cline)
 		return 0;
 	}
 	line += 5;
-	bastard = next_arg(line, &line);
+	if (!(bastard = next_arg(line, &line)))
+		bastard = star;
 
 	/* Hybrid BBC and doesn't include the kill-path. */
 	/* Fend off future BBC kills */
@@ -1251,7 +1268,8 @@ static int 	p_killmsg (const char *from, const char *to, const char *cline)
 	else
 	{
 		line += 6;
-		path_to_bastard = next_arg(line, &line);
+		if (!(path_to_bastard = next_arg(line, &line)))
+			path_to_bastard = star;
 		reason = line;
 	}
 
@@ -1321,6 +1339,7 @@ static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 	const char	*real_target;
 	int		hook_type;
 	int		l;
+	char		ctcp_buffer[BIG_BUFFER_SIZE + 1];
 
 	PasteArgs(ArgList, 1);
 	if (!(target = ArgList[0]))
@@ -1333,11 +1352,9 @@ static void 	p_notice (const char *from, const char *comm, const char **ArgList)
 
 	/* Do normal /CTCP reply handling */
 	/* XXX -- Casting "message" to (char *) is cheating. */
-	message = do_ctcp(0, from, target, (char *)
-#ifdef HAVE_INTPTR_T
-							(intptr_t)
-#endif
-								message);
+	/* See the comment in p_privmsg() */
+	strlcpy(ctcp_buffer, message, sizeof(ctcp_buffer));
+	message = do_ctcp(0, from, target, ctcp_buffer);
 	if (!*message) {
 		set_server_doing_notice(from_server, 0);
 		return;
@@ -1727,19 +1744,18 @@ void	rfc1459_any_to_utf8 (char *buffer, size_t buffsiz, char **extra)
 		 */
 		if (*server_part_copy == ':')
 		{
-			from = server_part_copy + 1;
-			for (endp = from; *endp; endp++)
-			{
-				if (*endp == '!')
-					*endp++ = 0;
+			char *	bang;
 
-				/* Not connected, so don't "fix" it */
-				if (*endp == ' ')
-				{
-					*endp++ = 0;
-					break;
-				}
-			}
+			/*
+			 * Don't advance 'endp' twice in one iteration -- 
+			 * a prefix ending in '!' would walk off the end.
+			 */
+			from = server_part_copy + 1;
+			endp = from + strcspn(from, " ");
+			if (*endp)
+				*endp++ = 0;
+			if ((bang = strchr(from, '!')))
+				*bang = 0;
 
 			/* 
 			 * So now 'from' points to the nick or server

@@ -345,6 +345,9 @@ static void	build_status_format (Status *s, int k)
 			raw = endptr + 1;
 		}
 
+		/* A % at the end of the string -- don't walk off the end */
+		if (!*raw)
+			break;
 		key = *raw++;
 
 		/* Choke once we get to the maximum number of expandos */
@@ -530,6 +533,7 @@ int	make_status (int window_, Status *status)
 		char	*lhp = lhs_buffer,
 			*rhp = rhs_buffer;
 		char 	*cp,
+			*cp_limit,
 			*str = NULL;
 	const char *	start_rhs = 0;
 		int	pr_lhs = 0,
@@ -654,8 +658,20 @@ int	make_status (int window_, Status *status)
 		cp = lhp;
 		lhs_buffer[0] = rhs_buffer[0] = 0;
 
+		/*
+		 * Only printable columns are limited below, but each 
+		 * attribute change is 12 bytes, so a status line with lots 
+		 * of them (ie, a topic full of ^B's) could overrun the 
+		 * buffer.  Leave room for the biggest single write (an
+		 * attribute, or 8 spaces for a tab), plus the nul.
+		 */
+		cp_limit = lhs_buffer + sizeof(lhs_buffer) - 16;
+
 		while ((code_point = next_code_point2(s, &offset, 1)))
 		{
+			if (cp >= cp_limit)
+				break;
+
 			if (code_point < 0)
 				s++;
 			else
@@ -671,6 +687,7 @@ int	make_status (int window_, Status *status)
 				*cp = 0;
 
 				cp = rhp;
+				cp_limit = rhs_buffer + sizeof(rhs_buffer) - 16;
 				prc = &pr_rhs;
 			}
 
@@ -683,8 +700,7 @@ int	make_status (int window_, Status *status)
 
 				*cp++ = 6;
 
-				/* XXX BIG_BUFFER_SIZE here is wrong. */
-				copy_internal_attribute(s, cp, BIG_BUFFER_SIZE, &numbytes);
+				copy_internal_attribute(s, cp, cp_limit + 16 - cp, &numbytes);
 				s += numbytes;
 				cp += numbytes;
                         }
