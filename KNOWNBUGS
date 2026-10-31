@@ -1471,3 +1471,4 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * keys.c: show_key sizes alloca by slen (key seqs can contain ^@) 
 * If it becomes necessary i'll rewrite them myself by hand.
 * <<< End of very many bugs fixed by using LLM as static analysis tool. 
+* Backport 3107 from epic6 - Don't get confused when duplicate JOINs show up

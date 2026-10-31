@@ -7368,7 +7368,7 @@ EXT_WINDOWCMD(rejoin)
 
 			    if (w->server != from_server)
 				continue;
-			    if (find_in_list(window->waiting_chans, chan))
+			    if (find_in_list(w->waiting_chans, chan))
 			    {
 				owner = w;
 				break;
