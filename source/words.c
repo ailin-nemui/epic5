@@ -771,7 +771,7 @@ char *	real_extract2 (const char *start, int firstword, int lastword, int extend
 	 */
 	if (firstword == lastword)
 	{
-		while (mark && *mark && isspace(*mark))
+		while (*mark && isspace(*mark))
 			mark++;
 	}
 

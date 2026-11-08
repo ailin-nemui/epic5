@@ -1472,3 +1472,13 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * If it becomes necessary i'll rewrite them myself by hand.
 * <<< End of very many bugs fixed by using LLM as static analysis tool. 
 * Backport 3107 from epic6 - Don't get confused when duplicate JOINs show up
+* >>> Fix very many bugs from using LLMs are static analysis tools:
+* -- These bugs were found in epic6 and were also present in epic5.
+* Fix off-by-one bug with dcc argument handling.
+* Fix rogue wserv sending missing geom
+* Fix various memory leaks all over the place.
+* Fix irc_exit() passing the wrong thing to logger()
+* Fix wserv listener to listen to INADDR_LOOPBACK instead of INADDR_ANY
+* Fix a few off-by-one issues with /command argument parsing.
+* <<< End of very many bugs fixed by using LLM as static analysis tool. 
+* Synced up all of the bug fixes from 3017 and 3018 to epic5.

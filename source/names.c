@@ -190,6 +190,7 @@ static void 	clear_channel (Channel *chan)
 		new_free(&x->userhost);
 		new_free(&(chan->nicks.list[i]->data));
 		new_free(&(chan->nicks.list[i]->name));
+		new_free((char **)&(chan->nicks.list[i]));
 	}
 	new_free((void **)&chan->nicks.list);
 	chan->nicks.max = chan->nicks.total_max = 0;
@@ -521,9 +522,18 @@ void 	add_userhost_to_channel (const char *channel, const char *nick, int server
 		 */
 		else
 		{
+		    Nick *	old;
+
 		    remove_from_alist(&chan->nicks, new_n->nick);
 		    malloc_strcpy(&new_n->nick, nick);
-		    add_to_alist(&chan->nicks, nick, new_n);
+
+		    /* XXX - What has gone wrong if this happens? */
+		    if ((old = add_to_alist(&chan->nicks, nick, new_n)))
+		    {
+			new_free(&old->nick);
+			new_free(&old->userhost);
+			new_free((char **)&old);
+		    }
 		    if (x_debug & DEBUG_CHANNELS)
 		    {
 			yell("Detected and corrected a nickname mangled by "
@@ -554,7 +564,8 @@ void 	remove_from_channel (const char *channel, const char *nick, int server)
 	Channel *chan = NULL;
 	Nick	*tmp;
 
-	if (server == NOSERV) return;
+	if (server == NOSERV) 
+		return;
 
 	while (traverse_all_channels(&chan, server, 1))
 	{
@@ -580,6 +591,7 @@ void 	rename_nick (const char *old_nick, const char *new_nick, int server)
 {
 	Channel *chan = NULL;
 	Nick	*tmp;
+	Nick *	old;
 
 	if (server == NOSERV) return;		/* Sanity check */
 
@@ -589,7 +601,14 @@ void 	rename_nick (const char *old_nick, const char *new_nick, int server)
 		{
 			malloc_strcpy(&tmp->nick, new_nick);
 			malloc_strcpy(&tmp->userhost, FromUserHost);
-			add_to_alist(&chan->nicks, new_nick, tmp);
+
+			/* XXX - What has gone wrong if this happens? */
+			if ((old = add_to_alist(&chan->nicks, new_nick, tmp)))
+			{
+				new_free(&old->nick);
+				new_free(&old->userhost);
+				new_free((char **)&old);
+			}
 		}
 	}
 }

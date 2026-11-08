@@ -1793,7 +1793,7 @@ void	rfc1459_any_to_utf8 (char *buffer, size_t buffsiz, char **extra)
 
 		if (from && !*from)
 			from = NULL;
-		if (to && !*to)
+		if (!*to)
 			to = NULL;
 
 		/*

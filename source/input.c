@@ -431,7 +431,7 @@ static int	retokenize_input (int start)
 	current_column = 0;
 	old_s = s = INPUT_BUFFER;
 
-	while (s && *s)
+	while (*s)
 	{
 		codepoint = next_code_point2(s, &offset, 1);
 		s += offset;
@@ -1682,6 +1682,9 @@ void	destroy_input_line (void *p)
 {
 	InputLine *	my_input_line = (InputLine *)p;
 
+	new_free(&my_input_line->input_buffer);
+	new_free((char **)&my_input_line->logical_chars);
+	new_free((char **)&my_input_line->logical_columns);
         new_free(&my_input_line->ind_right);
         new_free(&my_input_line->ind_left);
         new_free(&my_input_line->input_prompt);

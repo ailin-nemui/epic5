@@ -1022,24 +1022,27 @@ int     ucs_to_console (uint32_t codepoint, char *deststr, size_t deststrsiz)
 	char *	source;
 	char *	dest;
 
+	if (!deststr || deststrsiz == 0)
+		return -1;
+	*deststr = 0;
+
 	utf8strsiz = ucs_to_utf8(codepoint, utf8str, 16) + 1;
 	source = utf8str;
 
 	find_recoding("console", NULL, &xlat);
-	/* XXX What to do is 'xlat' is (iconv_t)-1? */
 	if (xlat == (iconv_t)-1)
-		return -1;	/* What to do? */
+		return -1;	/* Returns empty string */
 
 	dest = deststr;
 
-	if (iconv(xlat, &source, &utf8strsiz, &dest, &deststrsiz) != 0)
+	if (iconv(xlat, &source, &utf8strsiz, &dest, &deststrsiz) == (size_t)-1)
 	{
-		if (errno == EINVAL || errno == EILSEQ)
-		{
-			/* What to do? */
-			return -1;
-		}
+		/* Reset iconv then give up */
+		iconv(xlat, NULL, NULL, NULL, NULL);
+		strlcpy(deststr, "?", deststrsiz);
+		return -1;
 	}
+	deststr[deststrsiz - 1] = 0;
 	return 0;
 }
 

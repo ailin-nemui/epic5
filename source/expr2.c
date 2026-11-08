@@ -2417,6 +2417,9 @@ static void	mathparse (expr_info *c, int pc)
 			    retval = call_function(hack, c->args);
 			    c->last_token = tokenize_expanded(c, retval);
 			    push_token(c, c->last_token);
+
+			    new_free(&retval);
+			    new_free(&hack);
 			}
 			break;
 		}

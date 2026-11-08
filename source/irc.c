@@ -52,7 +52,7 @@ const char internal_version[] = "20250227";
 /*
  * In theory, this number is incremented for every commit.
  */
-const unsigned long	commit_id = 2166;
+const unsigned long	commit_id = 2167;
 
 /*
  * As a way to poke fun at the current rage of naming releases after
@@ -248,7 +248,7 @@ void	irc_exit (int really_quit, const char *format, ...)
 	char 	buffer[BIG_BUFFER_SIZE];
 	char *	quit_message = NULL;
 	int	old_window_display;
-	int	value;
+	VARIABLE	value;
 
 	/*
 	 * If we get called recursively, something is hosed.
@@ -293,8 +293,11 @@ void	irc_exit (int really_quit, const char *format, ...)
 #endif
 
 	close_all_servers(quit_message);
-	value = 0;
+
+	memset(&value, 0, sizeof(value));
+	value.integer = 0;
 	logger(&value);
+
 	get_child_exit(-1);  /* In case some children died in the exit hook. */
 	clean_up_processes();
 	close_all_dbms();

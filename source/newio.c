@@ -280,6 +280,7 @@ ssize_t	dgets (int vfd, char *buf, size_t buflen, int buffer)
 	size_t	consumed = 0;
 	char	h = 0;
 	MyIO *	ioe;
+	size_t	maxcopy;
 
 	if (buflen == 0)
 	{
@@ -288,6 +289,11 @@ ssize_t	dgets (int vfd, char *buf, size_t buflen, int buffer)
 			" This is surely a bug.", vfd);
 	    return -1;
 	}
+
+	if (buffer >= 0)
+		maxcopy = buflen - 1;
+	else
+		maxcopy = buflen;
 
 	if (!(ioe = io_rec[vfd]))
 		panic(1, "dgets called on unsetup vfd %d", vfd);
@@ -337,7 +343,7 @@ ssize_t	dgets (int vfd, char *buf, size_t buflen, int buffer)
 	    consumed++;
 
 	    /* Only copy the data if there is some place to put it. */
-	    if (cnt <= buflen - 1)
+	    if (cnt <= maxcopy)
 		buf[cnt++] = h;
 
 	    /* 
@@ -380,11 +386,8 @@ ssize_t	dgets (int vfd, char *buf, size_t buflen, int buffer)
 					vfd, (long)consumed, (long)cnt);
 
 		/* If the line had a newline, then put the newline in. */
-		if (buffer >= 0 && h == '\n')
-		{
-			cnt = buflen - 2;
-			buf[cnt++] = '\n';
-		}
+		if (buffer >= 0 && h == '\n' && cnt > 0)
+			buf[cnt - 1] = '\n';
 	}
 
 	/*
@@ -689,7 +692,7 @@ int	new_close_with_option (int vfd, int virtual)
 
 	if (vfd >= 0 && vfd <= global_max_vfd && (ioe = io_rec[vfd]))
 	{
-		if (ioe->io_callback == ssl_read)	/* XXX */
+		if (is_fd_ssl_enabled(ioe->channel))
 			ssl_shutdown(ioe->channel);
 
 		knoread(vfd);

@@ -1947,7 +1947,7 @@ char *	bindctl (char *input)
 	    else
 		malloc_sprintf(&retval, "alias %s", BINDING(bp)->alias);
 
-	    RETURN_STR(retval);
+	    RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "MATCH", 1)) {
 	    int len;
 	    if (!func || !*func)
@@ -1958,17 +1958,20 @@ char *	bindctl (char *input)
 		    malloc_strcat_word(&retval, space, bp->name, DWORD_NO);
 	    }
 
-	    RETURN_STR(retval);
+	    RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "PMATCH", 1)) {
 	    for (bp = binding_list;bp;bp = bp->next) {
 		if (wild_match(func, bp->name))
 		    malloc_strcat_word(&retval, space, bp->name, DWORD_NO);
 	    }
 
-	    RETURN_STR(retval);
+	    RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "GETPACKAGE", 1)) {
 	    if (bp != NULL)
-		RETURN_STR(BINDING(bp)->filename);
+	    {
+		const char *x = BINDING(bp)->filename;
+		RETURN_STR(x);
+	    }
 	} else if (!my_strnicmp(listc, "SETPACKAGE", 1)) {
 
 	    if (bp == NULL)
@@ -2000,7 +2003,7 @@ char *	bindctl (char *input)
 	    retval = malloc_strdup(key->bound->name);
 	    if (key->stuff)
 		malloc_strcat_wordlist(&retval, " ", key->stuff);
-	    RETURN_STR(retval);
+	    RETURN_MSTR(retval);
 	} else if (!my_strnicmp(listc, "GETPACKAGE", 4)) {
 	    if (key == NULL)
 		RETURN_EMPTY;
@@ -2021,7 +2024,7 @@ char *	bindctl (char *input)
 	seq = new_next_arg(input, &input);
 	if (seq == NULL) {
 	    bindctl_getmap(head_keymap, "", 0, &retval);
-	    RETURN_STR(retval);
+	    RETURN_MSTR(retval);
 	}
 	seq = bind_string_compress(seq, &slen);
 	key = find_sequence(head_keymap, seq, slen);
@@ -2034,7 +2037,7 @@ char *	bindctl (char *input)
 	    }
 	    bindctl_getmap(key->map, seq, slen, &retval);
 	    new_free(&seq);
-	    RETURN_STR(retval);
+	    RETURN_MSTR(retval);
 	}
 	new_free(&seq);
 	if (!my_strnicmp(listc, "CLEAR", 1)) {

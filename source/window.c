@@ -755,6 +755,12 @@ static void	delete_window_contents (int window_)
 		new_free(&window->status.special);
 	}
 
+	/* Toplines... */
+	for (i = 0; i < (int)(sizeof(window->topline) / sizeof(*window->topline)); i++)
+		new_free(&window->topline[i]);
+	window->toplines_showing = 0;
+	window->toplines_wanted = 0;
+
 	/* Various things... */
 	new_free(&window->logfile);
 	new_free(&window->name);
@@ -9844,7 +9850,8 @@ char 	*windowctl 	(char *input)
 	    } else if (!my_strnicmp(listc, "CURRENT_CHANNEL", len)) {
 		RETURN_STR(window_current_channel(w->refnum, w->server));
 	    } else if (!my_strnicmp(listc, "WAITING_CHANNEL", len)) {
-		RETURN_STR(get_waiting_channels_by_window(w->refnum));
+		char *x = get_waiting_channels_by_window(w->refnum);
+		RETURN_MSTR(x);
 	    } else if (!my_strnicmp(listc, "BIND_CHANNEL", len)) {
 		RETURN_EMPTY;
 	    } else if (!my_strnicmp(listc, "QUERY_NICK", len)) {

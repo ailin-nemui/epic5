@@ -444,6 +444,9 @@ static ssl_info *	unlink_ssl_info (int vfd)
 {
 	ssl_info *x = NULL;
 
+	if (!ssl_list)
+		return NULL;
+
 	if (ssl_list->vfd == vfd)
 	{
 		x = ssl_list;

@@ -931,6 +931,7 @@ static 	void 	remove_from_server_list (int i)
 	new_free(&s->default_realname);
 	new_free(&s->remote_paddr);
 	new_free(&s->ison);
+	new_free(&s->addrs);
 	destroy_notify_list(i);
 	destroy_005(i);
 	reset_server_altnames(i, NULL);
@@ -1656,6 +1657,7 @@ something_broke:
 			}
 
 			memcpy(&s->remote_sockname.ss, &name.ss, sizeof(name.ss));
+			new_free(&s->remote_paddr);
 			s->remote_paddr = inet_ssu_to_paddr(&name, 0);
 			say("Connected to IP address %s", s->remote_paddr);
 
@@ -2093,6 +2095,7 @@ static void 	vsend_to_aserver_with_payload (int refnum, const char *payload, con
 	}
 
 	/****************************************/
+	/* XXX This is not attached to the if, so don't "fix" it. */
 	/*
 	 * Send the resulting message out
 	 */

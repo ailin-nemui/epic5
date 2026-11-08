@@ -184,6 +184,8 @@ struct 	metric_time 	timeval_to_metric	(const Timeval *);
 	void	clear_modes		(char *);
 	void	update_mode_str		(char *, size_t, const char *);
 
+	int	is_signal_valid		(int);
+
 /**********************************************************************/
 
 /* ---------------- */

@@ -50,9 +50,18 @@
 	RETURN_IF_EMPTY((y)); 		\
 	x = next_arg((y), &(y));	\
 }
+
+/* Hey! If you call this with something that isn't new_malloc()ed, _that is an error in the caller_ */
+/* Hey! If you call this with something with side effects (like a function call) _that is an error in the caller_ */
 #define RETURN_MSTR(x) return ((x) ? (x) : EMPTY_STRING)
+
+/* Hey! If you call this with something that _is_ new_malloc()ed by the caller, _that is an error in the caller_ */
+/* Hey! If you call this with something with side effects (like a function call) _that is an error in the caller_ */
 #define RETURN_STR(x) return malloc_strdup((x) ? (x) : EMPTY)
+
+/* Hey!  If you call this with something that _is_ new_malloc()ed by the caller, _that is an error in the caller_ */
 #define RETURN_FSTR(x) return malloc_strdup( x )	/* Only fixed char arrays! */
+
 #define RETURN_INT(x) return malloc_strdup(intmaxtoa((x)))
 #define RETURN_FLOAT(x) return malloc_sprintf(NULL, "%.50g", (double) (x))
 #define RETURN_FLOAT2(x) return malloc_sprintf(NULL, "%.2f", (double) (x))

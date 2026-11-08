@@ -1126,7 +1126,10 @@ static	char	*alias_banner		(void) { return malloc_strdup(banner()); }
 
 static	char	*alias_currdir  	(void)
 {
-	char 	*tmp = (char *)new_malloc(PATH_MAX+1);
+	char 	*tmp;
+
+	if (!(tmp = new_malloc(PATH_MAX+1)))
+		RETURN_EMPTY;
 	if (!getcwd(tmp, PATH_MAX))
 		*tmp = 0;
 	return tmp;

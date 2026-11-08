@@ -3150,6 +3150,7 @@ void 	send_text (int server, const char *nick_list, const char *text, const char
 static	int	recursion = 0;
 	char *	extra = NULL;
 	const char	*recode_text;
+	char *	x;
 
 	/*
 	 * XXXX - Heaven help us.
@@ -3292,14 +3293,14 @@ struct target_type target[4] =
 		set_server_sent_nick(from_server, current_nick);
 		new_free(&line);
 	    }
-	    else if (*current_nick == '-' && strchr(current_nick + 1, '/'))
+	    else if (*current_nick == '-' && ((x = strchr(current_nick + 1, '/'))))
 	    {
 		int	servref;
 		char *	servername;
 		char *	msgtarget;
 
 		servername = current_nick + 1;
-		msgtarget = strchr(servername, '/');
+		msgtarget = x;
 		*msgtarget++ = 0;
 
 		if ((servref = str_to_servref(servername)) == NOSERV)

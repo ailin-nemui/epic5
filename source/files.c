@@ -430,6 +430,7 @@ char *	file_readb (int fd, int numb)
 		char *	blah;
 
 		blah = (char *)new_malloc(numb+1);
+		memset(blah, 0, numb);
                 if (ptr->elf->fp) {
                     clearerr(ptr->elf->fp);
                     numb = fread(blah, 1, numb, ptr->elf->fp);

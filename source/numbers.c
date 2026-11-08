@@ -312,6 +312,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		break;
 	}
 
+#if 0
 	case 10:		/* EFNext "Use another server"	010 */
 	{
 		const char *new_server /*, *new_port_s, *message */;
@@ -341,6 +342,7 @@ void 	numbered_command (const char *from, const char *comm, char const **ArgList
 		from_server = old_server;
 		break;
 	}
+#endif
 
 	case 14:		/* Erf/TS4 "cookie" numeric	014 */
 	{

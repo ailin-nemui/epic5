@@ -3665,8 +3665,7 @@ int	create_additional_screen (void)
 	socklen_t	new_sock_size;
 	const char *	wserv_path;
 
-	char 		subcmd[128];
-	char *		opts;
+	char *		opts, *saved_opts;
 	const char *	xterm;
 	char *		args[64];
 	char **		args_ptr = args;
@@ -3755,7 +3754,7 @@ int	create_additional_screen (void)
 	/* Create the command line arguments... */
 	if (screen_type == ST_SCREEN)
 	{
-	    opts = malloc_strdup(get_string_var(SCREEN_OPTIONS_VAR));
+	    saved_opts = opts = malloc_strdup(get_string_var(SCREEN_OPTIONS_VAR));
 	    *args_ptr++ = malloc_strdup("screen");
 	    while (opts && *opts)
 		*args_ptr++ = malloc_strdup(new_next_arg(opts, &opts));
@@ -3763,6 +3762,8 @@ int	create_additional_screen (void)
 	    *args_ptr++ = malloc_strdup("localhost");
 	    *args_ptr++ = malloc_strdup(ltoa((long)port));
 	    *args_ptr++ = NULL;
+	    new_free(&saved_opts);
+	    opts = NULL;
 	}
 	else if (screen_type == ST_XTERM)
 	{
@@ -3770,7 +3771,7 @@ int	create_additional_screen (void)
 		get_screen_columns(oldscreen) + 1, 
 		get_screen_lines(oldscreen));
 
-	    opts = malloc_strdup(get_string_var(XTERM_OPTIONS_VAR));
+	    saved_opts = opts = malloc_strdup(get_string_var(XTERM_OPTIONS_VAR));
 	    if (!(xterm = getenv("XTERM")))
 		if (!(xterm = get_string_var(XTERM_VAR)))
 		    xterm = "xterm";
@@ -3785,21 +3786,27 @@ int	create_additional_screen (void)
 	    *args_ptr++ = malloc_strdup("localhost");
 	    *args_ptr++ = malloc_strdup(ltoa((long)port));
 	    *args_ptr++ = NULL;
+	    new_free(&saved_opts);
+	    opts = NULL;
 	}
 	else if (screen_type == ST_TMUX)
 	{
-	    snprintf(subcmd, 127, "%s %s %hu", 
+	    char *subcmd = NULL;
+
+	    malloc_sprintf(&subcmd, "%s %s %hu", 
 			wserv_path, "localhost", port);
 
 	    *args_ptr++ = malloc_strdup("tmux");
 
-	    opts = malloc_strdup(get_string_var(TMUX_OPTIONS_VAR));
+	    saved_opts = opts = malloc_strdup(get_string_var(TMUX_OPTIONS_VAR));
 	    while (opts && *opts)
 		*args_ptr++ = malloc_strdup(new_next_arg(opts, &opts));
 
 	    *args_ptr++ = malloc_strdup("new-window");
-	    *args_ptr++ = malloc_strdup(subcmd);
+	    *args_ptr++ = subcmd;
 	    *args_ptr++ = NULL;
+	    new_free(&saved_opts);
+	    opts = NULL;
 	}
 
 	/* Now create a new screen */
@@ -5141,6 +5148,8 @@ void		set_screen_fpin			(int screen_, FILE *value)
 	Screen *s = get_screen_by_refnum(screen_);
 	if (!s)
 		return;
+	if (s->fpin && s->fpin != value)
+		fclose(s->fpin);
 	s->fpin = value;
 }
 
@@ -5149,6 +5158,8 @@ void		set_screen_fpout		(int screen_, FILE *value)
 	Screen *s = get_screen_by_refnum(screen_);
 	if (!s)
 		return;
+	if (s->fpout && s->fpout != value)
+		fclose(s->fpout);
 	s->fpout = value;
 }
 

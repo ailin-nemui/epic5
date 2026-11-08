@@ -803,7 +803,7 @@ do
 		else if (do_hook(WHO_LIST, "%s", buffer))
 			put_it(format, channel, nick, status, user, host, name);
 
-		return;
+		break;
 	}
 
 	if (new_w && new_w->who_mask)

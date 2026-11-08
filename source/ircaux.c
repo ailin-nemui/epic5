@@ -3074,6 +3074,9 @@ char *	skip_spaces (char *str)
  *			word inside 'str'.  The array will be NULL terminated.
  *		    YOU OWN THE ARRAY - IT WILL BE POINTING TO 'str'
  *	maxargs	- (INPUT) How big 'to' is.  If 'to' isn't big enough, too bad.
+ *		     This needs to be at least 2:
+ *			If this is 0, then 'to' won't be touched.
+ *			If this is 1, then to[0] will be NULL and that's it.
  *
  * Return value:
  *	How many args were in 'str' that were stored to 'to'.
@@ -3091,8 +3094,11 @@ int	split_args (char *str, char **to, size_t maxargs)
 	size_t	counter;
 	char *	ptr;
 
+	if (maxargs == 0)
+		return 0;
+
 	ptr = str;
-	for (counter = 0; counter < maxargs; counter++)
+	for (counter = 0; counter < maxargs - 1; counter++)
 	{
 		if (!ptr || !*ptr)
 			break;
@@ -6596,97 +6602,98 @@ void	init_signal_names (void)
 		signal_name[i] = NULL;
 
 /* XXX because clang objects to #x + 3 */
-#define SIGH(x) if (i == x) malloc_strcpy(&signal_name[i], & #x [3]);
+/* XXX and because gcc objects to &(#x + 3) */
+#define SIGH(x, y) if (i == x && i <= NSIG && is_signal_valid(i)) malloc_strcpy(&(signal_name[i]), y);
 
 #ifdef SIGABRT
-		SIGH(SIGABRT)
+		SIGH(SIGABRT, "ABRT")
 #endif
 #ifdef SIGALRM
-		else SIGH(SIGALRM)
+		else SIGH(SIGALRM, "ALRM")
 #endif
 #ifdef SIGBUS
-		else SIGH(SIGBUS)
+		else SIGH(SIGBUS, "BUS")
 #endif
 #ifdef SIGCHLD
-		else SIGH(SIGCHLD)
+		else SIGH(SIGCHLD, "CHLD")
 #endif
 #ifdef SIGCONT
-		else SIGH(SIGCONT)
+		else SIGH(SIGCONT, "CONT")
 #endif
 #ifdef SIGFPE
-		else SIGH(SIGFPE)
+		else SIGH(SIGFPE, "FPE")
 #endif
 #ifdef SIGHUP
-		else SIGH(SIGHUP)
+		else SIGH(SIGHUP, "HUP")
 #endif
 #ifdef SIGINFO
-		else SIGH(SIGINFO)
+		else SIGH(SIGINFO, "INFO")
 #endif
 #ifdef SIGILL
-		else SIGH(SIGILL)
+		else SIGH(SIGILL, "ILL")
 #endif
 #ifdef SIGINT
-		else SIGH(SIGINT)
+		else SIGH(SIGINT, "INT")
 #endif
 #ifdef SIGKILL
-		else SIGH(SIGKILL)
+		else SIGH(SIGKILL, "KILL")
 #endif
 #ifdef SIGPIPE
-		else SIGH(SIGPIPE)
+		else SIGH(SIGPIPE, "PIPE")
 #endif
 #ifdef SIGPOLL
-		else SIGH(SIGPOLL)
+		else SIGH(SIGPOLL, "POLL")
 #endif
 #ifdef SIGRTMIN
-		else SIGH(SIGRTMIN)
+		else SIGH(SIGRTMIN, "RTMIN")
 #endif 
 #ifdef SIGRTMAX
-		else SIGH(SIGRTMAX)
+		else SIGH(SIGRTMAX, "RTMAX")
 #endif
 #ifdef SIGQUIT
-		else SIGH(SIGQUIT)
+		else SIGH(SIGQUIT, "QUIT")
 #endif
 #ifdef SIGSEGV
-		else SIGH(SIGSEGV)
+		else SIGH(SIGSEGV, "SEGV")
 #endif
 #ifdef SIGSTOP
-		else SIGH(SIGSTOP)
+		else SIGH(SIGSTOP, "STOP")
 #endif
 #ifdef SIGSYS
-		else SIGH(SIGSYS)
+		else SIGH(SIGSYS, "SYS")
 #endif
 #ifdef SIGTERM
-		else SIGH(SIGTERM)
+		else SIGH(SIGTERM, "TERM")
 #endif
 #ifdef SIGTSTP
-		else SIGH(SIGTSTP)
+		else SIGH(SIGTSTP, "TSTP")
 #endif
 #ifdef SIGTTIN
-		else SIGH(SIGTTIN)
+		else SIGH(SIGTTIN, "TTIN")
 #endif
 #ifdef SIGTTOU
-		else SIGH(SIGTTOU)
+		else SIGH(SIGTTOU, "TTOU")
 #endif
 #ifdef SIGTRAP
-		else SIGH(SIGTRAP)
+		else SIGH(SIGTRAP, "TRAP")
 #endif
 #ifdef SIGURG
-		else SIGH(SIGURG)
+		else SIGH(SIGURG, "URG")
 #endif
 #ifdef SIGUSR1
-		else SIGH(SIGUSR1)
+		else SIGH(SIGUSR1, "USR1")
 #endif
 #ifdef SIGUSR2
-		else SIGH(SIGUSR2)
+		else SIGH(SIGUSR2, "USR2")
 #endif
 #ifdef SIGXCPU
-		else SIGH(SIGXCPU)
+		else SIGH(SIGXCPU, "XCPU")
 #endif
 #ifdef SIGXFSZ
-		else SIGH(SIGXFSZ)
+		else SIGH(SIGXFSZ, "XFSZ")
 #endif
 #ifdef SIGWINCH
-		else SIGH(SIGWINCH)
+		else SIGH(SIGWINCH, "WINCH")
 #endif
 		else
 			malloc_sprintf(&signal_name[i], "SIG%d", i);
@@ -7034,5 +7041,18 @@ const char *	nonull (const char *x)
 		return x;
 	else
 		return empty_string;
+}
+
+int     is_signal_valid (int signo)
+{
+        struct sigaction        sa;
+
+        if (sigaction(signo, NULL, &sa) == 0)
+                return 1;
+        else
+        {
+                /* The only interesting errno is EINVAL */
+                return 0;
+        }
 }
 

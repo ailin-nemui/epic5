@@ -538,6 +538,8 @@ int wild_match (const char *p, const char *str)
 		 * XXX This seems to be a no-op.  Why bother?
 		 */
 		placeholder = ptr = strstr(pattern, "\\[");
+		if (!ptr)
+			return 0;
 
 		/*
 		 * Look for the matching \].
@@ -555,8 +557,11 @@ int wild_match (const char *p, const char *str)
 					    nest--;
 					    break;
 					/* A trailing \ must not step past the nul */
+				case 0:
+					    ptr2 = ptr + 1;
+					    break;
 				default:
-					    ptr2 = ptr + (ptr[1] ? 2 : 1);
+					    ptr2 = ptr + 2;
 					    break;
 			}
 		}
@@ -640,6 +645,7 @@ int wild_match (const char *p, const char *str)
 }
 
 
+#if 0
 /*
  * Hrm.  Here's the plan -- can we convert ircII patterns to normal
  * regexes?  Well, the syntax should be pretty simple, right?
@@ -768,4 +774,5 @@ char *	pattern2regex (const char *pattern, int *weight)
 		privileged_yell("[%s] -> [%s]", pattern, retval);
 	return retval;
 }
+#endif
 
