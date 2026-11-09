@@ -1482,3 +1482,5 @@ THE CHANGELOG SINCE THE LAST RELEASE:
 * Fix a few off-by-one issues with /command argument parsing.
 * <<< End of very many bugs fixed by using LLM as static analysis tool. 
 * Synced up all of the bug fixes from 3017 and 3018 to epic5.
+* Fix typo with (sizeof(argv)/sizeof(*argv)) (rb skered)
+
